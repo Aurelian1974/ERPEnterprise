@@ -437,8 +437,80 @@ Components/
 |------|-------------|-------------------|
 | **NO Logic in .razor** | ONLY markup, bindings, simple conditionals | ❌ Complex logic in @code{} |
 | **ALL Logic in .razor.cs** | State management, service calls, business rules | ❌ Inline lambdas for complex ops |
-| **Scoped CSS ONLY** | Each component has `.razor.css` | ❌ Global CSS pollution |
-| **CSS Variables** | Use variables.css, NO hardcoded values | ❌ Hardcoded colors/sizes |
+| **CSS Strategy** | Global pentru variabile, Scoped pentru pagini | ❌ Stiluri de pagină în app.css |
+
+---
+
+### ✅ **STEP 2.1: CSS Strategy (GLOBAL vs SCOPED)**
+
+#### 🌍 **CSS Global (`wwwroot/css/app.css`)** - Folosește pentru:
+
+| Ce incluzi | Exemplu |
+|------------|---------|
+| **CSS Variables** | `--primary-color`, `--font-size-base`, `--spacing-md` |
+| **Reset/Normalize** | `*, body, html` base styles |
+| **Typography globală** | Font families, base font sizes |
+| **Bootstrap overrides** | Modificări la clasele Bootstrap |
+| **Utility classes** | `.text-center`, `.hidden`, `.flex-center` |
+| **Layout comun** | Sidebar, navbar, footer (dacă sunt în MainLayout) |
+
+```css
+/* app.css - DOAR stiluri globale */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+    --primary-color: #667eea;
+    --font-size-base: 14px;
+    --spacing-md: 16px;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: var(--font-size-base);
+}
+```
+
+#### 🔒 **CSS Scoped (`.razor.css`)** - Folosește pentru:
+
+| Ce incluzi | Exemplu |
+|------------|---------|
+| **Stiluri specifice paginii** | Card-uri, tabele, formulare din acea pagină |
+| **Componente custom** | Modal-uri, alerts, badges specifice |
+| **Hover states specifice** | Efecte doar pentru acea componentă |
+| **Layout specific** | Grid/flex layout doar pentru acea pagină |
+| **Animații specifice** | Tranziții doar pentru acea componentă |
+
+```css
+/* Persoane.razor.css - DOAR stiluri pentru pagina Persoane */
+.persoane-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.persoane-table th {
+    background: var(--primary-gradient);
+    color: white;
+}
+```
+
+#### 📊 **Regula de Decizie**
+
+```
+Întrebare: "Acest stil este folosit în mai multe pagini?"
+    │
+    ├── DA → app.css (Global)
+    │
+    └── NU → [Component].razor.css (Scoped)
+```
+
+#### ❌ **GREȘELI FRECVENTE**
+
+| Greșit | Corect |
+|--------|--------|
+| Stiluri `.modal-persoane` în app.css | Stiluri în `Persoane.razor.css` |
+| `!important` pentru specificitate | CSS Scoped elimină conflictele |
+| Clase generice `.card` în pagină | Clase prefixate `.persoane-card` |
+| Stiluri inline în .razor | Clasă în .razor.css |
 
 ---
 
@@ -615,9 +687,9 @@ public async Task MethodName_Scenario_ExpectedResult()
 2. **🔗 CHECK DEPENDENCIES:** Identify all dependent components/files
 3. **📝 DOCUMENT FIRST:** Create analysis document BEFORE coding
 4. **🎨 PURPLE/BLUE THEME:** Consistent gradient styling
-5. **🔒 SCOPED CSS ONLY:** NO global CSS pollution
-6. **🚫 NO LOGIC IN .razor:** ALL logic in `.razor.cs`
-7. **✅ CSS VARIABLES:** NO hardcoded colors/sizes
+5. **🌍 CSS GLOBAL:** Variabile, reset, Bootstrap overrides în `app.css`
+6. **🔒 CSS SCOPED:** Stiluri specifice paginilor în `.razor.css`
+7. **🚫 NO LOGIC IN .razor:** ALL logic in `.razor.cs`
 8. **🧪 TEST EVERYTHING:** Unit tests for business logic (80%+)
 9. **🔐 VALIDATE INPUT:** DataAnnotations on ALL models
 10. **📄 DOCUMENT FINAL:** Create completion document with ALL changes
