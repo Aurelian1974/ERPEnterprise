@@ -1,14 +1,14 @@
-/* ValyanERP - Soft Blue Gradient Theme */
+/* ValyanERP - Light Blue Theme */
 
 :root {
-    --primary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    --sidebar-gradient: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    --header-gradient: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
-    --primary-blue: #5b86e5;
-    --primary-light: #a8c0ff;
-    --accent-color: #36d1dc;
-    --soft-blue: #e8f4fc;
-    --card-shadow: rgba(91, 134, 229, 0.15);
+    --primary-gradient: linear-gradient(135deg, #93c5fd, #60a5fa);
+    --sidebar-gradient: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+    --header-gradient: linear-gradient(90deg, #93c5fd 0%, #60a5fa 100%);
+    --primary-color: #60a5fa;
+    --primary-light: #93c5fd;
+    --primary-dark: #3b82f6;
+    --soft-blue: #dbeafe;
+    --card-shadow: rgba(59, 130, 246, 0.15);
 }
 
 html,
@@ -24,10 +24,10 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar Styling - Soft Blue */
+/* Sidebar Styling - Light Blue */
 #sidebar-wrapper {
-    background: linear-gradient(180deg, #5b86e5 0%, #36d1dc 100%) !important;
-    box-shadow: 4px 0 20px rgba(91, 134, 229, 0.25);
+    background: var(--sidebar-gradient) !important;
+    box-shadow: 4px 0 20px rgba(59, 130, 246, 0.25);
 }
 
 .sidebar-heading {
@@ -63,10 +63,10 @@ body {
     color: white;
 }
 
-/* Top Navigation - Soft Gradient */
+/* Top Navigation - Light Blue Gradient */
 .navbar {
-    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%) !important;
-    box-shadow: 0 2px 20px rgba(91, 134, 229, 0.2);
+    background: var(--header-gradient) !important;
+    box-shadow: 0 2px 20px rgba(59, 130, 246, 0.2);
 }
 
 .navbar-brand {
@@ -90,11 +90,11 @@ body {
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(91, 134, 229, 0.25);
+    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.25);
 }
 
 .card-header {
-    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%) !important;
+    background: var(--primary-gradient) !important;
     color: white;
     border: none;
     padding: 15px 20px;
@@ -127,7 +127,7 @@ body {
 }
 
 .text-primary {
-    color: var(--primary-blue) !important;
+    color: var(--primary-color) !important;
 }
 
 .text-success {
@@ -142,19 +142,19 @@ body {
     color: #06b6d4 !important;
 }
 
-/* Buttons - Soft gradients */
+/* Buttons - Light Blue gradients */
 .btn-primary {
-    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     border: none;
-    box-shadow: 0 4px 15px rgba(91, 134, 229, 0.3);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
     transition: all 0.3s ease;
     border-radius: 8px;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(90deg, #4a75d4 0%, #25c0cb 100%);
+    background: linear-gradient(135deg, var(--primary-dark), #2563eb);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(91, 134, 229, 0.4);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 }
 
 .btn-outline-danger {
@@ -178,8 +178,8 @@ body {
 }
 
 .form-control:focus {
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 4px rgba(91, 134, 229, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
     background: white;
 }
 
@@ -190,7 +190,7 @@ h1 {
 }
 
 h1 i {
-    color: var(--primary-blue);
+    color: var(--primary-color);
 }
 
 h4,
@@ -220,12 +220,12 @@ h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #5b86e5 0%, #36d1dc 100%);
+    background: var(--sidebar-gradient);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #4a75d4;
+    background: var(--primary-dark);
 }
 
 /* Loading Spinner */
@@ -235,12 +235,12 @@ h6 {
 
 /* Selection */
 ::selection {
-    background: #a8c0ff;
+    background: var(--primary-light);
     color: #1e40af;
 }
 
 /* Checkbox styling */
 .form-check-input:checked {
-    background-color: var(--primary-blue);
-    border-color: var(--primary-blue);
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }

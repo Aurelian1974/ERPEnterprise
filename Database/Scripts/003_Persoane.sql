@@ -5,40 +5,61 @@
 -- =============================================
 
 -- =============================================
--- TABLE: Persoane
+-- DROP AND RECREATE TABLE: Persoane
 -- =============================================
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Persoane')
-BEGIN
-    CREATE TABLE [dbo].[Persoane] (
-        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-        [Nume] NVARCHAR(100) NOT NULL,
-        [Prenume] NVARCHAR(100) NOT NULL,
-        [CNP] NVARCHAR(13) NULL,
-        [DataNasterii] DATE NULL,
-        [Email] NVARCHAR(256) NULL,
-        [Telefon] NVARCHAR(20) NULL,
-        [Adresa] NVARCHAR(500) NULL,
-        [Oras] NVARCHAR(100) NULL,
-        [Judet] NVARCHAR(100) NULL,
-        [CodPostal] NVARCHAR(10) NULL,
-        [Tara] NVARCHAR(100) NULL DEFAULT 'Romania',
-        [IsActive] BIT NOT NULL DEFAULT 1,
-        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
-        [CreatedBy] UNIQUEIDENTIFIER NULL,
-        [UpdatedAt] DATETIME2 NULL,
-        [UpdatedBy] UNIQUEIDENTIFIER NULL,
-        
-        CONSTRAINT [FK_Persoane_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [dbo].[Users]([Id]),
-        CONSTRAINT [FK_Persoane_UpdatedBy] FOREIGN KEY ([UpdatedBy]) REFERENCES [dbo].[Users]([Id])
-    );
+IF OBJECT_ID('dbo.vw_Persoane', 'V') IS NOT NULL DROP VIEW dbo.vw_Persoane;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_GetAll', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_GetAll;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_GetById', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_GetById;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_Create', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Create;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_Update', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Update;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_Delete', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Delete;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_HardDelete', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_HardDelete;
+GO
+IF OBJECT_ID('dbo.sp_Persoane_Search', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Search;
+GO
+IF OBJECT_ID('dbo.fn_ValidateCNP', 'FN') IS NOT NULL DROP FUNCTION dbo.fn_ValidateCNP;
+GO
+IF OBJECT_ID('dbo.Persoane', 'U') IS NOT NULL DROP TABLE dbo.Persoane;
+GO
 
-    CREATE INDEX [IX_Persoane_Nume] ON [dbo].[Persoane] ([Nume]);
-    CREATE INDEX [IX_Persoane_CNP] ON [dbo].[Persoane] ([CNP]);
-    CREATE INDEX [IX_Persoane_Email] ON [dbo].[Persoane] ([Email]);
-    CREATE INDEX [IX_Persoane_IsActive] ON [dbo].[Persoane] ([IsActive]);
+-- =============================================
+-- TABLE: Persoane (with UNIQUEIDENTIFIER)
+-- =============================================
+CREATE TABLE [dbo].[Persoane] (
+    [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    [Nume] NVARCHAR(100) NOT NULL,
+    [Prenume] NVARCHAR(100) NOT NULL,
+    [CNP] NVARCHAR(13) NULL,
+    [DataNasterii] DATE NULL,
+    [Email] NVARCHAR(256) NULL,
+    [Telefon] NVARCHAR(20) NULL,
+    [Adresa] NVARCHAR(500) NULL,
+    [Oras] NVARCHAR(100) NULL,
+    [Judet] NVARCHAR(100) NULL,
+    [CodPostal] NVARCHAR(10) NULL,
+    [Tara] NVARCHAR(100) NULL DEFAULT 'Romania',
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+    [CreatedBy] UNIQUEIDENTIFIER NULL,
+    [UpdatedAt] DATETIME2 NULL,
+    [UpdatedBy] UNIQUEIDENTIFIER NULL,
     
-    PRINT 'Table Persoane created successfully.';
-END
+    CONSTRAINT [FK_Persoane_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [dbo].[Users]([Id]),
+    CONSTRAINT [FK_Persoane_UpdatedBy] FOREIGN KEY ([UpdatedBy]) REFERENCES [dbo].[Users]([Id])
+);
+
+CREATE INDEX [IX_Persoane_Nume] ON [dbo].[Persoane] ([Nume]);
+CREATE INDEX [IX_Persoane_CNP] ON [dbo].[Persoane] ([CNP]);
+CREATE INDEX [IX_Persoane_Email] ON [dbo].[Persoane] ([Email]);
+CREATE INDEX [IX_Persoane_IsActive] ON [dbo].[Persoane] ([IsActive]);
+
+PRINT 'Table Persoane created successfully with UNIQUEIDENTIFIER.';
 GO
 
 -- =============================================
@@ -97,7 +118,7 @@ GO
 IF OBJECT_ID('dbo.sp_Persoane_GetById', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_GetById;
 GO
 CREATE PROCEDURE dbo.sp_Persoane_GetById
-    @Id INT
+    @Id UNIQUEIDENTIFIER
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -126,17 +147,18 @@ CREATE PROCEDURE dbo.sp_Persoane_Create
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @NewId UNIQUEIDENTIFIER = NEWID();
     
     INSERT INTO [dbo].[Persoane] (
-        Nume, Prenume, CNP, DataNasterii, Email, Telefon,
+        Id, Nume, Prenume, CNP, DataNasterii, Email, Telefon,
         Adresa, Oras, Judet, CodPostal, Tara, CreatedBy
     )
     VALUES (
-        @Nume, @Prenume, @CNP, @DataNasterii, @Email, @Telefon,
+        @NewId, @Nume, @Prenume, @CNP, @DataNasterii, @Email, @Telefon,
         @Adresa, @Oras, @Judet, @CodPostal, @Tara, @CreatedBy
     );
     
-    SELECT SCOPE_IDENTITY() AS Id;
+    SELECT @NewId AS Id;
 END
 GO
 
@@ -144,7 +166,7 @@ GO
 IF OBJECT_ID('dbo.sp_Persoane_Update', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Update;
 GO
 CREATE PROCEDURE dbo.sp_Persoane_Update
-    @Id INT,
+    @Id UNIQUEIDENTIFIER,
     @Nume NVARCHAR(100),
     @Prenume NVARCHAR(100),
     @CNP NVARCHAR(13) = NULL,
@@ -187,7 +209,7 @@ GO
 IF OBJECT_ID('dbo.sp_Persoane_Delete', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_Delete;
 GO
 CREATE PROCEDURE dbo.sp_Persoane_Delete
-    @Id INT,
+    @Id UNIQUEIDENTIFIER,
     @UpdatedBy UNIQUEIDENTIFIER = NULL
 AS
 BEGIN
@@ -207,7 +229,7 @@ GO
 IF OBJECT_ID('dbo.sp_Persoane_HardDelete', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Persoane_HardDelete;
 GO
 CREATE PROCEDURE dbo.sp_Persoane_HardDelete
-    @Id INT
+    @Id UNIQUEIDENTIFIER
 AS
 BEGIN
     SET NOCOUNT ON;

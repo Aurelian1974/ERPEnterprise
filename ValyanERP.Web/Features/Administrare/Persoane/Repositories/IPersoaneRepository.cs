@@ -8,10 +8,11 @@ namespace ValyanERP.Web.Features.Administrare.Persoane.Repositories;
 public interface IPersoaneRepository
 {
     Task<IEnumerable<Persoana>> GetAllAsync(bool includeInactive = false);
-    Task<Persoana?> GetByIdAsync(int id);
-    Task<int> CreateAsync(CreatePersoanaDto persoana, Guid? createdBy = null);
+    Task<Persoana?> GetByIdAsync(Guid id);
+    Task<Persoana?> GetByEmailAsync(string email);
+    Task<Guid> CreateAsync(CreatePersoanaDto persoana, Guid? createdBy = null);
     Task<bool> UpdateAsync(UpdatePersoanaDto persoana, Guid? updatedBy = null);
-    Task<bool> DeleteAsync(int id, Guid? updatedBy = null);
-    Task<bool> HardDeleteAsync(int id);
+    Task<bool> DeleteAsync(Guid id, Guid? updatedBy = null);
+    Task<bool> HardDeleteAsync(Guid id);
     Task<IEnumerable<Persoana>> SearchAsync(string? searchTerm, bool includeInactive = false);
 }

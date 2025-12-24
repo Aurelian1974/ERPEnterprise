@@ -457,8 +457,10 @@ Components/
 ```css
 /* app.css - DOAR stiluri globale */
 :root {
-    --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
-    --primary-color: #667eea;
+    --primary-gradient: linear-gradient(135deg, #93c5fd, #60a5fa);
+    --primary-color: #60a5fa;
+    --primary-light: #93c5fd;
+    --primary-dark: #3b82f6;
     --font-size-base: 14px;
     --spacing-md: 16px;
 }
@@ -518,8 +520,8 @@ body {
 
 | Element | Color/Style | Never Use |
 |---------|-------------|-----------|
-| **Page/Modal Headers** | `linear-gradient(135deg, #667eea, #764ba2)` | ❌ Other gradients |
-| **Primary Buttons** | `linear-gradient(135deg, #667eea, #764ba2)` | ❌ Custom colors |
+| **Page/Modal Headers** | `linear-gradient(135deg, #93c5fd, #60a5fa)` | ❌ Other gradients |
+| **Primary Buttons** | `linear-gradient(135deg, #60a5fa, #3b82f6)` | ❌ Custom colors |
 | **Sidebar** | `bg-dark` (Bootstrap dark) | ❌ Custom backgrounds |
 | **Success** | `bg-success` (Bootstrap) | ❌ Custom green |
 | **Danger** | `bg-danger` (Bootstrap) | ❌ Custom red |
@@ -631,7 +633,7 @@ public async Task MethodName_Scenario_ExpectedResult()
 - [ ] No StyleCop/Analyzer violations
 
 **Manual Review:**
-- [ ] Purple/Blue gradient theme applied
+- [ ] Light Blue gradient theme applied
 - [ ] Scoped CSS used (`.razor.css` exists)
 - [ ] No logic in `.razor` files
 - [ ] CSS variables used (no hardcoded values)
@@ -686,7 +688,7 @@ public async Task MethodName_Scenario_ExpectedResult()
 1. **📖 READ FIRST:** Understand solution structure before ANY changes
 2. **🔗 CHECK DEPENDENCIES:** Identify all dependent components/files
 3. **📝 DOCUMENT FIRST:** Create analysis document BEFORE coding
-4. **🎨 PURPLE/BLUE THEME:** Consistent gradient styling
+4. **🎨 LIGHT BLUE THEME:** Consistent gradient styling (#93c5fd → #60a5fa → #3b82f6)
 5. **🌍 CSS GLOBAL:** Variabile, reset, Bootstrap overrides în `app.css`
 6. **🔒 CSS SCOPED:** Stiluri specifice paginilor în `.razor.css`
 7. **🚫 NO LOGIC IN .razor:** ALL logic in `.razor.cs`
@@ -781,7 +783,7 @@ Database (SQL Server with Stored Procedures)
 |---------|------------|---------|
 | **Tables** | PascalCase (plural) | `Persoane`, `Users`, `Roles` |
 | **Columns** | PascalCase | `FirstName`, `CreatedAt`, `IsActive` |
-| **Primary Keys** | Id | `Id` (INT IDENTITY sau UNIQUEIDENTIFIER) |
+| **Primary Keys** | Id | `Id` (UNIQUEIDENTIFIER) |
 | **Foreign Keys** | EntityId | `PersoanaId`, `UserId` |
 | **Stored Procedures** | sp_Table_Action | `sp_Persoane_GetAll`, `sp_Persoane_Create` |
 | **Views** | vw_Description | `vw_Persoane`, `vw_UsersWithRoles` |
@@ -805,10 +807,8 @@ Database (SQL Server with Stored Procedures)
 
 ```sql
 CREATE TABLE [dbo].[EntityName] (
-    -- Primary Key
-    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    -- OR for GUIDs:
-    -- [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    -- Primary Key (ALWAYS use UNIQUEIDENTIFIER)
+    [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
     
     -- Business columns
     [Name] NVARCHAR(100) NOT NULL,

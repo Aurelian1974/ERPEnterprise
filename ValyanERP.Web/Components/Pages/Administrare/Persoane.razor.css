@@ -1,0 +1,110 @@
+/* Persoane.razor.css - Scoped styles for Persoane page */
+
+/* Page Header */
+.persoane-header {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.persoane-header i {
+    color: var(--primary-color);
+}
+
+/* Table Styling */
+.table thead th {
+    background: var(--primary-gradient);
+    color: white;
+    font-weight: 500;
+    border: none;
+    padding: 12px 16px;
+}
+
+.table tbody tr:hover {
+    background-color: var(--soft-blue);
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 12px 16px;
+}
+
+/* Badge Styling */
+.badge.bg-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+}
+
+/* Modal Header */
+.modal-header {
+    background: var(--primary-gradient);
+    color: white;
+    border-bottom: none;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+/* Modal Footer */
+.modal-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 16px 24px;
+}
+
+/* Form Labels */
+.form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+/* Action Buttons */
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Search Input Group */
+.input-group .form-control {
+    border-radius: 8px 0 0 8px;
+}
+
+.input-group .btn {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Loading State */
+.spinner-border.text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Card Header Search Area */
+.card-header {
+    padding: 16px 20px;
+}
+
+.card-header .btn-primary {
+    font-size: 14px;
+}

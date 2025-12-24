@@ -9,6 +9,7 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Users')
 BEGIN
     CREATE TABLE [dbo].[Users] (
         [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+        [PersoanaId] UNIQUEIDENTIFIER NOT NULL,
         [UserName] NVARCHAR(256) NOT NULL,
         [NormalizedUserName] NVARCHAR(256) NOT NULL,
         [Email] NVARCHAR(256) NULL,
@@ -23,15 +24,15 @@ BEGIN
         [LockoutEnd] DATETIMEOFFSET NULL,
         [LockoutEnabled] BIT NOT NULL DEFAULT 0,
         [AccessFailedCount] INT NOT NULL DEFAULT 0,
-        [FirstName] NVARCHAR(100) NULL,
-        [LastName] NVARCHAR(100) NULL,
         [IsActive] BIT NOT NULL DEFAULT 1,
         [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
-        [UpdatedAt] DATETIME2 NULL
+        [UpdatedAt] DATETIME2 NULL,
+        CONSTRAINT [FK_Users_Persoane] FOREIGN KEY ([PersoanaId]) REFERENCES [dbo].[Persoane]([Id])
     );
 
     CREATE UNIQUE INDEX [IX_Users_NormalizedUserName] ON [dbo].[Users] ([NormalizedUserName]);
     CREATE INDEX [IX_Users_NormalizedEmail] ON [dbo].[Users] ([NormalizedEmail]);
+    CREATE INDEX [IX_Users_PersoanaId] ON [dbo].[Users] ([PersoanaId]);
 END
 GO
 

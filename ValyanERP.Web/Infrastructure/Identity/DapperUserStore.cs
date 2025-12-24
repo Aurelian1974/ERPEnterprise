@@ -27,13 +27,13 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
     {
         const string sql = @"
             INSERT INTO [dbo].[Users] 
-            (Id, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
+            (Id, PersoanaId, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
              PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed,
-             TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount, FirstName, LastName, IsActive, CreatedAt)
+             TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount, IsActive, CreatedAt)
             VALUES 
-            (@Id, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed,
+            (@Id, @PersoanaId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed,
              @PasswordHash, @SecurityStamp, @ConcurrencyStamp, @PhoneNumber, @PhoneNumberConfirmed,
-             @TwoFactorEnabled, @LockoutEnd, @LockoutEnabled, @AccessFailedCount, @FirstName, @LastName, @IsActive, @CreatedAt)";
+             @TwoFactorEnabled, @LockoutEnd, @LockoutEnabled, @AccessFailedCount, @IsActive, @CreatedAt)";
 
         using var connection = _context.CreateConnection();
         await connection.ExecuteAsync(sql, user);
@@ -44,6 +44,7 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
     {
         const string sql = @"
             UPDATE [dbo].[Users] SET
+                PersoanaId = @PersoanaId,
                 UserName = @UserName,
                 NormalizedUserName = @NormalizedUserName,
                 Email = @Email,
@@ -58,8 +59,6 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
                 LockoutEnd = @LockoutEnd,
                 LockoutEnabled = @LockoutEnabled,
                 AccessFailedCount = @AccessFailedCount,
-                FirstName = @FirstName,
-                LastName = @LastName,
                 IsActive = @IsActive,
                 UpdatedAt = GETDATE()
             WHERE Id = @Id";

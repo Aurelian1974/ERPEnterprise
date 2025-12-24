@@ -30,7 +30,7 @@ public class PersoaneRepository : IPersoaneRepository
             commandType: CommandType.StoredProcedure);
     }
 
-    public async Task<Persoana?> GetByIdAsync(int id)
+    public async Task<Persoana?> GetByIdAsync(Guid id)
     {
         using var connection = _context.CreateConnection();
         
@@ -43,7 +43,15 @@ public class PersoaneRepository : IPersoaneRepository
             commandType: CommandType.StoredProcedure);
     }
 
-    public async Task<int> CreateAsync(CreatePersoanaDto persoana, Guid? createdBy = null)
+    public async Task<Persoana?> GetByEmailAsync(string email)
+    {
+        using var connection = _context.CreateConnection();
+        
+        const string sql = "SELECT * FROM [dbo].[Persoane] WHERE Email = @Email AND IsActive = 1";
+        return await connection.QueryFirstOrDefaultAsync<Persoana>(sql, new { Email = email });
+    }
+
+    public async Task<Guid> CreateAsync(CreatePersoanaDto persoana, Guid? createdBy = null)
     {
         using var connection = _context.CreateConnection();
         
@@ -61,7 +69,7 @@ public class PersoaneRepository : IPersoaneRepository
         parameters.Add("@Tara", persoana.Tara ?? "Romania");
         parameters.Add("@CreatedBy", createdBy);
         
-        var result = await connection.QueryFirstOrDefaultAsync<int>(
+        var result = await connection.QueryFirstOrDefaultAsync<Guid>(
             "sp_Persoane_Create",
             parameters,
             commandType: CommandType.StoredProcedure);
@@ -97,7 +105,7 @@ public class PersoaneRepository : IPersoaneRepository
         return rowsAffected > 0;
     }
 
-    public async Task<bool> DeleteAsync(int id, Guid? updatedBy = null)
+    public async Task<bool> DeleteAsync(Guid id, Guid? updatedBy = null)
     {
         using var connection = _context.CreateConnection();
         
@@ -113,7 +121,7 @@ public class PersoaneRepository : IPersoaneRepository
         return rowsAffected > 0;
     }
 
-    public async Task<bool> HardDeleteAsync(int id)
+    public async Task<bool> HardDeleteAsync(Guid id)
     {
         using var connection = _context.CreateConnection();
         
