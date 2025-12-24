@@ -1,0 +1,66 @@
+﻿@inherits LayoutComponentBase
+
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    <div class="bg-dark text-white" id="sidebar-wrapper" style="width: 250px; min-height: 100vh;">
+        <div class="sidebar-heading p-3 border-bottom border-secondary">
+            <i class="bi bi-box-seam me-2"></i>
+            <strong>ValyanERP</strong>
+        </div>
+        <div class="list-group list-group-flush">
+            <NavLink class="list-group-item list-group-item-action bg-dark text-white border-0" href="/" Match="NavLinkMatch.All">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </NavLink>
+            
+            <!-- Administrare -->
+            <a class="list-group-item list-group-item-action bg-dark text-white border-0" 
+               data-bs-toggle="collapse" href="#administrareMenu" role="button" aria-expanded="false">
+                <i class="bi bi-gear me-2"></i> Administrare
+                <i class="bi bi-chevron-down float-end"></i>
+            </a>
+            <div class="collapse" id="administrareMenu">
+                <NavLink class="list-group-item list-group-item-action bg-secondary text-white border-0 ps-4" href="administrare/utilizatori">
+                    <i class="bi bi-people me-2"></i> Administrare utilizatori
+                </NavLink>
+                <NavLink class="list-group-item list-group-item-action bg-secondary text-white border-0 ps-4" href="administrare/persoane">
+                    <i class="bi bi-person-vcard me-2"></i> Administrare persoane
+                </NavLink>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper" class="flex-grow-1">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">
+                    <i class="bi bi-building me-2"></i>Enterprise Resource Planning
+                </span>
+                <div class="d-flex align-items-center">
+                    <AuthorizeView>
+                        <Authorized>
+                            <span class="me-3">
+                                <i class="bi bi-person-circle me-1"></i>
+                                @context.User.Identity?.Name
+                            </span>
+                            <a href="Account/Logout" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-box-arrow-right"></i> Ieșire
+                            </a>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="Account/Login" class="btn btn-primary btn-sm">
+                                <i class="bi bi-box-arrow-in-right"></i> Autentificare
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid p-4">
+            @Body
+        </div>
+    </div>
+</div>

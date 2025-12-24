@@ -1,0 +1,117 @@
+@page "/Account/Login"
+@layout ValyanERP.Web.Components.Layout.AuthLayout
+
+@using Microsoft.AspNetCore.Identity
+@using ValyanERP.Web.Infrastructure.Identity
+@using System.ComponentModel.DataAnnotations
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login - ValyanERP</PageTitle>
+
+<div class="card shadow-lg" style="width: 100%; max-width: 400px;">
+    <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <h4 class="mb-0">
+            <i class="bi bi-box-arrow-in-right me-2"></i>ValyanERP
+        </h4>
+    </div>
+    <div class="card-body p-4">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+
+        <EditForm Model="LoginModel" OnValidSubmit="HandleLogin" FormName="login">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <InputText id="email" @bind-Value="LoginModel.Email" class="form-control" placeholder="email@example.com" />
+                <ValidationMessage For="() => LoginModel.Email" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Parolă</label>
+                <InputText id="password" @bind-Value="LoginModel.Password" type="password" class="form-control" />
+                <ValidationMessage For="() => LoginModel.Password" class="text-danger" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox id="rememberMe" @bind-Value="LoginModel.RememberMe" class="form-check-input" />
+                <label for="rememberMe" class="form-check-label">Ține-mă minte</label>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    Autentificare
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private LoginInputModel? LoginModel { get; set; }
+    
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        LoginModel ??= new();
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+
+        try
+        {
+            var user = await UserManager.FindByEmailAsync(LoginModel.Email);
+            if (user == null)
+            {
+                errorMessage = "Email sau parolă incorectă.";
+                return;
+            }
+
+            var result = await SignInManager.PasswordSignInAsync(
+                user, 
+                LoginModel.Password, 
+                LoginModel.RememberMe, 
+                lockoutOnFailure: true);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+            else if (result.IsLockedOut)
+            {
+                errorMessage = "Contul este blocat temporar. Încercați mai târziu.";
+            }
+            else
+            {
+                errorMessage = "Email sau parolă incorectă.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Eroare: {ex.Message}";
+        }
+    }
+
+    public class LoginInputModel
+    {
+        [Required(ErrorMessage = "Email-ul este obligatoriu")]
+        [EmailAddress(ErrorMessage = "Email invalid")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Parola este obligatorie")]
+        public string Password { get; set; } = "";
+
+        public bool RememberMe { get; set; }
+    }
+}

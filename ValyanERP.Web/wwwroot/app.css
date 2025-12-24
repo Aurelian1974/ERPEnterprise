@@ -1,0 +1,246 @@
+/* ValyanERP - Soft Blue Gradient Theme */
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --sidebar-gradient: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    --header-gradient: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
+    --primary-blue: #5b86e5;
+    --primary-light: #a8c0ff;
+    --accent-color: #36d1dc;
+    --soft-blue: #e8f4fc;
+    --card-shadow: rgba(91, 134, 229, 0.15);
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #f5f9ff 100%);
+    min-height: 100vh;
+}
+
+#wrapper {
+    min-height: 100vh;
+}
+
+/* Sidebar Styling - Soft Blue */
+#sidebar-wrapper {
+    background: linear-gradient(180deg, #5b86e5 0%, #36d1dc 100%) !important;
+    box-shadow: 4px 0 20px rgba(91, 134, 229, 0.25);
+}
+
+.sidebar-heading {
+    font-size: 1.3rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.sidebar-heading i {
+    color: white;
+}
+
+.list-group-item {
+    background: transparent !important;
+    border: none !important;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    color: white !important;
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    padding-left: 25px;
+    border-left: 3px solid white !important;
+}
+
+.list-group-item.active {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-left: 3px solid white !important;
+}
+
+.list-group-item i {
+    color: white;
+}
+
+/* Top Navigation - Soft Gradient */
+.navbar {
+    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%) !important;
+    box-shadow: 0 2px 20px rgba(91, 134, 229, 0.2);
+}
+
+.navbar-brand {
+    color: white !important;
+    font-weight: 600;
+}
+
+.navbar-brand i {
+    color: white;
+}
+
+/* Cards - Clean with soft shadows */
+.card {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: white;
+    box-shadow: 0 4px 20px var(--card-shadow);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(91, 134, 229, 0.25);
+}
+
+.card-header {
+    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%) !important;
+    color: white;
+    border: none;
+    padding: 15px 20px;
+}
+
+.card-header h5 {
+    color: white;
+    margin: 0;
+}
+
+.card-header i {
+    color: white;
+}
+
+/* Stats Cards - Soft pastel backgrounds */
+.bg-primary.bg-opacity-10 {
+    background: linear-gradient(135deg, #e8f4fc 0%, #dbeafe 100%) !important;
+}
+
+.bg-success.bg-opacity-10 {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+}
+
+.bg-warning.bg-opacity-10 {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+}
+
+.bg-info.bg-opacity-10 {
+    background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%) !important;
+}
+
+.text-primary {
+    color: var(--primary-blue) !important;
+}
+
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-warning {
+    color: #f59e0b !important;
+}
+
+.text-info {
+    color: #06b6d4 !important;
+}
+
+/* Buttons - Soft gradients */
+.btn-primary {
+    background: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(91, 134, 229, 0.3);
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #4a75d4 0%, #25c0cb 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(91, 134, 229, 0.4);
+}
+
+.btn-outline-danger {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: white;
+    border-radius: 8px;
+}
+
+.btn-outline-danger:hover {
+    background: rgba(220, 53, 69, 0.9);
+    border-color: transparent;
+}
+
+/* Form Controls */
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e0e7ff;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+    background: #fafbff;
+}
+
+.form-control:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 4px rgba(91, 134, 229, 0.15);
+    background: white;
+}
+
+/* Page Title */
+h1 {
+    color: #334155;
+    font-weight: 700;
+}
+
+h1 i {
+    color: var(--primary-blue);
+}
+
+h4,
+h5,
+h6 {
+    color: #475569;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #dc2626;
+}
+
+/* Scrollbar - Soft */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #5b86e5 0%, #36d1dc 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4a75d4;
+}
+
+/* Loading Spinner */
+.spinner-border {
+    color: white;
+}
+
+/* Selection */
+::selection {
+    background: #a8c0ff;
+    color: #1e40af;
+}
+
+/* Checkbox styling */
+.form-check-input:checked {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
