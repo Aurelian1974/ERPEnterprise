@@ -760,6 +760,250 @@ Database (SQL Server with Stored Procedures)
 
 ---
 
-**Status:** ✅ **VERTICAL SLICES ARCHITECTURE - v1.0**  
+## 📛 Naming Conventions
+
+### **C# Naming**
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| **Classes** | PascalCase | `PersoanaRepository`, `UserService` |
+| **Interfaces** | I + PascalCase | `IPersoaneRepository`, `IUserService` |
+| **Methods** | PascalCase + Async suffix | `GetAllAsync()`, `CreateAsync()` |
+| **Properties** | PascalCase | `FirstName`, `IsActive` |
+| **Private fields** | _camelCase | `_context`, `_repository` |
+| **Parameters** | camelCase | `persoanaId`, `searchTerm` |
+| **Constants** | PascalCase | `MaxPageSize`, `DefaultTimeout` |
+| **DTOs** | EntityNameDto | `CreatePersoanaDto`, `UpdatePersoanaDto` |
+
+### **SQL Naming**
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| **Tables** | PascalCase (plural) | `Persoane`, `Users`, `Roles` |
+| **Columns** | PascalCase | `FirstName`, `CreatedAt`, `IsActive` |
+| **Primary Keys** | Id | `Id` (INT IDENTITY sau UNIQUEIDENTIFIER) |
+| **Foreign Keys** | EntityId | `PersoanaId`, `UserId` |
+| **Stored Procedures** | sp_Table_Action | `sp_Persoane_GetAll`, `sp_Persoane_Create` |
+| **Views** | vw_Description | `vw_Persoane`, `vw_UsersWithRoles` |
+| **Functions** | fn_Description | `fn_ValidateCNP`, `fn_CalculateAge` |
+| **Indexes** | IX_Table_Column | `IX_Persoane_Email`, `IX_Users_NormalizedEmail` |
+
+### **File Naming**
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| **Razor Pages** | PascalCase | `Persoane.razor`, `Utilizatori.razor` |
+| **Code-behind** | Page.razor.cs | `Persoane.razor.cs` |
+| **Scoped CSS** | Page.razor.css | `Persoane.razor.css` |
+| **SQL Scripts** | NNN_Description.sql | `001_CreateDatabase.sql`, `003_Persoane.sql` |
+
+---
+
+## 🗄️ Database Conventions
+
+### **Table Structure Standard**
+
+```sql
+CREATE TABLE [dbo].[EntityName] (
+    -- Primary Key
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    -- OR for GUIDs:
+    -- [Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    
+    -- Business columns
+    [Name] NVARCHAR(100) NOT NULL,
+    [Description] NVARCHAR(500) NULL,
+    
+    -- Audit columns (ALWAYS include these)
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+    [CreatedBy] UNIQUEIDENTIFIER NULL,
+    [UpdatedAt] DATETIME2 NULL,
+    [UpdatedBy] UNIQUEIDENTIFIER NULL,
+    
+    -- Foreign Keys
+    CONSTRAINT [FK_EntityName_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [dbo].[Users]([Id]),
+    CONSTRAINT [FK_EntityName_UpdatedBy] FOREIGN KEY ([UpdatedBy]) REFERENCES [dbo].[Users]([Id])
+);
+
+-- Indexes
+CREATE INDEX [IX_EntityName_IsActive] ON [dbo].[EntityName] ([IsActive]);
+```
+
+### **Stored Procedure Template**
+
+```sql
+IF OBJECT_ID('dbo.sp_Entity_Action', 'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_Entity_Action;
+GO
+
+CREATE PROCEDURE dbo.sp_Entity_Action
+    @Param1 INT,
+    @Param2 NVARCHAR(100) = NULL  -- Optional with default
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Your logic here
+    
+    SELECT @@ROWCOUNT AS RowsAffected;  -- Or return result set
+END
+GO
+```
+
+### **Soft Delete Pattern**
+
+```sql
+-- NEVER hard delete! Use soft delete:
+UPDATE [dbo].[Persoane] SET
+    IsActive = 0,
+    UpdatedAt = GETDATE(),
+    UpdatedBy = @UpdatedBy
+WHERE Id = @Id;
+```
+
+---
+
+## ⚠️ Error Handling Pattern
+
+### **Repository Layer**
+
+```csharp
+public async Task<Persoana?> GetByIdAsync(int id)
+{
+    try
+    {
+        using var connection = _context.CreateConnection();
+        return await connection.QueryFirstOrDefaultAsync<Persoana>(
+            "sp_Persoane_GetById",
+            new { Id = id },
+            commandType: CommandType.StoredProcedure);
+    }
+    catch (SqlException ex)
+    {
+        // Log and rethrow or wrap
+        throw new DataAccessException($"Error retrieving Persoana {id}", ex);
+    }
+}
+```
+
+### **UI Layer (Blazor Component)**
+
+```csharp
+private async Task LoadDataAsync()
+{
+    isLoading = true;
+    errorMessage = null;
+    
+    try
+    {
+        data = await Repository.GetAllAsync();
+    }
+    catch (Exception ex)
+    {
+        errorMessage = "Eroare la încărcarea datelor. Vă rugăm încercați din nou.";
+        // Log the actual exception
+        Logger.LogError(ex, "Failed to load data");
+    }
+    finally
+    {
+        isLoading = false;
+    }
+}
+```
+
+### **User-Friendly Error Messages**
+
+| Error Type | Technical | User Message (RO) |
+|------------|-----------|-------------------|
+| Not Found | `EntityNotFoundException` | "Înregistrarea nu a fost găsită." |
+| Validation | `ValidationException` | "Datele introduse nu sunt valide." |
+| Database | `SqlException` | "Eroare la accesarea bazei de date." |
+| Network | `HttpRequestException` | "Eroare de conexiune. Verificați rețeaua." |
+| Generic | `Exception` | "A apărut o eroare. Încercați din nou." |
+
+---
+
+## 🔀 Git Workflow
+
+### **Branch Naming**
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| **Feature** | `feature/description` | `feature/administrare-persoane` |
+| **Bugfix** | `fix/description` | `fix/login-validation` |
+| **Hotfix** | `hotfix/description` | `hotfix/security-patch` |
+| **Release** | `release/version` | `release/1.0.0` |
+
+### **Commit Messages (Conventional Commits)**
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring
+- `docs`: Documentation
+- `test`: Adding tests
+- `chore`: Maintenance
+
+**Examples:**
+```
+feat(persoane): Add search functionality
+fix(login): Resolve form validation issue
+refactor(repository): Extract common query logic
+docs(readme): Update installation instructions
+test(persoane): Add unit tests for PersoaneRepository
+```
+
+### **Pull Request Checklist**
+
+- [ ] Build passes (0 errors, 0 warnings)
+- [ ] All tests pass
+- [ ] Code follows naming conventions
+- [ ] CSS is scoped (not global pollution)
+- [ ] No logic in .razor files
+- [ ] Stored procedures created/updated
+- [ ] Documentation updated
+
+---
+
+## 📊 Logging Guidelines
+
+### **What to Log**
+
+| Level | When | Example |
+|-------|------|---------|
+| **Error** | Exceptions, failures | `Logger.LogError(ex, "Failed to create persoana")` |
+| **Warning** | Unexpected but handled | `Logger.LogWarning("User {Id} not found", userId)` |
+| **Information** | Key operations | `Logger.LogInformation("Created persoana {Id}", id)` |
+| **Debug** | Development details | `Logger.LogDebug("Query returned {Count} rows", count)` |
+
+### **What NEVER to Log**
+
+❌ **NEVER log sensitive data:**
+- Passwords (plain or hashed)
+- CNP (Romanian SSN)
+- Credit card numbers
+- Medical information
+- Authentication tokens
+
+```csharp
+// ❌ WRONG
+Logger.LogInformation("User login: {Email}, Password: {Password}", email, password);
+
+// ✅ CORRECT
+Logger.LogInformation("User login attempt: {Email}", email);
+```
+
+---
+
+**Status:** ✅ **VERTICAL SLICES ARCHITECTURE - v1.1**  
 **Last Updated:** December 2024  
 **Project:** ValyanERP - Enterprise Resource Planning System
