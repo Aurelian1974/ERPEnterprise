@@ -1,0 +1,61 @@
+@page "/dashboard"
+@attribute [Authorize]
+
+<PageTitle>Dashboard - ValyanERP</PageTitle>
+
+<SfDashboardLayout>
+    <DashboardLayoutPanels>
+        <DashboardLayoutPanel SizeX="6" SizeY="2" Row="0" Col="0">
+            <div class="p-3">
+                <SfCard>
+                    <CardHeader>
+                        <CardTitle>Vânz?ri</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span class="fs-4 fw-bold text-primary">0 RON</span>
+                    </CardContent>
+                </SfCard>
+            </div>
+        </DashboardLayoutPanel>
+        <DashboardLayoutPanel SizeX="6" SizeY="2" Row="0" Col="1">
+            <div class="p-3">
+                <SfCard>
+                    <CardHeader>
+                        <CardTitle>Clien?i</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span class="fs-4 fw-bold text-success">0</span>
+                    </CardContent>
+                </SfCard>
+            </div>
+        </DashboardLayoutPanel>
+        <DashboardLayoutPanel SizeX="6" SizeY="2" Row="1" Col="0">
+            <div class="p-3">
+                <SfCard>
+                    <CardHeader>
+                        <CardTitle>Produse</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span class="fs-4 fw-bold text-warning">0</span>
+                    </CardContent>
+                </SfCard>
+            </div>
+        </DashboardLayoutPanel>
+        <DashboardLayoutPanel SizeX="6" SizeY="2" Row="1" Col="1">
+            <div class="p-3">
+                <SfCard>
+                    <CardHeader>
+                        <CardTitle>Comenzi</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span class="fs-4 fw-bold text-info">0</span>
+                    </CardContent>
+                </SfCard>
+            </div>
+        </DashboardLayoutPanel>
+    </DashboardLayoutPanels>
+</SfDashboardLayout>
+
+@code {
+    // Po?i ad?uga logica de înc?rcare date aici
+}
