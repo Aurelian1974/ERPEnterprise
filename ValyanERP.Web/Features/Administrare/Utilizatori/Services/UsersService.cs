@@ -1,0 +1,222 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using ValyanERP.Web.Features.Administrare.Persoane.Models;
+using ValyanERP.Web.Features.Administrare.Utilizatori.Models;
+using ValyanERP.Web.Features.Administrare.Utilizatori.Repositories;
+using ValyanERP.Web.Infrastructure.Identity;
+
+namespace ValyanERP.Web.Features.Administrare.Utilizatori.Services;
+
+/// <summary>
+/// Service interface for Users business logic.
+/// </summary>
+public interface IUsersService
+{
+    /// <summary>
+    /// Gets available persons for user assignment (dropdown).
+    /// </summary>
+    Task<IEnumerable<Persoana>> GetAvailablePersonsAsync();
+
+    /// <summary>
+    /// Creates a new user with password hashing.
+    /// </summary>
+    Task<bool> CreateUserAsync(UserCreateDto userDto);
+
+    /// <summary>
+    /// Updates an existing user.
+    /// </summary>
+    Task<bool> UpdateUserAsync(User user);
+
+    /// <summary>
+    /// Soft deletes a user.
+    /// </summary>
+    Task<bool> DeleteUserAsync(Guid id);
+
+    /// <summary>
+    /// Gets a user by ID.
+    /// </summary>
+    Task<User?> GetByIdAsync(Guid id);
+}
+
+/// <summary>
+/// Service for Users business logic.
+/// Handles password hashing, validation, and orchestrates repository/UserManager calls.
+/// </summary>
+public class UsersService : IUsersService
+{
+    private readonly ValyanERP.Web.Features.Administrare.Persoane.Repositories.IPersoaneRepository _persoaneRepo;
+    private readonly IUsersRepository _usersRepo;
+    private readonly IPasswordHasher<ApplicationUser> _passwordHasher;
+    private readonly ILogger<UsersService> _logger;
+    
+    public UsersService(
+        ValyanERP.Web.Features.Administrare.Persoane.Repositories.IPersoaneRepository persoaneRepo,
+        IUsersRepository usersRepo,
+        IPasswordHasher<ApplicationUser> passwordHasher,
+        ILogger<UsersService> logger)
+    {
+        _persoaneRepo = persoaneRepo;
+        _usersRepo = usersRepo;
+        _passwordHasher = passwordHasher;
+        _logger = logger;
+    }
+
+    public async Task<IEnumerable<Persoana>> GetAvailablePersonsAsync()
+    {
+        _logger.LogDebug("GetAvailablePersonsAsync called");
+        return await _persoaneRepo.GetAllSimpleAsync();
+    }
+
+    public async Task<bool> CreateUserAsync(UserCreateDto userDto)
+    {
+        _logger.LogInformation("CreateUserAsync called for UserName={UserName}, PersoanaId={PersoanaId}", 
+            userDto.UserName, userDto.PersoanaId);
+        
+        // Validate input
+        ValidateUserDto(userDto);
+
+        // Check if Persoana exists
+        var persoana = await _persoaneRepo.GetByIdAsync(userDto.PersoanaId);
+        if (persoana == null)
+        {
+            _logger.LogWarning("CreateUser failed: Persoana Id={PersoanaId} not found", userDto.PersoanaId);
+            throw new InvalidOperationException($"Persoana cu ID {userDto.PersoanaId} nu există.");
+        }
+
+        _logger.LogDebug("Hashing password for user {UserName}", userDto.UserName);
+        
+        // Hash password using Argon2id (via custom IPasswordHasher)
+        var dummyUser = new ApplicationUser(); // Dummy for hashing interface
+        userDto.PasswordHash = _passwordHasher.HashPassword(dummyUser, userDto.Password);
+
+        // Create via repository
+        await _usersRepo.CreateAsync(userDto);
+        
+        _logger.LogInformation("User {UserName} created successfully", userDto.UserName);
+
+        return true;
+    }
+
+    public async Task<bool> UpdateUserAsync(User user)
+    {
+        _logger.LogInformation("UpdateUserAsync called for Id={Id}, UserName={UserName}", user.Id, user.UserName);
+        
+        // Validate input
+        if (user.Id == Guid.Empty)
+        {
+            _logger.LogWarning("UpdateUser failed: Invalid user Id");
+            throw new ArgumentException("ID-ul utilizatorului este invalid.", nameof(user.Id));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.UserName))
+        {
+            _logger.LogWarning("UpdateUser failed: UserName is required");
+            throw new ArgumentException("Username-ul este obligatoriu.", nameof(user.UserName));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            _logger.LogWarning("UpdateUser failed: Email is required");
+            throw new ArgumentException("Email-ul este obligatoriu.", nameof(user.Email));
+        }
+
+        // Check if exists
+        var existing = await _usersRepo.GetByIdAsync(user.Id);
+        if (existing == null)
+        {
+            _logger.LogWarning("UpdateUser failed: User Id={Id} not found", user.Id);
+            throw new InvalidOperationException($"Utilizatorul cu ID {user.Id} nu există.");
+        }
+
+        // Check if Persoana exists
+        var persoana = await _persoaneRepo.GetByIdAsync(user.PersoanaId);
+        if (persoana == null)
+        {
+            _logger.LogWarning("UpdateUser failed: Persoana Id={PersoanaId} not found", user.PersoanaId);
+            throw new InvalidOperationException($"Persoana cu ID {user.PersoanaId} nu există.");
+        }
+
+        // Update via repository
+        await _usersRepo.UpdateAsync(user);
+        
+        _logger.LogInformation("User Id={Id} updated successfully", user.Id);
+
+        return true;
+    }
+
+    public async Task<bool> DeleteUserAsync(Guid id)
+    {
+        _logger.LogInformation("DeleteUserAsync called for Id={Id}", id);
+        
+        // Check if exists
+        var existing = await _usersRepo.GetByIdAsync(id);
+        if (existing == null)
+        {
+            _logger.LogWarning("DeleteUser failed: User Id={Id} not found", id);
+            throw new InvalidOperationException($"Utilizatorul cu ID {id} nu există.");
+        }
+
+        // Soft delete via repository
+        await _usersRepo.DeleteAsync(id);
+        
+        _logger.LogInformation("User Id={Id} deleted successfully", id);
+
+        return true;
+    }
+
+    public async Task<User?> GetByIdAsync(Guid id)
+    {
+        _logger.LogDebug("GetByIdAsync called for User Id={Id}", id);
+        return await _usersRepo.GetByIdAsync(id);
+    }
+
+    /// <summary>
+    /// Validates UserCreateDto business rules.
+    /// </summary>
+    private void ValidateUserDto(UserCreateDto userDto)
+    {
+        _logger.LogDebug("Validating UserCreateDto for UserName={UserName}", userDto.UserName);
+        
+        if (userDto.PersoanaId == Guid.Empty)
+        {
+            _logger.LogWarning("Validation failed: PersoanaId is required");
+            throw new ArgumentException("PersoanaId este obligatoriu.", nameof(userDto.PersoanaId));
+        }
+
+        if (string.IsNullOrWhiteSpace(userDto.UserName))
+        {
+            _logger.LogWarning("Validation failed: UserName is required");
+            throw new ArgumentException("Username-ul este obligatoriu.", nameof(userDto.UserName));
+        }
+
+        if (string.IsNullOrWhiteSpace(userDto.Email))
+        {
+            _logger.LogWarning("Validation failed: Email is required");
+            throw new ArgumentException("Email-ul este obligatoriu.", nameof(userDto.Email));
+        }
+
+        if (string.IsNullOrWhiteSpace(userDto.Password))
+        {
+            _logger.LogWarning("Validation failed: Password is required");
+            throw new ArgumentException("Parola este obligatorie.", nameof(userDto.Password));
+        }
+
+        if (userDto.Password.Length < 8)
+        {
+            _logger.LogWarning("Validation failed: Password too short ({Length} chars)", userDto.Password.Length);
+            throw new ArgumentException("Parola trebuie să aibă cel puțin 8 caractere.", nameof(userDto.Password));
+        }
+
+        if (userDto.UserName.Length > 256)
+        {
+            _logger.LogWarning("Validation failed: UserName too long ({Length} chars)", userDto.UserName.Length);
+            throw new ArgumentException("Username-ul nu poate depăși 256 caractere.", nameof(userDto.UserName));
+        }
+
+        if (userDto.Email.Length > 256)
+        {
+            _logger.LogWarning("Validation failed: Email too long ({Length} chars)", userDto.Email.Length);
+            throw new ArgumentException("Email-ul nu poate depăși 256 caractere.", nameof(userDto.Email));
+        }
+    }
+}

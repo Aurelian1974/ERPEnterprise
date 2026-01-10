@@ -1,0 +1,14 @@
+@page "/syncfusion-scheduler-demo"
+
+<PageTitle>Syncfusion Scheduler Demo</PageTitle>
+
+<h3>Syncfusion Scheduler (SfSchedule)</h3>
+
+<SfSchedule TValue="Appointment"></SfSchedule>
+
+@code {
+    // Simplified demo: no views configured, just verifying component availability
+    public class Appointment { public DateTime Start { get; set; } public DateTime End { get; set; } public string Subject { get; set; } = ""; }
+}
+
+

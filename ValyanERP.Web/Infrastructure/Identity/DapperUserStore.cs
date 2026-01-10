@@ -27,11 +27,11 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
     {
         const string sql = @"
             INSERT INTO [dbo].[Users] 
-            (Id, PersoanaId, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
+            (Id, PersoanaId, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, FirstName, LastName, 
              PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed,
              TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount, IsActive, CreatedAt)
             VALUES 
-            (@Id, @PersoanaId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed,
+            (@Id, @PersoanaId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @FirstName, @LastName,
              @PasswordHash, @SecurityStamp, @ConcurrencyStamp, @PhoneNumber, @PhoneNumberConfirmed,
              @TwoFactorEnabled, @LockoutEnd, @LockoutEnabled, @AccessFailedCount, @IsActive, @CreatedAt)";
 
@@ -50,6 +50,8 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
                 Email = @Email,
                 NormalizedEmail = @NormalizedEmail,
                 EmailConfirmed = @EmailConfirmed,
+                FirstName = @FirstName,
+                LastName = @LastName,
                 PasswordHash = @PasswordHash,
                 SecurityStamp = @SecurityStamp,
                 ConcurrencyStamp = @ConcurrencyStamp,
@@ -70,7 +72,14 @@ public class DapperUserStore : IUserStore<ApplicationUser>,
 
     public async Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
-        const string sql = "DELETE FROM [dbo].[Users] WHERE Id = @Id";
+        // Soft delete - set IsActive to 0 instead of hard delete
+        // This maintains referential integrity and audit trail
+        const string sql = @"
+            UPDATE [dbo].[Users] SET
+                IsActive = 0,
+                UpdatedAt = GETDATE()
+            WHERE Id = @Id";
+        
         using var connection = _context.CreateConnection();
         await connection.ExecuteAsync(sql, new { user.Id });
         return IdentityResult.Success;

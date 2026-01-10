@@ -695,6 +695,244 @@ public async Task MethodName_Scenario_ExpectedResult()
 8. **🧪 TEST EVERYTHING:** Unit tests for business logic (80%+)
 9. **🔐 VALIDATE INPUT:** DataAnnotations on ALL models
 10. **📄 DOCUMENT FINAL:** Create completion document with ALL changes
+11. **⚙️ SYSTEM PARAMETERS:** ALL configuration via DB parameters - NO hardcoded values
+
+---
+
+## ⚙️ **SYSTEM PARAMETERS: Configuration Management**
+
+**🔴 CRITICAL: All application configuration MUST use SystemParameters!**
+
+### **Rule #1: NO HARDCODED VALUES**
+
+**❌ WRONG:**
+```csharp
+// Hardcoded cache duration
+TimeSpan cacheDuration = TimeSpan.FromMinutes(5);
+
+// Hardcoded default country
+if (string.IsNullOrWhiteSpace(persoana.Tara))
+    persoana.Tara = "Romania";
+
+// Hardcoded validation
+if (password.Length < 8)
+    throw new Exception("Password too short");
+```
+
+**✅ CORRECT:**
+```csharp
+// Use SystemParametersService
+var cacheDurationMinutes = await _parametersService.GetIntAsync("Cache.Persoane.DurationMinutes", 5);
+var cacheDuration = TimeSpan.FromMinutes(cacheDurationMinutes);
+
+// Use DB parameter with fallback
+var defaultCountry = await _parametersService.GetStringAsync("Business.DefaultCountry", "Romania");
+if (string.IsNullOrWhiteSpace(persoana.Tara))
+    persoana.Tara = defaultCountry;
+
+// Use DB parameter for validation
+var minPasswordLength = await _parametersService.GetIntAsync("Validation.Password.MinLength", 8);
+if (password.Length < minPasswordLength)
+    throw new Exception($"Password must be at least {minPasswordLength} characters");
+```
+
+---
+
+### **Rule #2: MANDATORY DOCUMENTATION**
+
+**When adding a new system parameter, you MUST:**
+
+1. ✅ **Add to SQL seed data** (`Database/Scripts/011_SystemParameters.sql`)
+   ```sql
+   INSERT INTO [dbo].[SystemParameters] (
+       [ParameterKey], [Category], [SubCategory], 
+       [ParameterValue], [DataType], [DefaultValue],
+       [Description], [DisplayName], [IsReadOnly]
+   ) VALUES (
+       'Category.SubCategory.ParameterName',
+       'Category',
+       'SubCategory',
+       'DefaultValue',
+       'DataType',
+       'DefaultValue',
+       'DETAILED DESCRIPTION with impact of modification',
+       'Display Name for UI',
+       0 -- 0=editable, 1=read-only (system critical)
+   );
+   ```
+
+2. ✅ **Document in `DevSupport/SystemParameters-Documentation.md`**
+   - Add complete section in appropriate category
+   - Include: Type, Current Value, Valid Range, Description
+   - Document: Impact of Modification, Used In (which files/methods)
+   - Mark Read-Only status and warnings if applicable
+   - Example:
+   ```markdown
+   ### 🔹 Category.SubCategory.ParameterName
+   - **Tip Date:** `int`
+   - **Valoare Curentă:** `10`
+   - **Valoare Implicită:** `10`
+   - **Interval Valid:** 5 - 60
+   - **Descriere:** What this parameter controls
+   - **Impact Modificare:**
+     - ⬆️ Higher value = consequence 1
+     - ⬇️ Lower value = consequence 2
+   - **Folosit În:**
+     - `ClassName.MethodName()` - specific usage
+   - **Read-Only:** ❌ No / ⚠️ Yes (with reason)
+   - **Ultima Modificare:** YYYY-MM-DD (when)
+   - **Modificat De:** Who changed it
+   ```
+
+3. ✅ **Update code to use parameter**
+   - Inject `ISystemParametersService` via DI
+   - Replace hardcoded value with `GetIntAsync`, `GetStringAsync`, etc.
+   - Always provide default fallback value
+   - Add XML documentation referencing the parameter
+
+4. ✅ **Test all scenarios**
+   - Test with default value
+   - Test with minimum valid value
+   - Test with maximum valid value
+   - Test with invalid value (should use default)
+   - Test cache invalidation after parameter update
+
+---
+
+### **Rule #3: PARAMETER NAMING CONVENTION**
+
+**Format:** `Category.SubCategory.ParameterName`
+
+**Categories:**
+- `Cache` - Caching configuration (durations, limits, compaction)
+- `Validation` - Input validation rules (lengths, formats, patterns)
+- `Business` - Business logic defaults (countries, currencies, rates)
+- `Session` - Session management (timeouts, cleanup intervals)
+- `Performance` - Performance thresholds (query timeout, slow query threshold)
+- `Security` - Security policies (lockout, 2FA, token expiration)
+- `UI` - UI behavior (page sizes, themes, layouts)
+- `Email` - Email settings (SMTP, templates, retry policies)
+- `Enum` - Enumeration values (JSON arrays for dropdown options)
+
+**Examples of Good Names:**
+- ✅ `Cache.Persoane.DurationMinutes`
+- ✅ `Validation.Password.MinLength`
+- ✅ `Business.Pagination.DefaultPageSize`
+- ✅ `Session.TimeoutMinutes`
+
+**Examples of Bad Names:**
+- ❌ `CacheDur` (unclear, abbreviated)
+- ❌ `PwdLen` (abbreviated)
+- ❌ `Timeout` (missing category/subcategory)
+- ❌ `Setting1` (meaningless)
+
+---
+
+### **Rule #4: WHEN TO MARK READ-ONLY**
+
+Mark `IsReadOnly = 1` ONLY for system-critical parameters:
+
+**✅ Read-Only Examples:**
+- `Enum.DataType.Values` - Changing would break parameter validation
+- `Security.EncryptionKey` - Changing would invalidate existing encrypted data
+- `Database.ConnectionPoolSize` - Requires application restart
+
+**❌ NOT Read-Only:**
+- Most cache durations
+- Validation lengths (unless tied to DB schema)
+- Business defaults
+- UI preferences
+
+**If parameter requires application restart to take effect, document it clearly!**
+
+---
+
+### **Rule #5: VALIDATION RULES**
+
+Always define validation constraints:
+
+```sql
+-- For numeric types: set MinValue and MaxValue
+[MinValue] = 5,
+[MaxValue] = 60,
+
+-- For strings with specific format: set ValidationRegex
+[ValidationRegex] = '^[A-Z]{2}$', -- Two uppercase letters
+
+-- Always set meaningful Description
+[Description] = 'Cache duration in minutes. Higher values reduce DB load but may show stale data. Valid range: 5-60 minutes.'
+```
+
+---
+
+### **Rule #6: DOCUMENTATION MAINTENANCE**
+
+**MANDATORY:** Update `DevSupport/SystemParameters-Documentation.md`:
+
+- ✅ When adding new parameter
+- ✅ When modifying parameter properties (min/max, validation)
+- ✅ When changing parameter value in production
+- ✅ When discovering new usage of parameter in code
+
+**Update Histogram Modificări section:**
+```markdown
+| Data | Parametru | Valoare Veche | Valoare Nouă | Modificat De | Motiv |
+|------|-----------|---------------|--------------|--------------|-------|
+| 2026-01-09 | Cache.Duration | 5 | 10 | Admin | Reduce DB load |
+```
+
+---
+
+### **Rule #7: PRODUCTION CHANGES**
+
+**Before modifying parameter in production:**
+
+1. ✅ **Backup current value:**
+   ```sql
+   SELECT [ParameterKey], [ParameterValue], [UpdatedAt]
+   FROM [dbo].[SystemParameters]
+   WHERE [ParameterKey] = 'Key.To.Change';
+   ```
+
+2. ✅ **Check dependencies:**
+   - Read documentation for impact
+   - Verify no system restart needed
+   - Check if parameter is read-only
+
+3. ✅ **Modify via Admin UI:**
+   - Navigate to `/administrare/parametri-sistem`
+   - Edit parameter (validation enforced)
+   - Save and verify success message
+
+4. ✅ **Monitor application:**
+   - Check logs for errors
+   - Verify expected behavior change
+   - Rollback if issues detected
+
+5. ✅ **Document change:**
+   - Update `SystemParameters-Documentation.md`
+   - Note reason, date, who made change
+   - Commit documentation update
+
+---
+
+### **Checklist: Adding New Parameter**
+
+- [ ] SQL INSERT in `011_SystemParameters.sql` with all fields
+- [ ] Run SQL migration to add parameter to DB
+- [ ] Document in `DevSupport/SystemParameters-Documentation.md` (complete section)
+- [ ] Update code to use `ISystemParametersService.GetXxxAsync()`
+- [ ] Remove hardcoded value from code
+- [ ] Add XML documentation referencing parameter
+- [ ] Test default value scenario
+- [ ] Test min/max boundary values
+- [ ] Test invalid value (fallback to default)
+- [ ] Test cache invalidation after update
+- [ ] Verify parameter visible in `/administrare/parametri-sistem`
+- [ ] PR review includes documentation review
+- [ ] Team notified of new parameter
+
+**If ANY checkbox unchecked → parameter is NOT production-ready!**
 
 ---
 

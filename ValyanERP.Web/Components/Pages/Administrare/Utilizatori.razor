@@ -1,22 +1,98 @@
 @page "/administrare/utilizatori"
 @attribute [Authorize]
+@rendermode InteractiveServer
+@using ValyanERP.Web.Features.Administrare.Utilizatori.Models
+@using ValyanERP.Web.Features.Administrare.Utilizatori
+@using ValyanERP.Web.Features.Administrare.Utilizatori.Services
+@using ValyanERP.Web.Features.Administrare.Persoane.Models
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
 
-<PageTitle>Administrare Utilizatori - ValyanERP</PageTitle>
+<PageTitle>Administrare Utilizatori</PageTitle>
 
-<h3><i class="bi bi-people me-2"></i>Administrare Utilizatori</h3>
-
-<p class="text-muted">Gestionează utilizatorii sistemului.</p>
-
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>Lista Utilizatori</span>
-            <button class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Adaugă Utilizator
-            </button>
+<div class="container-fluid p-0">
+    <div class="row mb-3">
+        <div class="col">
+            <h3><i class="bi bi-people me-2"></i>Utilizatori</h3>
         </div>
     </div>
-    <div class="card-body">
-        <p class="text-muted">Niciun utilizator de afișat momentan.</p>
-    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    <SfGrid @ref="grid" TValue="User" AllowPaging="true" AllowSorting="true" AllowFiltering="true"
+            AllowGrouping="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true"
+            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Search", "ColumnChooser" })"
+            OnActionBegin="ActionBeginHandler" 
+            OnActionComplete="ActionCompleteHandler" 
+            OnActionFailure="ActionFailureHandler">
+        
+        <SfDataManager AdaptorInstance="@typeof(UsersAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        
+        <GridPageSettings PageSize="20" PageSizes="@(new int[] { 20, 50, 100 })"></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+             <Template>
+                @{
+                    var u = context as User;
+                    if (u == null) return;
+                    
+                    // Hack for casting to subclass if new
+                    var createMode = u.Id == Guid.Empty;
+                    // Note: Handling password in Grid Dialog Template usually involves a separate ViewModel
+                }
+                <div>
+                     <div class="form-group mb-3">
+                        <label class="form-label">Persoană Asociată</label>
+                        <SfDropDownList TValue="Guid" TItem="Persoana" Placeholder="Selectează o persoană"
+                            @bind-Value="@(u.PersoanaId)" DataSource="@persoaneList">
+                            <DropDownListFieldSettings Text="NumeComplet" Value="Id"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                        @* <ValidationMessage For="@(() => u.PersoanaId)" /> *@
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(u.UserName)" Placeholder="Nume Utilizator" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            @* <ValidationMessage For="@(() => u.UserName)" /> *@
+                        </div>
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(u.Email)" Placeholder="Email" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            @* <ValidationMessage For="@(() => u.Email)" /> *@
+                        </div>
+                    </div>
+                    
+                    @if (createMode)
+                    {
+                         <div class="form-group mb-3">
+                            @* Just a visual field, binding needs CustomAdaptor to handle "Password" param or extra property *@
+                            <label class="form-label">Parola (implicită dacă e gol)</label>
+                            <input type="password" class="form-control" />
+                         </div>
+                    }
+
+                    <div class="form-group mt-3">
+                         <SfCheckBox @bind-Checked="@(u.IsActive)" Label="Activ"></SfCheckBox>
+                    </div>
+                </div>
+            </Template>
+        </GridEditSettings>
+
+        <GridColumns>
+            <GridColumn Field=@nameof(User.Id) IsPrimaryKey="true" Visible="false"></GridColumn>
+            <GridColumn Field=@nameof(User.UserName) HeaderText="Utilizator" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(User.NumeComplet) HeaderText="Nume Persoană" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(User.Email) HeaderText="Email" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(User.CreatedAt) HeaderText="Creat La" Format="d" Width="130"></GridColumn>
+            <GridColumn Field=@nameof(User.IsActive) HeaderText="Activ" Width="100" DisplayAsCheckBox="true"></GridColumn>
+        </GridColumns>
+    </SfGrid>
 </div>

@@ -1,0 +1,325 @@
+@page "/administrare/parametri-sistem"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using ValyanERP.Web.Features.Infrastructure.SystemParameters.Models
+@using ValyanERP.Web.Features.Infrastructure.SystemParameters.Services
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Notifications
+@inject ISystemParametersService ParametersService
+@inject ILogger<SystemParameters> Logger
+
+<PageTitle>Parametri Sistem</PageTitle>
+
+<div class="container-fluid p-0">
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <h3><i class="bi bi-gear-fill me-2"></i>Parametri Sistem</h3>
+            <p class="text-muted mb-0">Configurare centralizată a sistemului - modificările se aplică imediat</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-primary btn-sm" @onclick="RefreshGrid">
+                <i class="bi bi-arrow-clockwise me-1"></i>Reîmprospătează
+            </button>
+        </div>
+    </div>
+
+    <SfToast @ref="ToastObj" 
+             ID="toast_systemparams" 
+             ShowCloseButton="true"
+             Timeout="5000"
+             NewestOnTop="true">
+        <ToastPosition X="Right" Y="Top"></ToastPosition>
+    </SfToast>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <SfGrid @ref="grid" 
+                    TValue="SystemParameter" 
+                    DataSource="@parameters"
+                    AllowPaging="true" 
+                    AllowSorting="true" 
+                    AllowFiltering="true"
+                    AllowGrouping="true" 
+                    AllowResizing="true"
+                    AllowTextWrap="true"
+                    AllowExcelExport="true"
+                    Toolbar="@(new List<string>() { "Edit", "Delete", "Update", "Cancel", "ExcelExport", "Search", "ColumnChooser" })"
+                    OnToolbarClick="ToolbarClickHandler">
+                
+                <GridPageSettings PageSize="20" PageSizes="@(new int[] { 10, 20, 50, 100 })"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridGroupSettings ShowDropArea="true"></GridGroupSettings>
+                
+                <GridEditSettings AllowAdding="false" 
+                                  AllowEditing="true" 
+                                  AllowDeleting="true" 
+                                  Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"
+                                  Dialog="dialogParams">
+                    <Template>
+                        @{
+                            var param = context as SystemParameter;
+                            if (param == null) return;
+                        }
+                        <div class="edit-parameter-form">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="e-float-text">Cheie Parametru</label>
+                                    <SfTextBox @bind-Value="param.ParameterKey" 
+                                               Enabled="false"
+                                               CssClass="e-outline"
+                                               Placeholder="Cheie parametru">
+                                    </SfTextBox>
+                                    <small class="text-muted">Imutabil după creare</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="e-float-text">Nume Afișat</label>
+                                    <SfTextBox @bind-Value="param.DisplayName" 
+                                               Enabled="false"
+                                               CssClass="e-outline"
+                                               Placeholder="Nume afișat">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="e-float-text"><span class="text-danger">*</span> Valoare</label>
+                                    <SfTextBox @bind-Value="param.ParameterValue" 
+                                               CssClass="e-outline"
+                                               Placeholder="Introduceți valoarea">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="e-float-text">Valoare Implicită</label>
+                                    <SfTextBox @bind-Value="param.DefaultValue" 
+                                               CssClass="e-outline"
+                                               Placeholder="Valoare implicită">
+                                    </SfTextBox>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="e-float-text">Tip Date</label>
+                                    <SfTextBox Value="@param.DataType" 
+                                               Enabled="false"
+                                               CssClass="e-outline">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="e-float-text">Descriere</label>
+                                    <SfTextBox @bind-Value="param.Description" 
+                                               Multiline="true"
+                                               CssClass="e-outline"
+                                               Placeholder="Explică scopul parametrului și impactul modificării">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(param.ValidationRegex) || 
+                                 param.MinValue.HasValue || param.MaxValue.HasValue)
+                            {
+                                <div class="alert alert-info">
+                                    <strong><i class="bi bi-info-circle me-2"></i>Constrângeri de validare:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @if (!string.IsNullOrEmpty(param.ValidationRegex))
+                                        {
+                                            <li>Regex: <code>@param.ValidationRegex</code></li>
+                                        }
+                                        @if (param.MinValue.HasValue)
+                                        {
+                                            <li>Valoare minimă: @param.MinValue</li>
+                                        }
+                                        @if (param.MaxValue.HasValue)
+                                        {
+                                            <li>Valoare maximă: @param.MaxValue</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                    </Template>
+                </GridEditSettings>
+
+                <GridEvents TValue="SystemParameter" 
+                            RowSelected="OnRowSelected"
+                            OnActionBegin="ActionBeginHandler"
+                            OnActionComplete="ActionCompleteHandler"
+                            OnActionFailure="ActionFailureHandler">
+                </GridEvents>
+
+                <GridTemplates>
+                    <DetailTemplate>
+                        @{
+                            var param = context as SystemParameter;
+                            if (param == null) return;
+                        }
+                        <div class="parameter-detail-view p-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Descriere:</strong> @param.Description
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Valoare Implicită:</strong> @param.DefaultValue
+                                </div>
+                            </div>
+                        </div>
+                    </DetailTemplate>
+                </GridTemplates>
+
+                <GridColumns>
+                    <GridColumn Field=@nameof(SystemParameter.Id) IsPrimaryKey="true" Visible="false"></GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.ParameterKey) 
+                                HeaderText="Cheie" 
+                                Width="220"
+                                ClipMode="ClipMode.EllipsisWithTooltip">
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.DisplayName) 
+                                HeaderText="Nume Afișat" 
+                                Width="180">
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.Category) 
+                                HeaderText="Categorie" 
+                                Width="120">
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.SubCategory) 
+                                HeaderText="SubCategorie" 
+                                Width="130">
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.DataType) 
+                                HeaderText="Tip" 
+                                Width="90"
+                                TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var param = context as SystemParameter;
+                                var badgeClass = param?.DataType switch
+                                {
+                                    "int" => "badge-type-int",
+                                    "string" => "badge-type-string",
+                                    "bool" => "badge-type-bool",
+                                    "decimal" => "badge-type-decimal",
+                                    "json" => "badge-type-json",
+                                    "enum" => "badge-type-enum",
+                                    _ => "badge-type-default"
+                                };
+                            }
+                            <span class="badge @badgeClass">@param?.DataType</span>
+                        </Template>
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.ParameterValue) 
+                                HeaderText="Valoare" 
+                                Width="150"
+                                ClipMode="ClipMode.EllipsisWithTooltip">
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.IsReadOnly) 
+                                HeaderText="Read-Only" 
+                                Width="110"
+                                TextAlign="TextAlign.Center"
+                                DisplayAsCheckBox="false">
+                        <Template>
+                            @{
+                                var param = context as SystemParameter;
+                                if (param?.IsReadOnly == true)
+                                {
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-lock-fill"></i> Locked
+                                    </span>
+                                }
+                            }
+                        </Template>
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.IsActive) 
+                                HeaderText="Status" 
+                                Width="100"
+                                TextAlign="TextAlign.Center"
+                                DisplayAsCheckBox="false">
+                        <Template>
+                            @{
+                                var param = context as SystemParameter;
+                                if (param?.IsActive == true)
+                                {
+                                    <span class="badge bg-success">Activ</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactiv</span>
+                                }
+                            }
+                        </Template>
+                    </GridColumn>
+                    
+                    <GridColumn Field=@nameof(SystemParameter.Description) 
+                                HeaderText="Descriere" 
+                                Width="250"
+                                ClipMode="ClipMode.EllipsisWithTooltip">
+                    </GridColumn>
+                    
+                    <GridColumn HeaderText="Acțiuni" Width="120" TextAlign="TextAlign.Center">
+                        <GridCommandColumns>
+                            <GridCommandColumn Type="CommandButtonType.Edit" 
+                                             ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-edit", CssClass = "e-flat" })">
+                            </GridCommandColumn>
+                            <GridCommandColumn Type="CommandButtonType.Delete" 
+                                             ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-delete", CssClass = "e-flat" })">
+                            </GridCommandColumn>
+                            <GridCommandColumn Type="CommandButtonType.Save" 
+                                             ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-update", CssClass = "e-flat" })">
+                            </GridCommandColumn>
+                            <GridCommandColumn Type="CommandButtonType.Cancel" 
+                                             ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-cancel-icon", CssClass = "e-flat" })">
+                            </GridCommandColumn>
+                        </GridCommandColumns>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+    </div>
+    
+    @* Confirmation Delete Dialog *@
+    <SfDialog @ref="confirmDeleteDialog"
+              Width="500px" 
+              IsModal="true" 
+              ShowCloseIcon="true"
+              @bind-Visible="isDeleteDialogVisible">
+        <DialogTemplates>
+            <Header>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i> 
+                    <span>Confirmare Ștergere</span>
+                </div>
+            </Header>
+            <Content>
+                @if (parameterToDelete != null)
+                {
+                    <p>Sigur doriți să ștergeți parametrul <strong>@parameterToDelete.ParameterKey</strong>?</p>
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Această acțiune nu poate fi anulată!
+                    </div>
+                }
+            </Content>
+            <FooterTemplate>
+                <SfButton CssClass="e-secondary" OnClick="CancelDelete">Anulează</SfButton>
+                <SfButton CssClass="e-danger" OnClick="ConfirmDelete">
+                    <i class="bi bi-trash me-1"></i>Șterge
+                </SfButton>
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+</div>

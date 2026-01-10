@@ -16,6 +16,8 @@ public class ApplicationUser : IdentityUser<Guid>
     public Guid PersoanaId { get; set; }
     
     public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public DateTime CreatedAt { get; set; } = ValyanERP.Web.Infrastructure.Time.TimeUtils.NowRomania();
     public DateTime? UpdatedAt { get; set; }
 }

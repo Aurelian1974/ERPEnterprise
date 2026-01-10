@@ -2,232 +2,94 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 @using ValyanERP.Web.Features.Administrare.Persoane.Models
+@using ValyanERP.Web.Features.Administrare.Persoane
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Blazored.FluentValidation
 
-<PageTitle>Administrare Persoane - ValyanERP</PageTitle>
+<PageTitle>Administrare Persoane</PageTitle>
 
-<h3><i class="bi bi-person-vcard me-2"></i>Administrare Persoane</h3>
-
-<p class="text-muted">Gestionează persoanele din sistem.</p>
-
-@if (!string.IsNullOrEmpty(alertMessage))
-{
-    <div class="alert @alertClass alert-dismissible fade show" role="alert">
-        @alertMessage
-        <button type="button" class="btn-close" @onclick="() => alertMessage = string.Empty"></button>
-    </div>
-}
-
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>Lista Persoane</span>
-            <div>
-                <div class="input-group input-group-sm d-inline-flex me-2" style="width: 250px;">
-                    <input type="text" class="form-control" placeholder="Caută..." @bind="searchTerm" @bind:event="oninput" @onkeypress="HandleSearchKeyPress" />
-                    <button class="btn btn-outline-secondary" type="button" @onclick="SearchPersoane">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-                <button class="btn btn-primary btn-sm" @onclick="ShowAddModal">
-                    <i class="bi bi-plus-lg me-1"></i> Adaugă Persoană
-                </button>
-            </div>
+<div class="container-fluid p-0">
+    <div class="row mb-3">
+        <div class="col">
+            <h3><i class="bi bi-person-vcard me-2"></i>Persoane</h3>
         </div>
     </div>
-    <div class="card-body">
-        @if (isLoading)
-        {
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Se încarcă...</span>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    <SfGrid @ref="grid" TValue="Persoana" AllowPaging="true" AllowSorting="true" AllowFiltering="true"
+            AllowGrouping="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true"
+            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Search", "ColumnChooser" })"
+            OnActionBegin="ActionBeginHandler" 
+            OnActionComplete="ActionCompleteHandler" 
+            OnActionFailure="ActionFailureHandler">
+        
+        <SfDataManager AdaptorInstance="@typeof(PersoaneAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        
+        <GridPageSettings PageSize="20" PageSizes="@(new int[] { 20, 50, 100 })"></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+             <Template>
+                @{
+                    var p = context as Persoana;
+                    if (p == null) return;
+                }
+                <div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(p.Nume)" Placeholder="Nume" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <ValidationMessage For="@(() => p.Nume)" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(p.Prenume)" Placeholder="Prenume" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <ValidationMessage For="@(() => p.Prenume)" />
+                        </div>
+                    </div>
+                     <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(p.CNP)" Placeholder="CNP" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <ValidationMessage For="@(() => p.CNP)" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <SfTextBox @bind-Value="@(p.Email)" Placeholder="Email" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                            <ValidationMessage For="@(() => p.Email)" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                         <div class="form-group col-md-4">
+                             <SfTextBox @bind-Value="@(p.Oras)" Placeholder="Oras" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                         </div>
+                         <div class="form-group col-md-4">
+                             <SfTextBox @bind-Value="@(p.Judet)" Placeholder="Judet" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                         </div>
+                         <div class="form-group col-md-4">
+                             <SfCheckBox @bind-Checked="@(p.IsActive)" Label="Activ"></SfCheckBox>
+                         </div>
+                    </div>
                 </div>
-            </div>
-        }
-        else if (persoane == null || !persoane.Any())
-        {
-            <p class="text-muted">Nicio persoană de afișat.</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nume</th>
-                            <th>Prenume</th>
-                            <th>CNP</th>
-                            <th>Email</th>
-                            <th>Telefon</th>
-                            <th>Oraș</th>
-                            <th>Status</th>
-                            <th>Acțiuni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var persoana in persoane)
-                        {
-                            <tr>
-                                <td>@persoana.Id</td>
-                                <td>@persoana.Nume</td>
-                                <td>@persoana.Prenume</td>
-                                <td>@persoana.CNP</td>
-                                <td>@persoana.Email</td>
-                                <td>@persoana.Telefon</td>
-                                <td>@persoana.Oras</td>
-                                <td>
-                                    @if (persoana.IsActive)
-                                    {
-                                        <span class="badge bg-success">Activ</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">Inactiv</span>
-                                    }
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowEditModal(persoana)" title="Editează">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirmation(persoana)" title="Șterge">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
+            </Template>
+        </GridEditSettings>
+
+        <GridColumns>
+            <GridColumn Field=@nameof(Persoana.Id) IsPrimaryKey="true" Visible="false"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.Nume) HeaderText="Nume" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.Prenume) HeaderText="Prenume" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.CNP) HeaderText="CNP" Width="130"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.Email) HeaderText="Email" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.Oras) HeaderText="Oras" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Persoana.IsActive) HeaderText="Activ" Width="100" DisplayAsCheckBox="true"></GridColumn>
+        </GridColumns>
+        <GridEvents OnActionBegin="ActionBeginHandler" TValue="Persoana"></GridEvents>
+    </SfGrid>
 </div>
-
-<!-- Modal Adaugă/Editează Persoană -->
-@if (showModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-@(isEditing ? "pencil" : "plus-lg") me-2"></i>
-                        @(isEditing ? "Editează Persoană" : "Adaugă Persoană Nouă")
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                </div>
-                <EditForm Model="editModel" OnValidSubmit="SavePersoana">
-                    <DataAnnotationsValidator />
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Nume <span class="text-danger">*</span></label>
-                                <InputText class="form-control" @bind-Value="editModel.Nume" />
-                                <ValidationMessage For="() => editModel.Nume" class="text-danger" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Prenume <span class="text-danger">*</span></label>
-                                <InputText class="form-control" @bind-Value="editModel.Prenume" />
-                                <ValidationMessage For="() => editModel.Prenume" class="text-danger" />
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">CNP</label>
-                                <InputText class="form-control" @bind-Value="editModel.CNP" maxlength="13" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Data Nașterii</label>
-                                <InputDate class="form-control" @bind-Value="editModel.DataNasterii" />
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <InputText class="form-control" @bind-Value="editModel.Email" type="email" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Telefon</label>
-                                <InputText class="form-control" @bind-Value="editModel.Telefon" />
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Adresă</label>
-                            <InputText class="form-control" @bind-Value="editModel.Adresa" />
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Oraș</label>
-                                <InputText class="form-control" @bind-Value="editModel.Oras" />
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Județ</label>
-                                <InputText class="form-control" @bind-Value="editModel.Judet" />
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Cod Poștal</label>
-                                <InputText class="form-control" @bind-Value="editModel.CodPostal" />
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Țară</label>
-                                <InputText class="form-control" @bind-Value="editModel.Tara" />
-                            </div>
-                            @if (isEditing)
-                            {
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Status</label>
-                                    <div class="form-check form-switch mt-2">
-                                        <InputCheckbox class="form-check-input" @bind-Value="editModel.IsActive" />
-                                        <label class="form-check-label">@(editModel.IsActive ? "Activ" : "Inactiv")</label>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anulează</button>
-                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
-                            @if (isSaving)
-                            {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            }
-                            <i class="bi bi-check-lg me-1"></i> Salvează
-                        </button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Modal Confirmare Ștergere -->
-@if (showDeleteModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Confirmare Ștergere
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="() => showDeleteModal = false"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Sigur doriți să ștergeți persoana <strong>@selectedPersoana?.NumeComplet</strong>?</p>
-                    <p class="text-muted small">Persoana va fi marcată ca inactivă și nu va mai apărea în listele active.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteModal = false">Anulează</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeletePersoana" disabled="@isSaving">
-                        @if (isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        }
-                        <i class="bi bi-trash me-1"></i> Șterge
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}

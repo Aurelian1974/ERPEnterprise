@@ -1,0 +1,23 @@
+@page "/syncfusion-treegrid-demo"
+
+<PageTitle>Syncfusion TreeGrid Demo</PageTitle>
+
+<h3>Syncfusion TreeGrid (SfTreeGrid)</h3>
+
+<SfTreeGrid DataSource="tasks" ChildMapping="SubTasks" TreeColumnIndex="1">
+    <TreeGridColumns>
+        <TreeGridColumn Field="Id" HeaderText="ID" Width="80"></TreeGridColumn>
+        <TreeGridColumn Field="Name" HeaderText="Task Name"></TreeGridColumn>
+        <TreeGridColumn Field="Progress" HeaderText="Progress" Width="120" TextAlign="TextAlign.Center"></TreeGridColumn>
+    </TreeGridColumns>
+</SfTreeGrid>
+
+@code {
+    public class TaskItem { public int Id { get; set; } public string Name { get; set; } = ""; public int Progress { get; set; } public List<TaskItem>? SubTasks { get; set; } }
+
+    private List<TaskItem> tasks = new List<TaskItem>
+    {
+        new TaskItem { Id = 1, Name = "Project A", Progress = 40, SubTasks = new List<TaskItem>{ new TaskItem{ Id=11, Name="Design", Progress=60}, new TaskItem{ Id=12, Name="Development", Progress=30}} },
+        new TaskItem { Id = 2, Name = "Project B", Progress = 80 }
+    };
+}

@@ -1,0 +1,22 @@
+@page "/syncfusion-chart-demo"
+
+<PageTitle>Syncfusion Chart Demo</PageTitle>
+
+<h3>Syncfusion Chart (SfChart)</h3>
+
+<SfChart Title="Sales by Month">
+    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+    <ChartSeriesCollection>
+        <ChartSeries DataSource="sales" XName="Month" YName="Amount" Type="Syncfusion.Blazor.Charts.ChartSeriesType.Column"></ChartSeries>
+    </ChartSeriesCollection>
+</SfChart>
+
+@code {
+    public class SalesItem { public string Month { get; set; } = ""; public double Amount { get; set; } }
+    private List<SalesItem> sales = new List<SalesItem>
+    {
+        new SalesItem{ Month = "Jan", Amount = 100 },
+        new SalesItem{ Month = "Feb", Amount = 120 },
+        new SalesItem{ Month = "Mar", Amount = 90 }
+    };
+}

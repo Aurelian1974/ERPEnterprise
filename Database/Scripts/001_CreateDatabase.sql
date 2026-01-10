@@ -18,6 +18,8 @@ BEGIN
         [PasswordHash] NVARCHAR(MAX) NULL,
         [SecurityStamp] NVARCHAR(MAX) NULL,
         [ConcurrencyStamp] NVARCHAR(MAX) NULL,
+        [FirstName] NVARCHAR(100) NULL,
+        [LastName] NVARCHAR(100) NULL,
         [PhoneNumber] NVARCHAR(50) NULL,
         [PhoneNumberConfirmed] BIT NOT NULL DEFAULT 0,
         [TwoFactorEnabled] BIT NOT NULL DEFAULT 0,
