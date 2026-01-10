@@ -56,10 +56,6 @@ public class AuditRepository : IAuditRepository
                 },
                 commandType: CommandType.StoredProcedure);
             
-            _logger.LogInformation(
-                "Audit log created: {EntityType} {EntityId} {OperationType} by {UserEmail}",
-                entry.EntityType, entry.EntityId, entry.OperationType, entry.UserEmail);
-            
             return result.AuditLogId;
         }
         catch (Exception ex)
@@ -440,9 +436,6 @@ public class AuditRepository : IAuditRepository
                 commandType: CommandType.StoredProcedure);
             
             int deletedCount = (int)result.DeletedAuditLogs;
-            
-            _logger.LogInformation("Deleted {Count} old audit logs (retention: {Days} days)", 
-                deletedCount, retentionDays);
             
             return deletedCount;
         }

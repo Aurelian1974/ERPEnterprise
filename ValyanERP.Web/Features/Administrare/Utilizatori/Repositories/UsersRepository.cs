@@ -29,8 +29,6 @@ public class UsersRepository : IUsersRepository
     {
         try
         {
-            _logger.LogDebug("Users GetPagedAsync called with Skip={Skip}, Take={Take}", dm.Skip, dm.Take);
-            
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
@@ -39,7 +37,6 @@ public class UsersRepository : IUsersRepository
             if (dm.Search != null && dm.Search.Count > 0)
             {
                 searchTerm = dm.Search[0].Key;
-                _logger.LogDebug("Search term: {SearchTerm}", searchTerm);
             }
 
             // Extract sort
@@ -68,9 +65,6 @@ public class UsersRepository : IUsersRepository
             var items = await multi.ReadAsync<User>();
             var countResult = await multi.ReadFirstOrDefaultAsync<int>();
 
-            _logger.LogInformation("Users GetPagedAsync returned {Count} records out of {Total}", 
-                items.Count(), countResult);
-
             return new DataResult
             {
                 Result = items,
@@ -88,7 +82,6 @@ public class UsersRepository : IUsersRepository
     {
         try
         {
-            _logger.LogInformation("Creating new User: {UserName}", user.UserName);
             using var connection = _context.CreateConnection();
             
             // NOTE: Password should be hashed by Service layer BEFORE calling repository!
@@ -109,8 +102,6 @@ public class UsersRepository : IUsersRepository
                     user.IsActive
                 },
                 commandType: CommandType.StoredProcedure);
-            
-            _logger.LogInformation("User {UserName} created successfully", user.UserName);
         }
         catch (Exception ex)
         {
@@ -123,7 +114,6 @@ public class UsersRepository : IUsersRepository
     {
         try
         {
-            _logger.LogDebug("GetByIdAsync called with UserId={Id}", id);
             using var connection = _context.CreateConnection();
             var result = await connection.QueryFirstOrDefaultAsync<User>(
                 "sp_Users_GetById",
@@ -146,7 +136,6 @@ public class UsersRepository : IUsersRepository
     {
         try
         {
-            _logger.LogInformation("Updating User Id={Id}: {UserName}", user.Id, user.UserName);
             using var connection = _context.CreateConnection();
             await connection.ExecuteAsync(
                 "sp_Users_Update",
@@ -161,8 +150,6 @@ public class UsersRepository : IUsersRepository
                     user.IsActive
                 },
                 commandType: CommandType.StoredProcedure);
-            
-            _logger.LogInformation("User Id={Id} updated successfully", user.Id);
         }
         catch (Exception ex)
         {
@@ -175,15 +162,12 @@ public class UsersRepository : IUsersRepository
     {
         try
         {
-            _logger.LogInformation("Soft deleting User Id={Id}", id);
             using var connection = _context.CreateConnection();
             // Soft delete via stored procedure - consistent with application standard
             await connection.ExecuteAsync(
                 "sp_Users_Delete",
                 new { Id = id },
                 commandType: CommandType.StoredProcedure);
-            
-            _logger.LogInformation("User Id={Id} soft deleted successfully", id);
         }
         catch (Exception ex)
         {

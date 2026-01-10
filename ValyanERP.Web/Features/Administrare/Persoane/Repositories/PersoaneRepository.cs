@@ -46,8 +46,6 @@ public class PersoaneRepository : IPersoaneRepository
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            _logger.LogDebug("GetPagedAsync called with Skip={Skip}, Take={Take}", dm.Skip, dm.Take);
-            
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
 
@@ -56,7 +54,6 @@ public class PersoaneRepository : IPersoaneRepository
             if (dm.Search != null && dm.Search.Count > 0)
             {
                 searchTerm = dm.Search[0].Key;
-                _logger.LogDebug("Search term: {SearchTerm}", searchTerm);
             }
 
             // Extract filter (simple implementation for first filter only)
@@ -69,8 +66,6 @@ public class PersoaneRepository : IPersoaneRepository
                 filterField = where.Field;
                 filterOperator = where.Operator?.ToLower();
                 filterValue = where.value?.ToString();
-                _logger.LogDebug("Filter: Field={Field}, Operator={Operator}, Value={Value}", 
-                    filterField, filterOperator, filterValue);
             }
 
             // Extract sort
@@ -102,9 +97,6 @@ public class PersoaneRepository : IPersoaneRepository
             var items = await multi.ReadAsync<Persoana>();
             var countResult = await multi.ReadFirstOrDefaultAsync<int>();
 
-            _logger.LogInformation("GetPagedAsync returned {Count} records out of {Total} in {ElapsedMs}ms", 
-                items.Count(), countResult, stopwatch.ElapsedMilliseconds);
-
             return new DataResult
             {
                 Result = items,
@@ -133,7 +125,6 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogDebug("GetByIdAsync called with Id={Id}", id);
             using var connection = _context.CreateConnection();
             var result = await connection.QueryFirstOrDefaultAsync<Persoana>(
                 "sp_Persoane_GetById",
@@ -156,7 +147,6 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogInformation("Creating new Persoana: {Nume} {Prenume}", persoana.Nume, persoana.Prenume);
             using var connection = _context.CreateConnection();
             
             if (persoana.Id == Guid.Empty) 
@@ -182,8 +172,6 @@ public class PersoaneRepository : IPersoaneRepository
                 },
                 commandType: CommandType.StoredProcedure);
             
-            _logger.LogInformation("Persoana created successfully with Id={Id}", persoana.Id);
-            
             // Auto-audit: Log Create operation
             await LogAuditAsync("Create", persoana.Id.ToString(), persoana);
         }
@@ -198,8 +186,6 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogInformation("Updating Persoana Id={Id}: {Nume} {Prenume}", persoana.Id, persoana.Nume, persoana.Prenume);
-            
             // Get old value for audit diff
             var oldValue = await GetByIdAsync(persoana.Id);
             
@@ -224,8 +210,6 @@ public class PersoaneRepository : IPersoaneRepository
                 },
                 commandType: CommandType.StoredProcedure);
             
-            _logger.LogInformation("Persoana Id={Id} updated successfully", persoana.Id);
-            
             // Auto-audit: Log Update operation with diff
             if (oldValue != null)
             {
@@ -243,8 +227,6 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogInformation("Soft deleting Persoana Id={Id}", id);
-            
             // Get entity before delete for audit
             var deletedValue = await GetByIdAsync(id);
             
@@ -254,8 +236,6 @@ public class PersoaneRepository : IPersoaneRepository
                 "sp_Persoane_Delete",
                 new { Id = id },
                 commandType: CommandType.StoredProcedure);
-            
-            _logger.LogInformation("Persoana Id={Id} soft deleted successfully", id);
             
             // Auto-audit: Log Delete operation
             if (deletedValue != null)
@@ -274,7 +254,6 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogDebug("GetByEmailAsync called with Email={Email}", email);
             using var connection = _context.CreateConnection();
             var result = await connection.QueryFirstOrDefaultAsync<Persoana>(
                 "sp_Persoane_GetByEmail",
@@ -294,14 +273,12 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            _logger.LogDebug("GetAllSimpleAsync called");
             using var connection = _context.CreateConnection();
             // Now returns NumeComplet calculated field and limits to 1000 records
             var result = await connection.QueryAsync<Persoana>(
                 "sp_Persoane_GetAllSimple",
                 commandType: CommandType.StoredProcedure);
             
-            _logger.LogInformation("GetAllSimpleAsync returned {Count} records", result.Count());
             return result;
         }
         catch (SqlException ex)
@@ -368,8 +345,6 @@ public class PersoaneRepository : IPersoaneRepository
                     userAgent
                 );
             }
-
-            _logger.LogDebug("Audit log created for {OperationType} on Persoane Id={EntityId}", operationType, entityId);
         }
         catch (Exception ex)
         {

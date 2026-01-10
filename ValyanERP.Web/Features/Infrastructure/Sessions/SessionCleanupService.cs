@@ -57,8 +57,6 @@ public class SessionCleanupService : BackgroundService
             
             // Invalidate all active sessions
             await repo.InvalidateAllSessionsAsync();
-            
-            _logger.LogInformation("All sessions invalidated successfully");
         }
         catch (Exception ex)
         {

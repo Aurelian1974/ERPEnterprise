@@ -97,7 +97,6 @@ public class AuditService : IAuditService
             // Only log if there are actual changes
             if (entry.ChangedFields.Count == 0)
             {
-                _logger.LogDebug("No changes detected for {EntityType} {EntityId}, skipping audit log", entityType, entityId);
                 return Guid.Empty;
             }
 

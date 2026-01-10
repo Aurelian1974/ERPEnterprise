@@ -73,8 +73,6 @@ public partial class SystemParameters : ComponentBase
         {
             var result = await ParametersService.GetAllAsync(includeReadOnly: true);
             parameters = result.ToList();
-            
-            Logger.LogInformation("Loaded {Count} system parameters", parameters.Count);
         }
         catch (Exception ex)
         {
@@ -108,7 +106,6 @@ public partial class SystemParameters : ComponentBase
     private void OnRowSelected(RowSelectEventArgs<SystemParameter> args)
     {
         // Row selected - we can trigger edit manually here if needed
-        Logger.LogDebug("Row selected: {Key}", args.Data.ParameterKey);
     }
 
     /// <summary>
@@ -141,9 +138,6 @@ public partial class SystemParameters : ComponentBase
     /// </summary>
     private async Task ActionBeginHandler(ActionEventArgs<SystemParameter> args)
     {
-        Logger.LogDebug("🔥 ActionBeginHandler: RequestType={RequestType}, Action={Action}", 
-            args.RequestType, args.Action);
-        
         try
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
@@ -208,7 +202,6 @@ public partial class SystemParameters : ComponentBase
                             "Succes",
                             "e-toast-success"
                         );
-                        Logger.LogInformation("✅ Updated parameter: {Key}", param.ParameterKey);
                     }
                     else
                     {
@@ -283,7 +276,6 @@ public partial class SystemParameters : ComponentBase
                     "Succes",
                     "e-toast-success"
                 );
-                Logger.LogInformation("✅ Deleted parameter: {Key}", parameterToDelete.ParameterKey);
                 
                 // Reload data
                 await LoadParametersAsync();
@@ -340,7 +332,6 @@ public partial class SystemParameters : ComponentBase
             {
                 await grid.Refresh();
             }
-            Logger.LogDebug("Grid refreshed after {Action} operation", args.RequestType);
         }
     }
     
@@ -377,7 +368,6 @@ public partial class SystemParameters : ComponentBase
                     "Succes",
                     "e-toast-success"
                 );
-                Logger.LogInformation("Exported system parameters to Excel");
             }
         }
     }

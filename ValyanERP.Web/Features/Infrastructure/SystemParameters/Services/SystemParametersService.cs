@@ -245,10 +245,6 @@ public class SystemParametersService : ISystemParametersService
         // Clear cache for this parameter
         ClearParameterCache(parameter.ParameterKey);
         
-        _logger.LogInformation(
-            "Created and invalidated cache for parameter: {ParameterKey}",
-            parameter.ParameterKey);
-        
         return id;
     }
 
@@ -263,10 +259,6 @@ public class SystemParametersService : ISystemParametersService
         {
             // Clear cache for this parameter
             ClearParameterCache(parameter.ParameterKey);
-            
-            _logger.LogInformation(
-                "Updated and invalidated cache for parameter: {ParameterKey}",
-                parameter.ParameterKey);
         }
         
         return success;
@@ -285,10 +277,6 @@ public class SystemParametersService : ISystemParametersService
         {
             // Clear cache for this parameter
             ClearParameterCache(parameter.ParameterKey);
-            
-            _logger.LogInformation(
-                "Deleted and invalidated cache for parameter: {ParameterKey}",
-                parameter.ParameterKey);
         }
         
         return success;
@@ -310,8 +298,6 @@ public class SystemParametersService : ISystemParametersService
         // Note: IMemoryCache doesn't provide a way to enumerate keys
         // We'd need to track keys separately if we want bulk clear
         // For now, cache is cleared per-parameter on updates
-        
-        _logger.LogInformation("Cache clear requested (per-parameter invalidation active)");
     }
 
     // ================================================================
@@ -328,22 +314,16 @@ public class SystemParametersService : ISystemParametersService
         // Try get from cache
         if (_cache.TryGetValue(cacheKey, out SystemParameter? cached))
         {
-            _logger.LogDebug("Cache HIT for parameter: {ParameterKey}", parameterKey);
             return cached;
         }
         
         // Cache miss - load from database
-        _logger.LogDebug("Cache MISS for parameter: {ParameterKey}", parameterKey);
-        
         var parameter = await _repository.GetByKeyAsync(parameterKey);
         
         if (parameter != null)
         {
             // Cache the parameter (never expires unless manually cleared)
             _cache.Set(cacheKey, parameter, CacheOptions);
-            
-            _logger.LogDebug("Cached parameter: {ParameterKey} = {Value}",
-                parameterKey, parameter.ParameterValue);
         }
         
         return parameter;
@@ -356,8 +336,6 @@ public class SystemParametersService : ISystemParametersService
     {
         var cacheKey = $"{CACHE_KEY_PREFIX}{parameterKey}";
         _cache.Remove(cacheKey);
-        
-        _logger.LogDebug("Cleared cache for parameter: {ParameterKey}", parameterKey);
     }
 
     /// <summary>

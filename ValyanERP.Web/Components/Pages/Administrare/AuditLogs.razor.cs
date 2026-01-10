@@ -108,10 +108,6 @@ public partial class AuditLogs : ComponentBase
                 pageNumber: currentPage,
                 pageSize: pageSize
             );
-
-            Logger.LogInformation(
-                "Loaded audit logs page {Page}: {Count} items (Total: {Total})",
-                currentPage, auditLogs.Items.Count(), auditLogs.TotalCount);
                 
             if (auditLogs.TotalCount == 0)
             {
@@ -140,7 +136,6 @@ public partial class AuditLogs : ComponentBase
 
     private async Task RefreshDataAsync()
     {
-        Logger.LogInformation("Manual refresh requested");
         hasRendered = false; // Reset flag to allow refresh
         await LoadAuditLogsAsync();
     }
@@ -162,8 +157,6 @@ public partial class AuditLogs : ComponentBase
             
             if (selectedLog != null)
             {
-                Logger.LogInformation("Loaded audit log details: {LogId}", logId);
-                
                 // Force UI update before showing dialog
                 StateHasChanged();
                 await Task.Delay(50);
@@ -257,7 +250,6 @@ public partial class AuditLogs : ComponentBase
                     "Succes",
                     "e-toast-success"
                 );
-                Logger.LogInformation("Exported audit logs to Excel");
             }
             else if (args.Item.Id == "auditGrid_pdfexport" || args.Item.Text == "PDF Export")
             {
@@ -272,7 +264,6 @@ public partial class AuditLogs : ComponentBase
                     "Succes",
                     "e-toast-success"
                 );
-                Logger.LogInformation("Exported audit logs to PDF");
             }
         }
         catch (Exception ex)

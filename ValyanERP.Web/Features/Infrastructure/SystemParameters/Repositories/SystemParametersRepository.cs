@@ -56,10 +56,6 @@ public class SystemParametersRepository : ISystemParametersRepository
                 new { Category = category, SubCategory = subCategory, IncludeReadOnly = includeReadOnly },
                 commandType: CommandType.StoredProcedure);
 
-            _logger.LogDebug(
-                "Retrieved {Count} system parameters (Category: {Category}, SubCategory: {SubCategory})",
-                parameters.Count(), category ?? "All", subCategory ?? "All");
-
             return parameters;
         }
         catch (Exception ex)
@@ -87,11 +83,6 @@ public class SystemParametersRepository : ISystemParametersRepository
             {
                 _logger.LogWarning("Parameter not found: {ParameterKey}", parameterKey);
             }
-            else
-            {
-                _logger.LogDebug("Retrieved parameter: {ParameterKey} = {Value}", 
-                    parameterKey, parameter.ParameterValue);
-            }
 
             return parameter;
         }
@@ -113,9 +104,6 @@ public class SystemParametersRepository : ISystemParametersRepository
                 "sp_SystemParameters_GetByCategory",
                 new { Category = category },
                 commandType: CommandType.StoredProcedure);
-
-            _logger.LogDebug("Retrieved {Count} parameters for category: {Category}",
-                parameters.Count(), category);
 
             return parameters;
         }
@@ -154,10 +142,6 @@ public class SystemParametersRepository : ISystemParametersRepository
                     CreatedBy = createdBy
                 },
                 commandType: CommandType.StoredProcedure);
-
-            _logger.LogInformation(
-                "Created system parameter: {ParameterKey} (Id: {Id})",
-                parameter.ParameterKey, result);
 
             return result;
         }
@@ -200,10 +184,6 @@ public class SystemParametersRepository : ISystemParametersRepository
 
             if (success)
             {
-                _logger.LogInformation(
-                    "Updated system parameter: {ParameterKey} (Id: {Id})",
-                    parameter.ParameterKey, parameter.Id);
-                
                 // Auto-audit: Log Update operation (CRITICAL for config changes)
                 if (oldValue != null)
                 {
@@ -240,11 +220,7 @@ public class SystemParametersRepository : ISystemParametersRepository
 
             var success = rowsAffected > 0;
 
-            if (success)
-            {
-                _logger.LogInformation("Soft deleted system parameter: {Id}", id);
-            }
-            else
+            if (!success)
             {
                 _logger.LogWarning(
                     "Failed to delete parameter (not found or read-only): {Id}",
@@ -273,8 +249,6 @@ public class SystemParametersRepository : ISystemParametersRepository
 
             var result = categories.Select(c => (c.Category, c.ParameterCount)).ToList();
 
-            _logger.LogDebug("Retrieved {Count} parameter categories", result.Count);
-
             return result;
         }
         catch (Exception ex)
@@ -296,16 +270,13 @@ public class SystemParametersRepository : ISystemParametersRepository
             var userId = await GetCurrentUserIdAsync();
             if (userId == Guid.Empty)
             {
-                _logger.LogWarning("⚠️ Skipping audit log for SystemParameter update - no authenticated user found. Parameter: {Key}", newValue.ParameterKey);
+                _logger.LogWarning("Skipping audit log for SystemParameter update - no authenticated user found. Parameter: {Key}", newValue.ParameterKey);
                 return;
             }
 
             var sessionId = GetCurrentSessionId();
             var ipAddress = GetClientIP();
             var userAgent = GetUserAgent();
-
-            _logger.LogInformation("🔍 Creating audit log: User={UserId}, Session={SessionId}, IP={IP}, Parameter={Key}",
-                userId, sessionId, ipAddress, newValue.ParameterKey);
 
             // SystemParameters only support Update operation (Create/Delete done via migrations)
             if (operationType == "Update")
@@ -322,14 +293,11 @@ public class SystemParametersRepository : ISystemParametersRepository
                     notes: $"Config change: {newValue.ParameterKey}"
                 );
             }
-
-            _logger.LogInformation("✅ Audit log created for {OperationType} on SystemParameters Id={EntityId} (Key={Key})", 
-                operationType, entityId, newValue.ParameterKey);
         }
         catch (Exception ex)
         {
             // Don't fail the operation if audit fails
-            _logger.LogError(ex, "❌ Failed to create audit log for {OperationType} on SystemParameters Id={EntityId}", 
+            _logger.LogError(ex, "Failed to create audit log for {OperationType} on SystemParameters Id={EntityId}", 
                 operationType, entityId);
         }
     }
@@ -349,19 +317,13 @@ public class SystemParametersRepository : ISystemParametersRepository
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
                 {
-                    _logger.LogDebug("✅ User authenticated: {UserId}", userId);
                     return userId;
                 }
-                _logger.LogWarning("⚠️ User authenticated but NameIdentifier claim not found or invalid");
-            }
-            else
-            {
-                _logger.LogWarning("⚠️ User not authenticated in AuthenticationState");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error getting user ID from AuthenticationState");
+            _logger.LogError(ex, "Error getting user ID from AuthenticationState");
         }
 
         return Guid.Empty;
@@ -392,7 +354,6 @@ public class SystemParametersRepository : ISystemParametersRepository
             catch (InvalidOperationException)
             {
                 // Session not configured in Blazor Server - this is expected
-                _logger.LogDebug("Session not available (Blazor Server mode) - using null SessionId");
             }
         }
         catch (Exception ex)

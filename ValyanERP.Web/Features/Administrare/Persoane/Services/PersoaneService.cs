@@ -32,8 +32,6 @@ public class PersoaneService : IPersoaneService
 
     public async Task<Persoana> CreateAsync(Persoana persoana)
     {
-        _logger.LogInformation("CreateAsync called for {Nume} {Prenume}", persoana.Nume, persoana.Prenume);
-        
         // Business validation
         ValidatePersoana(persoana);
 
@@ -76,17 +74,12 @@ public class PersoaneService : IPersoaneService
         
         // Invalidate cache since data changed
         _cache.Remove(CACHE_KEY_ALL_SIMPLE);
-        _logger.LogDebug("Cache invalidated after Create");
-        
-        _logger.LogInformation("Persoana created successfully with Id={Id}", persoana.Id);
 
         return persoana;
     }
 
     public async Task<bool> UpdateAsync(Persoana persoana)
     {
-        _logger.LogInformation("UpdateAsync called for Id={Id}", persoana.Id);
-        
         // Business validation
         ValidatePersoana(persoana);
 
@@ -121,17 +114,12 @@ public class PersoaneService : IPersoaneService
         
         // Invalidate cache since data changed
         _cache.Remove(CACHE_KEY_ALL_SIMPLE);
-        _logger.LogDebug("Cache invalidated after Update");
-        
-        _logger.LogInformation("Persoana Id={Id} updated successfully", persoana.Id);
 
         return true;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        _logger.LogInformation("DeleteAsync called for Id={Id}", id);
-        
         // Check if exists
         var existing = await _repository.GetByIdAsync(id);
         if (existing == null)
@@ -145,9 +133,6 @@ public class PersoaneService : IPersoaneService
         
         // Invalidate cache since data changed
         _cache.Remove(CACHE_KEY_ALL_SIMPLE);
-        _logger.LogDebug("Cache invalidated after Delete");
-        
-        _logger.LogInformation("Persoana Id={Id} deleted successfully", id);
 
         return true;
     }
@@ -172,11 +157,9 @@ public class PersoaneService : IPersoaneService
         // Try to get from cache first
         if (_cache.TryGetValue(CACHE_KEY_ALL_SIMPLE, out IEnumerable<Persoana>? cachedData) && cachedData != null)
         {
-            _logger.LogDebug("GetAllSimpleAsync: Cache HIT");
             return cachedData;
         }
 
-        _logger.LogDebug("GetAllSimpleAsync: Cache MISS - fetching from database");
         var data = await _repository.GetAllSimpleAsync();
 
         // Get cache duration from system parameters (default: 5 minutes)
@@ -185,8 +168,6 @@ public class PersoaneService : IPersoaneService
         
         // Cache with configured duration
         _cache.Set(CACHE_KEY_ALL_SIMPLE, data, cacheDuration);
-        _logger.LogInformation("Cached {Count} persons for dropdown (expires in {Duration} minutes)", 
-            data.Count(), cacheDuration.TotalMinutes);
 
         return data;
     }
@@ -195,14 +176,12 @@ public class PersoaneService : IPersoaneService
     {
         if (string.IsNullOrWhiteSpace(cnp))
         {
-            _logger.LogDebug("CNP validation: empty or null CNP");
             return false;
         }
 
         // CNP must be exactly 13 digits
         if (cnp.Length != 13 || !cnp.All(char.IsDigit))
         {
-            _logger.LogDebug("CNP validation failed: invalid length or non-digit characters for CNP={CNP}", cnp);
             return false;
         }
 
@@ -210,7 +189,6 @@ public class PersoaneService : IPersoaneService
         var firstDigit = int.Parse(cnp[0].ToString());
         if (firstDigit < 1 || firstDigit > 8)
         {
-            _logger.LogDebug("CNP validation failed: invalid first digit {FirstDigit}", firstDigit);
             return false;
         }
 
@@ -226,13 +204,7 @@ public class PersoaneService : IPersoaneService
         var remainder = sum % 11;
         var checkDigit = remainder == 10 ? 1 : remainder;
         
-        var isValid = checkDigit == int.Parse(cnp[12].ToString());
-        if (!isValid)
-        {
-            _logger.LogDebug("CNP validation failed: checksum mismatch");
-        }
-
-        return isValid;
+        return checkDigit == int.Parse(cnp[12].ToString());
     }
 
     /// <summary>
@@ -240,8 +212,6 @@ public class PersoaneService : IPersoaneService
     /// </summary>
     private void ValidatePersoana(Persoana persoana)
     {
-        _logger.LogDebug("Validating Persoana: {Nume} {Prenume}", persoana.Nume, persoana.Prenume);
-        
         if (string.IsNullOrWhiteSpace(persoana.Nume))
         {
             _logger.LogWarning("Validation failed: Nume is required");

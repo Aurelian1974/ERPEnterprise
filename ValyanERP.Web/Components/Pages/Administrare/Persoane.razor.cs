@@ -28,8 +28,6 @@ public partial class Persoane : ComponentBase
             
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
-                Logger.LogDebug("Grid Save action initiated for Persoana");
-                
                 // Validation is handled by:
                 // 1. FluentValidation (PersoanaValidator)
                 // 2. EditForm in Grid Template
@@ -41,8 +39,6 @@ public partial class Persoane : ComponentBase
 
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
             {
-                Logger.LogDebug("Grid Delete action initiated for Persoana Id={Id}", args.Data?.Id);
-                
                 // Soft delete is handled by sp_Persoane_Delete stored procedure
                 // via the repository
             }
@@ -66,13 +62,11 @@ public partial class Persoane : ComponentBase
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
-                Logger.LogInformation("Persoana saved successfully");
                 errorMessage = null;
             }
 
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
             {
-                Logger.LogInformation("Persoana deleted successfully");
                 errorMessage = null;
             }
         }

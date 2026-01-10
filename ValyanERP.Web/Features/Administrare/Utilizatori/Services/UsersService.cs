@@ -63,15 +63,11 @@ public class UsersService : IUsersService
 
     public async Task<IEnumerable<Persoana>> GetAvailablePersonsAsync()
     {
-        _logger.LogDebug("GetAvailablePersonsAsync called");
         return await _persoaneRepo.GetAllSimpleAsync();
     }
 
     public async Task<bool> CreateUserAsync(UserCreateDto userDto)
     {
-        _logger.LogInformation("CreateUserAsync called for UserName={UserName}, PersoanaId={PersoanaId}", 
-            userDto.UserName, userDto.PersoanaId);
-        
         // Validate input
         ValidateUserDto(userDto);
 
@@ -83,24 +79,18 @@ public class UsersService : IUsersService
             throw new InvalidOperationException($"Persoana cu ID {userDto.PersoanaId} nu există.");
         }
 
-        _logger.LogDebug("Hashing password for user {UserName}", userDto.UserName);
-        
         // Hash password using Argon2id (via custom IPasswordHasher)
         var dummyUser = new ApplicationUser(); // Dummy for hashing interface
         userDto.PasswordHash = _passwordHasher.HashPassword(dummyUser, userDto.Password);
 
         // Create via repository
         await _usersRepo.CreateAsync(userDto);
-        
-        _logger.LogInformation("User {UserName} created successfully", userDto.UserName);
 
         return true;
     }
 
     public async Task<bool> UpdateUserAsync(User user)
     {
-        _logger.LogInformation("UpdateUserAsync called for Id={Id}, UserName={UserName}", user.Id, user.UserName);
-        
         // Validate input
         if (user.Id == Guid.Empty)
         {
@@ -138,16 +128,12 @@ public class UsersService : IUsersService
 
         // Update via repository
         await _usersRepo.UpdateAsync(user);
-        
-        _logger.LogInformation("User Id={Id} updated successfully", user.Id);
 
         return true;
     }
 
     public async Task<bool> DeleteUserAsync(Guid id)
     {
-        _logger.LogInformation("DeleteUserAsync called for Id={Id}", id);
-        
         // Check if exists
         var existing = await _usersRepo.GetByIdAsync(id);
         if (existing == null)
@@ -158,15 +144,12 @@ public class UsersService : IUsersService
 
         // Soft delete via repository
         await _usersRepo.DeleteAsync(id);
-        
-        _logger.LogInformation("User Id={Id} deleted successfully", id);
 
         return true;
     }
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        _logger.LogDebug("GetByIdAsync called for User Id={Id}", id);
         return await _usersRepo.GetByIdAsync(id);
     }
 
@@ -175,8 +158,6 @@ public class UsersService : IUsersService
     /// </summary>
     private void ValidateUserDto(UserCreateDto userDto)
     {
-        _logger.LogDebug("Validating UserCreateDto for UserName={UserName}", userDto.UserName);
-        
         if (userDto.PersoanaId == Guid.Empty)
         {
             _logger.LogWarning("Validation failed: PersoanaId is required");

@@ -27,12 +27,8 @@ public partial class Utilizatori : ComponentBase
         {
             errorMessage = null;
             
-            Logger.LogDebug("Loading available persons for Utilizatori page");
-            
             // Load available persons for dropdown
             persoaneList = await UsersService.GetAvailablePersonsAsync();
-            
-            Logger.LogInformation("Loaded {Count} persons for dropdown", persoaneList.Count());
         }
         catch (Exception ex)
         {
@@ -53,12 +49,12 @@ public partial class Utilizatori : ComponentBase
             
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
-                Logger.LogDebug("Grid Save action initiated for User");
+                // Grid will handle save via adaptor
             }
 
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
             {
-                Logger.LogDebug("Grid Delete action initiated for User Id={Id}", args.Data?.Id);
+                // Grid will handle delete via adaptor
             }
         }
         catch (Exception ex)
@@ -80,13 +76,11 @@ public partial class Utilizatori : ComponentBase
         {
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
-                Logger.LogInformation("User saved successfully");
                 errorMessage = null;
             }
 
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
             {
-                Logger.LogInformation("User deleted successfully");
                 errorMessage = null;
             }
         }
