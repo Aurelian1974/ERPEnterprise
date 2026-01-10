@@ -53,6 +53,9 @@ builder.Services.AddMemoryCache(options =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add API Controllers
+builder.Services.AddControllers();
+
 // Register Dapper context for all database operations
 builder.Services.AddSingleton<DapperContext>();
 
@@ -273,6 +276,9 @@ app.UseAuthentication();
 app.UseMiddleware<ValyanERP.Web.Features.Infrastructure.Sessions.SessionValidationMiddleware>();
 
 app.UseAuthorization();
+
+// Map API Controllers
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

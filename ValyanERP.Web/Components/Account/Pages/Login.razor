@@ -1,20 +1,28 @@
 @page "/Account/Login"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @layout ValyanERP.Web.Components.Layout.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 
-<PageTitle>Login - ValyanERP</PageTitle>
+<PageTitle>Autentificare - ValyanERP</PageTitle>
 
-<div class="card shadow-lg" style="width: 100%; max-width: 400px;">
-    <div class="card-header text-white text-center py-4">
-        <h4 class="mb-0">
-            <i class="bi bi-box-arrow-in-right me-2"></i>ValyanERP
-        </h4>
+<div class="login-container">
+    <!-- Logo & Welcome Section -->
+    <div class="login-header">
+        <div class="logo-container">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <h1 class="welcome-title">Bun venit</h1>
+        <p class="welcome-subtitle">Autentifică-te pentru a continua în ValyanERP</p>
     </div>
-    <div class="card-body p-4">
+
+    <!-- Login Card -->
+    <div class="login-card">
         @if (!string.IsNullOrEmpty(errorMessage))
         {
-            <div class="alert alert-danger" role="alert">
+            <div class="alert alert-danger alert-modern" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 @errorMessage
             </div>
         }
@@ -22,25 +30,90 @@
         <EditForm Model="LoginModel" OnValidSubmit="HandleLogin" FormName="login">
             <DataAnnotationsValidator />
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <InputText id="email" @bind-Value="LoginModel!.Email" class="form-control" placeholder="email@example.com" />
-                <ValidationMessage For="() => LoginModel!.Email" class="text-danger" />
+            <!-- Email Input with Icon -->
+            <div class="form-group-modern">
+                <label for="email" class="form-label-modern">Adresă Email</label>
+                <div class="input-with-icon">
+                    <i class="bi bi-envelope input-icon"></i>
+                    <InputText id="email" 
+                               @bind-Value="LoginModel!.Email" 
+                               class="form-control-modern" 
+                               placeholder="exemplu@valyanerp.ro" 
+                               autocomplete="username" />
+                </div>
+                <ValidationMessage For="() => LoginModel!.Email" class="validation-message" />
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Parolă</label>
-                <InputText id="password" @bind-Value="LoginModel!.Password" type="password" class="form-control" />
-                <ValidationMessage For="() => LoginModel!.Password" class="text-danger" />
+            <!-- Password Input with Icon and Toggle -->
+            <div class="form-group-modern">
+                <label for="password" class="form-label-modern">Parolă</label>
+                <div class="input-with-icon password-input-container">
+                    <i class="bi bi-lock input-icon"></i>
+                    <input id="password" 
+                           type="@PasswordInputType"
+                           @bind="LoginModel!.Password" 
+                           @bind:event="oninput"
+                           class="form-control-modern form-control-password" 
+                           placeholder="Introdu parola"
+                           autocomplete="current-password"
+                           disabled="@isLoading" />
+                    <button type="button" 
+                            class="password-toggle-btn" 
+                            @onclick="TogglePasswordVisibility"
+                            tabindex="-1"
+                            title="@PasswordToggleTitle"
+                            aria-label="@PasswordToggleAriaLabel">
+                        <i class="bi @PasswordToggleIcon"></i>
+                    </button>
+                </div>
+                <ValidationMessage For="() => LoginModel!.Password" class="validation-message" />
             </div>
 
-            @* Remember Me removed for security - session cookie expires when browser closes *@
-
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary text-white">
-                    Autentificare
-                </button>
+            <!-- Remember Me & Forgot Password Row -->
+            <div class="remember-forgot-row">
+                <label class="remember-me-label">
+                    <input type="checkbox" class="remember-me-checkbox" />
+                    <span class="remember-me-text">Reține-mă</span>
+                </label>
+                <a href="/Account/ForgotPassword" class="forgot-password-link">
+                    Am uitat parola
+                </a>
             </div>
+
+            <!-- Login Button with Loading State -->
+            <button type="submit" class="btn-login-modern" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="btn-content">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Se autentifică...
+                    </span>
+                }
+                else
+                {
+                    <span class="btn-content">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Autentificare
+                    </span>
+                    <span class="btn-shine"></span>
+                }
+            </button>
         </EditForm>
+
+        <!-- Footer Info -->
+        <div class="login-footer">
+            <div class="security-info">
+                <i class="bi bi-shield-check me-1"></i>
+                <span>Conexiune securizată</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="login-info">
+        <p class="info-text">
+            <i class="bi bi-info-circle me-1"></i>
+            ValyanERP - Enterprise Resource Planning
+        </p>
     </div>
 </div>
