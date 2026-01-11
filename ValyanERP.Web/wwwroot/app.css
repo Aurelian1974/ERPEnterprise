@@ -679,3 +679,176 @@ p {
 .badge.bg-secondary {
     background: #6b7280 !important;
 }
+
+/* ==================================================
+   SYNCFUSION DIALOG OVERRIDES - GLOBAL STYLES
+   Dialogs render at body level, so must be global
+   ================================================== */
+
+/* Base Dialog Styling */
+.e-dialog {
+    border-radius: 12px !important;
+    overflow: visible !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+}
+
+/* Dialog Header */
+.e-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa) !important;
+    padding: 16px 20px !important;
+    border-bottom: none !important;
+}
+
+.e-dialog .e-dlg-header {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+}
+
+/* Close Button in Header */
+.e-dialog .e-dlg-closeicon-btn {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    border: none !important;
+}
+
+.e-dialog .e-dlg-closeicon-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.e-dialog .e-dlg-closeicon-btn .e-icon-dlg-close {
+    color: white !important;
+}
+
+/* Dialog Content */
+.e-dialog .e-dlg-content {
+    padding: 24px !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+}
+
+/* Dialog Footer */
+.e-dialog .e-footer-content {
+    padding: 16px 20px !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Dialog Buttons - Primary */
+.e-dialog .e-footer-content .e-primary {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px 20px !important;
+    font-weight: 500 !important;
+    color: white !important;
+}
+
+.e-dialog .e-footer-content .e-primary:hover {
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Dialog Buttons - Flat/Cancel */
+.e-dialog .e-footer-content .e-flat:not(.e-primary):not(.e-danger) {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 20px !important;
+    color: #64748b !important;
+}
+
+.e-dialog .e-footer-content .e-flat:not(.e-primary):not(.e-danger):hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Dialog Buttons - Danger */
+.e-dialog .e-footer-content .e-danger {
+    background: linear-gradient(135deg, #f87171, #ef4444) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px 20px !important;
+    color: white !important;
+}
+
+/* Modal Overlay */
+.e-dlg-overlay {
+    background: rgba(15, 23, 42, 0.4) !important;
+}
+
+/* Delete Confirmation Dialog */
+.delete-confirm-dialog.e-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #fca5a5, #ef4444) !important;
+}
+
+/* ==================================================
+   EDIT FORM LAYOUT - Inside Dialogs
+   ================================================== */
+
+.edit-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 400px;
+}
+
+.edit-form-container .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.edit-form-container .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.edit-form-container .form-label {
+    font-weight: 500;
+    color: #334155;
+    font-size: 13px;
+}
+
+.edit-form-container .form-label.required-field::after {
+    content: " *";
+    color: #ef4444;
+}
+
+.edit-form-container .form-hint {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+/* Form inputs */
+.edit-form-container .e-input-group {
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.edit-form-container .e-input-group.e-input-focus {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+}
+
+/* Dropdown popup - ensure it shows above dialog */
+.e-popup.e-ddl {
+    z-index: 10001 !important;
+}
+
+.e-popup.e-popup-open {
+    z-index: 10001 !important;
+}
+
+@media (max-width: 576px) {
+    .edit-form-container {
+        min-width: auto;
+    }
+    
+    .edit-form-container .form-row {
+        grid-template-columns: 1fr;
+    }
+}

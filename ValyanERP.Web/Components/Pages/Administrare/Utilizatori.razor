@@ -143,65 +143,59 @@
                     if (user == null) return;
                     var isNewUser = user.Id == Guid.Empty;
                 }
-                <div class="edit-dialog-content">
-                    <div class="row g-3">
-                        @* Persoana Dropdown *@
-                        <div class="col-12">
-                            <label class="form-label required-field">Persoană Asociată</label>
-                            <SfDropDownList TValue="Guid" TItem="Persoana" 
-                                            @bind-Value="user.PersoanaId" 
-                                            DataSource="@persoaneList"
-                                            Placeholder="Selectează o persoană"
-                                            AllowFiltering="true"
-                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
-                                            CssClass="w-100">
-                                <DropDownListFieldSettings Text="NumeComplet" Value="Id"></DropDownListFieldSettings>
-                            </SfDropDownList>
-                        </div>
+                <div class="edit-form-container">
+                    @* Persoana Dropdown *@
+                    <div class="form-group">
+                        <label class="form-label required-field">Persoană Asociată</label>
+                        <SfDropDownList TValue="Guid" TItem="Persoana" 
+                                        @bind-Value="user.PersoanaId" 
+                                        DataSource="@persoaneList"
+                                        Placeholder="Selectează o persoană"
+                                        AllowFiltering="true"
+                                        FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                        PopupHeight="200px">
+                            <DropDownListFieldSettings Text="NumeComplet" Value="Id"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                    </div>
 
-                        @* Username *@
-                        <div class="col-md-6">
+                    @* Username & Email - side by side *@
+                    <div class="form-row">
+                        <div class="form-group">
                             <label class="form-label required-field">Nume Utilizator</label>
                             <SfTextBox @bind-Value="user.UserName" 
                                        Placeholder="Introduceți numele de utilizator"
-                                       FloatLabelType="FloatLabelType.Never"
-                                       CssClass="w-100">
+                                       FloatLabelType="FloatLabelType.Never">
                             </SfTextBox>
                         </div>
-
-                        @* Email *@
-                        <div class="col-md-6">
+                        <div class="form-group">
                             <label class="form-label required-field">Email</label>
                             <SfTextBox @bind-Value="user.Email" 
                                        Placeholder="Introduceți adresa de email"
                                        Type="InputType.Email"
-                                       FloatLabelType="FloatLabelType.Never"
-                                       CssClass="w-100">
+                                       FloatLabelType="FloatLabelType.Never">
                             </SfTextBox>
                         </div>
+                    </div>
 
-                        @* Password (only for new users) *@
-                        @if (isNewUser)
-                        {
-                            <div class="col-12">
-                                <label class="form-label">Parolă</label>
-                                <SfTextBox @bind-Value="newUserPassword" 
-                                           Placeholder="Lăsați gol pentru parola implicită"
-                                           Type="InputType.Password"
-                                           FloatLabelType="FloatLabelType.Never"
-                                           CssClass="w-100">
-                                </SfTextBox>
-                                <small class="text-muted">Parola implicită: Parola123!</small>
-                            </div>
-                        }
-
-                        @* Is Active *@
-                        <div class="col-12">
-                            <SfCheckBox @bind-Checked="user.IsActive" 
-                                        Label="Utilizator Activ"
-                                        CssClass="user-active-checkbox">
-                            </SfCheckBox>
+                    @* Password (only for new users) *@
+                    @if (isNewUser)
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Parolă</label>
+                            <SfTextBox @bind-Value="newUserPassword" 
+                                       Placeholder="Lăsați gol pentru parola implicită"
+                                       Type="InputType.Password"
+                                       FloatLabelType="FloatLabelType.Never">
+                            </SfTextBox>
+                            <small class="form-hint">Parola implicită: Parola123!</small>
                         </div>
+                    }
+
+                    @* Is Active *@
+                    <div class="form-group">
+                        <SfCheckBox @bind-Checked="user.IsActive" 
+                                    Label="Utilizator Activ">
+                        </SfCheckBox>
                     </div>
                 </div>
             </Template>
