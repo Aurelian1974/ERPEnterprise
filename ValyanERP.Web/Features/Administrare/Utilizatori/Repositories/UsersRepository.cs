@@ -50,11 +50,12 @@ public class UsersRepository : IUsersRepository
             }
 
             // Set parameters for stored procedure
+            // When Take=0, return all data (used for export operations)
             parameters.Add("@SearchTerm", searchTerm);
             parameters.Add("@SortField", sortField);
             parameters.Add("@SortDirection", sortDirection);
             parameters.Add("@Skip", dm.Skip);
-            parameters.Add("@Take", dm.Take == 0 ? 20 : dm.Take);
+            parameters.Add("@Take", dm.Take == 0 ? 10000 : dm.Take); // 10000 = effectively all for export
 
             // Execute stored procedure - returns multiple result sets
             using var multi = await connection.QueryMultipleAsync(
@@ -75,6 +76,22 @@ public class UsersRepository : IUsersRepository
         {
             _logger.LogError(ex, "Error in Users GetPagedAsync: {Message}", ex.Message);
             throw new InvalidOperationException($"Database error in GetPagedAsync: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<User>(
+                "sp_Users_GetAll",
+                commandType: CommandType.StoredProcedure);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in Users GetAllAsync: {Message}", ex.Message);
+            throw new InvalidOperationException($"Database error in GetAllAsync: {ex.Message}", ex);
         }
     }
 

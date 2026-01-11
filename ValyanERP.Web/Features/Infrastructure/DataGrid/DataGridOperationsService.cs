@@ -48,16 +48,18 @@ public class DataGridOperationsService : IDataGridOperationsService
 
         try
         {
-            _logger.LogDebug("Applying grouping for {GroupCount} columns: {GroupColumns}", 
+            _logger.LogDebug("Applying lazy load grouping for {GroupCount} columns: {GroupColumns}, LazyLoad={LazyLoad}, LazyExpandAllGroup={LazyExpandAllGroup}", 
                 dm.Group.Count, 
-                string.Join(", ", dm.Group));
+                string.Join(", ", dm.Group),
+                dm.LazyLoad,
+                dm.LazyExpandAllGroup);
 
             // Convert to list for grouping operations
             IEnumerable result = dataSource.ToList();
 
             // Apply grouping using Syncfusion DataUtil
-            // DataUtil.Group returns IEnumerable (not IEnumerable<T>) with Group objects
-            // For multiple group columns, we apply them sequentially
+            // For lazy load grouping, DataUtil.Group handles the lazy loading logic internally
+            // It returns Group objects that contain caption info and can be expanded on demand
             for (int i = 0; i < dm.Group.Count; i++)
             {
                 result = DataUtil.Group<T>(
@@ -66,16 +68,19 @@ public class DataGridOperationsService : IDataGridOperationsService
                     dm.Aggregates, 
                     i,  // Level parameter for nested grouping
                     dm.GroupByFormatter,
-                    dm.LazyLoad,
-                    dm.LazyExpandAllGroup);
+                    dm.LazyLoad,           // Pass lazy load flag
+                    dm.LazyExpandAllGroup); // Pass expand all flag
             }
 
-            _logger.LogDebug("Grouping applied successfully");
+            // For lazy load grouping, count should be the number of group captions, not total records
+            var groupCount = result.Cast<object>().Count();
+            
+            _logger.LogDebug("Lazy load grouping applied successfully, group count: {GroupCount}", groupCount);
 
             return new DataResult
             {
                 Result = result,
-                Count = totalCount
+                Count = groupCount
             };
         }
         catch (Exception ex)
@@ -89,6 +94,102 @@ public class DataGridOperationsService : IDataGridOperationsService
                 Count = totalCount
             };
         }
+    }
+
+    /// <inheritdoc />
+    public bool IsLazyLoadGrouping(DataManagerRequest dm)
+    {
+        return RequiresGrouping(dm) && dm.LazyLoad;
+    }
+
+    /// <inheritdoc />
+    public object ApplyLazyLoadGrouping<T>(IEnumerable<T> dataSource, DataManagerRequest dm, int totalCount)
+    {
+        if (!RequiresGrouping(dm))
+        {
+            return dm.RequiresCounts 
+                ? new DataResult { Result = dataSource, Count = totalCount } 
+                : dataSource;
+        }
+
+        try
+        {
+            _logger.LogDebug("Applying lazy load grouping for {GroupCount} columns: {GroupColumns}, LazyLoad={LazyLoad}, LazyExpandAllGroup={LazyExpandAllGroup}, RequiresCounts={RequiresCounts}", 
+                dm.Group.Count, 
+                string.Join(", ", dm.Group),
+                dm.LazyLoad,
+                dm.LazyExpandAllGroup,
+                dm.RequiresCounts);
+
+            // Apply grouping using Syncfusion DataUtil
+            // For lazy load, DataUtil.Group creates Group objects with Items populated only when expanded
+            IEnumerable result = dataSource.ToList();
+            
+            for (int i = 0; i < dm.Group.Count; i++)
+            {
+                result = DataUtil.Group<T>(
+                    result, 
+                    dm.Group[i], 
+                    dm.Aggregates, 
+                    i,
+                    dm.GroupByFormatter,
+                    dm.LazyLoad,
+                    dm.LazyExpandAllGroup);
+            }
+
+            var groupCount = result.Cast<object>().Count();
+            
+            _logger.LogDebug("Lazy load grouping applied, group count: {GroupCount}", groupCount);
+
+            // Return based on RequiresCounts flag (as per Syncfusion documentation)
+            if (dm.RequiresCounts)
+            {
+                return new DataResult
+                {
+                    Result = result,
+                    Count = groupCount
+                };
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error applying lazy load grouping");
+            
+            // Fallback
+            return dm.RequiresCounts 
+                ? new DataResult { Result = dataSource, Count = totalCount } 
+                : dataSource;
+        }
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<T> ApplyFiltering<T>(IEnumerable<T> dataSource, DataManagerRequest dm)
+    {
+        IEnumerable<T> result = dataSource;
+
+        // Apply Where filters (used by lazy load expand for group filtering)
+        if (dm.Where != null && dm.Where.Count > 0)
+        {
+            _logger.LogDebug("Applying {FilterCount} filter conditions", dm.Where.Count);
+            
+            foreach (var filter in dm.Where)
+            {
+                _logger.LogDebug("Filter: Field={Field}, Operator={Operator}, Value={Value}", 
+                    filter.Field, filter.Operator, filter.value);
+            }
+            
+            result = DataOperations.PerformFiltering(result, dm.Where, dm.Where[0].Operator);
+        }
+
+        // Apply sorting if specified
+        if (dm.Sorted != null && dm.Sorted.Count > 0)
+        {
+            result = DataOperations.PerformSorting(result, dm.Sorted);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />

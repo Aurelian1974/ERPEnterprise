@@ -95,15 +95,14 @@
                             ImmediateModeDelay="300">
         </GridFilterSettings>
         
-        @* Group Settings - Server-side grouping *@
-        @* NOTE: EnableLazyLoading=false because lazy loading requires special server-side 
-           implementation for group expansion. Can be enabled later with full implementation. *@
+        @* Group Settings - Server-side lazy load grouping *@
+        @* LazyLoad grouping loads child rows on-demand when expanding groups *@
         <GridGroupSettings ShowDropArea="true" 
                            ShowGroupedColumn="true"
                            ShowToggleButton="true"
                            ShowUngroupButton="true"
                            AllowReordering="true"
-                           EnableLazyLoading="false">
+                           EnableLazyLoading="true">
         </GridGroupSettings>
         
         @* Sort Settings *@
@@ -327,6 +326,7 @@
                     OnActionComplete="ActionCompleteHandler"
                     RowSelected="OnRowSelected"
                     RowDeselected="OnRowDeselected"
+                    RowDataBound="OnRowDataBound"
                     DataBound="OnDataBound"
                     OnToolbarClick="@(async args => await OnToolbarClick(args))">
         </GridEvents>
@@ -371,5 +371,152 @@
     <DialogButtons>
         <DialogButton Content="Șterge" CssClass="e-danger" IsPrimary="true" OnClick="ConfirmDelete"></DialogButton>
         <DialogButton Content="Anulează" OnClick="@(() => showDeleteConfirm = false)"></DialogButton>
+    </DialogButtons>
+</SfDialog>
+
+@* View User Dialog (Read-Only) *@
+<SfDialog @bind-Visible="showViewDialog" 
+          Width="500px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          CssClass="view-user-dialog">
+    <DialogTemplates>
+        <Header>
+            <span class="view-dialog-header">
+                <i class="bi bi-person-lines-fill me-2"></i>Detalii Utilizator
+            </span>
+        </Header>
+        <Content>
+            @if (viewUser != null)
+            {
+                <div class="view-dialog-content">
+                    @* User Avatar & Name *@
+                    <div class="user-avatar-section">
+                        <div class="avatar-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="avatar-info">
+                            <h5 class="user-name">@viewUser.UserName</h5>
+                            <span class="user-email">@viewUser.Email</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="divider" />
+                    
+                    @* User Details *@
+                    <div class="details-grid">
+                        @* Persoană Asociată *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-person-badge me-2"></i>Persoană Asociată
+                            </label>
+                            <span class="detail-value">@(viewUser.NumeComplet ?? "N/A")</span>
+                        </div>
+                        
+                        @* Status *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-toggle-on me-2"></i>Status
+                            </label>
+                            @if (viewUser.IsActive)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Activ
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle me-1"></i>Inactiv
+                                </span>
+                            }
+                        </div>
+                        
+                        @* Email Confirmat *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-envelope-check me-2"></i>Email Confirmat
+                            </label>
+                            @if (viewUser.EmailConfirmed)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check me-1"></i>Da
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock me-1"></i>Nu
+                                </span>
+                            }
+                        </div>
+                        
+                        @* Two-Factor *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-shield-lock me-2"></i>Autentificare 2FA
+                            </label>
+                            @if (viewUser.TwoFactorEnabled)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check me-1"></i>Activată
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-x me-1"></i>Dezactivată
+                                </span>
+                            }
+                        </div>
+                        
+                        @* Creat La *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-calendar-plus me-2"></i>Creat La
+                            </label>
+                            <span class="detail-value">@viewUser.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        
+                        @* Ultima Actualizare *@
+                        <div class="detail-item">
+                            <label class="detail-label">
+                                <i class="bi bi-calendar-check me-2"></i>Ultima Actualizare
+                            </label>
+                            <span class="detail-value">
+                                @(viewUser.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "Niciodată")
+                            </span>
+                        </div>
+                        
+                        @* Lockout Status *@
+                        @if (viewUser.LockoutEnd.HasValue && viewUser.LockoutEnd.Value > DateTimeOffset.UtcNow)
+                        {
+                            <div class="detail-item full-width">
+                                <label class="detail-label text-danger">
+                                    <i class="bi bi-lock-fill me-2"></i>Cont Blocat Până La
+                                </label>
+                                <span class="detail-value text-danger">
+                                    @viewUser.LockoutEnd.Value.LocalDateTime.ToString("dd.MM.yyyy HH:mm")
+                                </span>
+                            </div>
+                        }
+                        
+                        @* Failed Access Attempts *@
+                        @if (viewUser.AccessFailedCount > 0)
+                        {
+                            <div class="detail-item">
+                                <label class="detail-label text-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Încercări Eșuate
+                                </label>
+                                <span class="badge bg-warning text-dark">@viewUser.AccessFailedCount</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Închide" IsPrimary="true" OnClick="CloseViewDialog"></DialogButton>
     </DialogButtons>
 </SfDialog>

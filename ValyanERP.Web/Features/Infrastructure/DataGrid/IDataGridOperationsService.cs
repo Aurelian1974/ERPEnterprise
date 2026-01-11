@@ -24,6 +24,17 @@ public interface IDataGridOperationsService
     DataResult ApplyGrouping<T>(IEnumerable<T> dataSource, DataManagerRequest dm, int totalCount);
 
     /// <summary>
+    /// Applies server-side lazy load grouping and returns the appropriate object for Syncfusion.
+    /// For lazy load grouping, returns DataResult when RequiresCounts is true, otherwise IEnumerable.
+    /// </summary>
+    /// <typeparam name="T">The type of entity in the data source.</typeparam>
+    /// <param name="dataSource">The data source to group.</param>
+    /// <param name="dm">The DataManagerRequest containing grouping information.</param>
+    /// <param name="totalCount">The total count of records before grouping.</param>
+    /// <returns>DataResult or IEnumerable based on RequiresCounts flag.</returns>
+    object ApplyLazyLoadGrouping<T>(IEnumerable<T> dataSource, DataManagerRequest dm, int totalCount);
+
+    /// <summary>
     /// Applies all server-side operations (filtering, sorting, paging, grouping) to the data source.
     /// </summary>
     /// <typeparam name="T">The type of entity in the data source.</typeparam>
@@ -38,4 +49,21 @@ public interface IDataGridOperationsService
     /// <param name="dm">The DataManagerRequest to check.</param>
     /// <returns>True if grouping is requested.</returns>
     bool RequiresGrouping(DataManagerRequest dm);
+
+    /// <summary>
+    /// Checks if the request is for lazy load grouping.
+    /// </summary>
+    /// <param name="dm">The DataManagerRequest to check.</param>
+    /// <returns>True if lazy load grouping is requested.</returns>
+    bool IsLazyLoadGrouping(DataManagerRequest dm);
+
+    /// <summary>
+    /// Applies server-side filtering to the data source.
+    /// Used for lazy load group expand operations.
+    /// </summary>
+    /// <typeparam name="T">The type of entity in the data source.</typeparam>
+    /// <param name="dataSource">The data source to filter.</param>
+    /// <param name="dm">The DataManagerRequest containing filter conditions.</param>
+    /// <returns>Filtered data source.</returns>
+    IEnumerable<T> ApplyFiltering<T>(IEnumerable<T> dataSource, DataManagerRequest dm);
 }

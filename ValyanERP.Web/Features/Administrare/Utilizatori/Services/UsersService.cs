@@ -13,6 +13,11 @@ namespace ValyanERP.Web.Features.Administrare.Utilizatori.Services;
 public interface IUsersService
 {
     /// <summary>
+    /// Gets all users for export purposes.
+    /// </summary>
+    Task<IEnumerable<User>> GetAllUsersAsync();
+
+    /// <summary>
     /// Gets available persons for user assignment (dropdown).
     /// </summary>
     Task<IEnumerable<Persoana>> GetAvailablePersonsAsync();
@@ -64,6 +69,11 @@ public class UsersService : IUsersService
     public async Task<IEnumerable<Persoana>> GetAvailablePersonsAsync()
     {
         return await _persoaneRepo.GetAllSimpleAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    {
+        return await _usersRepo.GetAllAsync();
     }
 
     public async Task<bool> CreateUserAsync(UserCreateDto userDto)

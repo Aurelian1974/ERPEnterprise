@@ -194,4 +194,29 @@ BEGIN
 END
 GO
 
+-- =============================================
+-- sp_Users_GetAll - Returns all users (for export)
+-- =============================================
+IF OBJECT_ID('dbo.sp_Users_GetAll', 'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_Users_GetAll;
+GO
+
+CREATE PROCEDURE dbo.sp_Users_GetAll
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT u.Id, u.PersoanaId, u.UserName, u.NormalizedUserName, 
+           u.Email, u.NormalizedEmail, u.EmailConfirmed, 
+           u.PasswordHash, u.SecurityStamp, u.ConcurrencyStamp,
+           u.FirstName, u.LastName, u.PhoneNumber, u.PhoneNumberConfirmed,
+           u.TwoFactorEnabled, u.LockoutEnd, u.LockoutEnabled, u.AccessFailedCount,
+           u.IsActive, u.CreatedAt, u.UpdatedAt,
+           (p.Nume + ' ' + p.Prenume) AS NumeComplet
+    FROM Users u
+    INNER JOIN Persoane p ON u.PersoanaId = p.Id
+    ORDER BY u.CreatedAt DESC;
+END
+GO
+
 PRINT '✅ Users stored procedures created successfully!';

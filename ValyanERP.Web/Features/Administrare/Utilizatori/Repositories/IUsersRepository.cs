@@ -7,6 +7,7 @@ namespace ValyanERP.Web.Features.Administrare.Utilizatori.Repositories;
 public interface IUsersRepository
 {
     Task<DataResult> GetPagedAsync(DataManagerRequest dm);
+    Task<IEnumerable<User>> GetAllAsync();
     Task<User?> GetByIdAsync(Guid id);
     Task CreateAsync(UserCreateDto user);
     Task UpdateAsync(User user);

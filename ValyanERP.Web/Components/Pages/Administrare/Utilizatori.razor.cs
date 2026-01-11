@@ -87,6 +87,16 @@ public partial class Utilizatori : ComponentBase, IDisposable
     private bool showDeleteConfirm = false;
     
     /// <summary>
+    /// Whether to show view dialog.
+    /// </summary>
+    private bool showViewDialog = false;
+    
+    /// <summary>
+    /// User being viewed in view dialog (read-only).
+    /// </summary>
+    private User? viewUser;
+    
+    /// <summary>
     /// Password for new user creation.
     /// </summary>
     private string newUserPassword = string.Empty;
@@ -116,7 +126,8 @@ public partial class Utilizatori : ComponentBase, IDisposable
     private List<object> toolbar = new()
     {
         "Add",
-        "Edit", 
+        "Edit",
+        new ItemModel { Text = "Vizualizare", TooltipText = "Vizualizează detaliile utilizatorului selectat", PrefixIcon = "e-icons e-eye", Id = "View" },
         "Delete",
         new ItemModel { Text = "Reîmprospătează", TooltipText = "Reîmprospătează datele", PrefixIcon = "e-icons e-refresh", Id = "Refresh" },
         "Search",
@@ -292,6 +303,18 @@ public partial class Utilizatori : ComponentBase, IDisposable
     }
     
     /// <summary>
+    /// Handles row data bound event - applies styling for inactive users.
+    /// </summary>
+    public void OnRowDataBound(RowDataBoundEventArgs<User> args)
+    {
+        if (args.Data != null && !args.Data.IsActive)
+        {
+            // Add CSS class for inactive (soft deleted) users
+            args.Row.AddClass(new string[] { "inactive-user-row" });
+        }
+    }
+    
+    /// <summary>
     /// Handles data bound event - updates total records count.
     /// </summary>
     public async Task OnDataBound(object args)
@@ -322,16 +345,23 @@ public partial class Utilizatori : ComponentBase, IDisposable
             
             switch (args.Item?.Id)
             {
+                case "View":
+                case "UtilizatoriGrid_view":
+                    await OpenViewDialog();
+                    break;
+                    
                 case "Refresh":
                 case "UtilizatoriGrid_refresh":
                     await RefreshGrid();
                     break;
                     
                 case "UtilizatoriGrid_excelexport":
+                    args.Cancel = true; // Prevent default export behavior
                     await ExportToExcel();
                     break;
                     
                 case "UtilizatoriGrid_pdfexport":
+                    args.Cancel = true; // Prevent default export behavior
                     await ExportToPdf();
                     break;
             }
@@ -341,6 +371,32 @@ public partial class Utilizatori : ComponentBase, IDisposable
             Logger.LogError(ex, "Error in OnToolbarClick: {Message}", ex.Message);
             errorMessage = $"Eroare: {ex.Message}";
         }
+    }
+    
+    /// <summary>
+    /// Opens the view dialog to display user details (read-only).
+    /// </summary>
+    private async Task OpenViewDialog()
+    {
+        if (selectedUser == null)
+        {
+            errorMessage = "Selectați un utilizator pentru a-i vedea detaliile.";
+            return;
+        }
+        
+        viewUser = selectedUser;
+        showViewDialog = true;
+        Logger.LogDebug("Opened view dialog for user: {UserName}", selectedUser.UserName);
+        await Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Closes the view dialog.
+    /// </summary>
+    private void CloseViewDialog()
+    {
+        showViewDialog = false;
+        viewUser = null;
     }
     
     #endregion
@@ -361,36 +417,162 @@ public partial class Utilizatori : ComponentBase, IDisposable
     }
     
     /// <summary>
-    /// Exports grid data to Excel.
+    /// Exports grid data to Excel using XlsIO directly.
+    /// This approach bypasses the adaptor and avoids issues with CustomAdaptor.
     /// </summary>
     private async Task ExportToExcel()
     {
-        if (grid != null)
+        if (grid == null) return;
+        
+        try
         {
-            var excelExportProperties = new ExcelExportProperties
+            await grid.ShowSpinnerAsync();
+            
+            // Get all users for export
+            var allUsers = (await UsersService.GetAllUsersAsync()).ToList();
+            
+            using var excelEngine = new Syncfusion.XlsIO.ExcelEngine();
+            var application = excelEngine.Excel;
+            application.DefaultVersion = Syncfusion.XlsIO.ExcelVersion.Xlsx;
+            
+            var workbook = application.Workbooks.Create(1);
+            var worksheet = workbook.Worksheets[0];
+            worksheet.Name = "Utilizatori";
+            
+            // Headers
+            worksheet.Range["A1"].Text = "Utilizator";
+            worksheet.Range["B1"].Text = "Nume Persoană";
+            worksheet.Range["C1"].Text = "Email";
+            worksheet.Range["D1"].Text = "Creat La";
+            worksheet.Range["E1"].Text = "Activ";
+            
+            // Header style
+            var headerRange = worksheet.Range["A1:E1"];
+            headerRange.CellStyle.Font.Bold = true;
+            headerRange.CellStyle.Color = Syncfusion.Drawing.Color.FromArgb(96, 165, 250);
+            headerRange.CellStyle.Font.Color = Syncfusion.XlsIO.ExcelKnownColors.White;
+            
+            // Data rows
+            int row = 2;
+            foreach (var user in allUsers)
             {
-                FileName = $"Utilizatori_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx",
-                IncludeHiddenColumn = false
-            };
-            await grid.ExportToExcelAsync(excelExportProperties);
-            Logger.LogInformation("Exported to Excel");
+                worksheet.Range[$"A{row}"].Text = user.UserName ?? "";
+                worksheet.Range[$"B{row}"].Text = user.NumeComplet ?? "";
+                worksheet.Range[$"C{row}"].Text = user.Email ?? "";
+                worksheet.Range[$"D{row}"].DateTime = user.CreatedAt;
+                worksheet.Range[$"D{row}"].NumberFormat = "dd.MM.yyyy HH:mm";
+                worksheet.Range[$"E{row}"].Text = user.IsActive ? "Da" : "Nu";
+                row++;
+            }
+            
+            // Auto-fit columns
+            worksheet.UsedRange.AutofitColumns();
+            
+            // Save to stream
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            
+            var fileName = $"Utilizatori_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var base64 = Convert.ToBase64String(stream.ToArray());
+            
+            // Download file via JS
+            await JS.InvokeVoidAsync("downloadFile", fileName, base64, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            
+            Logger.LogInformation("Exported {Count} users to Excel", allUsers.Count);
+            successMessage = $"Exportat {allUsers.Count} utilizatori în Excel.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting to Excel");
+            errorMessage = $"Eroare la export Excel: {ex.Message}";
+        }
+        finally
+        {
+            await grid.HideSpinnerAsync();
         }
     }
     
     /// <summary>
-    /// Exports grid data to PDF.
+    /// Exports grid data to PDF using PdfExport directly.
     /// </summary>
     private async Task ExportToPdf()
     {
-        if (grid != null)
+        if (grid == null) return;
+        
+        try
         {
-            var pdfExportProperties = new PdfExportProperties
+            await grid.ShowSpinnerAsync();
+            
+            // Get all users for export
+            var allUsers = (await UsersService.GetAllUsersAsync()).ToList();
+            
+            using var document = new Syncfusion.Pdf.PdfDocument();
+            var page = document.Pages.Add();
+            
+            var graphics = page.Graphics;
+            var font = new Syncfusion.Pdf.Graphics.PdfStandardFont(Syncfusion.Pdf.Graphics.PdfFontFamily.Helvetica, 12);
+            var headerFont = new Syncfusion.Pdf.Graphics.PdfStandardFont(Syncfusion.Pdf.Graphics.PdfFontFamily.Helvetica, 14, Syncfusion.Pdf.Graphics.PdfFontStyle.Bold);
+            
+            // Title
+            graphics.DrawString("Lista Utilizatori", headerFont, Syncfusion.Pdf.Graphics.PdfBrushes.DarkBlue, new Syncfusion.Drawing.PointF(10, 10));
+            
+            // Create table
+            var pdfGrid = new Syncfusion.Pdf.Grid.PdfGrid();
+            pdfGrid.Columns.Add(5);
+            
+            // Headers
+            var headerRow = pdfGrid.Headers.Add(1)[0];
+            headerRow.Cells[0].Value = "Utilizator";
+            headerRow.Cells[1].Value = "Nume Persoană";
+            headerRow.Cells[2].Value = "Email";
+            headerRow.Cells[3].Value = "Creat La";
+            headerRow.Cells[4].Value = "Activ";
+            
+            // Style headers
+            foreach (Syncfusion.Pdf.Grid.PdfGridCell cell in headerRow.Cells)
             {
-                FileName = $"Utilizatori_{DateTime.Now:yyyyMMdd_HHmmss}.pdf",
-                IncludeHiddenColumn = false
-            };
-            await grid.ExportToPdfAsync(pdfExportProperties);
-            Logger.LogInformation("Exported to PDF");
+                cell.Style.Font = new Syncfusion.Pdf.Graphics.PdfStandardFont(Syncfusion.Pdf.Graphics.PdfFontFamily.Helvetica, 10, Syncfusion.Pdf.Graphics.PdfFontStyle.Bold);
+                cell.Style.BackgroundBrush = new Syncfusion.Pdf.Graphics.PdfSolidBrush(Syncfusion.Drawing.Color.FromArgb(255, 96, 165, 250));
+                cell.Style.TextBrush = Syncfusion.Pdf.Graphics.PdfBrushes.White;
+            }
+            
+            // Data rows
+            foreach (var user in allUsers)
+            {
+                var dataRow = pdfGrid.Rows.Add();
+                dataRow.Cells[0].Value = user.UserName ?? "";
+                dataRow.Cells[1].Value = user.NumeComplet ?? "";
+                dataRow.Cells[2].Value = user.Email ?? "";
+                dataRow.Cells[3].Value = user.CreatedAt.ToString("dd.MM.yyyy HH:mm");
+                dataRow.Cells[4].Value = user.IsActive ? "Da" : "Nu";
+            }
+            
+            // Draw table
+            pdfGrid.Draw(page, new Syncfusion.Drawing.PointF(10, 40));
+            
+            // Save to stream
+            using var stream = new MemoryStream();
+            document.Save(stream);
+            stream.Position = 0;
+            
+            var fileName = $"Utilizatori_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var base64 = Convert.ToBase64String(stream.ToArray());
+            
+            // Download file via JS
+            await JS.InvokeVoidAsync("downloadFile", fileName, base64, "application/pdf");
+            
+            Logger.LogInformation("Exported {Count} users to PDF", allUsers.Count);
+            successMessage = $"Exportat {allUsers.Count} utilizatori în PDF.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting to PDF");
+            errorMessage = $"Eroare la export PDF: {ex.Message}";
+        }
+        finally
+        {
+            await grid.HideSpinnerAsync();
         }
     }
     
