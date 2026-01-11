@@ -4,6 +4,7 @@ using Syncfusion.Blazor.Data;
 using ValyanERP.Web.Features.Administrare.Utilizatori.Models;
 using ValyanERP.Web.Features.Administrare.Utilizatori.Repositories;
 using ValyanERP.Web.Features.Administrare.Utilizatori.Services;
+using ValyanERP.Web.Features.Infrastructure.DataGrid;
 
 namespace ValyanERP.Web.Features.Administrare.Utilizatori;
 
@@ -15,15 +16,18 @@ public class UsersAdaptor : DataAdaptor
 {
     private readonly IUsersRepository _repository;
     private readonly IUsersService _service;
+    private readonly IDataGridOperationsService _gridOperations;
     private readonly ILogger<UsersAdaptor> _logger;
 
     public UsersAdaptor(
         IUsersRepository repository, 
         IUsersService service,
+        IDataGridOperationsService gridOperations,
         ILogger<UsersAdaptor> logger)
     {
         _repository = repository;
         _service = service;
+        _gridOperations = gridOperations;
         _logger = logger;
     }
 
@@ -40,7 +44,23 @@ public class UsersAdaptor : DataAdaptor
                 dm.Where?.Count ?? 0,
                 dm.Group?.Count ?? 0);
             
-            return await _repository.GetPagedAsync(dm);
+            // Get paged data from repository
+            var result = await _repository.GetPagedAsync(dm);
+            
+            // Apply grouping if requested
+            if (_gridOperations.RequiresGrouping(dm) && result.Result != null)
+            {
+                var users = result.Result as IEnumerable<User>;
+                if (users != null)
+                {
+                    _logger.LogDebug("Applying server-side grouping for columns: {GroupColumns}", 
+                        string.Join(", ", dm.Group ?? []));
+                    
+                    return _gridOperations.ApplyGrouping(users, dm, result.Count);
+                }
+            }
+            
+            return result;
         }
         catch (Exception ex)
         {

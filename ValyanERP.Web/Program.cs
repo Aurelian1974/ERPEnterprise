@@ -105,6 +105,9 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.Servi
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.IUserGridSettingsRepository, ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.UserGridSettingsRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Services.IUserGridSettingsService, ValyanERP.Web.Features.Infrastructure.GridSettings.Services.UserGridSettingsService>();
 
+// DataGrid Operations Service (server-side grouping, sorting, filtering)
+builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.DataGrid.IDataGridOperationsService, ValyanERP.Web.Features.Infrastructure.DataGrid.DataGridOperationsService>();
+
 // Configure Identity with custom Dapper stores
 builder.Services.AddScoped<IUserStore<ApplicationUser>, DapperUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, DapperRoleStore>();

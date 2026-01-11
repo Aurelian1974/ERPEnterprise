@@ -96,12 +96,14 @@
         </GridFilterSettings>
         
         @* Group Settings - Server-side grouping *@
+        @* NOTE: EnableLazyLoading=false because lazy loading requires special server-side 
+           implementation for group expansion. Can be enabled later with full implementation. *@
         <GridGroupSettings ShowDropArea="true" 
                            ShowGroupedColumn="true"
                            ShowToggleButton="true"
                            ShowUngroupButton="true"
                            AllowReordering="true"
-                           EnableLazyLoading="true">
+                           EnableLazyLoading="false">
         </GridGroupSettings>
         
         @* Sort Settings *@
