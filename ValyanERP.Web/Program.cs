@@ -101,6 +101,10 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.Repos
 // Users service (business logic)
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.Services.IUsersService, ValyanERP.Web.Features.Administrare.Utilizatori.Services.UsersService>();
 
+// Grid Settings (user-specific grid configuration persistence)
+builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.IUserGridSettingsRepository, ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.UserGridSettingsRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Services.IUserGridSettingsService, ValyanERP.Web.Features.Infrastructure.GridSettings.Services.UserGridSettingsService>();
+
 // Configure Identity with custom Dapper stores
 builder.Services.AddScoped<IUserStore<ApplicationUser>, DapperUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, DapperRoleStore>();

@@ -579,6 +579,64 @@ builder.Services.AddScoped<IPersoaneRepository, PersoaneRepository>();
 
 ---
 
+### ✅ **STEP 4.1: Database Access - NO Inline SQL!**
+
+**🔴 CRITICAL: All database operations MUST use stored procedures!**
+
+#### **❌ WRONG - Inline SQL in C# Code:**
+```csharp
+// ❌ NEVER do this!
+const string sql = @"
+    SELECT Id, UserName, Email 
+    FROM [dbo].[Users] 
+    WHERE Id = @Id AND IsActive = 1";
+    
+await connection.QueryAsync<User>(sql, new { Id = id });
+```
+
+#### **✅ CORRECT - Use Stored Procedures:**
+```csharp
+// ✅ Always use stored procedures
+await connection.QueryAsync<User>(
+    "sp_Users_GetById",
+    new { Id = id },
+    commandType: CommandType.StoredProcedure);
+```
+
+#### **Rațiune:**
+
+| Beneficiu | Descriere |
+|-----------|-----------|
+| **SQL Centralizat** | Toate query-urile în database, ușor de optimizat cu DBA |
+| **Security** | Parametrizare la nivel SP, protecție SQL injection |
+| **Performance** | Planuri de execuție cacheable, query hints disponibile |
+| **Separation of Concerns** | Business logic în C#, data access în SQL Server |
+| **Versioning** | SP-urile pot fi versionate în `Database/Scripts/` |
+| **Debugging** | Query-urile pot fi testate direct în SSMS |
+
+#### **Stored Procedure Naming Convention:**
+```
+sp_[TableName]_[Action]
+
+Examples:
+- sp_Users_GetAll
+- sp_Users_GetById
+- sp_Users_Create
+- sp_Users_Update
+- sp_Users_Delete
+- sp_Users_GetByEmail
+- sp_Users_Search
+```
+
+#### **Checklist for New Repository Method:**
+- [ ] Create stored procedure in `Database/Scripts/XXX_StoredProcedures_[Feature].sql`
+- [ ] Run SQL migration on database
+- [ ] Call SP from repository using `CommandType.StoredProcedure`
+- [ ] Add `/// <inheritdoc />` on implementation
+- [ ] Test with unit tests mocking the SP call
+
+---
+
 ### ✅ **STEP 5: Testing Strategy (ENFORCE COVERAGE)**
 
 | Test Type | Tool | Coverage Goal | When |

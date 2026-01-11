@@ -1,98 +1,373 @@
 @page "/administrare/utilizatori"
 @attribute [Authorize]
 @rendermode InteractiveServer
+
 @using ValyanERP.Web.Features.Administrare.Utilizatori.Models
 @using ValyanERP.Web.Features.Administrare.Utilizatori
 @using ValyanERP.Web.Features.Administrare.Utilizatori.Services
 @using ValyanERP.Web.Features.Administrare.Persoane.Models
+@using ValyanERP.Web.Components.Shared.DataGrid
+
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Data
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Navigations
 
 <PageTitle>Administrare Utilizatori</PageTitle>
 
-<div class="container-fluid p-0">
-    <div class="row mb-3">
-        <div class="col">
-            <h3><i class="bi bi-people me-2"></i>Utilizatori</h3>
+<div class="utilizatori-page">
+    @* Page Header *@
+    <div class="page-header">
+        <div class="header-content">
+            <h3 class="page-title">
+                <i class="bi bi-people-fill me-2"></i>Utilizatori
+            </h3>
+            <span class="record-count">@totalRecords înregistrări</span>
         </div>
+        
+        @* Grid State Manager - for saving/loading configurations *@
+        <GridStateManager @ref="gridStateManager" 
+                          GridId="Utilizatori" 
+                          GridReference="@grid"
+                          ShowConfigurationSelector="true"
+                          ShowButtonLabels="false"
+                          OnStateSaved="OnGridStateSaved"
+                          OnStateLoaded="OnGridStateLoaded"
+                          OnStateReset="OnGridStateReset" />
     </div>
 
+    @* Error Alert *@
     @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
-            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+    
+    @* Success Alert *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess"></button>
         </div>
     }
 
-    <SfGrid @ref="grid" TValue="User" AllowPaging="true" AllowSorting="true" AllowFiltering="true"
-            AllowGrouping="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true"
-            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Search", "ColumnChooser" })"
-            OnActionBegin="ActionBeginHandler" 
-            OnActionComplete="ActionCompleteHandler" 
-            OnActionFailure="ActionFailureHandler">
+    @* Main Grid *@
+    <SfGrid @ref="grid" 
+            TValue="User" 
+            ID="UtilizatoriGrid"
+            AllowPaging="true" 
+            AllowSorting="true" 
+            AllowMultiSorting="true"
+            AllowFiltering="true"
+            AllowGrouping="true" 
+            AllowResizing="true" 
+            AllowReordering="true" 
+            AllowSelection="true"
+            AllowExcelExport="true"
+            AllowPdfExport="true"
+            ShowColumnChooser="true"
+            ShowColumnMenu="true"
+            EnablePersistence="true"
+            EnableStickyHeader="true"
+            EnableHover="true"
+            EnableAltRow="true"
+            Height="calc(100vh - 280px)"
+            Toolbar="@toolbar">
         
+        @* Custom Data Adaptor for server-side operations *@
         <SfDataManager AdaptorInstance="@typeof(UsersAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         
-        <GridPageSettings PageSize="20" PageSizes="@(new int[] { 20, 50, 100 })"></GridPageSettings>
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
-        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
-             <Template>
-                @{
-                    var u = context as User;
-                    if (u == null) return;
-                    
-                    // Hack for casting to subclass if new
-                    var createMode = u.Id == Guid.Empty;
-                    // Note: Handling password in Grid Dialog Template usually involves a separate ViewModel
-                }
-                <div>
-                     <div class="form-group mb-3">
-                        <label class="form-label">Persoană Asociată</label>
-                        <SfDropDownList TValue="Guid" TItem="Persoana" Placeholder="Selectează o persoană"
-                            @bind-Value="@(u.PersoanaId)" DataSource="@persoaneList">
-                            <DropDownListFieldSettings Text="NumeComplet" Value="Id"></DropDownListFieldSettings>
-                        </SfDropDownList>
-                        @* <ValidationMessage For="@(() => u.PersoanaId)" /> *@
-                    </div>
+        @* Page Settings - Server-side pagination *@
+        <GridPageSettings PageSize="@pageSize" 
+                          PageSizes="@pageSizeOptions" 
+                          PageCount="5">
+        </GridPageSettings>
+        
+        @* Filter Settings - Advanced filtering *@
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" 
+                            EnableCaseSensitivity="false"
+                            ImmediateModeDelay="300">
+        </GridFilterSettings>
+        
+        @* Group Settings - Server-side grouping *@
+        <GridGroupSettings ShowDropArea="true" 
+                           ShowGroupedColumn="true"
+                           ShowToggleButton="true"
+                           ShowUngroupButton="true"
+                           AllowReordering="true"
+                           EnableLazyLoading="true">
+        </GridGroupSettings>
+        
+        @* Sort Settings *@
+        <GridSortSettings AllowUnsort="true">
+        </GridSortSettings>
+        
+        @* Selection Settings *@
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" 
+                               Mode="Syncfusion.Blazor.Grids.SelectionMode.Row"
+                               EnableToggle="true">
+        </GridSelectionSettings>
+        
+        @* Search Settings *@
+        <GridSearchSettings IgnoreCase="true" 
+                            Operator="Syncfusion.Blazor.Operator.Contains">
+        </GridSearchSettings>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(u.UserName)" Placeholder="Nume Utilizator" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                            @* <ValidationMessage For="@(() => u.UserName)" /> *@
-                        </div>
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(u.Email)" Placeholder="Email" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                            @* <ValidationMessage For="@(() => u.Email)" /> *@
-                        </div>
-                    </div>
-                    
-                    @if (createMode)
-                    {
-                         <div class="form-group mb-3">
-                            @* Just a visual field, binding needs CustomAdaptor to handle "Password" param or extra property *@
-                            <label class="form-label">Parola (implicită dacă e gol)</label>
-                            <input type="password" class="form-control" />
-                         </div>
+        @* Edit Settings - Dialog mode for better UX *@
+        <GridEditSettings AllowAdding="true" 
+                          AllowEditing="true" 
+                          AllowDeleting="true" 
+                          Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"
+                          ShowDeleteConfirmDialog="true"
+                          ShowConfirmDialog="true">
+            <HeaderTemplate>
+                <span class="e-dialog-header">
+                    @{
+                        var headerText = context.GetType().GetProperty("IsAdd")?.GetValue(context) is true 
+                            ? "Adaugă Utilizator Nou" 
+                            : "Editează Utilizator";
                     }
+                    <i class="bi bi-person-plus me-2"></i>@headerText
+                </span>
+            </HeaderTemplate>
+            <Template>
+                @{
+                    var user = context as User;
+                    if (user == null) return;
+                    var isNewUser = user.Id == Guid.Empty;
+                }
+                <div class="edit-dialog-content">
+                    <div class="row g-3">
+                        @* Persoana Dropdown *@
+                        <div class="col-12">
+                            <label class="form-label required-field">Persoană Asociată</label>
+                            <SfDropDownList TValue="Guid" TItem="Persoana" 
+                                            @bind-Value="user.PersoanaId" 
+                                            DataSource="@persoaneList"
+                                            Placeholder="Selectează o persoană"
+                                            AllowFiltering="true"
+                                            FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains"
+                                            CssClass="w-100">
+                                <DropDownListFieldSettings Text="NumeComplet" Value="Id"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
 
-                    <div class="form-group mt-3">
-                         <SfCheckBox @bind-Checked="@(u.IsActive)" Label="Activ"></SfCheckBox>
+                        @* Username *@
+                        <div class="col-md-6">
+                            <label class="form-label required-field">Nume Utilizator</label>
+                            <SfTextBox @bind-Value="user.UserName" 
+                                       Placeholder="Introduceți numele de utilizator"
+                                       FloatLabelType="FloatLabelType.Never"
+                                       CssClass="w-100">
+                            </SfTextBox>
+                        </div>
+
+                        @* Email *@
+                        <div class="col-md-6">
+                            <label class="form-label required-field">Email</label>
+                            <SfTextBox @bind-Value="user.Email" 
+                                       Placeholder="Introduceți adresa de email"
+                                       Type="InputType.Email"
+                                       FloatLabelType="FloatLabelType.Never"
+                                       CssClass="w-100">
+                            </SfTextBox>
+                        </div>
+
+                        @* Password (only for new users) *@
+                        @if (isNewUser)
+                        {
+                            <div class="col-12">
+                                <label class="form-label">Parolă</label>
+                                <SfTextBox @bind-Value="newUserPassword" 
+                                           Placeholder="Lăsați gol pentru parola implicită"
+                                           Type="InputType.Password"
+                                           FloatLabelType="FloatLabelType.Never"
+                                           CssClass="w-100">
+                                </SfTextBox>
+                                <small class="text-muted">Parola implicită: Parola123!</small>
+                            </div>
+                        }
+
+                        @* Is Active *@
+                        <div class="col-12">
+                            <SfCheckBox @bind-Checked="user.IsActive" 
+                                        Label="Utilizator Activ"
+                                        CssClass="user-active-checkbox">
+                            </SfCheckBox>
+                        </div>
                     </div>
                 </div>
             </Template>
         </GridEditSettings>
 
+        @* Grid Columns *@
         <GridColumns>
-            <GridColumn Field=@nameof(User.Id) IsPrimaryKey="true" Visible="false"></GridColumn>
-            <GridColumn Field=@nameof(User.UserName) HeaderText="Utilizator" Width="150"></GridColumn>
-            <GridColumn Field=@nameof(User.NumeComplet) HeaderText="Nume Persoană" Width="200"></GridColumn>
-            <GridColumn Field=@nameof(User.Email) HeaderText="Email" Width="200"></GridColumn>
-            <GridColumn Field=@nameof(User.CreatedAt) HeaderText="Creat La" Format="d" Width="130"></GridColumn>
-            <GridColumn Field=@nameof(User.IsActive) HeaderText="Activ" Width="100" DisplayAsCheckBox="true"></GridColumn>
+            @* Primary Key - Hidden *@
+            <GridColumn Field="@nameof(User.Id)" 
+                        IsPrimaryKey="true" 
+                        Visible="false"
+                        AllowEditing="false">
+            </GridColumn>
+            
+            @* Username *@
+            <GridColumn Field="@nameof(User.UserName)" 
+                        HeaderText="Utilizator" 
+                        Width="180"
+                        MinWidth="120"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        AllowSearching="true"
+                        AllowFiltering="true"
+                        AllowSorting="true"
+                        AllowGrouping="true">
+                <Template>
+                    @{
+                        var data = context as User;
+                    }
+                    <div class="username-cell">
+                        <i class="bi bi-person-circle me-2 text-primary"></i>
+                        <span class="username-text">@data?.UserName</span>
+                    </div>
+                </Template>
+            </GridColumn>
+            
+            @* Person Name (from join) *@
+            <GridColumn Field="@nameof(User.NumeComplet)" 
+                        HeaderText="Nume Persoană" 
+                        Width="220"
+                        MinWidth="150"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        AllowEditing="false"
+                        AllowSearching="true"
+                        AllowFiltering="true"
+                        AllowSorting="true"
+                        AllowGrouping="true">
+            </GridColumn>
+            
+            @* Email *@
+            <GridColumn Field="@nameof(User.Email)" 
+                        HeaderText="Email" 
+                        Width="250"
+                        MinWidth="150"
+                        ClipMode="ClipMode.EllipsisWithTooltip"
+                        AllowSearching="true"
+                        AllowFiltering="true"
+                        AllowSorting="true">
+                <Template>
+                    @{
+                        var data = context as User;
+                    }
+                    <a href="mailto:@data?.Email" class="email-link">
+                        <i class="bi bi-envelope me-1"></i>@data?.Email
+                    </a>
+                </Template>
+            </GridColumn>
+            
+            @* PersoanaId - Hidden for edit dialog binding *@
+            <GridColumn Field="@nameof(User.PersoanaId)" 
+                        Visible="false"
+                        AllowSearching="false">
+            </GridColumn>
+            
+            @* Created Date *@
+            <GridColumn Field="@nameof(User.CreatedAt)" 
+                        HeaderText="Creat La" 
+                        Format="dd.MM.yyyy HH:mm"
+                        Type="ColumnType.DateTime"
+                        Width="160"
+                        AllowEditing="false"
+                        AllowFiltering="true"
+                        AllowSorting="true"
+                        TextAlign="TextAlign.Center">
+            </GridColumn>
+            
+            @* Is Active *@
+            <GridColumn Field="@nameof(User.IsActive)" 
+                        HeaderText="Activ" 
+                        Width="100"
+                        DisplayAsCheckBox="true"
+                        AllowFiltering="true"
+                        AllowSorting="true"
+                        TextAlign="TextAlign.Center"
+                        Type="ColumnType.Boolean">
+                <FilterTemplate>
+                    <SfDropDownList TValue="string" TItem="StatusItem" 
+                                    DataSource="@statusOptions"
+                                    Value="@GetFilterValue(context)"
+                                    Placeholder="Toate">
+                        <DropDownListFieldSettings Text="Text" Value="Value"></DropDownListFieldSettings>
+                        <DropDownListEvents TValue="string" TItem="StatusItem" 
+                                            ValueChange="@(e => OnStatusFilterChange(e, context))">
+                        </DropDownListEvents>
+                    </SfDropDownList>
+                </FilterTemplate>
+            </GridColumn>
+            
+            @* Last Update - Hidden by default *@
+            <GridColumn Field="@nameof(User.UpdatedAt)" 
+                        HeaderText="Ultima Actualizare" 
+                        Format="dd.MM.yyyy HH:mm"
+                        Type="ColumnType.DateTime"
+                        Width="170"
+                        AllowEditing="false"
+                        Visible="false">
+            </GridColumn>
         </GridColumns>
+
+        @* Grid Events *@
+        <GridEvents TValue="User"
+                    OnActionBegin="ActionBeginHandler"
+                    OnActionComplete="ActionCompleteHandler"
+                    RowSelected="OnRowSelected"
+                    RowDeselected="OnRowDeselected"
+                    DataBound="OnDataBound"
+                    OnToolbarClick="@(async args => await OnToolbarClick(args))">
+        </GridEvents>
+        
+        @* Grid Aggregates for footer summary *@
+        <GridAggregates>
+            <GridAggregate>
+                <GridAggregateColumns>
+                    <GridAggregateColumn Field="@nameof(User.UserName)" Type="AggregateType.Count">
+                        <FooterTemplate>
+                            @{
+                                var aggregate = (context as AggregateTemplateContext);
+                            }
+                            <span class="aggregate-footer">
+                                Total: <strong>@aggregate?.Count</strong> utilizatori
+                            </span>
+                        </FooterTemplate>
+                    </GridAggregateColumn>
+                </GridAggregateColumns>
+            </GridAggregate>
+        </GridAggregates>
     </SfGrid>
 </div>
+
+@* Delete Confirmation Dialog *@
+<SfDialog @bind-Visible="showDeleteConfirm" 
+          Width="400px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          CssClass="delete-confirm-dialog">
+    <DialogTemplates>
+        <Header>
+            <span class="text-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmare Ștergere
+            </span>
+        </Header>
+        <Content>
+            <p>Sigur doriți să ștergeți utilizatorul <strong>@selectedUserName</strong>?</p>
+            <p class="text-muted small">Această acțiune nu poate fi anulată.</p>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Șterge" CssClass="e-danger" IsPrimary="true" OnClick="ConfirmDelete"></DialogButton>
+        <DialogButton Content="Anulează" OnClick="@(() => showDeleteConfirm = false)"></DialogButton>
+    </DialogButtons>
+</SfDialog>
