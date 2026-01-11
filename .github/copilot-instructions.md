@@ -994,7 +994,129 @@ Always define validation constraints:
 
 ---
 
-## 📚 Vertical Slices Architecture Details
+## � **TEMPLATE PAGES: Reference Implementation**
+
+### **🔷 Pagina Utilizatori - TEMPLATE OBLIGATORIU**
+
+**⚠️ CRITICAL: Când creezi o nouă pagină cu SfDataGrid, folosește `/administrare/utilizatori` ca model!**
+
+Pagina Utilizatori implementează toate pattern-urile și componentele necesare pentru un grid enterprise-ready.
+
+### **📁 Structura Fișierelor (de copiat și adaptat):**
+
+```
+Components/Pages/Administrare/
+├── Utilizatori.razor           ← Markup cu SfGrid, dialogs
+├── Utilizatori.razor.cs        ← Code-behind (ALL logic here)
+└── Utilizatori.razor.css       ← Scoped styles
+
+Features/Administrare/Utilizatori/
+├── Models/
+│   └── User.cs                 ← Entity model + DTOs
+├── Repositories/
+│   ├── IUsersRepository.cs     ← Interface
+│   └── UsersRepository.cs      ← Implementation (stored procedures)
+├── Services/
+│   ├── IUsersService.cs        ← Business logic interface
+│   └── UsersService.cs         ← Business logic implementation
+└── UsersAdaptor.cs             ← CustomAdaptor for SfDataGrid
+
+Components/Shared/DataGrid/
+├── GridStateManager.razor      ← Reusable grid state component
+└── GridStateManager.razor.cs   ← State persistence logic
+```
+
+### **🎯 Componente Implementate în Utilizatori:**
+
+| Componentă | Descriere | Fișier |
+|------------|-----------|--------|
+| **SfGrid** | Grid cu server-side operations | `Utilizatori.razor` |
+| **CustomAdaptor** | Lazy load, paging, grouping, filtering | `UsersAdaptor.cs` |
+| **GridStateManager** | Save/Load grid configurations | `GridStateManager.razor` |
+| **Edit Dialog** | Add/Edit în dialog modal | `GridEditSettings` |
+| **View Dialog** | Read-only details view | `SfDialog` custom |
+| **Delete Confirm** | Confirmare ștergere | `SfDialog` custom |
+| **Row Styling** | Inactive users highlighted | `RowDataBound` event |
+| **Excel Export** | Manual export cu Syncfusion.XlsIO | `ExportToExcel()` |
+| **PDF Export** | Manual export cu Syncfusion.Pdf | `ExportToPdf()` |
+| **Toolbar** | Standard Syncfusion, tradus în română | `ItemModel` config |
+
+### **⚙️ Features Server-Side (via CustomAdaptor):**
+
+```csharp
+// În UsersAdaptor.cs - Pattern de urmat:
+public class UsersAdaptor : DataAdaptor
+{
+    public override async Task<object> ReadAsync(DataManagerRequest dm, string key = null)
+    {
+        // 1. Handle FilterChoiceRequest (pentru Excel filter dropdown)
+        // 2. Handle LazyLoad Grouping (expand/collapse groups)
+        // 3. Handle Standard Read (paging, sorting, filtering)
+        // 4. Return DataResult cu Count pentru paginare
+    }
+    
+    public override async Task<object> InsertAsync(DataManager dm, object value, string key)
+    public override async Task<object> UpdateAsync(DataManager dm, object value, string keyField, string key)
+    public override async Task<object> RemoveAsync(DataManager dm, object value, string keyField, string key)
+}
+```
+
+### **🎨 Modal Styling (în app.css - GLOBAL):**
+
+Dialogurile Syncfusion sunt renderizate în `<body>`, deci stilurile TREBUIE să fie globale:
+
+```css
+/* app.css - Dialog overrides */
+.e-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa) !important;
+}
+.e-dialog .e-footer-content .e-primary {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+}
+.delete-confirm-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #fca5a5, #ef4444) !important;
+}
+```
+
+### **📝 Checklist pentru Pagină Nouă cu SfDataGrid:**
+
+- [ ] Copiază structura fișierelor din Utilizatori
+- [ ] Creează CustomAdaptor pentru entitatea nouă
+- [ ] Implementează Repository cu stored procedures
+- [ ] Înregistrează serviciile în `Program.cs`
+- [ ] Adaugă `GridStateManager` în header-ul paginii
+- [ ] Configurează `GridEditSettings` cu dialog template
+- [ ] Adaugă View Dialog pentru read-only details
+- [ ] Adaugă Delete Confirm Dialog
+- [ ] Implementează `RowDataBound` pentru inactive row styling
+- [ ] Testează lazy load grouping
+- [ ] Testează Excel/PDF export
+- [ ] Verifică toolbar-ul tradus în română
+
+### **📋 Pagini Care Trebuie să Urmeze Acest Template:**
+
+| Pagină | Status | Descriere |
+|--------|--------|-----------|
+| ✅ **Utilizatori** | DONE | Template principal |
+| ⬜ **Persoane** | TODO | Refactor cu SfDataGrid |
+| ⬜ **Roluri** | TODO | CRUD pentru roluri |
+| ⬜ **Parametri Sistem** | TODO | Admin parametri |
+| ⬜ **Audit Logs** | TODO | Read-only grid |
+| ⬜ **Sesiuni Active** | TODO | Monitorizare sesiuni |
+
+### **⚠️ NU Faceți Așa:**
+
+| ❌ WRONG | ✅ CORRECT |
+|----------|-----------|
+| Inline SQL în adaptor | Stored procedures via Repository |
+| Stiluri dialog în .razor.css | Stiluri dialog în app.css (global) |
+| Logic în @code{} block | Toată logica în .razor.cs |
+| Export direct cu grid.ExportToExcelAsync() | Export manual cu Syncfusion.XlsIO |
+| Client-side grouping pe 10k+ rows | Lazy load grouping server-side |
+
+---
+
+## �📚 Vertical Slices Architecture Details
 
 ### What is Vertical Slices Architecture?
 
