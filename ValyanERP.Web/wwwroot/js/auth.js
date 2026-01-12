@@ -7,16 +7,23 @@ window.ValyanAuth = {
      * Login via API Controller
      * @param {string} email - User email
      * @param {string} password - User password
+     * @param {string} entityId - Selected entity ID (optional)
+     * @param {string} entityType - Selected entity type: LOCATION, WORKPLACE, COMPANY, GROUP (optional)
      * @returns {Promise<{success: boolean, message?: string, redirectUrl?: string}>}
      */
-    login: async function(email, password) {
+    login: async function(email, password, entityId, entityType) {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ 
+                    email, 
+                    password,
+                    entityId: entityId || null,
+                    entityType: entityType || null
+                }),
                 credentials: 'include' // Important: include cookies in request
             });
 
@@ -53,4 +60,20 @@ window.ValyanAuth = {
             return false;
         }
     }
+};
+
+/**
+ * Get cookie value by name - used by Blazor to read working context
+ * @param {string} name - Cookie name
+ * @returns {string|null} - Cookie value or null if not found
+ */
+window.getCookie = function(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        const cookieValue = parts.pop().split(';').shift();
+        // Decode URL-encoded value (e.g., %3A becomes :)
+        return decodeURIComponent(cookieValue);
+    }
+    return null;
 };

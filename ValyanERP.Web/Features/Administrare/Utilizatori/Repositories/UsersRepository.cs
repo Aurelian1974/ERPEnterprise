@@ -116,7 +116,11 @@ public class UsersRepository : IUsersRepository
                     user.Email,
                     NormalizedEmail = user.Email.ToUpperInvariant(),
                     user.PasswordHash, // Pre-hashed by service
-                    user.IsActive
+                    user.IsActive,
+                    // Ownership columns
+                    user.OwnerCompanyId,
+                    user.OwnerWorkPlaceId,
+                    user.OwnerLocationId
                 },
                 commandType: CommandType.StoredProcedure);
         }
@@ -164,7 +168,11 @@ public class UsersRepository : IUsersRepository
                     NormalizedUserName = user.UserName.ToUpperInvariant(),
                     user.Email,
                     NormalizedEmail = user.Email.ToUpperInvariant(),
-                    user.IsActive
+                    user.IsActive,
+                    // Ownership columns
+                    user.OwnerCompanyId,
+                    user.OwnerWorkPlaceId,
+                    user.OwnerLocationId
                 },
                 commandType: CommandType.StoredProcedure);
         }

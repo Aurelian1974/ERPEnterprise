@@ -1,0 +1,452 @@
+@page "/administrare/permisiuni-organizationale"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@using ValyanERP.Web.Features.Infrastructure.Security.Models.DTOs
+@using ValyanERP.Web.Features.Infrastructure.Security.Repositories
+@using ValyanERP.Web.Features.Administrare.Utilizatori.Repositories
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+
+<PageTitle>Permisiuni Organizaționale - ValyanERP</PageTitle>
+
+<div class="permissions-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="e-icons e-security"></i> Permisiuni Organizaționale</h1>
+            <p class="subtitle">Gestionați accesul utilizatorilor la structura organizațională</p>
+        </div>
+        <div class="header-actions">
+            <SfButton CssClass="e-info" IconCss="e-icons e-refresh" @onclick="RefreshDataAsync">
+                Reîmprospătează
+            </SfButton>
+        </div>
+    </div>
+
+    <!-- Main Content - Two Column Layout -->
+    <div class="content-layout">
+        <!-- Left Panel: User Selection -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <h3><i class="e-icons e-user"></i> Selectează Utilizator</h3>
+            </div>
+            <div class="panel-content">
+                <!-- User Search -->
+                <div class="user-search">
+                    <SfTextBox @bind-Value="userSearchTerm" 
+                               Placeholder="Caută utilizator..."
+                               ShowClearButton="true">
+                        <TextBoxEvents TValue="string" ValueChange="OnUserSearchChanged" />
+                    </SfTextBox>
+                </div>
+                
+                <!-- Users List -->
+                <div class="users-list">
+                    @if (isLoadingUsers)
+                    {
+                        <div class="loading-indicator">
+                            <div class="spinner"></div>
+                            <span>Se încarcă utilizatorii...</span>
+                        </div>
+                    }
+                    else if (filteredUsers != null && filteredUsers.Any())
+                    {
+                        @foreach (var user in filteredUsers)
+                        {
+                            <div class="user-item @(selectedUserId == user.Id ? "selected" : "")"
+                                 @onclick="() => SelectUserAsync(user.Id)">
+                                <div class="user-avatar">
+                                    @(user.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                                </div>
+                                <div class="user-info">
+                                    <div class="user-name">@user.DisplayName</div>
+                                    <div class="user-email">@user.Email</div>
+                                </div>
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="badge badge-admin">Admin</span>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="no-results">
+                            <i class="e-icons e-search"></i>
+                            <span>Nu s-au găsit utilizatori</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Organization Tree & Permissions -->
+        <div class="right-panel">
+            @if (selectedUserId == null)
+            {
+                <div class="no-selection">
+                    <i class="e-icons e-user-follow"></i>
+                    <h3>Selectați un utilizator</h3>
+                    <p>Alegeți un utilizator din lista din stânga pentru a-i gestiona permisiunile.</p>
+                </div>
+            }
+            else
+            {
+                <!-- User Info Header -->
+                <div class="user-header">
+                    <div class="user-details">
+                        <h3>@selectedUserName</h3>
+                        <span class="email">@selectedUserEmail</span>
+                    </div>
+                    <div class="user-actions">
+                        <SfButton CssClass="e-success" IconCss="e-icons e-plus" 
+                                  @onclick="OpenAddPermissionDialog">
+                            Adaugă Permisiune
+                        </SfButton>
+                        <SfButton CssClass="e-warning" IconCss="e-icons e-copy"
+                                  @onclick="OpenCopyPermissionsDialog">
+                            Copiază de la Alt User
+                        </SfButton>
+                    </div>
+                </div>
+
+                <!-- Perimeter Summary -->
+                @if (perimeterSummary != null)
+                {
+                    <div class="perimeter-summary">
+                        <div class="summary-item">
+                            <span class="count">@perimeterSummary.GroupCount</span>
+                            <span class="label">Grupuri</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="count">@perimeterSummary.CompanyCount</span>
+                            <span class="label">Companii</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="count">@perimeterSummary.WorkPlaceCount</span>
+                            <span class="label">Puncte Lucru</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="count">@perimeterSummary.LocationCount</span>
+                            <span class="label">Locații</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- Organization Tree with Permissions -->
+                <div class="organization-tree-section">
+                    <div class="section-header">
+                        <h4><i class="e-icons e-hierarchical-tree"></i> Structură Organizațională</h4>
+                    </div>
+                    
+                    @if (isLoadingTree)
+                    {
+                        <div class="loading-indicator">
+                            <div class="spinner"></div>
+                            <span>Se încarcă structura...</span>
+                        </div>
+                    }
+                    else if (organizationTree != null && organizationTree.Any())
+                    {
+                        <div class="tree-container">
+                            <SfTreeView TValue="OrganizationTreeNode" 
+                                        @ref="treeView"
+                                        CssClass="org-tree">
+                                <TreeViewFieldsSettings TValue="OrganizationTreeNode" 
+                                                        DataSource="@organizationTree"
+                                                        Id="NodeId"
+                                                        Text="Denumire"
+                                                        ParentID="ParentId"
+                                                        HasChildren="HasChildren"
+                                                        Expanded="IsExpanded"
+                                                        IconCss="Icon">
+                                </TreeViewFieldsSettings>
+                                <TreeViewTemplates TValue="OrganizationTreeNode">
+                                    <NodeTemplate>
+                                        <div class="tree-node">
+                                            <span class="node-text">@context.Denumire</span>
+                                            <span class="entity-type">@context.NodeType</span>
+                                            @if (context.EffectiveAccessLevel.HasValue && context.EffectiveAccessLevel > 0)
+                                            {
+                                                <span class="access-badge badge-@context.AccessLevelBadge">
+                                                    @context.AccessLevelName
+                                                    @if (context.AccessType == "Inherited")
+                                                    {
+                                                        <i class="bi bi-arrow-down" title="Moștenit de la părinte"></i>
+                                                    }
+                                                    @if (context.InheritToChildren == true && context.AccessType == "Direct")
+                                                    {
+                                                        <i class="bi bi-arrow-down-circle" title="Se moștenește în subordonate"></i>
+                                                    }
+                                                </span>
+                                                @if (context.AccessType == "Direct")
+                                                {
+                                                    <button class="btn-remove" 
+                                                            @onclick="() => RemoveAccessAsync(context)"
+                                                            @onclick:stopPropagation="true"
+                                                            title="Revocă accesul">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <button class="btn-add"
+                                                        @onclick="() => AddAccessToEntityAsync(context)"
+                                                        @onclick:stopPropagation="true"
+                                                        title="Acordă acces">
+                                                    <i class="bi bi-plus-lg"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </NodeTemplate>
+                                </TreeViewTemplates>
+                            </SfTreeView>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-data">
+                            <i class="e-icons e-folder-open"></i>
+                            <span>Nu există structură organizațională definită.</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Current Permissions Grid -->
+                <div class="permissions-grid-section">
+                    <div class="section-header">
+                        <h4><i class="e-icons e-list-unordered"></i> Permisiuni Active</h4>
+                    </div>
+                    
+                    <SfGrid TValue="UserAccessListDto" 
+                            DataSource="@userAccessList"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            CssClass="permissions-grid">
+                        <GridPageSettings PageSize="10" />
+                        <GridColumns>
+                            <GridColumn Field="@nameof(UserAccessListDto.EntityType)" 
+                                        HeaderText="Tip" 
+                                        Width="120">
+                                <Template>
+                                    @{
+                                        var item = context as UserAccessListDto;
+                                        <span class="entity-type-badge @item!.EntityType.ToLower()">
+                                            @EntityTypes.GetDisplayName(item.EntityType)
+                                        </span>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(UserAccessListDto.EntityName)" 
+                                        HeaderText="Entitate" 
+                                        Width="200" />
+                            <GridColumn Field="@nameof(UserAccessListDto.AccessLevel)" 
+                                        HeaderText="Nivel Acces" 
+                                        Width="130">
+                                <Template>
+                                    @{
+                                        var item = context as UserAccessListDto;
+                                        <span class="access-level-badge level-@item!.AccessLevel">
+                                            @AccessLevels.GetName(item.AccessLevel)
+                                        </span>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(UserAccessListDto.InheritToChildren)" 
+                                        HeaderText="Moștenire" 
+                                        Width="100">
+                                <Template>
+                                    @{
+                                        var item = context as UserAccessListDto;
+                                        @if (item!.InheritToChildren)
+                                        {
+                                            <i class="e-icons e-check text-success" title="Da"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="e-icons e-close text-muted" title="Nu"></i>
+                                        }
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(UserAccessListDto.ValidTo)" 
+                                        HeaderText="Expiră" 
+                                        Width="120"
+                                        Format="d" />
+                            <GridColumn HeaderText="Acțiuni" Width="100">
+                                <Template>
+                                    @{
+                                        var item = context as UserAccessListDto;
+                                        <div class="action-buttons">
+                                            <button class="btn-action btn-edit" 
+                                                    @onclick="() => EditAccessAsync(item!)"
+                                                    title="Editează">
+                                                <i class="e-icons e-edit"></i>
+                                            </button>
+                                            <button class="btn-action btn-delete" 
+                                                    @onclick="() => DeleteAccessAsync(item!)"
+                                                    title="Revocă">
+                                                <i class="e-icons e-delete"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Permission Dialog -->
+<SfDialog @bind-Visible="showPermissionDialog" 
+          Width="500px" 
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="@permissionDialogTitle"
+          CssClass="permission-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="dialog-form">
+                @if (isAddMode)
+                {
+                    <div class="form-group">
+                        <label>Tip Entitate</label>
+                        <SfDropDownList TValue="string" TItem="EntityTypeItem"
+                                        @bind-Value="editingAccess.EntityType"
+                                        DataSource="@entityTypeOptions"
+                                        Placeholder="Selectați tipul">
+                            <DropDownListFieldSettings Text="Name" Value="Value" />
+                            <DropDownListEvents TValue="string" TItem="EntityTypeItem"
+                                                ValueChange="OnEntityTypeChanged" />
+                        </SfDropDownList>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Entitate</label>
+                        <SfDropDownList TValue="Guid" TItem="EntitySelectItem"
+                                        @bind-Value="editingAccess.EntityId"
+                                        DataSource="@availableEntities"
+                                        Placeholder="Selectați entitatea"
+                                        AllowFiltering="true">
+                            <DropDownListFieldSettings Text="Name" Value="Id" />
+                        </SfDropDownList>
+                    </div>
+                }
+                
+                <div class="form-group">
+                    <label>Nivel Acces</label>
+                    <SfDropDownList TValue="byte" TItem="AccessLevelItem"
+                                    @bind-Value="editingAccess.AccessLevel"
+                                    DataSource="@accessLevelOptions"
+                                    Placeholder="Selectați nivelul">
+                        <DropDownListFieldSettings Text="Name" Value="Value" />
+                    </SfDropDownList>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <SfCheckBox @bind-Checked="editingAccess.InheritToChildren"
+                                Label="Moștenește în entitățile subordonate" />
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Valid De La</label>
+                        <SfDatePicker TValue="DateTime?" @bind-Value="editingAccess.ValidFrom" 
+                                      Placeholder="Opțional" />
+                    </div>
+                    <div class="form-group half">
+                        <label>Valid Până La</label>
+                        <SfDatePicker TValue="DateTime?" @bind-Value="editingAccess.ValidTo" 
+                                      Placeholder="Opțional" />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Note</label>
+                    <SfTextBox @bind-Value="editingAccess.Notes" 
+                               Multiline="true"
+                               Placeholder="Notițe opționale..." />
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Anulează" CssClass="e-flat" OnClick="ClosePermissionDialog" />
+        <DialogButton Content="@(isAddMode ? "Adaugă" : "Salvează")" 
+                      CssClass="e-primary" 
+                      IsPrimary="true"
+                      OnClick="SavePermissionAsync" />
+    </DialogButtons>
+</SfDialog>
+
+<!-- Copy Permissions Dialog -->
+<SfDialog @bind-Visible="showCopyDialog"
+          Width="450px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="Copiază Permisiuni"
+          CssClass="copy-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="dialog-form">
+                <p class="info-text">
+                    <i class="e-icons e-info-circle"></i>
+                    Selectați utilizatorul sursă de la care doriți să copiați permisiunile.
+                    Permisiunile existente ale utilizatorului curent nu vor fi afectate.
+                </p>
+                
+                <div class="form-group">
+                    <label>Copiază de la:</label>
+                    <SfDropDownList TValue="Guid?" TItem="UserSelectItem"
+                                    @bind-Value="copyFromUserId"
+                                    DataSource="@usersForCopy"
+                                    Placeholder="Selectați utilizatorul"
+                                    AllowFiltering="true">
+                        <DropDownListFieldSettings Text="DisplayName" Value="Id" />
+                    </SfDropDownList>
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Anulează" CssClass="e-flat" OnClick="CloseCopyDialog" />
+        <DialogButton Content="Copiază" CssClass="e-primary" IsPrimary="true" OnClick="CopyPermissionsAsync" />
+    </DialogButtons>
+</SfDialog>
+
+<!-- Delete Confirmation Dialog -->
+<SfDialog @bind-Visible="showDeleteConfirm"
+          Width="400px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="Confirmare Revocare"
+          CssClass="delete-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="confirm-content">
+                <i class="e-icons e-warning confirm-icon"></i>
+                <p>Sunteți sigur că doriți să revocați această permisiune?</p>
+                @if (deletingAccess != null)
+                {
+                    <div class="delete-details">
+                        <strong>@EntityTypes.GetDisplayName(deletingAccess.EntityType):</strong> 
+                        @deletingAccess.EntityName
+                    </div>
+                }
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Anulează" CssClass="e-flat" OnClick="CloseDeleteConfirm" />
+        <DialogButton Content="Revocă" CssClass="e-danger" OnClick="ConfirmDeleteAsync" />
+    </DialogButtons>
+</SfDialog>

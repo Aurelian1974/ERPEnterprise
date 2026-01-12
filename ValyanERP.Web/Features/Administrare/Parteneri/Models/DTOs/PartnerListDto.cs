@@ -72,6 +72,21 @@ public class PartnerListDto
     public DateTime? UpdatedAt { get; set; }
     public string? CreatedByUserName { get; set; }
 
+    // Ownership
+    public Guid? OwnerCompanyId { get; set; }
+    public Guid? OwnerWorkPlaceId { get; set; }
+    public Guid? OwnerLocationId { get; set; }
+    public string? OwnerCompanyName { get; set; }
+    public string? OwnerWorkPlaceName { get; set; }
+    public string? OwnerLocationName { get; set; }
+    
+    /// <summary>Afișare entitate (Location > WorkPlace > Company).</summary>
+    public string? OwnerEntityDisplay => !string.IsNullOrEmpty(OwnerLocationName) 
+        ? OwnerLocationName 
+        : !string.IsNullOrEmpty(OwnerWorkPlaceName)
+            ? OwnerWorkPlaceName
+            : OwnerCompanyName;
+
     // Helpers
     public bool EsteFurnizor => RolPartener.HasFlag(RolPartener.Furnizor);
     public bool EsteClient => RolPartener.HasFlag(RolPartener.Client);

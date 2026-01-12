@@ -14,6 +14,7 @@ using Syncfusion.Licensing;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Blazored.FluentValidation;
+using ValyanERP.Web.Features.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -125,6 +126,11 @@ builder.Services.AddHttpClient<ValyanERP.Web.Features.Administrare.Parteneri.Ser
 
 // DataGrid Operations Service (server-side grouping, sorting, filtering)
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.DataGrid.IDataGridOperationsService, ValyanERP.Web.Features.Infrastructure.DataGrid.DataGridOperationsService>();
+
+// ================================================================
+// ORGANIZATIONAL SECURITY: User permissions and access control
+// ================================================================
+builder.Services.AddOrganizationalSecurity();
 
 // Configure Identity with custom Dapper stores
 builder.Services.AddScoped<IUserStore<ApplicationUser>, DapperUserStore>();
@@ -275,6 +281,28 @@ using (var scope = app.Services.CreateScope())
         else
         {
             Console.WriteLine($"ℹ️ Admin password already matches desired password for {adminEmail}");
+        }
+    }
+    
+    // TODO: REMOVE IN PRODUCTION - Temporary fix for testing Simona's password
+    // This was added because passwords were not being saved correctly when creating users via the grid
+    // The root cause was fixed in Utilizatori.razor.cs ActionBeginHandler
+    var simonaUser = await userManager.FindByEmailAsync("simona@email.ro");
+    if (simonaUser != null)
+    {
+        var simonaPasswordOk = await userManager.CheckPasswordAsync(simonaUser, "Simona123!");
+        if (!simonaPasswordOk)
+        {
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(simonaUser);
+            var resetResult = await userManager.ResetPasswordAsync(simonaUser, resetToken, "Simona123!");
+            if (resetResult.Succeeded)
+            {
+                Console.WriteLine($"✅ Simona password reset to 'Simona123!' for simona@email.ro");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"ℹ️ Simona password already correct for simona@email.ro");
         }
     }
 }

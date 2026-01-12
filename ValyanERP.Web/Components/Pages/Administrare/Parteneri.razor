@@ -207,6 +207,7 @@
 <PartnerDialog @bind-IsVisible="partnerDialogVisible"
                IsEdit="@(!isNewPartner)"
                Model="@partnerDialogModel"
+               OwnerEntityDisplay="@(selectedPartner?.OwnerEntityDisplay)"
                OnSave="OnPartnerSaved"
                OnVerifyAnaf="OnVerifyAnafFromDialog"
                IsLoadingAnaf="@isLoadingAnafInDialog"

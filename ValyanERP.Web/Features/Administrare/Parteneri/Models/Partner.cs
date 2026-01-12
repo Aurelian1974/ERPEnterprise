@@ -249,6 +249,35 @@ public class Partner
 
     #endregion
 
+    #region Ownership
+
+    /// <summary>Compania care deține această înregistrare.</summary>
+    public Guid? OwnerCompanyId { get; set; }
+
+    /// <summary>Punctul de lucru care deține această înregistrare.</summary>
+    public Guid? OwnerWorkPlaceId { get; set; }
+
+    /// <summary>Locația care deține această înregistrare.</summary>
+    public Guid? OwnerLocationId { get; set; }
+
+    /// <summary>Numele companiei owner (populated by JOIN).</summary>
+    public string? OwnerCompanyName { get; set; }
+
+    /// <summary>Numele punctului de lucru owner (populated by JOIN).</summary>
+    public string? OwnerWorkPlaceName { get; set; }
+
+    /// <summary>Numele locației owner (populated by JOIN).</summary>
+    public string? OwnerLocationName { get; set; }
+
+    /// <summary>Afișare entitate (Location > WorkPlace > Company).</summary>
+    public string? OwnerEntityDisplay => !string.IsNullOrEmpty(OwnerLocationName) 
+        ? OwnerLocationName 
+        : !string.IsNullOrEmpty(OwnerWorkPlaceName)
+            ? OwnerWorkPlaceName
+            : OwnerCompanyName;
+
+    #endregion
+
     #region Navigation Properties
 
     /// <summary>Adresele partenerului.</summary>

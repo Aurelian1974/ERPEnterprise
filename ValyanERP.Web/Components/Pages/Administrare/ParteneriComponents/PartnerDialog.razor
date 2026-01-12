@@ -46,6 +46,19 @@
                                 </SfDropDownList>
                             </div>
                         </div>
+                        @* Înregistrat în - Afișat doar la editare *@
+                        @if (IsEdit && !string.IsNullOrEmpty(OwnerEntityDisplay))
+                        {
+                            <div class="form-row mt-3">
+                                <div class="form-group col-12">
+                                    <label>Înregistrat în</label>
+                                    <div class="owner-entity-display">
+                                        <i class="bi bi-pin-map-fill me-2"></i>
+                                        <span>@OwnerEntityDisplay</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     @* Roluri *@
@@ -245,6 +258,9 @@
 
     [Parameter]
     public EventCallback<string> OnVerifyVies { get; set; }
+
+    [Parameter]
+    public string? OwnerEntityDisplay { get; set; }
 
     [Parameter]
     public bool IsLoadingAnaf { get; set; }

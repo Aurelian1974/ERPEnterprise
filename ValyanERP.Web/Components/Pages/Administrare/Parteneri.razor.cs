@@ -8,6 +8,7 @@ using ValyanERP.Web.Features.Administrare.Parteneri.Models.DTOs;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums;
 using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 using ValyanERP.Web.Features.Administrare.Parteneri.Services;
+using ValyanERP.Web.Features.Infrastructure.Security.Services;
 
 namespace ValyanERP.Web.Components.Pages.Administrare;
 
@@ -29,6 +30,9 @@ public partial class Parteneri : ComponentBase
     
     [Inject]
     private ILogger<Parteneri> Logger { get; set; } = default!;
+    
+    [Inject]
+    private IWorkingContextService WorkingContext { get; set; } = default!;
 
     // ==================== LIST STATE ====================
     
@@ -296,13 +300,25 @@ public partial class Parteneri : ComponentBase
 
     private void ShowAddPartnerDialog()
     {
+        // Get ownership context from user's selected working entity
+        var (companyId, workPlaceId, locationId) = WorkingContext.GetOwnershipContext();
+        
         partnerDialogModel = new CreatePartnerDto
         {
             Categoria = CategoriePartener.SC,
             TipEntitate = "SRL",
-            RolPartener = RolPartener.Client
+            RolPartener = RolPartener.Client,
+            // ✅ Set ownership from working context
+            OwnerCompanyId = companyId,
+            OwnerWorkPlaceId = workPlaceId,
+            OwnerLocationId = locationId
         };
         isNewPartner = true;
+        
+        // Log pentru debugging
+        Logger.LogInformation(
+            "Creating new partner with ownership: CompanyId={CompanyId}, WorkPlaceId={WorkPlaceId}, LocationId={LocationId}",
+            companyId, workPlaceId, locationId);
         
         // Resetăm starea ANAF din dialog
         anafCacheData = null;

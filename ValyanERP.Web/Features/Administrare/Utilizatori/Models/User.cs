@@ -42,6 +42,14 @@ public class User
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    
+    // Ownership - în ce entitate organizațională a fost creat userul
+    public Guid? OwnerCompanyId { get; set; }
+    public Guid? OwnerWorkPlaceId { get; set; }
+    public Guid? OwnerLocationId { get; set; }
+    
+    // View properties (populated by JOINs)
+    public string? OwnerCompanyName { get; set; }
 }
 
 public class UserCreateDto : User
@@ -51,4 +59,5 @@ public class UserCreateDto : User
     public string Password { get; set; } = string.Empty;
     
     // Note: PasswordHash inherited from base User class
+    // Note: OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId inherited from base User class
 }

@@ -1,4 +1,7 @@
 @rendermode InteractiveServer
+@using ValyanERP.Web.Features.Infrastructure.Security.Services
+@inject IWorkingContextService WorkingContext
+@inject IJSRuntime JS
 
 <aside class="@SidebarClass" id="sidebar-wrapper">
     <!-- Sidebar Header with Toggle -->
@@ -70,6 +73,12 @@
                     </span>
                     <span class="nav-text">Audit Logs</span>
                 </NavLink>
+                <NavLink class="nav-item submenu-item" href="administrare/permisiuni-organizationale">
+                    <span class="nav-icon">
+                        <i class="bi bi-diagram-3"></i>
+                    </span>
+                    <span class="nav-text">Permisiuni Organizaționale</span>
+                </NavLink>
             </div>
         </div>
 
@@ -117,6 +126,21 @@
 
     <!-- Sidebar Footer -->
     <div class="sidebar-footer">
+        @* Working Context Display *@
+        @if (WorkingContext.HasContext)
+        {
+            <div class="working-context-section">
+                <div class="working-context-icon">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <div class="working-context-details">
+                    <div class="working-context-label">Punct de lucru</div>
+                    <div class="working-context-value" title="@WorkingContext.Current.ContextSummary">
+                        @WorkingContext.Current.ContextSummary
+                    </div>
+                </div>
+            </div>
+        }
         <AuthorizeView>
             <Authorized>
                 <div class="user-info">
@@ -140,8 +164,35 @@
     private bool sidebarCollapsed = false;
     private bool administrareExpanded = true;
     private bool moduleExpanded = false;
+    private bool _contextInitialized = false;
 
     private string SidebarClass => sidebarCollapsed ? "collapsed" : "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_contextInitialized)
+        {
+            _contextInitialized = true;
+            
+            try
+            {
+                var cookieValue = await JS.InvokeAsync<string?>("getCookie", "ValyanERP.WorkingContext");
+                
+                if (!string.IsNullOrEmpty(cookieValue))
+                {
+                    var success = await WorkingContext.InitializeFromCookieAsync(cookieValue);
+                    if (success)
+                    {
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+            }
+            catch
+            {
+                // Silently ignore
+            }
+        }
+    }
 
     private void ToggleSidebar()
     {

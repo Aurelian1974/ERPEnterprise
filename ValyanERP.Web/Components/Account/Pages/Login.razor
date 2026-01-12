@@ -37,6 +37,7 @@
                     <i class="bi bi-envelope input-icon"></i>
                     <InputText id="email" 
                                @bind-Value="LoginModel!.Email" 
+                               @bind-Value:after="OnEmailChanged"
                                class="form-control-modern" 
                                placeholder="exemplu@valyanerp.ro" 
                                autocomplete="username" />
@@ -69,6 +70,42 @@
                 <ValidationMessage For="() => LoginModel!.Password" class="validation-message" />
             </div>
 
+            <!-- Entity Selection Dropdown (appears after email is validated) -->
+            @if (availableEntities.Count > 0)
+            {
+                <div class="form-group-modern">
+                    <label for="entity" class="form-label-modern">Punct de lucru</label>
+                    <div class="input-with-icon">
+                        <i class="bi bi-building input-icon"></i>
+                        <select id="entity" 
+                                @bind="selectedEntityId" 
+                                class="form-control-modern"
+                                disabled="@isLoading">
+                            <option value="">-- Selectează punctul de lucru --</option>
+                            @foreach (var entity in availableEntities)
+                            {
+                                <option value="@entity.EntityId">@entity.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                    @if (availableEntities.Count == 1)
+                    {
+                        <small class="text-muted mt-1 d-block">
+                            <i class="bi bi-info-circle me-1"></i>Aveți acces la un singur punct de lucru.
+                        </small>
+                    }
+                </div>
+            }
+            @if (isLoadingEntities)
+            {
+                <div class="form-group-modern">
+                    <div class="d-flex align-items-center text-muted">
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <small>Se încarcă punctele de lucru...</small>
+                    </div>
+                </div>
+            }
+
             <!-- Remember Me & Forgot Password Row -->
             <div class="remember-forgot-row">
                 <label class="remember-me-label">
@@ -81,7 +118,7 @@
             </div>
 
             <!-- Login Button with Loading State -->
-            <button type="submit" class="btn-login-modern" disabled="@isLoading">
+            <button type="submit" class="btn-login-modern" disabled="@(isLoading || (availableEntities.Count > 0 && string.IsNullOrEmpty(selectedEntityId)))">
                 @if (isLoading)
                 {
                     <span class="btn-content">

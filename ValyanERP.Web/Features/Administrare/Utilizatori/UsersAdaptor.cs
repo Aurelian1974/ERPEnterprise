@@ -132,6 +132,8 @@ public class UsersAdaptor : DataAdaptor
 
     /// <summary>
     /// Inserts a new user record.
+    /// NOTE: Normal user creation with password is handled in Utilizatori.razor.cs ActionBeginHandler
+    /// This method is a fallback with default password for edge cases.
     /// </summary>
     public override async Task<object> InsertAsync(DataManager dataManager, object data, string key)
     {
@@ -145,17 +147,19 @@ public class UsersAdaptor : DataAdaptor
             }
             else if (data is User user)
             {
-                // Convert User to UserCreateDto for creation
+                // Fallback: Convert User to UserCreateDto for creation
+                // NOTE: This should rarely be called - ActionBeginHandler handles user creation with password
+                _logger.LogWarning("UsersAdaptor.InsertAsync: Creating user {UserName} via fallback (no password from UI)", user.UserName);
+                
                 var createDto = new UserCreateDto
                 {
                     PersoanaId = user.PersoanaId,
                     UserName = user.UserName,
                     Email = user.Email,
                     IsActive = user.IsActive,
-                    Password = "Parola123!" // Default password - should be changed by user
+                    Password = "Parola123!" // Default password - user must change on first login
                 };
                 
-                _logger.LogInformation("UsersAdaptor.InsertAsync: Creating user {UserName} (converted from User)", createDto.UserName);
                 await _service.CreateUserAsync(createDto);
                 return data;
             }

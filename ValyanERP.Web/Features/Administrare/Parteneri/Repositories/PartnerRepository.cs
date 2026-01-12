@@ -1,6 +1,7 @@
 // ========================================================================
 // PartnerRepository.cs - Implementare repository Partners cu Dapper
 // Vertical Slices Architecture - Features/Administrare/Parteneri
+// Includes organizational security filtering via IUserPerimeterProvider
 // ========================================================================
 
 using System.Data;
@@ -9,6 +10,8 @@ using Microsoft.Data.SqlClient;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models.DTOs;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums;
+using ValyanERP.Web.Features.Infrastructure.Security.Data;
+using ValyanERP.Web.Features.Infrastructure.Security.Services;
 using ValyanERP.Web.Infrastructure.Data;
 
 namespace ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
@@ -16,15 +19,27 @@ namespace ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 /// <summary>
 /// Repository pentru operații CRUD pe entitatea Partner.
 /// Folosește stored procedures pentru toate operațiile de acces la date.
+/// Implements organizational security filtering via IUserPerimeterProvider.
 /// </summary>
 public class PartnerRepository : IPartnerRepository
 {
     private readonly DapperContext _context;
+    private readonly ISecureConnectionFactory _secureConnectionFactory;
+    private readonly IUserPerimeterProvider _perimeterProvider;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<PartnerRepository> _logger;
 
-    public PartnerRepository(DapperContext context, ILogger<PartnerRepository> logger)
+    public PartnerRepository(
+        DapperContext context, 
+        ISecureConnectionFactory secureConnectionFactory,
+        IUserPerimeterProvider perimeterProvider,
+        ICurrentUserService currentUserService,
+        ILogger<PartnerRepository> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _secureConnectionFactory = secureConnectionFactory ?? throw new ArgumentNullException(nameof(secureConnectionFactory));
+        _perimeterProvider = perimeterProvider ?? throw new ArgumentNullException(nameof(perimeterProvider));
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -35,11 +50,53 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // Get user's perimeter for security filtering
+            var perimeter = await _perimeterProvider.GetPerimeterAsync();
+            var visibleCompanyIds = await _perimeterProvider.GetVisibleCompanyIdsAsync();
+            var visibleWorkPlaceIds = await _perimeterProvider.GetVisibleWorkPlaceIdsAsync();
+            var visibleLocationIds = await _perimeterProvider.GetVisibleLocationIdsAsync();
+            
             using var connection = _context.CreateConnection();
             
+            // Create TVP for company IDs
+            var companyTable = new DataTable();
+            companyTable.Columns.Add("Id", typeof(Guid));
+            foreach (var companyId in visibleCompanyIds)
+            {
+                companyTable.Rows.Add(companyId);
+            }
+            
+            // Create TVP for workplace IDs
+            var workPlaceTable = new DataTable();
+            workPlaceTable.Columns.Add("Id", typeof(Guid));
+            foreach (var workPlaceId in visibleWorkPlaceIds)
+            {
+                workPlaceTable.Rows.Add(workPlaceId);
+            }
+            
+            // Create TVP for location IDs
+            var locationTable = new DataTable();
+            locationTable.Columns.Add("Id", typeof(Guid));
+            foreach (var locationId in visibleLocationIds)
+            {
+                locationTable.Rows.Add(locationId);
+            }
+            
+            var parameters = new DynamicParameters();
+            parameters.Add("@Skip", skip);
+            parameters.Add("@Take", take);
+            parameters.Add("@IncludeInactive", false);
+            parameters.Add("@Categoria", null);
+            parameters.Add("@RolPartener", null);
+            parameters.Add("@TipEntitate", null);
+            parameters.Add("@HasFullAccess", perimeter.HasFullAccess);
+            parameters.Add("@VisibleCompanyIds", companyTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleLocationIds", locationTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleWorkPlaceIds", workPlaceTable.AsTableValuedParameter("GuidListType"));
+            
             using var multi = await connection.QueryMultipleAsync(
-                "sp_Partners_GetAll",
-                new { Skip = skip, Take = take },
+                "sp_Partners_GetAll_Filtered",
+                parameters,
                 commandType: CommandType.StoredProcedure);
 
             var partners = await multi.ReadAsync<PartnerListDto>();
@@ -59,12 +116,49 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // Get user's perimeter for security filtering
+            var perimeter = await _perimeterProvider.GetPerimeterAsync();
+            var visibleCompanyIds = await _perimeterProvider.GetVisibleCompanyIdsAsync();
+            var visibleWorkPlaceIds = await _perimeterProvider.GetVisibleWorkPlaceIdsAsync();
+            var visibleLocationIds = await _perimeterProvider.GetVisibleLocationIdsAsync();
+            
             using var connection = _context.CreateConnection();
             
-            // Obține partenerul principal
+            // Create TVP for company IDs
+            var companyTable = new DataTable();
+            companyTable.Columns.Add("Id", typeof(Guid));
+            foreach (var companyId in visibleCompanyIds)
+            {
+                companyTable.Rows.Add(companyId);
+            }
+            
+            // Create TVP for workplace IDs
+            var workPlaceTable = new DataTable();
+            workPlaceTable.Columns.Add("Id", typeof(Guid));
+            foreach (var workPlaceId in visibleWorkPlaceIds)
+            {
+                workPlaceTable.Rows.Add(workPlaceId);
+            }
+            
+            // Create TVP for location IDs
+            var locationTable = new DataTable();
+            locationTable.Columns.Add("Id", typeof(Guid));
+            foreach (var locationId in visibleLocationIds)
+            {
+                locationTable.Rows.Add(locationId);
+            }
+            
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+            parameters.Add("@HasFullAccess", perimeter.HasFullAccess);
+            parameters.Add("@VisibleCompanyIds", companyTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleLocationIds", locationTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleWorkPlaceIds", workPlaceTable.AsTableValuedParameter("GuidListType"));
+            
+            // Obține partenerul principal cu verificare perimetru
             var partner = await connection.QueryFirstOrDefaultAsync<Partner>(
-                "sp_Partners_GetById",
-                new { Id = id },
+                "sp_Partners_GetById_Filtered",
+                parameters,
                 commandType: CommandType.StoredProcedure);
 
             if (partner == null)
@@ -140,11 +234,50 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // Get user's perimeter for security filtering
+            var perimeter = await _perimeterProvider.GetPerimeterAsync();
+            var visibleCompanyIds = await _perimeterProvider.GetVisibleCompanyIdsAsync();
+            var visibleWorkPlaceIds = await _perimeterProvider.GetVisibleWorkPlaceIdsAsync();
+            var visibleLocationIds = await _perimeterProvider.GetVisibleLocationIdsAsync();
+            
             using var connection = _context.CreateConnection();
             
+            // Create TVP for company IDs
+            var companyTable = new DataTable();
+            companyTable.Columns.Add("Id", typeof(Guid));
+            foreach (var companyId in visibleCompanyIds)
+            {
+                companyTable.Rows.Add(companyId);
+            }
+            
+            // Create TVP for workplace IDs
+            var workPlaceTable = new DataTable();
+            workPlaceTable.Columns.Add("Id", typeof(Guid));
+            foreach (var workPlaceId in visibleWorkPlaceIds)
+            {
+                workPlaceTable.Rows.Add(workPlaceId);
+            }
+            
+            // Create TVP for location IDs
+            var locationTable = new DataTable();
+            locationTable.Columns.Add("Id", typeof(Guid));
+            foreach (var locationId in visibleLocationIds)
+            {
+                locationTable.Rows.Add(locationId);
+            }
+            
+            var parameters = new DynamicParameters();
+            parameters.Add("@SearchTerm", searchTerm);
+            parameters.Add("@Skip", skip);
+            parameters.Add("@Take", take);
+            parameters.Add("@HasFullAccess", perimeter.HasFullAccess);
+            parameters.Add("@VisibleCompanyIds", companyTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleLocationIds", locationTable.AsTableValuedParameter("GuidListType"));
+            parameters.Add("@VisibleWorkPlaceIds", workPlaceTable.AsTableValuedParameter("GuidListType"));
+            
             using var multi = await connection.QueryMultipleAsync(
-                "sp_Partners_Search",
-                new { SearchTerm = searchTerm, Skip = skip, Take = take },
+                "sp_Partners_Search_Filtered",
+                parameters,
                 commandType: CommandType.StoredProcedure);
 
             var partners = await multi.ReadAsync<PartnerListDto>();
@@ -164,6 +297,22 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Verify user has write access to target company
+            // ═══════════════════════════════════════════════════════════════
+            if (dto.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(dto.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to create Partner in company {CompanyId}",
+                        _currentUserService.UserId, dto.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru compania selectată.");
+                }
+            }
+            
             using var connection = _context.CreateConnection();
             
             var parameters = new DynamicParameters();
@@ -196,6 +345,11 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@CategorieComercialaTxt", (string?)null);
             parameters.Add("@Observatii", dto.Observatii);
             parameters.Add("@CreatedBy", createdBy);
+            
+            // Ownership - în ce entitate organizațională a fost creat partenerul
+            parameters.Add("@OwnerCompanyId", dto.OwnerCompanyId);
+            parameters.Add("@OwnerWorkPlaceId", dto.OwnerWorkPlaceId);
+            parameters.Add("@OwnerLocationId", dto.OwnerLocationId);
 
             // SP returnează Id și Cod
             var result = await connection.QuerySingleAsync<dynamic>(
@@ -221,6 +375,44 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Get existing partner and verify access
+            // ═══════════════════════════════════════════════════════════════
+            var existingPartner = await GetByIdAsync(dto.Id);
+            if (existingPartner == null)
+            {
+                _logger.LogWarning("Partenerul nu a fost găsit pentru actualizare. ID={Id}", dto.Id);
+                return false;
+            }
+            
+            // Check write access to current owner company
+            if (existingPartner.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(existingPartner.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to update Partner {PartnerId} owned by company {CompanyId}",
+                        _currentUserService.UserId, dto.Id, existingPartner.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru acest partener.");
+                }
+            }
+            
+            // If changing ownership, verify access to new company too
+            if (dto.OwnerCompanyId.HasValue && dto.OwnerCompanyId != existingPartner.OwnerCompanyId)
+            {
+                var canWriteNew = await _perimeterProvider.CanWriteToCompanyAsync(dto.OwnerCompanyId.Value);
+                if (!canWriteNew)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to transfer Partner {PartnerId} to company {CompanyId}",
+                        _currentUserService.UserId, dto.Id, dto.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru compania destinație.");
+                }
+            }
+            
             using var connection = _context.CreateConnection();
             
             var parameters = new DynamicParameters();
@@ -259,6 +451,11 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@CategorieComercialaTxt", (string?)null); // Column renamed, pass null for now
             parameters.Add("@Observatii", dto.Observatii);
             parameters.Add("@UpdatedBy", updatedBy);
+            
+            // Ownership - în ce entitate organizațională aparține partenerul
+            parameters.Add("@OwnerCompanyId", dto.OwnerCompanyId);
+            parameters.Add("@OwnerWorkPlaceId", dto.OwnerWorkPlaceId);
+            parameters.Add("@OwnerLocationId", dto.OwnerLocationId);
 
             var rowsAffected = await connection.ExecuteAsync(
                 "sp_Partners_Update",
@@ -274,6 +471,10 @@ public class PartnerRepository : IPartnerRepository
             _logger.LogWarning("Partenerul nu a fost găsit pentru actualizare. ID={Id}", dto.Id);
             return false;
         }
+        catch (UnauthorizedAccessException)
+        {
+            throw;
+        }
         catch (SqlException ex)
         {
             _logger.LogError(ex, "Eroare la actualizarea partenerului. ID={Id}", dto.Id);
@@ -286,6 +487,29 @@ public class PartnerRepository : IPartnerRepository
     {
         try
         {
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Get existing partner and verify write access
+            // ═══════════════════════════════════════════════════════════════
+            var existingPartner = await GetByIdAsync(id);
+            if (existingPartner == null)
+            {
+                _logger.LogWarning("Partenerul nu a fost găsit pentru ștergere. ID={Id}", id);
+                return false;
+            }
+            
+            if (existingPartner.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(existingPartner.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to delete Partner {PartnerId} owned by company {CompanyId}",
+                        _currentUserService.UserId, id, existingPartner.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de ștergere pentru acest partener.");
+                }
+            }
+            
             using var connection = _context.CreateConnection();
             
             var rowsAffected = await connection.ExecuteAsync(

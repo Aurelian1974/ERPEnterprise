@@ -10,6 +10,8 @@ using System.Security.Claims;
 using System.Text;
 using ValyanERP.Web.Features.Administrare.Persoane.Models;
 using ValyanERP.Web.Features.Infrastructure.Audit.Services;
+using ValyanERP.Web.Features.Infrastructure.Security.Data;
+using ValyanERP.Web.Features.Infrastructure.Security.Services;
 using ValyanERP.Web.Infrastructure.Data;
 
 namespace ValyanERP.Web.Features.Administrare.Persoane.Repositories;
@@ -18,10 +20,14 @@ namespace ValyanERP.Web.Features.Administrare.Persoane.Repositories;
 /// Repository for Persoane data access using stored procedures.
 /// All operations use parameterized queries to prevent SQL injection.
 /// Includes automatic audit logging for Create/Update/Delete operations.
+/// Implements organizational security filtering via IUserPerimeterProvider.
 /// </summary>
 public class PersoaneRepository : IPersoaneRepository
 {
     private readonly DapperContext _context;
+    private readonly ISecureConnectionFactory _secureConnectionFactory;
+    private readonly IUserPerimeterProvider _perimeterProvider;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<PersoaneRepository> _logger;
     private readonly IAuditService _auditService;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -29,12 +35,18 @@ public class PersoaneRepository : IPersoaneRepository
 
     public PersoaneRepository(
         DapperContext context, 
+        ISecureConnectionFactory secureConnectionFactory,
+        IUserPerimeterProvider perimeterProvider,
+        ICurrentUserService currentUserService,
         ILogger<PersoaneRepository> logger,
         IAuditService auditService,
         IHttpContextAccessor httpContextAccessor,
         AuthenticationStateProvider authStateProvider)
     {
         _context = context;
+        _secureConnectionFactory = secureConnectionFactory;
+        _perimeterProvider = perimeterProvider;
+        _currentUserService = currentUserService;
         _logger = logger;
         _auditService = auditService;
         _httpContextAccessor = httpContextAccessor;
@@ -147,10 +159,31 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Verify user has write access to target company
+            // ═══════════════════════════════════════════════════════════════
+            if (persoana.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(persoana.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to create Persoana in company {CompanyId}",
+                        _currentUserService.UserId, persoana.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru compania selectată.");
+                }
+            }
+            
             using var connection = _context.CreateConnection();
             
             if (persoana.Id == Guid.Empty) 
                 persoana.Id = Guid.NewGuid();
+            
+            // Get current user ID for CreatedBy (use security service)
+            persoana.CreatedBy = _currentUserService.UserId != Guid.Empty 
+                ? _currentUserService.UserId 
+                : await GetCurrentUserIdAsync();
             
             await connection.QueryFirstOrDefaultAsync<Persoana>(
                 "sp_Persoane_Create",
@@ -168,12 +201,22 @@ public class PersoaneRepository : IPersoaneRepository
                     persoana.Judet,
                     persoana.CodPostal,
                     persoana.Tara,
-                    persoana.IsActive
+                    persoana.IsActive,
+                    // Ownership columns
+                    persoana.OwnerCompanyId,
+                    persoana.OwnerWorkPlaceId,
+                    persoana.OwnerLocationId,
+                    persoana.CreatedBy
                 },
                 commandType: CommandType.StoredProcedure);
             
             // Auto-audit: Log Create operation
             await LogAuditAsync("Create", persoana.Id.ToString(), persoana);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Re-throw security exceptions as-is
+            throw;
         }
         catch (SqlException ex)
         {
@@ -186,8 +229,48 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            // Get old value for audit diff
+            // Get old value for audit diff AND security check
             var oldValue = await GetByIdAsync(persoana.Id);
+            
+            if (oldValue == null)
+            {
+                throw new KeyNotFoundException($"Persoana cu Id={persoana.Id} nu a fost găsită.");
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Verify user has write access to existing record's company
+            // ═══════════════════════════════════════════════════════════════
+            if (oldValue.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(oldValue.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to update Persoana {PersoanaId} owned by company {CompanyId}",
+                        _currentUserService.UserId, persoana.Id, oldValue.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru această persoană.");
+                }
+            }
+            
+            // If changing ownership to a different company, verify access to new company too
+            if (persoana.OwnerCompanyId.HasValue && persoana.OwnerCompanyId != oldValue.OwnerCompanyId)
+            {
+                var canWriteNew = await _perimeterProvider.CanWriteToCompanyAsync(persoana.OwnerCompanyId.Value);
+                if (!canWriteNew)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to transfer Persoana {PersoanaId} to company {CompanyId}",
+                        _currentUserService.UserId, persoana.Id, persoana.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de scriere pentru compania destinație.");
+                }
+            }
+            
+            // Get current user ID for UpdatedBy (use security service)
+            persoana.UpdatedBy = _currentUserService.UserId != Guid.Empty 
+                ? _currentUserService.UserId 
+                : await GetCurrentUserIdAsync();
             
             using var connection = _context.CreateConnection();
             await connection.ExecuteAsync(
@@ -206,15 +289,25 @@ public class PersoaneRepository : IPersoaneRepository
                     persoana.Judet,
                     persoana.CodPostal,
                     persoana.Tara,
-                    persoana.IsActive
+                    persoana.IsActive,
+                    // Ownership columns
+                    persoana.OwnerCompanyId,
+                    persoana.OwnerWorkPlaceId,
+                    persoana.OwnerLocationId,
+                    persoana.UpdatedBy
                 },
                 commandType: CommandType.StoredProcedure);
             
             // Auto-audit: Log Update operation with diff
-            if (oldValue != null)
-            {
-                await LogAuditAsync("Update", persoana.Id.ToString(), persoana, oldValue);
-            }
+            await LogAuditAsync("Update", persoana.Id.ToString(), persoana, oldValue);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw;
+        }
+        catch (KeyNotFoundException)
+        {
+            throw;
         }
         catch (SqlException ex)
         {
@@ -227,8 +320,29 @@ public class PersoaneRepository : IPersoaneRepository
     {
         try
         {
-            // Get entity before delete for audit
+            // Get entity before delete for audit AND security check
             var deletedValue = await GetByIdAsync(id);
+            
+            if (deletedValue == null)
+            {
+                throw new KeyNotFoundException($"Persoana cu Id={id} nu a fost găsită.");
+            }
+            
+            // ═══════════════════════════════════════════════════════════════
+            // SECURITY CHECK: Verify user has write access to record's company
+            // ═══════════════════════════════════════════════════════════════
+            if (deletedValue.OwnerCompanyId.HasValue)
+            {
+                var canWrite = await _perimeterProvider.CanWriteToCompanyAsync(deletedValue.OwnerCompanyId.Value);
+                if (!canWrite)
+                {
+                    _logger.LogWarning(
+                        "ACCESS DENIED: User {UserId} attempted to delete Persoana {PersoanaId} owned by company {CompanyId}",
+                        _currentUserService.UserId, id, deletedValue.OwnerCompanyId.Value);
+                    throw new UnauthorizedAccessException(
+                        "Nu aveți permisiune de ștergere pentru această persoană.");
+                }
+            }
             
             using var connection = _context.CreateConnection();
             // Soft delete via stored procedure
@@ -238,10 +352,15 @@ public class PersoaneRepository : IPersoaneRepository
                 commandType: CommandType.StoredProcedure);
             
             // Auto-audit: Log Delete operation
-            if (deletedValue != null)
-            {
-                await LogAuditAsync("Delete", id.ToString(), deletedValue);
-            }
+            await LogAuditAsync("Delete", id.ToString(), deletedValue);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw;
+        }
+        catch (KeyNotFoundException)
+        {
+            throw;
         }
         catch (SqlException ex)
         {

@@ -117,4 +117,21 @@ public class UpdatePartnerDto
     // Note
     [StringLength(2000)]
     public string? Observatii { get; set; }
+
+    #region Ownership - Entitatea organizațională în care a fost creat partenerul
+    /// <summary>
+    /// ID-ul societății în care a fost creat partenerul (opțional la update, doar pentru admin).
+    /// </summary>
+    public Guid? OwnerCompanyId { get; set; }
+
+    /// <summary>
+    /// ID-ul punctului de lucru în care a fost creat partenerul (opțional la update).
+    /// </summary>
+    public Guid? OwnerWorkPlaceId { get; set; }
+
+    /// <summary>
+    /// ID-ul locației în care a fost creat partenerul (opțional la update).
+    /// </summary>
+    public Guid? OwnerLocationId { get; set; }
+    #endregion
 }

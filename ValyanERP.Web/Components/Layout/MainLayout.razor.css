@@ -327,6 +327,31 @@
     color: #60a5fa;
 }
 
+/* Working Context Badge */
+.working-context-badge {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #1e40af;
+    font-weight: 500;
+    max-width: 350px;
+    overflow: hidden;
+}
+
+.working-context-badge .context-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.working-context-badge i {
+    flex-shrink: 0;
+}
+
 /* ============================================
    MAIN CONTENT
    ============================================ */
@@ -351,6 +376,68 @@
         opacity: 0;
         width: 0;
     }
+}
+
+/* Working Context Section in Sidebar */
+.working-context-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.working-context-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #93c5fd;
+    flex-shrink: 0;
+}
+
+.working-context-details {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.working-context-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.working-context-value {
+    font-size: 13px;
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar.collapsed .working-context-section {
+    padding: 8px;
+    justify-content: center;
+}
+
+.sidebar.collapsed .working-context-details {
+    display: none;
+}
+
+.sidebar.collapsed .working-context-icon {
+    width: 40px;
+    height: 40px;
 }
 
 @media (max-width: 768px) {

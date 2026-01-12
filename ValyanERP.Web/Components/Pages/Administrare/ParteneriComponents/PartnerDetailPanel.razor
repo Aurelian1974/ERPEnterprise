@@ -194,6 +194,23 @@
                                 </div>
                             </div>
                         }
+
+                        @* Înregistrat în entitate *@
+                        @if (!string.IsNullOrEmpty(Partner.OwnerEntityDisplay))
+                        {
+                            <div class="info-section owner-entity-section">
+                                <h6><i class="bi bi-building-check me-1"></i> Înregistrat în</h6>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Entitate</label>
+                                        <span class="owner-entity-badge">
+                                            <i class="bi bi-pin-map-fill me-1"></i>
+                                            @Partner.OwnerEntityDisplay
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </ContentTemplate>
             </TabItem>

@@ -220,6 +220,48 @@ public partial class Utilizatori : ComponentBase, IDisposable
                             args.Cancel = true;
                             return;
                         }
+                        
+                        // ✅ FIX: Handle new user creation with password
+                        // Grid sends User object, but we need UserCreateDto with password
+                        // Intercept new user creation and handle it manually
+                        bool isNewUser = user.Id == Guid.Empty;
+                        if (isNewUser)
+                        {
+                            Logger.LogInformation("Creating new user with password: {UserName}, HasPassword: {HasPassword}", 
+                                user.UserName, !string.IsNullOrEmpty(newUserPassword));
+                            
+                            // Create UserCreateDto with the password from the form
+                            var createDto = new UserCreateDto
+                            {
+                                PersoanaId = user.PersoanaId,
+                                UserName = user.UserName,
+                                Email = user.Email,
+                                IsActive = user.IsActive,
+                                Password = string.IsNullOrWhiteSpace(newUserPassword) 
+                                    ? "Parola123!" // Default password if not provided
+                                    : newUserPassword
+                            };
+                            
+                            // Call service directly to create user with password
+                            await UsersService.CreateUserAsync(createDto);
+                            
+                            // Cancel grid's action - we already created the user
+                            args.Cancel = true;
+                            
+                            // Show success message
+                            successMessage = "Utilizator creat cu succes!";
+                            
+                            // Reset password field
+                            newUserPassword = string.Empty;
+                            
+                            // Refresh grid to show new user
+                            if (grid != null)
+                            {
+                                await grid.Refresh();
+                            }
+                            
+                            return;
+                        }
                     }
                     break;
                     
@@ -240,8 +282,6 @@ public partial class Utilizatori : ComponentBase, IDisposable
             errorMessage = $"Eroare: {ex.Message}";
             args.Cancel = true;
         }
-
-        await Task.CompletedTask;
     }
     
     /// <summary>
