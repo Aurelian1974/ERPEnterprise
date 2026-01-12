@@ -95,11 +95,29 @@
                                     <label>CUI @if(IsCUIRequired){<span class="required">*</span>}</label>
                                     <div class="input-with-button">
                                         <SfTextBox @bind-Value="Model.CUI" Placeholder="RO12345678"></SfTextBox>
-                                        <SfButton CssClass="e-outline e-small" IconCss="bi bi-search"
-                                                  @onclick="VerifyAnaf" Disabled="@string.IsNullOrEmpty(Model.CUI)">
-                                            ANAF
-                                        </SfButton>
+                                        <button type="button" class="e-btn e-outline e-small anaf-btn"
+                                                @onclick="VerifyAnaf"
+                                                disabled="@(string.IsNullOrEmpty(Model.CUI) || IsLoadingAnaf)">
+                                            @if (IsLoadingAnaf)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                                <text>Verificare...</text>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-search me-1"></i>
+                                                <text>Preia din ANAF</text>
+                                            }
+                                        </button>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(AnafMessage))
+                                    {
+                                        <small class="text-success mt-1"><i class="bi bi-check-circle"></i> @AnafMessage</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(AnafErrorMessage))
+                                    {
+                                        <small class="text-danger mt-1"><i class="bi bi-exclamation-triangle"></i> @AnafErrorMessage</small>
+                                    }
                                 </div>
                             }
                             @if (ShowCNP)
@@ -191,7 +209,7 @@
         <FooterTemplate>
             <div class="dialog-footer">
                 <SfButton CssClass="e-flat" @onclick="Cancel">Anulează</SfButton>
-                <SfButton CssClass="e-primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+                <SfButton CssClass="e-primary" @onclick="HandleSubmit" Disabled="@(IsSubmitting || IsLoadingAnaf)">
                     @if (IsSubmitting)
                     {
                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -227,6 +245,15 @@
 
     [Parameter]
     public EventCallback<string> OnVerifyVies { get; set; }
+
+    [Parameter]
+    public bool IsLoadingAnaf { get; set; }
+
+    [Parameter]
+    public string? AnafMessage { get; set; }
+
+    [Parameter]
+    public string? AnafErrorMessage { get; set; }
 
     private bool IsSubmitting { get; set; }
     

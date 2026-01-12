@@ -7,6 +7,14 @@ using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 namespace ValyanERP.Web.Features.Administrare.Parteneri.Services;
 
 /// <summary>
+/// Excepție aruncată când CUI-ul nu este găsit în baza ANAF.
+/// </summary>
+public class CuiNotFoundException : Exception
+{
+    public CuiNotFoundException(string message) : base(message) { }
+}
+
+/// <summary>
 /// Implementare serviciu verificare ANAF.
 /// API v9: https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva
 /// Documentație oficială ANAF - API sincron pentru verificare TVA.
@@ -83,6 +91,12 @@ public class AnafVerificationService : IAnafVerificationService
             _logger.LogInformation("ANAF verificare reușită pentru CUI={CUI}", cui);
             return AnafVerificationResult.Ok(apiResult, AnafDataSource.Api);
         }
+        catch (CuiNotFoundException ex)
+        {
+            // CUI-ul nu există în baza ANAF - mesaj clar pentru utilizator
+            _logger.LogWarning("CUI negăsit în ANAF: {Message}", ex.Message);
+            return AnafVerificationResult.Fail(cui, ex.Message);
+        }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Eroare conexiune ANAF pentru CUI={CUI}", cui);
@@ -131,9 +145,16 @@ public class AnafVerificationService : IAnafVerificationService
                     updatedBy
                 );
 
+                // Actualizează/creează adresa de tip Sediu din ANAF
+                var addressId = await _partnerRepository.UpsertSediuAddressFromAnafAsync(
+                    partnerId,
+                    result.Data,
+                    updatedBy
+                );
+
                 _logger.LogInformation(
-                    "Partner {PartnerId} actualizat din ANAF. Denumire={Denumire}, TVA={TVA}, Inactiv={Inactiv}",
-                    partnerId, result.Data.Denumire, result.Data.ScpTVA, result.Data.StatusInactivi);
+                    "Partner {PartnerId} actualizat din ANAF. Denumire={Denumire}, TVA={TVA}, Inactiv={Inactiv}, AdresaUpdated={AdresaUpdated}",
+                    partnerId, result.Data.Denumire, result.Data.ScpTVA, result.Data.StatusInactivi, addressId != null);
             }
 
             return result;
@@ -236,15 +257,42 @@ public class AnafVerificationService : IAnafVerificationService
         _logger.LogInformation("ANAF API v9 POST: {Url} for CUI={CUI}", fullUrl, cui);
         
         var response = await _httpClient.PostAsJsonAsync(fullUrl, request);
+        var responseContent = await response.Content.ReadAsStringAsync();
         
+        // ANAF returnează HTTP 404 când CUI-ul nu este găsit, dar body-ul conține JSON valid cu notFound
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogError("ANAF API returned {StatusCode}: {Content}", response.StatusCode, errorContent);
+            // Verificăm dacă este cazul "CUI negăsit" (HTTP 404 cu notFound în body)
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound && !string.IsNullOrEmpty(responseContent))
+            {
+                try
+                {
+                    var notFoundResponse = JsonSerializer.Deserialize<AnafResponse>(responseContent, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    
+                    if (notFoundResponse?.Notfound != null && notFoundResponse.Notfound.Count > 0)
+                    {
+                        _logger.LogInformation("ANAF: CUI={CUI} nu a fost găsit în baza ANAF (notFound)", cui);
+                        // Returnăm null cu un semnal special că CUI-ul nu există
+                        throw new CuiNotFoundException($"Nu a fost găsită nicio societate cu CUI: {cui}");
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Nu este JSON valid, continuă cu eroarea standard
+                }
+                catch (CuiNotFoundException)
+                {
+                    throw; // Re-aruncă excepția CuiNotFoundException
+                }
+            }
+            
+            _logger.LogError("ANAF API returned {StatusCode}: {Content}", response.StatusCode, responseContent);
             throw new HttpRequestException($"ANAF API a returnat eroare {(int)response.StatusCode}. Serviciul ANAF poate fi temporar indisponibil.");
         }
 
-        var responseContent = await response.Content.ReadAsStringAsync();
         _logger.LogDebug("ANAF Response: {Response}", responseContent);
         
         var anafResponse = JsonSerializer.Deserialize<AnafResponse>(responseContent, new JsonSerializerOptions
@@ -350,10 +398,10 @@ public class AnafVerificationService : IAnafVerificationService
         // Marchează cele negăsite
         if (anafResponse?.Notfound != null)
         {
-            foreach (var notfound in anafResponse.Notfound)
+            foreach (var notfoundCui in anafResponse.Notfound)
             {
-                var cui = notfound.Cui?.ToString() ?? string.Empty;
-                results[cui] = AnafVerificationResult.Fail(cui, "CUI negăsit în baza ANAF.");
+                var cui = notfoundCui.ToString();
+                results[cui] = AnafVerificationResult.Fail(cui, $"Nu a fost găsită nicio societate cu CUI: {cui}");
             }
         }
 
@@ -372,6 +420,7 @@ public class AnafVerificationService : IAnafVerificationService
         var tva = item.InregistrareScopTva;
         var split = item.InregistrareSplitTva;
         var inactiv = item.StareInactiv;
+        var sediu = item.AdresaSediuSocial;
 
         // Data înregistrare TVA vine din prima perioadă TVA
         var primaPerioada = tva?.PerioadeTVA?.FirstOrDefault();
@@ -386,6 +435,16 @@ public class AnafVerificationService : IAnafVerificationService
             CodPostal = dg.CodPostal,
             Telefon = dg.Telefon,
             Fax = dg.Fax,
+
+            // Adresa sediu social (structurată)
+            SediuLocalitate = sediu?.DenumireLocalitate,
+            SediuStrada = sediu?.DenumireStrada,
+            SediuNumar = sediu?.NumarStrada,
+            SediuJudet = sediu?.DenumireJudet,
+            SediuCodJudetAuto = sediu?.CodJudetAuto,
+            SediuDetalii = sediu?.DetaliiAdresa,
+            SediuCodPostal = sediu?.CodPostal,
+            SediuTara = string.IsNullOrWhiteSpace(sediu?.Tara) ? "România" : sediu.Tara,
 
             // Status TVA - data înregistrare din prima perioadă
             ScpTVA = tva?.ScpTVA ?? false,
@@ -458,8 +517,8 @@ internal class AnafResponse
     [JsonPropertyName("found")]
     public List<AnafFoundItem>? Found { get; set; }
 
-    [JsonPropertyName("notfound")]
-    public List<AnafNotFoundItem>? Notfound { get; set; }
+    [JsonPropertyName("notFound")]
+    public List<long>? Notfound { get; set; }
 }
 
 /// <summary>Element găsit în răspunsul ANAF.</summary>
@@ -485,6 +544,12 @@ internal class AnafFoundItem
 
     [JsonPropertyName("stare_insolventa")]
     public AnafInsolventaInfo? StareInsolventa { get; set; }
+
+    [JsonPropertyName("adresa_sediu_social")]
+    public AnafAdresaSediuSocial? AdresaSediuSocial { get; set; }
+
+    [JsonPropertyName("adresa_domiciliu_fiscal")]
+    public AnafAdresaDomiciliuFiscal? AdresaDomiciliuFiscal { get; set; }
 }
 
 /// <summary>Element negăsit.</summary>
@@ -665,6 +730,74 @@ internal class AnafInsolventaInfo
 
     [JsonPropertyName("dataInsolventa")]
     public string? DataInsolventa { get; set; }
+}
+
+/// <summary>Adresa sediu social din răspunsul ANAF.</summary>
+internal class AnafAdresaSediuSocial
+{
+    [JsonPropertyName("sdenumire_Localitate")]
+    public string? DenumireLocalitate { get; set; }
+
+    [JsonPropertyName("sdenumire_Strada")]
+    public string? DenumireStrada { get; set; }
+
+    [JsonPropertyName("snumar_Strada")]
+    public string? NumarStrada { get; set; }
+
+    [JsonPropertyName("scod_Localitate")]
+    public string? CodLocalitate { get; set; }
+
+    [JsonPropertyName("sdenumire_Judet")]
+    public string? DenumireJudet { get; set; }
+
+    [JsonPropertyName("scod_Judet")]
+    public string? CodJudet { get; set; }
+
+    [JsonPropertyName("scod_JudetAuto")]
+    public string? CodJudetAuto { get; set; }
+
+    [JsonPropertyName("sdetalii_Adresa")]
+    public string? DetaliiAdresa { get; set; }
+
+    [JsonPropertyName("scod_Postal")]
+    public string? CodPostal { get; set; }
+
+    [JsonPropertyName("stara")]
+    public string? Tara { get; set; }
+}
+
+/// <summary>Adresa domiciliu fiscal din răspunsul ANAF.</summary>
+internal class AnafAdresaDomiciliuFiscal
+{
+    [JsonPropertyName("ddenumire_Localitate")]
+    public string? DenumireLocalitate { get; set; }
+
+    [JsonPropertyName("ddenumire_Strada")]
+    public string? DenumireStrada { get; set; }
+
+    [JsonPropertyName("dnumar_Strada")]
+    public string? NumarStrada { get; set; }
+
+    [JsonPropertyName("dcod_Localitate")]
+    public string? CodLocalitate { get; set; }
+
+    [JsonPropertyName("ddenumire_Judet")]
+    public string? DenumireJudet { get; set; }
+
+    [JsonPropertyName("dcod_Judet")]
+    public string? CodJudet { get; set; }
+
+    [JsonPropertyName("dcod_JudetAuto")]
+    public string? CodJudetAuto { get; set; }
+
+    [JsonPropertyName("ddetalii_Adresa")]
+    public string? DetaliiAdresa { get; set; }
+
+    [JsonPropertyName("dcod_Postal")]
+    public string? CodPostal { get; set; }
+
+    [JsonPropertyName("dtara")]
+    public string? Tara { get; set; }
 }
 
 #endregion

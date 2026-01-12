@@ -290,7 +290,7 @@ public class PartnerRepository : IPartnerRepository
             
             var rowsAffected = await connection.ExecuteAsync(
                 "sp_Partners_Delete",
-                new { Id = id, DeletedBy = deletedBy },
+                new { Id = id, UpdatedBy = deletedBy },
                 commandType: CommandType.StoredProcedure);
 
             if (rowsAffected > 0)
@@ -378,6 +378,65 @@ public class PartnerRepository : IPartnerRepository
         catch (SqlException ex)
         {
             _logger.LogError(ex, "Eroare la actualizarea partenerului din ANAF. ID={Id}", id);
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Guid?> UpsertSediuAddressFromAnafAsync(Guid partnerId, AnafVerificationCache anafData, Guid? updatedBy)
+    {
+        try
+        {
+            // Verifică dacă avem date pentru adresa sediu
+            if (string.IsNullOrWhiteSpace(anafData.SediuStrada) && 
+                string.IsNullOrWhiteSpace(anafData.SediuLocalitate))
+            {
+                _logger.LogDebug("Nu există date pentru adresa sediu din ANAF pentru PartnerId={PartnerId}", partnerId);
+                return null;
+            }
+
+            // Construiește adresa completă
+            var adresaParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(anafData.SediuStrada))
+                adresaParts.Add(anafData.SediuStrada);
+            if (!string.IsNullOrWhiteSpace(anafData.SediuNumar))
+                adresaParts.Add($"Nr. {anafData.SediuNumar}");
+            if (!string.IsNullOrWhiteSpace(anafData.SediuDetalii))
+                adresaParts.Add(anafData.SediuDetalii);
+            
+            var adresaCompleta = string.Join(", ", adresaParts);
+
+            using var connection = _context.CreateConnection();
+            
+            var result = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                "sp_PartnerAddresses_UpsertFromAnaf",
+                new 
+                { 
+                    PartnerId = partnerId,
+                    Adresa = adresaCompleta,
+                    Localitate = anafData.SediuLocalitate ?? string.Empty,
+                    Judet = anafData.SediuJudet ?? string.Empty,
+                    CodPostal = anafData.SediuCodPostal,
+                    Tara = anafData.SediuTara ?? "România",
+                    UpdatedBy = updatedBy
+                },
+                commandType: CommandType.StoredProcedure);
+
+            if (result != null)
+            {
+                var addressId = (Guid)result.Id;
+                var operation = (string)result.Operation;
+                _logger.LogInformation(
+                    "Adresa sediu {Operation} din ANAF. PartnerId={PartnerId}, AddressId={AddressId}, Adresa={Adresa}", 
+                    operation, partnerId, addressId, adresaCompleta);
+                return addressId;
+            }
+
+            return null;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "Eroare la upsert adresă sediu din ANAF. PartnerId={PartnerId}", partnerId);
             throw;
         }
     }

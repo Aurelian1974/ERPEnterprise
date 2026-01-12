@@ -208,7 +208,10 @@
                IsEdit="@(!isNewPartner)"
                Model="@partnerDialogModel"
                OnSave="OnPartnerSaved"
-               OnVerifyAnaf="OnVerifyAnafFromDialog" />
+               OnVerifyAnaf="OnVerifyAnafFromDialog"
+               IsLoadingAnaf="@isLoadingAnafInDialog"
+               AnafMessage="@anafDialogMessage"
+               AnafErrorMessage="@anafDialogErrorMessage" />
 
 <PartnerAddressDialog @bind-IsVisible="addressDialogVisible"
                       IsEdit="@(editingAddress?.Id != Guid.Empty)"
@@ -246,10 +249,13 @@
                    DataSource="@anafDataSource"
                    ErpDenumire="@anafErpDenumire"
                    ErpAdresa="@anafErpAdresa"
+                   ErpLocalitate="@anafErpLocalitate"
+                   ErpJudet="@anafErpJudet"
                    ErpRegCom="@anafErpRegCom"
                    ErpTelefon="@anafErpTelefon"
                    ErpPlatitorTVA="@anafErpPlatitorTVA"
                    ErpDataTVA="@anafErpDataTVA"
                    ErpSplitTVA="@anafErpSplitTVA"
                    ErpInactiv="@anafErpInactiv"
-                   OnApplyData="ApplyAnafDataToPartner" />
+                   OnApplyData="ApplyAnafDataToPartner"
+                   OnRefresh="RefreshAnafData" />

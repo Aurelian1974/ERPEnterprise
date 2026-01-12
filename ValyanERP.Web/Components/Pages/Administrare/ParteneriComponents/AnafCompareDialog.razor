@@ -82,11 +82,25 @@
                                     <td>@(AnafData.Denumire ?? "-")</td>
                                 </tr>
                                 
-                                @* Adresă *@
-                                <tr class="@GetRowClass(ErpAdresa, AnafData.Adresa)">
-                                    <td><strong>Adresă</strong></td>
+                                @* Adresă Sediu Social (structurată) *@
+                                <tr class="@GetRowClass(ErpAdresa, FormatAnafAddress())">
+                                    <td><strong>Adresă Sediu</strong></td>
                                     <td class="text-wrap">@(ErpAdresa ?? "-")</td>
-                                    <td class="text-wrap">@(AnafData.Adresa ?? "-")</td>
+                                    <td class="text-wrap">@(FormatAnafAddress())</td>
+                                </tr>
+                                
+                                @* Localitate *@
+                                <tr class="@GetRowClass(ErpLocalitate, AnafData.SediuLocalitate)">
+                                    <td><strong>Localitate</strong></td>
+                                    <td>@(ErpLocalitate ?? "-")</td>
+                                    <td>@(AnafData.SediuLocalitate ?? "-")</td>
+                                </tr>
+                                
+                                @* Județ *@
+                                <tr class="@GetRowClass(ErpJudet, AnafData.SediuJudet)">
+                                    <td><strong>Județ</strong></td>
+                                    <td>@(ErpJudet ?? "-")</td>
+                                    <td>@(AnafData.SediuJudet ?? "-")</td>
                                 </tr>
                                 
                                 @* Nr. Reg. Com. *@
@@ -236,6 +250,8 @@
     <DialogButtons>
         @if (!IsLoading && AnafData != null)
         {
+            <DialogButton Content="Reîncarcă din ANAF" CssClass="e-flat" IconCss="bi bi-arrow-clockwise"
+                          OnClick="@RefreshFromAnaf" />
             <DialogButton Content="Actualizează din ANAF" CssClass="e-primary" IsPrimary="true" 
                           OnClick="@ApplyAnafData" Disabled="@(!HasDifferences)" />
         }
@@ -256,6 +272,8 @@
     // Date din ERP pentru comparare
     [Parameter] public string? ErpDenumire { get; set; }
     [Parameter] public string? ErpAdresa { get; set; }
+    [Parameter] public string? ErpLocalitate { get; set; }
+    [Parameter] public string? ErpJudet { get; set; }
     [Parameter] public string? ErpRegCom { get; set; }
     [Parameter] public string? ErpTelefon { get; set; }
     [Parameter] public bool ErpPlatitorTVA { get; set; }
@@ -267,10 +285,13 @@
     [Parameter] public string? DataSource { get; set; }
     
     [Parameter] public EventCallback OnApplyData { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
 
     private bool HasDifferences => AnafData != null && (
         !StringEquals(ErpDenumire, AnafData.Denumire) ||
         !StringEquals(ErpRegCom, AnafData.NrRegCom) ||
+        !StringEquals(ErpLocalitate, AnafData.SediuLocalitate) ||
+        !StringEquals(ErpJudet, AnafData.SediuJudet) ||
         ErpPlatitorTVA != AnafData.ScpTVA ||
         ErpSplitTVA != AnafData.StatusSplitTVA ||
         ErpInactiv != AnafData.StatusInactivi
@@ -304,9 +325,32 @@
         return string.Equals(a?.Trim(), b?.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Formatează adresa sediu social din datele ANAF structurate.
+    /// </summary>
+    private string FormatAnafAddress()
+    {
+        if (AnafData == null) return "-";
+        
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(AnafData.SediuStrada))
+            parts.Add(AnafData.SediuStrada);
+        if (!string.IsNullOrWhiteSpace(AnafData.SediuNumar))
+            parts.Add($"Nr. {AnafData.SediuNumar}");
+        if (!string.IsNullOrWhiteSpace(AnafData.SediuDetalii))
+            parts.Add(AnafData.SediuDetalii);
+        
+        return parts.Count > 0 ? string.Join(", ", parts) : (AnafData.Adresa ?? "-");
+    }
+
     private async Task ApplyAnafData()
     {
         await OnApplyData.InvokeAsync();
+    }
+
+    private async Task RefreshFromAnaf()
+    {
+        await OnRefresh.InvokeAsync();
     }
 
     private async Task Close()

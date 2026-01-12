@@ -102,6 +102,15 @@ public interface IPartnerRepository
     Task<bool> UpdateFromAnafAsync(Guid id, AnafVerificationCache anafData, Guid? updatedBy);
 
     /// <summary>
+    /// Inserează sau actualizează adresa de tip Sediu din datele ANAF.
+    /// </summary>
+    /// <param name="partnerId">ID-ul partenerului</param>
+    /// <param name="anafData">Datele din cache-ul ANAF (cu adresa sediu)</param>
+    /// <param name="updatedBy">Utilizatorul care a făcut actualizarea</param>
+    /// <returns>ID-ul adresei (nouă sau existentă)</returns>
+    Task<Guid?> UpsertSediuAddressFromAnafAsync(Guid partnerId, AnafVerificationCache anafData, Guid? updatedBy);
+
+    /// <summary>
     /// Setează adresa principală pentru un partener.
     /// </summary>
     /// <param name="partnerId">ID-ul partenerului</param>

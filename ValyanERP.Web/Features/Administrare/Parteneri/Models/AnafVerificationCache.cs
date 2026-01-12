@@ -26,6 +26,34 @@ public class AnafVerificationCache
     /// <summary>Telefon.</summary>
     public string? Telefon { get; set; }
 
+    #region Adresa Sediu Social
+
+    /// <summary>Denumirea localității (din adresa_sediu_social).</summary>
+    public string? SediuLocalitate { get; set; }
+
+    /// <summary>Denumirea străzii.</summary>
+    public string? SediuStrada { get; set; }
+
+    /// <summary>Numărul străzii.</summary>
+    public string? SediuNumar { get; set; }
+
+    /// <summary>Denumirea județului.</summary>
+    public string? SediuJudet { get; set; }
+
+    /// <summary>Codul județului auto (B, CJ, etc.).</summary>
+    public string? SediuCodJudetAuto { get; set; }
+
+    /// <summary>Detalii adresă (bloc, scara, ap, etc.).</summary>
+    public string? SediuDetalii { get; set; }
+
+    /// <summary>Codul poștal sediu.</summary>
+    public string? SediuCodPostal { get; set; }
+
+    /// <summary>Țara sediu.</summary>
+    public string? SediuTara { get; set; }
+
+    #endregion
+
     /// <summary>Fax.</summary>
     public string? Fax { get; set; }
 

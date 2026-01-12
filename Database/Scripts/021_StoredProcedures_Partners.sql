@@ -63,7 +63,7 @@ BEGIN
         Telefon,
         Website,
         TaraOrigine,
-        [EstePlătitorTVA] AS EstePlatitorTVA,
+        EstePlatitorTVA,
         EsteActiv,
         EsteVerificat,
         AnafStatus,
@@ -72,7 +72,7 @@ BEGIN
         BlocatLivrare,
         LimitaCredit,
         TermenPlataDef,
-        [CategorieComercială] AS CategorieComercială,
+        CategorieComercialaTxt AS CategorieComercială,
         CodPartenerSAFT,
         TipPartenerSAFT,
         AdresaPrincipala,
@@ -93,7 +93,7 @@ BEGIN
       AND (@Categoria IS NULL OR Categoria = @Categoria)
       AND (@RolPartener IS NULL OR (RolPartener & @RolPartener) = @RolPartener)
       AND (@TipEntitate IS NULL OR TipEntitate = @TipEntitate)
-    ORDER BY DenumireAfisare
+    ORDER BY CreatedAt DESC
     OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;
     
     -- Return total count as second result set
@@ -206,7 +206,7 @@ BEGIN
         Telefon,
         Website,
         TaraOrigine,
-        [EstePlătitorTVA] AS EstePlatitorTVA,
+        EstePlatitorTVA,
         EsteActiv,
         EsteVerificat,
         AnafStatus,
@@ -215,7 +215,7 @@ BEGIN
         BlocatLivrare,
         LimitaCredit,
         TermenPlataDef,
-        [CategorieComercială] AS CategorieComercială,
+        CategorieComercialaTxt AS CategorieComercială,
         CodPartenerSAFT,
         TipPartenerSAFT,
         AdresaPrincipala,
@@ -241,7 +241,7 @@ BEGIN
           OR Email LIKE '%' + @SearchTerm + '%'
           OR Telefon LIKE '%' + @SearchTerm + '%'
       )
-    ORDER BY DenumireAfisare
+    ORDER BY CreatedAt DESC
     OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;
     
     -- Return total count as second result set
@@ -836,6 +836,77 @@ END;
 GO
 
 PRINT '✅ sp_PartnerAddresses_Delete creat';
+GO
+
+-- sp_PartnerAddresses_UpsertFromAnaf
+-- Inserează sau actualizează adresa de tip Sediu din ANAF
+IF OBJECT_ID('dbo.sp_PartnerAddresses_UpsertFromAnaf', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_PartnerAddresses_UpsertFromAnaf;
+GO
+
+CREATE PROCEDURE dbo.sp_PartnerAddresses_UpsertFromAnaf
+    @PartnerId UNIQUEIDENTIFIER,
+    @Adresa NVARCHAR(500),
+    @Localitate NVARCHAR(100),
+    @Judet NVARCHAR(50),
+    @CodPostal NVARCHAR(10) = NULL,
+    @Tara NVARCHAR(50) = N'România',
+    @UpdatedBy UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @ExistingId UNIQUEIDENTIFIER;
+    DECLARE @TipSediu TINYINT = 0; -- TipAdresa.Sediu = 0
+    
+    -- Caută adresa de tip Sediu existentă
+    SELECT TOP 1 @ExistingId = Id 
+    FROM PartnerAddresses 
+    WHERE PartnerId = @PartnerId 
+      AND TipAdresa = @TipSediu 
+      AND IsActive = 1;
+    
+    IF @ExistingId IS NOT NULL
+    BEGIN
+        -- UPDATE adresa existentă
+        UPDATE PartnerAddresses SET
+            Adresa = @Adresa,
+            Localitate = @Localitate,
+            Judet = @Judet,
+            CodPostal = @CodPostal,
+            Tara = @Tara,
+            Denumire = N'Sediu Social (ANAF)',
+            UpdatedAt = GETDATE(),
+            UpdatedBy = @UpdatedBy
+        WHERE Id = @ExistingId;
+        
+        SELECT @ExistingId AS Id, 'UPDATE' AS Operation;
+    END
+    ELSE
+    BEGIN
+        -- INSERT adresa nouă
+        DECLARE @NewId UNIQUEIDENTIFIER = NEWID();
+        
+        INSERT INTO PartnerAddresses (
+            Id, PartnerId, TipAdresa, Denumire,
+            Adresa, Localitate, Judet, CodPostal, Tara, CodTaraISO,
+            EstePrincipala, IsActive, CreatedBy
+        )
+        VALUES (
+            @NewId, @PartnerId, @TipSediu, N'Sediu Social (ANAF)',
+            @Adresa, @Localitate, @Judet, @CodPostal, @Tara, N'RO',
+            1, 1, @UpdatedBy
+        );
+        
+        -- Setează ca adresă principală dacă e prima
+        UPDATE Partners SET AdresaPrincipalaId = @NewId 
+        WHERE Id = @PartnerId AND AdresaPrincipalaId IS NULL;
+        
+        SELECT @NewId AS Id, 'INSERT' AS Operation;
+    END
+END;
+GO
+
+PRINT '✅ sp_PartnerAddresses_UpsertFromAnaf creat';
 GO
 
 -- =============================================
