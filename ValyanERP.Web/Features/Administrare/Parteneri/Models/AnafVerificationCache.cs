@@ -80,10 +80,20 @@ public class AnafVerificationCache
     #region RO e-Factura
 
     /// <summary>Înregistrat în RO e-Factura.</summary>
-    public bool StatusRoEFactura { get; set; }
+    public bool StatusRoEfactura { get; set; }
 
     /// <summary>Data începerii RO e-Factura.</summary>
-    public DateTime? DataInceputRoEFactura { get; set; }
+    public DateTime? DataInceputRoEfactura { get; set; }
+
+    #endregion
+
+    #region Insolvență
+
+    /// <summary>Este în procedură de insolvență.</summary>
+    public bool StatusInsolventa { get; set; }
+
+    /// <summary>Data declarării insolvenței.</summary>
+    public DateTime? DataInsolventa { get; set; }
 
     #endregion
 
@@ -105,6 +115,9 @@ public class AnafVerificationCache
     /// <summary>ID utilizator care a creat.</summary>
     public Guid? CreatedBy { get; set; }
 
+    /// <summary>Data creării înregistrării în cache.</summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     /// <summary>Cache-ul este valid.</summary>
     public bool IsValid => ExpiresAt > DateTime.Now;
 
@@ -113,6 +126,7 @@ public class AnafVerificationCache
     {
         get
         {
+            if (StatusInsolventa) return "ÎN INSOLVENȚĂ";
             if (StatusInactivi) return "INACTIV FISCAL";
             if (!ScpTVA) return "Neplătitor TVA";
             if (StatusSplitTVA) return "Plătitor TVA (Split)";

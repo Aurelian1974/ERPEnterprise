@@ -115,6 +115,13 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie
 
 // Partners (Business Partners Management)
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Parteneri.Repositories.IPartnerRepository, ValyanERP.Web.Features.Administrare.Parteneri.Repositories.PartnerRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Parteneri.Services.IAnafVerificationService, ValyanERP.Web.Features.Administrare.Parteneri.Services.AnafVerificationService>();
+
+// HttpClient for ANAF API
+builder.Services.AddHttpClient<ValyanERP.Web.Features.Administrare.Parteneri.Services.IAnafVerificationService, ValyanERP.Web.Features.Administrare.Parteneri.Services.AnafVerificationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 // DataGrid Operations Service (server-side grouping, sorting, filtering)
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.DataGrid.IDataGridOperationsService, ValyanERP.Web.Features.Infrastructure.DataGrid.DataGridOperationsService>();

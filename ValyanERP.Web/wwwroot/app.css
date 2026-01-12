@@ -628,6 +628,16 @@ p {
     color: var(--primary-color);
 }
 
+/* Spin animation for icons */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* Selection */
 ::selection {
     background: var(--primary-light);

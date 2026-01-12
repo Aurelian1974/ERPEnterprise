@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Net.Http;
 using System.Security.Claims;
+using Syncfusion.Blazor.Inputs;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models.DTOs;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums;
 using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
+using ValyanERP.Web.Features.Administrare.Parteneri.Services;
 
 namespace ValyanERP.Web.Components.Pages.Administrare;
 
@@ -17,6 +20,9 @@ public partial class Parteneri : ComponentBase
     
     [Inject]
     private IPartnerRepository PartnerRepository { get; set; } = default!;
+    
+    [Inject]
+    private IAnafVerificationService AnafService { get; set; } = default!;
     
     [Inject]
     private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
@@ -77,6 +83,28 @@ public partial class Parteneri : ComponentBase
     private string confirmDialogTitle = string.Empty;
     private string confirmDialogMessage = string.Empty;
     private Func<Task>? pendingConfirmAction;
+    
+    // ==================== ANAF COMPARE DIALOG STATE ====================
+    
+    private bool anafCompareDialogVisible;
+    private bool isVerifyingAnaf;
+    private string? anafErrorMessage;
+    private AnafVerificationCache? anafCacheData;
+    private string anafVerifyCUI = string.Empty;
+    private string anafDataSource = "ANAF";
+    
+    // Date ERP pentru comparare
+    private string anafErpDenumire = string.Empty;
+    private string anafErpAdresa = string.Empty;
+    private string anafErpRegCom = string.Empty;
+    private string anafErpTelefon = string.Empty;
+    private bool anafErpPlatitorTVA;
+    private DateTime? anafErpDataTVA;
+    private bool anafErpSplitTVA;
+    private bool anafErpInactiv;
+    
+    // ID-ul partenerului pentru actualizare
+    private Guid anafPartnerIdToUpdate;
     
     // ==================== CURRENT USER ====================
     
@@ -186,19 +214,25 @@ public partial class Parteneri : ComponentBase
 
     private System.Timers.Timer? searchDebounceTimer;
 
-    private void OnSearchChanged(ChangeEventArgs e)
+    private void OnSearchInput(InputEventArgs args)
     {
+        // Update searchTerm immediately from input (real-time, case-insensitive handled by SQL)
+        searchTerm = args.Value ?? string.Empty;
+        
+        // Cancel previous timer
         searchDebounceTimer?.Stop();
         searchDebounceTimer?.Dispose();
         
+        // Debounce: wait 300ms after user stops typing
         searchDebounceTimer = new System.Timers.Timer(300);
-        searchDebounceTimer.Elapsed += async (s, args) =>
+        searchDebounceTimer.AutoReset = false;
+        searchDebounceTimer.Elapsed += async (s, timerArgs) =>
         {
-            searchDebounceTimer?.Stop();
             await InvokeAsync(async () =>
             {
                 currentPage = 1;
                 await LoadPartnersAsync();
+                StateHasChanged();
             });
         };
         searchDebounceTimer.Start();
@@ -206,8 +240,10 @@ public partial class Parteneri : ComponentBase
 
     private async Task OnSearchValueChanged(Syncfusion.Blazor.Inputs.ChangedEventArgs args)
     {
+        // Handle clear button click or blur event
         if (string.IsNullOrEmpty(args.Value))
         {
+            searchTerm = string.Empty;
             currentPage = 1;
             await LoadPartnersAsync();
         }
@@ -367,16 +403,195 @@ public partial class Parteneri : ComponentBase
 
     // ==================== ANAF VERIFICATION ====================
 
+    private AnafVerificationResult? anafResult;
+
+    /// <summary>
+    /// Verifică partenerul selectat la ANAF și afișează dialogul de comparare.
+    /// </summary>
     private async Task VerifyAnaf()
     {
-        if (selectedPartnerDetails == null || string.IsNullOrEmpty(selectedPartnerDetails.CUI))
+        if (selectedPartnerDetails == null)
         {
-            errorMessage = "Partenerul nu are CUI pentru verificare ANAF.";
+            errorMessage = "Selectați un partener pentru verificare.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var cui = selectedPartnerDetails.CUI ?? selectedPartnerDetails.CIF;
+        if (string.IsNullOrWhiteSpace(cui))
+        {
+            errorMessage = "Partenerul nu are CUI/CIF pentru verificare ANAF.";
+            await InvokeAsync(StateHasChanged);
             return;
         }
         
-        // TODO: Implementare serviciu ANAF în FAZA 4
-        successMessage = "Verificarea ANAF va fi implementată în faza următoare.";
+        // Pregătește dialogul de comparare
+        await PrepareAnafCompareDialogAsync(selectedPartnerDetails.Id, cui);
+    }
+
+    /// <summary>
+    /// Apelat din PartnerDialog când se apasă butonul ANAF.
+    /// </summary>
+    private async Task OnVerifyAnafFromDialog(string cui)
+    {
+        if (string.IsNullOrWhiteSpace(cui))
+        {
+            errorMessage = "CUI-ul nu este valid.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        // Folosim partnerul din dialog model sau cel selectat
+        var partnerId = selectedPartnerDetails?.Id ?? Guid.Empty;
+        
+        await PrepareAnafCompareDialogAsync(partnerId, cui);
+    }
+
+    /// <summary>
+    /// Pregătește și deschide dialogul de comparare ANAF.
+    /// </summary>
+    private async Task PrepareAnafCompareDialogAsync(Guid partnerId, string cui)
+    {
+        // Salvăm ID-ul pentru actualizare ulterioară
+        anafPartnerIdToUpdate = partnerId;
+        anafVerifyCUI = cui;
+        
+        // Populează datele ERP din partenerul selectat sau din model
+        if (selectedPartnerDetails != null)
+        {
+            anafErpDenumire = selectedPartnerDetails.Denumire ?? string.Empty;
+            anafErpAdresa = FormatPartnerAddress(selectedPartnerDetails);
+            anafErpRegCom = selectedPartnerDetails.RegCom ?? string.Empty;
+            anafErpTelefon = selectedPartnerDetails.Telefon ?? string.Empty;
+            anafErpPlatitorTVA = selectedPartnerDetails.EstePlatitorTVA;
+            anafErpDataTVA = selectedPartnerDetails.DataInregistrareTVA;
+            anafErpSplitTVA = selectedPartnerDetails.StatusSplitTVA;
+            anafErpInactiv = !selectedPartnerDetails.EsteActiv;
+        }
+        else
+        {
+            // Folosim datele din dialogul de creare
+            anafErpDenumire = partnerDialogModel.Denumire ?? string.Empty;
+            anafErpAdresa = string.Empty;
+            anafErpRegCom = partnerDialogModel.RegCom ?? string.Empty;
+            anafErpTelefon = partnerDialogModel.Telefon ?? string.Empty;
+            anafErpPlatitorTVA = partnerDialogModel.EstePlatitorTVA;
+            anafErpDataTVA = partnerDialogModel.DataInregistrareTVA;
+            anafErpSplitTVA = partnerDialogModel.StatusSplitTVA;
+            anafErpInactiv = false;
+        }
+        
+        // Afișează dialogul cu loading
+        anafCacheData = null;
+        anafErrorMessage = null;
+        isVerifyingAnaf = true;
+        anafCompareDialogVisible = true;
+        await InvokeAsync(StateHasChanged);
+        
+        Logger.LogInformation("Începe verificare ANAF pentru CUI={CUI}", cui);
+
+        try
+        {
+            // Doar interogăm ANAF fără a actualiza partenerul
+            anafResult = await AnafService.VerifyAsync(cui);
+
+            if (anafResult.Success && anafResult.Data != null)
+            {
+                anafCacheData = anafResult.Data;
+                anafDataSource = anafResult.Source == AnafDataSource.Cache ? "Cache" : "ANAF";
+                
+                Logger.LogInformation("Verificare ANAF reușită pentru CUI={CUI}, Sursa={Source}", cui, anafDataSource);
+            }
+            else
+            {
+                anafErrorMessage = anafResult.ErrorMessage ?? "Eroare la verificarea ANAF.";
+                Logger.LogWarning("Verificare ANAF eșuată pentru CUI={CUI}: {Error}", cui, anafErrorMessage);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(ex, "Eroare HTTP la verificarea ANAF pentru CUI={CUI}", cui);
+            anafErrorMessage = $"Serviciul ANAF nu este disponibil momentan. Încercați mai târziu. ({ex.Message})";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Eroare la verificarea ANAF pentru CUI={CUI}", cui);
+            anafErrorMessage = $"Eroare: {ex.Message}";
+        }
+        finally
+        {
+            isVerifyingAnaf = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <summary>
+    /// Formatează adresa partenerului pentru afișare.
+    /// </summary>
+    private string FormatPartnerAddress(Partner partner)
+    {
+        var sediu = partner.Addresses?.FirstOrDefault(a => a.TipAdresa == TipAdresa.Sediu);
+        if (sediu == null) return string.Empty;
+        
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(sediu.Adresa))
+            parts.Add(sediu.Adresa);
+        if (!string.IsNullOrWhiteSpace(sediu.Localitate))
+            parts.Add(sediu.Localitate);
+        if (!string.IsNullOrWhiteSpace(sediu.Judet))
+            parts.Add($"Jud. {sediu.Judet}");
+        if (!string.IsNullOrWhiteSpace(sediu.CodPostal))
+            parts.Add($"Cod {sediu.CodPostal}");
+            
+        return string.Join(", ", parts);
+    }
+
+    /// <summary>
+    /// Aplică datele ANAF asupra partenerului și actualizează în baza de date.
+    /// </summary>
+    private async Task ApplyAnafDataToPartner()
+    {
+        if (anafCacheData == null)
+        {
+            errorMessage = "Nu există date ANAF de aplicat.";
+            return;
+        }
+
+        try
+        {
+            // Actualizează partenerul în baza de date cu datele ANAF
+            var success = await AnafService.VerifyAndUpdatePartnerAsync(
+                anafPartnerIdToUpdate, 
+                currentUserId);
+
+            if (success.Success)
+            {
+                successMessage = $"✅ Datele ANAF au fost aplicate cu succes pentru CUI {anafVerifyCUI}.";
+                Logger.LogInformation("Date ANAF aplicate pentru PartnerId={PartnerId}, CUI={CUI}", 
+                    anafPartnerIdToUpdate, anafVerifyCUI);
+                
+                // Reîncarcă datele
+                await LoadPartnersAsync();
+                if (selectedPartnerDetails != null)
+                {
+                    await LoadPartnerDetailsAsync(anafPartnerIdToUpdate);
+                }
+            }
+            else
+            {
+                errorMessage = $"❌ Eroare la aplicarea datelor ANAF: {success.ErrorMessage}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Eroare la aplicarea datelor ANAF pentru PartnerId={PartnerId}", anafPartnerIdToUpdate);
+            errorMessage = $"❌ Eroare: {ex.Message}";
+        }
+        finally
+        {
+            anafCompareDialogVisible = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     // ==================== ADDRESS CRUD ====================

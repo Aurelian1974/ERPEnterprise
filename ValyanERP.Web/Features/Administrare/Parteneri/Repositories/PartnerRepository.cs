@@ -188,11 +188,12 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@Telefon", dto.Telefon);
             parameters.Add("@TelefonSecundar", dto.TelefonSecundar);
             parameters.Add("@Website", dto.Website);
-            parameters.Add("@EstePlătitorTVA", dto.EstePlatitorTVA);
+            parameters.Add("@EstePlatitorTVA", dto.EstePlatitorTVA);
             parameters.Add("@DataInregistrareTVA", dto.DataInregistrareTVA);
             parameters.Add("@StatusSplitTVA", dto.StatusSplitTVA);
             parameters.Add("@LimitaCredit", dto.LimitaCredit);
             parameters.Add("@TermenPlataDef", dto.TermenPlataDef);
+            parameters.Add("@CategorieComercialaTxt", (string?)null);
             parameters.Add("@Observatii", dto.Observatii);
             parameters.Add("@CreatedBy", createdBy);
 
@@ -245,7 +246,7 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@Telefon", dto.Telefon);
             parameters.Add("@TelefonSecundar", dto.TelefonSecundar);
             parameters.Add("@Website", dto.Website);
-            parameters.Add("@EstePlătitorTVA", dto.EstePlatitorTVA);
+            parameters.Add("@EstePlatitorTVA", dto.EstePlatitorTVA);
             parameters.Add("@DataInregistrareTVA", dto.DataInregistrareTVA);
             parameters.Add("@StatusSplitTVA", dto.StatusSplitTVA);
             parameters.Add("@PartnerStatus", dto.PartnerStatus);
@@ -255,6 +256,7 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@MotivBlocare", dto.MotivBlocare);
             parameters.Add("@LimitaCredit", dto.LimitaCredit);
             parameters.Add("@TermenPlataDef", dto.TermenPlataDef);
+            parameters.Add("@CategorieComercialaTxt", (string?)null); // Column renamed, pass null for now
             parameters.Add("@Observatii", dto.Observatii);
             parameters.Add("@UpdatedBy", updatedBy);
 
@@ -308,8 +310,8 @@ public class PartnerRepository : IPartnerRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateAnafStatusAsync(Guid id, bool? esteInactiv, bool? esteRadiat, 
-        bool? estePlatitorTva, bool? esteInsolvent, DateTime dataVerificareAnaf)
+    public async Task<bool> UpdateAnafStatusAsync(Guid id, bool? estePlatitorTva, bool? statusSplitTva,
+        bool? esteInactiv, bool? esteInsolvent, DateTime dataVerificareAnaf, Guid? updatedBy)
     {
         try
         {
@@ -320,11 +322,12 @@ public class PartnerRepository : IPartnerRepository
                 new 
                 { 
                     Id = id, 
-                    EsteInactiv = esteInactiv, 
-                    EsteRadiat = esteRadiat,
                     EstePlatitorTVA = estePlatitorTva,
+                    StatusSplitTVA = statusSplitTva,
+                    EsteInactiv = esteInactiv, 
                     EsteInsolvent = esteInsolvent,
-                    DataVerificareANAF = dataVerificareAnaf
+                    DataVerificareANAF = dataVerificareAnaf,
+                    UpdatedBy = updatedBy
                 },
                 commandType: CommandType.StoredProcedure);
 
@@ -333,6 +336,48 @@ public class PartnerRepository : IPartnerRepository
         catch (SqlException ex)
         {
             _logger.LogError(ex, "Eroare la actualizarea statusului ANAF. ID={Id}", id);
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateFromAnafAsync(Guid id, AnafVerificationCache anafData, Guid? updatedBy)
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            
+            var rowsAffected = await connection.ExecuteAsync(
+                "sp_Partners_UpdateFromAnaf",
+                new 
+                { 
+                    Id = id, 
+                    Denumire = anafData.Denumire,
+                    Telefon = anafData.Telefon,
+                    RegCom = anafData.NrRegCom,
+                    CAENPrincipal = (string?)null, // CAEN not in cache model yet
+                    EstePlatitorTVA = anafData.ScpTVA,
+                    DataInregistrareTVA = anafData.DataInregistrareTVA,
+                    StatusSplitTVA = anafData.StatusSplitTVA,
+                    EsteInactiv = anafData.StatusInactivi,
+                    EsteInsolvent = anafData.StatusInsolventa,
+                    StatusRoEfactura = anafData.StatusRoEfactura,
+                    UpdatedBy = updatedBy
+                },
+                commandType: CommandType.StoredProcedure);
+
+            if (rowsAffected > 0)
+            {
+                _logger.LogInformation("Partener actualizat din ANAF. ID={Id}, Denumire={Denumire}", id, anafData.Denumire);
+                return true;
+            }
+
+            _logger.LogWarning("Partenerul nu a fost găsit pentru actualizare ANAF. ID={Id}", id);
+            return false;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "Eroare la actualizarea partenerului din ANAF. ID={Id}", id);
             throw;
         }
     }
@@ -920,28 +965,20 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@Denumire", cache.Denumire);
             parameters.Add("@Adresa", cache.Adresa);
             parameters.Add("@NrRegCom", cache.NrRegCom);
-            parameters.Add("@CodPostal", cache.CodPostal);
-            parameters.Add("@Telefon", cache.Telefon);
-            parameters.Add("@Fax", cache.Fax);
+            // Procedura stocată folosește parametri specifici - aliniem cu signatura SP
             parameters.Add("@ScpTVA", cache.ScpTVA);
             parameters.Add("@DataInregistrareTVA", cache.DataInregistrareTVA);
             parameters.Add("@DataAnulareTVA", cache.DataAnulareTVA);
             parameters.Add("@StatusTVA", cache.StatusTVA);
-            parameters.Add("@StatusTVAMessage", cache.StatusTVAMessage);
             parameters.Add("@StatusSplitTVA", cache.StatusSplitTVA);
             parameters.Add("@DataInceputSplitTVA", cache.DataInceputSplitTVA);
-            parameters.Add("@DataAnulareSplitTVA", cache.DataAnulareSplitTVA);
             parameters.Add("@StatusInactivi", cache.StatusInactivi);
             parameters.Add("@DataInactivare", cache.DataInactivare);
-            parameters.Add("@DataReactivare", cache.DataReactivare);
-            parameters.Add("@StatusInactiviMessage", cache.StatusInactiviMessage);
-            parameters.Add("@StatusRoEFactura", cache.StatusRoEFactura);
-            parameters.Add("@DataInceputRoEFactura", cache.DataInceputRoEFactura);
+            parameters.Add("@StatusRoEfactura", cache.StatusRoEfactura);
+            parameters.Add("@DataInceputRoEfactura", cache.DataInceputRoEfactura);
             parameters.Add("@RawResponse", cache.RawResponse);
-            parameters.Add("@DataInterogare", cache.DataInterogare);
-            parameters.Add("@VerifiedAt", cache.VerifiedAt);
-            parameters.Add("@ExpiresAt", cache.ExpiresAt);
-            parameters.Add("@Source", cache.Source);
+            parameters.Add("@DataInterogare", cache.DataInterogare == DateTime.MinValue ? DateTime.Today : cache.DataInterogare);
+            parameters.Add("@CacheDurationHours", 24); // SP calculează ExpiresAt intern
             parameters.Add("@CreatedBy", cache.CreatedBy);
 
             return await connection.QuerySingleAsync<Guid>(

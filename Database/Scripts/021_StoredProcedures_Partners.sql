@@ -502,24 +502,27 @@ GO
 
 CREATE PROCEDURE dbo.sp_Partners_UpdateAnafStatus
     @Id UNIQUEIDENTIFIER,
-    @AnafStatus VARCHAR(20),
-    @EstePlătitorTVA BIT,
-    @StatusSplitTVA BIT,
-    @VerifiedBy UNIQUEIDENTIFIER
+    @EstePlatitorTVA BIT = NULL,
+    @StatusSplitTVA BIT = NULL,
+    @EsteInactiv BIT = NULL,
+    @EsteInsolvent BIT = NULL,
+    @DataVerificareANAF DATETIME2 = NULL,
+    @UpdatedBy UNIQUEIDENTIFIER = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     
+    IF @DataVerificareANAF IS NULL
+        SET @DataVerificareANAF = GETDATE();
+    
     UPDATE Partners
     SET 
-        EsteVerificat = 1,
-        AnafStatus = @AnafStatus,
-        AnafVerifiedAt = GETDATE(),
-        AnafVerifiedBy = @VerifiedBy,
-        EstePlătitorTVA = @EstePlătitorTVA,
-        StatusSplitTVA = @StatusSplitTVA,
+        EstePlatitorTVA = COALESCE(@EstePlatitorTVA, EstePlatitorTVA),
+        StatusSplitTVA = COALESCE(@StatusSplitTVA, StatusSplitTVA),
+        EsteActiv = CASE WHEN @EsteInactiv = 1 THEN 0 ELSE COALESCE(EsteActiv, 1) END,
+        DataVerificareANAF = @DataVerificareANAF,
         UpdatedAt = GETDATE(),
-        UpdatedBy = @VerifiedBy
+        UpdatedBy = @UpdatedBy
     WHERE Id = @Id;
     
     SELECT @@ROWCOUNT AS RowsAffected;

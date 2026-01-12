@@ -82,14 +82,24 @@ public interface IPartnerRepository
     /// Actualizează statusul verificării ANAF pentru un partener.
     /// </summary>
     /// <param name="id">ID-ul partenerului</param>
-    /// <param name="esteInactiv">Status inactiv fiscal</param>
-    /// <param name="esteRadiat">Status radiat din Registrul Comerțului</param>
     /// <param name="estePlatitorTva">Status plătitor TVA</param>
+    /// <param name="statusSplitTva">Status Split TVA</param>
+    /// <param name="esteInactiv">Status inactiv fiscal</param>
     /// <param name="esteInsolvent">Status insolvent</param>
     /// <param name="dataVerificareAnaf">Data verificării</param>
+    /// <param name="updatedBy">Utilizatorul care a făcut actualizarea</param>
     /// <returns>True dacă actualizarea a reușit</returns>
-    Task<bool> UpdateAnafStatusAsync(Guid id, bool? esteInactiv, bool? esteRadiat, 
-        bool? estePlatitorTva, bool? esteInsolvent, DateTime dataVerificareAnaf);
+    Task<bool> UpdateAnafStatusAsync(Guid id, bool? estePlatitorTva, bool? statusSplitTva,
+        bool? esteInactiv, bool? esteInsolvent, DateTime dataVerificareAnaf, Guid? updatedBy);
+
+    /// <summary>
+    /// Actualizează toate datele partenerului din ANAF (denumire, adresă, telefon, statusuri).
+    /// </summary>
+    /// <param name="id">ID-ul partenerului</param>
+    /// <param name="anafData">Datele din cache-ul ANAF</param>
+    /// <param name="updatedBy">Utilizatorul care a făcut actualizarea</param>
+    /// <returns>True dacă actualizarea a reușit</returns>
+    Task<bool> UpdateFromAnafAsync(Guid id, AnafVerificationCache anafData, Guid? updatedBy);
 
     /// <summary>
     /// Setează adresa principală pentru un partener.

@@ -19,10 +19,12 @@
             </div>
         </div>
         <div class="header-actions">
-            @if (!string.IsNullOrEmpty(Partner.CUI))
+            @if (!string.IsNullOrEmpty(Partner.CUI) || !string.IsNullOrEmpty(Partner.CIF))
             {
-                <SfButton CssClass="e-outline" IconCss="bi bi-shield-check" @onclick="() => OnVerifyAnaf.InvokeAsync()">
-                    Verifică ANAF
+                <SfButton CssClass="e-outline" IconCss="@(IsVerifyingAnaf ? "bi bi-arrow-repeat spin" : "bi bi-shield-check")" 
+                          @onclick="() => OnVerifyAnaf.InvokeAsync()" 
+                          Disabled="@IsVerifyingAnaf">
+                    @(IsVerifyingAnaf ? "Verificare..." : "Verifică ANAF")
                 </SfButton>
             }
             <SfButton CssClass="e-outline" IconCss="bi bi-pencil" @onclick="() => OnEdit.InvokeAsync()">
@@ -692,6 +694,9 @@
 
     [Parameter]
     public EventCallback OnVerifyAnaf { get; set; }
+
+    [Parameter]
+    public bool IsVerifyingAnaf { get; set; }
 
     [Parameter]
     public EventCallback OnAddAddress { get; set; }
