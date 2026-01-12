@@ -1,0 +1,124 @@
+@using ValyanERP.Web.Features.Administrare.SocietateaProprie.Models
+@using Syncfusion.Blazor.Buttons
+
+<div class="detail-card location-card">
+    <div class="card-header">
+        <div class="entity-icon location-icon">
+            <i class="@GetLocationIcon()"></i>
+        </div>
+        <div class="entity-info">
+            <h4>@Location?.Denumire</h4>
+            <span class="entity-type">
+                @Location?.TipLocatieDescriere
+                @if (Location?.IsLocOnly == true)
+                {
+                    <span class="badge bg-secondary ms-2">Locație Independentă</span>
+                }
+            </span>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Cod Intern</label>
+                <span class="value-highlight">@Location?.CodIntern</span>
+            </div>
+            <div class="info-item">
+                <label>Regim Juridic</label>
+                <span>@Location?.RegimJuridicDescriere</span>
+            </div>
+            @if (Location?.Suprafata.HasValue == true)
+            {
+                <div class="info-item">
+                    <label>Suprafață</label>
+                    <span>@Location.Suprafata?.ToString("N2") m²</span>
+                </div>
+            }
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Location?.AdresaCompleta))
+        {
+            <div class="info-section">
+                <label>Adresa</label>
+                <p>@Location.AdresaCompleta</p>
+            </div>
+        }
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Companie</label>
+                <span><i class="bi bi-bank me-1"></i>@Location?.CompanyName</span>
+            </div>
+            @if (!string.IsNullOrEmpty(Location?.WorkPlaceName))
+            {
+                <div class="info-item">
+                    <label>Punct de Lucru</label>
+                    <span><i class="bi bi-geo-alt me-1"></i>@Location.WorkPlaceName</span>
+                </div>
+            }
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Location?.Descriere))
+        {
+            <div class="info-section">
+                <label>Descriere</label>
+                <p>@Location.Descriere</p>
+            </div>
+        }
+        
+        <div class="capabilities-section">
+            <label>Capabilități ERP</label>
+            <div class="capabilities-grid">
+                <div class="capability-item @(Location?.HasStock == true ? "active" : "")">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Stoc</span>
+                </div>
+                <div class="capability-item @(Location?.CanSell == true ? "active" : "")">
+                    <i class="bi bi-cart-check"></i>
+                    <span>Vânzare</span>
+                </div>
+                <div class="capability-item @(Location?.CanPurchase == true ? "active" : "")">
+                    <i class="bi bi-cart-plus"></i>
+                    <span>Achiziție</span>
+                </div>
+                <div class="capability-item @(Location?.CanManufacture == true ? "active" : "")">
+                    <i class="bi bi-gear"></i>
+                    <span>Producție</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-actions">
+        <SfButton CssClass="e-outline e-primary" IconCss="bi bi-pencil" @onclick="OnEdit">
+            Editează
+        </SfButton>
+        <SfButton CssClass="e-outline e-danger" IconCss="bi bi-trash" @onclick="OnDelete">
+            Șterge
+        </SfButton>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Location? Location { get; set; }
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private string GetLocationIcon() => Location?.TipLocatieDescriere switch
+    {
+        "Depozit" => "bi bi-box-seam",
+        "Magazin" => "bi bi-shop",
+        "Birou" => "bi bi-briefcase",
+        "Showroom" => "bi bi-display",
+        "Teren" => "bi bi-tree",
+        "Service" => "bi bi-wrench",
+        "Parcare" => "bi bi-p-square",
+        _ => "bi bi-pin-map"
+    };
+}

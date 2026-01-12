@@ -105,6 +105,14 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.Servi
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.IUserGridSettingsRepository, ValyanERP.Web.Features.Infrastructure.GridSettings.Repositories.UserGridSettingsRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.GridSettings.Services.IUserGridSettingsService, ValyanERP.Web.Features.Infrastructure.GridSettings.Services.UserGridSettingsService>();
 
+// Societatea Proprie (Organization Structure)
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.ICompanyGroupRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.CompanyGroupRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.ICompanyRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.CompanyRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.IWorkPlaceRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.WorkPlaceRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.ILocationRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.LocationRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.IOrganizationRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.OrganizationRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Services.IOrganizationService, ValyanERP.Web.Features.Administrare.SocietateaProprie.Services.OrganizationService>();
+
 // DataGrid Operations Service (server-side grouping, sorting, filtering)
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.DataGrid.IDataGridOperationsService, ValyanERP.Web.Features.Infrastructure.DataGrid.DataGridOperationsService>();
 

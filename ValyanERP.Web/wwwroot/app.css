@@ -852,3 +852,373 @@ p {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==================================================
+   ENTITY DIALOGS - GLOBAL (Syncfusion renders in body)
+   ================================================== */
+
+.entity-dialog .e-dlg-header-content {
+    background: var(--header-gradient) !important;
+    padding: 16px 24px !important;
+}
+
+.entity-dialog .e-dlg-header {
+    color: white !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.entity-dialog .e-dlg-content {
+    padding: 24px !important;
+}
+
+.entity-dialog .e-footer-content {
+    padding: 16px 24px !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.entity-dialog .e-dlg-closeicon-btn {
+    color: white !important;
+}
+
+.entity-dialog .e-dlg-closeicon-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dialog Form Styles */
+.dialog-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.dialog-form .form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.dialog-form .form-row .form-group {
+    flex: 1;
+}
+
+.dialog-form .form-row .form-group.flex-1 {
+    flex: 1;
+}
+
+.dialog-form .form-row .form-group.flex-2 {
+    flex: 2;
+}
+
+.dialog-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dialog-form .form-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dialog-form .form-group label.required::after {
+    content: " *";
+    color: #ef4444;
+}
+
+.dialog-form .validation-error {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 2px;
+}
+
+.dialog-form .form-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.dialog-form .form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-form .checkbox-group {
+    flex-direction: row !important;
+    align-items: center;
+}
+
+.dialog-form .capabilities-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.dialog-form .capabilities-checkboxes .checkbox-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dialog-form .capabilities-checkboxes .checkbox-item small {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 24px;
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Confirm Dialog */
+.confirm-dialog .e-dlg-header-content {
+    background: var(--header-gradient) !important;
+}
+
+.confirm-dialog.delete-confirm .e-dlg-header-content {
+    background: linear-gradient(135deg, #fca5a5, #ef4444) !important;
+}
+
+.confirm-content {
+    text-align: center;
+    padding: 16px 0;
+}
+
+.confirm-icon {
+    font-size: 48px;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+}
+
+.confirm-dialog.delete-confirm .confirm-icon {
+    color: #ef4444;
+}
+
+.confirm-content p {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.confirm-details {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--background-light);
+    border-radius: 6px;
+}
+
+.confirm-details small {
+    color: var(--text-secondary);
+}
+
+/* ==================================================
+   DETAIL CARDS - GLOBAL (referenced by detail panels)
+   ================================================== */
+
+.detail-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.detail-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    background: var(--header-gradient);
+    color: white;
+}
+
+.detail-card .entity-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.detail-card .entity-info h4 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.detail-card .entity-type {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.detail-card .card-body {
+    padding: 24px;
+}
+
+.detail-card .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.detail-card .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-card .info-item label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-card .info-item span,
+.detail-card .info-item a {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.detail-card .info-item .value-highlight {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.detail-card .info-section {
+    margin-bottom: 16px;
+}
+
+.detail-card .info-section label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.detail-card .info-section p {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.detail-card .contact-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.detail-card .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.detail-card .contact-item i {
+    color: var(--primary-color);
+}
+
+.detail-card .stats-grid {
+    display: flex;
+    gap: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.detail-card .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.detail-card .stat-item i {
+    font-size: 20px;
+    color: var(--primary-color);
+}
+
+.detail-card .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.detail-card .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.detail-card .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--background-light);
+}
+
+/* Capabilities Section for Location */
+.capabilities-section {
+    margin-top: 16px;
+}
+
+.capabilities-section > label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.capabilities-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.capability-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--background-light);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.capability-item.active {
+    background: var(--soft-blue);
+    color: var(--primary-dark);
+    border-color: var(--primary-color);
+}
+
+.capability-item i {
+    font-size: 16px;
+}
+
+/* Badge styles */
+.detail-card .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.ownership {
+    opacity: 0.8;
+    font-size: 12px;
+}

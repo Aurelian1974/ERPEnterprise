@@ -1,0 +1,144 @@
+@using ValyanERP.Web.Features.Administrare.SocietateaProprie.Models
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+
+<SfDialog @bind-Visible="@IsVisible" 
+          Width="500px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          Header="@DialogTitle"
+          CssClass="entity-dialog group-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="dialog-form">
+                <div class="form-group">
+                    <label class="required">Denumire</label>
+                    <SfTextBox @bind-Value="@Model.Denumire" 
+                               Placeholder="Introduceți denumirea grupului"
+                               FloatLabelType="FloatLabelType.Never" />
+                    @if (!string.IsNullOrEmpty(DenumireError))
+                    {
+                        <span class="validation-error">@DenumireError</span>
+                    }
+                </div>
+                
+                <div class="form-group">
+                    <label>Descriere</label>
+                    <SfTextBox @bind-Value="@Model.Descriere" 
+                               Placeholder="Descriere opțională"
+                               Multiline="true"
+                               FloatLabelType="FloatLabelType.Never" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Website</label>
+                    <SfTextBox @bind-Value="@Model.Website" 
+                               Placeholder="https://..."
+                               FloatLabelType="FloatLabelType.Never" />
+                </div>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-outline" @onclick="OnCancel">Anulează</SfButton>
+                <SfButton CssClass="e-primary" IsPrimary="true" @onclick="OnSave">
+                    @(IsEditMode ? "Salvează" : "Adaugă")
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+    <DialogEvents Closed="OnDialogClosed" />
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public CompanyGroup? EditModel { get; set; }
+
+    [Parameter]
+    public EventCallback<CompanyGroup> OnSaved { get; set; }
+
+    private CompanyGroup Model { get; set; } = new();
+    private bool IsEditMode => EditModel?.Id != null && EditModel.Id != Guid.Empty;
+    private string DialogTitle => IsEditMode ? "Editare Grup" : "Adaugă Grup Nou";
+    private string? DenumireError;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            if (EditModel != null && EditModel.Id != Guid.Empty)
+            {
+                // Clone for editing
+                Model = new CompanyGroup
+                {
+                    Id = EditModel.Id,
+                    Denumire = EditModel.Denumire,
+                    Descriere = EditModel.Descriere,
+                    Website = EditModel.Website,
+                    IsActive = EditModel.IsActive
+                };
+            }
+            else
+            {
+                Model = new CompanyGroup { IsActive = true };
+            }
+            ClearValidation();
+        }
+    }
+
+    private bool Validate()
+    {
+        ClearValidation();
+        var isValid = true;
+
+        if (string.IsNullOrWhiteSpace(Model.Denumire))
+        {
+            DenumireError = "Denumirea este obligatorie";
+            isValid = false;
+        }
+        else if (Model.Denumire.Length > 200)
+        {
+            DenumireError = "Denumirea nu poate depăși 200 caractere";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private void ClearValidation()
+    {
+        DenumireError = null;
+    }
+
+    private async Task OnSave()
+    {
+        if (!Validate()) return;
+
+        await OnSaved.InvokeAsync(Model);
+        await CloseDialog();
+    }
+
+    private async Task OnCancel()
+    {
+        await CloseDialog();
+    }
+
+    private async Task CloseDialog()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private void OnDialogClosed()
+    {
+        Model = new CompanyGroup();
+        ClearValidation();
+    }
+}

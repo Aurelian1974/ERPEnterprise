@@ -1,0 +1,340 @@
+@using ValyanERP.Web.Features.Administrare.SocietateaProprie.Models
+@using ValyanERP.Web.Features.Administrare.SocietateaProprie.Models.Enums
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Calendars
+
+<SfDialog @bind-Visible="@IsVisible" 
+          Width="700px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          Header="@DialogTitle"
+          CssClass="entity-dialog workplace-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="dialog-form">
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label class="required">Denumire</label>
+                        <SfTextBox @bind-Value="@Model.Denumire" 
+                                   Placeholder="Denumirea punctului de lucru"
+                                   FloatLabelType="FloatLabelType.Never" />
+                        @if (!string.IsNullOrEmpty(DenumireError))
+                        {
+                            <span class="validation-error">@DenumireError</span>
+                        }
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>Cod ONRC</label>
+                        <SfTextBox @bind-Value="@Model.CodONRC" 
+                                   Placeholder="Cod ONRC"
+                                   FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Companie</label>
+                        <SfDropDownList TValue="Guid" TItem="Company"
+                                       @bind-Value="@Model.CompanyId"
+                                       DataSource="@AvailableCompanies"
+                                       Placeholder="Selectați compania"
+                                       AllowFiltering="true"
+                                       Enabled="@(!IsEditMode)">
+                            <DropDownListFieldSettings Text="Denumire" Value="Id" />
+                        </SfDropDownList>
+                        @if (!string.IsNullOrEmpty(CompanyError))
+                        {
+                            <span class="validation-error">@CompanyError</span>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label>Tip Punct de Lucru</label>
+                        <SfDropDownList TValue="TipPunctLucru" TItem="DropdownItem<TipPunctLucru>"
+                                       @bind-Value="@Model.TipPunctLucru"
+                                       DataSource="@TipPunctLucruOptions"
+                                       Placeholder="Selectați tipul">
+                            <DropDownListFieldSettings Text="Text" Value="Value" />
+                        </SfDropDownList>
+                    </div>
+                    <div class="form-group">
+                        <label>Regim Juridic</label>
+                        <SfDropDownList TValue="RegimJuridic" TItem="DropdownItem<RegimJuridic>"
+                                       @bind-Value="@Model.RegimJuridic"
+                                       DataSource="@RegimJuridicOptions"
+                                       Placeholder="Selectați regimul">
+                            <DropDownListFieldSettings Text="Text" Value="Value" />
+                        </SfDropDownList>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group checkbox-group">
+                        <SfCheckBox @bind-Checked="@Model.EsteSediuSocial" Label="Este Sediu Social" />
+                    </div>
+                </div>
+                
+                <div class="form-section-title">Adresă</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Adresa</label>
+                        <SfTextBox @bind-Value="@Model.Adresa" 
+                                   Placeholder="Strada, numărul, bloc, apartament"
+                                   FloatLabelType="FloatLabelType.Never" />
+                        @if (!string.IsNullOrEmpty(AdresaError))
+                        {
+                            <span class="validation-error">@AdresaError</span>
+                        }
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Localitate</label>
+                        <SfTextBox @bind-Value="@Model.Localitate" 
+                                   Placeholder="Oraș/Comună"
+                                   FloatLabelType="FloatLabelType.Never" />
+                        @if (!string.IsNullOrEmpty(LocalitateError))
+                        {
+                            <span class="validation-error">@LocalitateError</span>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Județ</label>
+                        <SfTextBox @bind-Value="@Model.Judet" 
+                                   Placeholder="Județ"
+                                   FloatLabelType="FloatLabelType.Never" />
+                        @if (!string.IsNullOrEmpty(JudetError))
+                        {
+                            <span class="validation-error">@JudetError</span>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label>Cod Poștal</label>
+                        <SfTextBox @bind-Value="@Model.CodPostal" 
+                                   Placeholder="000000"
+                                   FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Țară</label>
+                        <SfTextBox @bind-Value="@Model.Tara" 
+                                   Placeholder="România"
+                                   FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                </div>
+                
+                <div class="form-section-title">Contact</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <SfTextBox @bind-Value="@Model.Telefon" 
+                                   Placeholder="+40..."
+                                   FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <SfTextBox @bind-Value="@Model.Email" 
+                                   Placeholder="contact@company.ro"
+                                   FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                </div>
+                
+                <div class="form-section-title">Date ONRC</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data Înregistrării</label>
+                        <SfDatePicker TValue="DateTime?" @bind-Value="@Model.DataInregistrare" 
+                                      Format="dd.MM.yyyy"
+                                      Placeholder="Selectați data" />
+                    </div>
+                    <div class="form-group">
+                        <label>Data Radierii</label>
+                        <SfDatePicker TValue="DateTime?" @bind-Value="@Model.DataRadiere" 
+                                      Format="dd.MM.yyyy"
+                                      Placeholder="Selectați data (opțional)" />
+                    </div>
+                </div>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-outline" @onclick="OnCancel">Anulează</SfButton>
+                <SfButton CssClass="e-primary" IsPrimary="true" @onclick="OnSave">
+                    @(IsEditMode ? "Salvează" : "Adaugă")
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+    <DialogEvents Closed="OnDialogClosed" />
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public WorkPlace? EditModel { get; set; }
+
+    [Parameter]
+    public Guid? PreselectedCompanyId { get; set; }
+
+    [Parameter]
+    public List<Company> AvailableCompanies { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<WorkPlace> OnSaved { get; set; }
+
+    private WorkPlace Model { get; set; } = new();
+    private bool IsEditMode => EditModel?.Id != null && EditModel.Id != Guid.Empty;
+    private string DialogTitle => IsEditMode ? "Editare Punct de Lucru" : "Adaugă Punct de Lucru";
+    
+    private string? DenumireError;
+    private string? CompanyError;
+    private string? AdresaError;
+    private string? LocalitateError;
+    private string? JudetError;
+
+    private List<DropdownItem<TipPunctLucru>> TipPunctLucruOptions = new()
+    {
+        new() { Value = TipPunctLucru.SediuSocial, Text = "Sediu Social" },
+        new() { Value = TipPunctLucru.Sucursala, Text = "Sucursală" },
+        new() { Value = TipPunctLucru.Agentie, Text = "Agenție" },
+        new() { Value = TipPunctLucru.PunctLucru, Text = "Punct de Lucru" }
+    };
+
+    private List<DropdownItem<RegimJuridic>> RegimJuridicOptions = new()
+    {
+        new() { Value = RegimJuridic.Proprietate, Text = "Proprietate" },
+        new() { Value = RegimJuridic.Inchiriere, Text = "Închiriere" },
+        new() { Value = RegimJuridic.Comodat, Text = "Comodat" },
+        new() { Value = RegimJuridic.Leasing, Text = "Leasing" }
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            if (EditModel != null && EditModel.Id != Guid.Empty)
+            {
+                Model = new WorkPlace
+                {
+                    Id = EditModel.Id,
+                    Denumire = EditModel.Denumire,
+                    CompanyId = EditModel.CompanyId,
+                    TipPunctLucru = EditModel.TipPunctLucru,
+                    EsteSediuSocial = EditModel.EsteSediuSocial,
+                    CodONRC = EditModel.CodONRC,
+                    RegimJuridic = EditModel.RegimJuridic,
+                    Adresa = EditModel.Adresa,
+                    Localitate = EditModel.Localitate,
+                    Judet = EditModel.Judet,
+                    CodPostal = EditModel.CodPostal,
+                    Tara = EditModel.Tara,
+                    Telefon = EditModel.Telefon,
+                    Email = EditModel.Email,
+                    DataInregistrare = EditModel.DataInregistrare,
+                    DataRadiere = EditModel.DataRadiere,
+                    IsActive = EditModel.IsActive
+                };
+            }
+            else
+            {
+                Model = new WorkPlace 
+                { 
+                    IsActive = true,
+                    TipPunctLucru = TipPunctLucru.PunctLucru,
+                    RegimJuridic = RegimJuridic.Proprietate,
+                    Tara = "România",
+                    CompanyId = PreselectedCompanyId ?? Guid.Empty
+                };
+            }
+            ClearValidation();
+        }
+    }
+
+    private bool Validate()
+    {
+        ClearValidation();
+        var isValid = true;
+
+        if (string.IsNullOrWhiteSpace(Model.Denumire))
+        {
+            DenumireError = "Denumirea este obligatorie";
+            isValid = false;
+        }
+
+        if (Model.CompanyId == Guid.Empty)
+        {
+            CompanyError = "Compania este obligatorie";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Model.Adresa))
+        {
+            AdresaError = "Adresa este obligatorie";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Model.Localitate))
+        {
+            LocalitateError = "Localitatea este obligatorie";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Model.Judet))
+        {
+            JudetError = "Județul este obligatoriu";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private void ClearValidation()
+    {
+        DenumireError = null;
+        CompanyError = null;
+        AdresaError = null;
+        LocalitateError = null;
+        JudetError = null;
+    }
+
+    private async Task OnSave()
+    {
+        if (!Validate()) return;
+
+        await OnSaved.InvokeAsync(Model);
+        await CloseDialog();
+    }
+
+    private async Task OnCancel()
+    {
+        await CloseDialog();
+    }
+
+    private async Task CloseDialog()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private void OnDialogClosed()
+    {
+        Model = new WorkPlace();
+        ClearValidation();
+    }
+
+    public class DropdownItem<T>
+    {
+        public T Value { get; set; } = default!;
+        public string Text { get; set; } = string.Empty;
+    }
+}
