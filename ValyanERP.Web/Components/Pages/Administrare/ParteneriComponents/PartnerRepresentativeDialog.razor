@@ -1,0 +1,195 @@
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Buttons
+
+<SfDialog @bind-Visible="IsVisible" Width="600px" IsModal="true" ShowCloseIcon="true"
+          CssClass="representative-dialog" AllowDragging="true">
+    <DialogTemplates>
+        <Header>
+            <div class="dialog-header">
+                <i class="bi bi-person-vcard"></i>
+                <span>@(IsEdit ? "Editează Reprezentant" : "Adaugă Reprezentant")</span>
+            </div>
+        </Header>
+        <Content>
+            <div class="dialog-content">
+                <EditForm Model="Model" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Nume <span class="required">*</span></label>
+                            <SfTextBox @bind-Value="Model.Nume" Placeholder="Ionescu"></SfTextBox>
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Prenume <span class="required">*</span></label>
+                            <SfTextBox @bind-Value="Model.Prenume" Placeholder="Maria"></SfTextBox>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Tip Reprezentant <span class="required">*</span></label>
+                            <SfDropDownList TValue="TipReprezentant" TItem="TipReprezentantOption"
+                                            @bind-Value="Model.TipReprezentant"
+                                            DataSource="TipReprezentantOptions"
+                                            Placeholder="Selectează tipul">
+                                <DropDownListFieldSettings Value="Value" Text="Text"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Funcție <span class="required">*</span></label>
+                            <SfTextBox @bind-Value="Model.Functie" Placeholder="Administrator"></SfTextBox>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label>CNP</label>
+                            <SfTextBox @bind-Value="Model.CNP" Placeholder="2851234567890"></SfTextBox>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Data Numirii</label>
+                            <SfDatePicker TValue="DateTime?" @bind-Value="Model.DataNumire"
+                                          Format="dd.MM.yyyy" Placeholder="Selectează data"></SfDatePicker>
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Data Expirării Mandatului</label>
+                            <SfDatePicker TValue="DateTime?" @bind-Value="Model.DataExpirare"
+                                          Format="dd.MM.yyyy" Placeholder="Selectează data"></SfDatePicker>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label>Observații</label>
+                            <SfTextBox @bind-Value="Model.Observatii" Placeholder="Notițe despre reprezentant..."
+                                       Multiline="true"></SfTextBox>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-flat" @onclick="Cancel">Anulează</SfButton>
+                <SfButton CssClass="e-primary" @onclick="HandleSubmit">
+                    @(IsEdit ? "Salvează" : "Adaugă")
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    [Parameter]
+    public PartnerRepresentative Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<PartnerRepresentative> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private List<TipReprezentantOption> TipReprezentantOptions => Enum.GetValues<TipReprezentant>()
+        .Select(t => new TipReprezentantOption
+        {
+            Value = t,
+            Text = t switch
+            {
+                TipReprezentant.Administrator => "Administrator",
+                TipReprezentant.Asociat => "Asociat",
+                TipReprezentant.Imputernicit => "Împuternicit",
+                TipReprezentant.ReprezentantLegal => "Reprezentant Legal",
+                _ => t.ToString()
+            }
+        })
+        .ToList();
+
+    private async Task HandleSubmit()
+    {
+        await OnSave.InvokeAsync(Model);
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Cancel()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnCancel.InvokeAsync();
+    }
+
+    public class TipReprezentantOption
+    {
+        public TipReprezentant Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .representative-dialog .e-dlg-header-content {
+        background: linear-gradient(135deg, #93c5fd, #60a5fa);
+        padding: 16px 24px;
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .dialog-content {
+        padding: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group.col-6 { flex: 0 0 calc(50% - 8px); }
+    .form-group.col-12 { flex: 0 0 100%; }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .required { color: #ef4444; }
+
+    .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+    }
+</style>

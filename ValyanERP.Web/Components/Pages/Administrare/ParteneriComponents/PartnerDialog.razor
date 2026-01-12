@@ -1,0 +1,443 @@
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models.DTOs
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+
+<SfDialog @bind-Visible="IsVisible" Width="800px" IsModal="true" ShowCloseIcon="true"
+          CssClass="partner-dialog" AllowDragging="true">
+    <DialogTemplates>
+        <Header>
+            <div class="dialog-header">
+                <i class="bi @(IsEdit ? "bi-pencil" : "bi-plus-circle")"></i>
+                <span>@(IsEdit ? "Editează Partener" : "Adaugă Partener")</span>
+            </div>
+        </Header>
+        <Content>
+            <div class="dialog-content">
+                <EditForm Model="Model" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    @* Tip Partener *@
+                    <div class="form-section">
+                        <h6>Tip Partener</h6>
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>Categorie <span class="required">*</span></label>
+                                <SfDropDownList TValue="CategoriePartener" TItem="CategorieOption"
+                                                @bind-Value="Model.Categoria"
+                                                DataSource="CategorieOptions"
+                                                Placeholder="Selectează categoria">
+                                    <DropDownListFieldSettings Value="Value" Text="Text"></DropDownListFieldSettings>
+                                    <DropDownListEvents TValue="CategoriePartener" TItem="CategorieOption"
+                                                       ValueChange="OnCategorieChanged"></DropDownListEvents>
+                                </SfDropDownList>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>Tip Entitate <span class="required">*</span></label>
+                                <SfDropDownList TValue="string" TItem="TipEntitateInfo"
+                                                @bind-Value="Model.TipEntitate"
+                                                DataSource="FilteredTipuriEntitati"
+                                                Placeholder="Selectează tipul">
+                                    <DropDownListFieldSettings Value="Cod" Text="Denumire"></DropDownListFieldSettings>
+                                </SfDropDownList>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Roluri *@
+                    <div class="form-section">
+                        <h6>Roluri Partener</h6>
+                        <div class="roles-grid">
+                            <SfCheckBox @bind-Checked="IsFurnizor" Label="Furnizor"></SfCheckBox>
+                            <SfCheckBox @bind-Checked="IsClient" Label="Client"></SfCheckBox>
+                            <SfCheckBox @bind-Checked="IsColaborator" Label="Colaborator"></SfCheckBox>
+                            <SfCheckBox @bind-Checked="IsAngajat" Label="Angajat"></SfCheckBox>
+                            <SfCheckBox @bind-Checked="IsAsociat" Label="Asociat"></SfCheckBox>
+                        </div>
+                    </div>
+
+                    @* Identificare *@
+                    <div class="form-section">
+                        <h6>Identificare</h6>
+                        
+                        @if (ShowDenumire)
+                        {
+                            <div class="form-row">
+                                <div class="form-group col-12">
+                                    <label>Denumire <span class="required">*</span></label>
+                                    <SfTextBox @bind-Value="Model.Denumire" Placeholder="Denumirea oficială"></SfTextBox>
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (ShowNumePrenume)
+                        {
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label>Nume <span class="required">*</span></label>
+                                    <SfTextBox @bind-Value="Model.Nume" Placeholder="Nume"></SfTextBox>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label>Prenume <span class="required">*</span></label>
+                                    <SfTextBox @bind-Value="Model.Prenume" Placeholder="Prenume"></SfTextBox>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="form-row">
+                            @if (ShowCUI)
+                            {
+                                <div class="form-group col-6">
+                                    <label>CUI @if(IsCUIRequired){<span class="required">*</span>}</label>
+                                    <div class="input-with-button">
+                                        <SfTextBox @bind-Value="Model.CUI" Placeholder="RO12345678"></SfTextBox>
+                                        <SfButton CssClass="e-outline e-small" IconCss="bi bi-search"
+                                                  @onclick="VerifyAnaf" Disabled="@string.IsNullOrEmpty(Model.CUI)">
+                                            ANAF
+                                        </SfButton>
+                                    </div>
+                                </div>
+                            }
+                            @if (ShowCNP)
+                            {
+                                <div class="form-group col-6">
+                                    <label>CNP <span class="required">*</span></label>
+                                    <SfTextBox @bind-Value="Model.CNP" Placeholder="1234567890123"></SfTextBox>
+                                </div>
+                            }
+                            @if (ShowRegCom)
+                            {
+                                <div class="form-group col-6">
+                                    <label>Nr. Reg. Comerț</label>
+                                    <SfTextBox @bind-Value="Model.RegCom" Placeholder="J40/1234/2020"></SfTextBox>
+                                </div>
+                            }
+                        </div>
+
+                        @if (ShowCIF || ShowVATID)
+                        {
+                            <div class="form-row">
+                                @if (ShowCIF)
+                                {
+                                    <div class="form-group col-6">
+                                        <label>CIF</label>
+                                        <SfTextBox @bind-Value="Model.CIF" Placeholder="CIF"></SfTextBox>
+                                    </div>
+                                }
+                                @if (ShowVATID)
+                                {
+                                    <div class="form-group col-6">
+                                        <label>VAT ID</label>
+                                        <div class="input-with-button">
+                                            <SfTextBox @bind-Value="Model.VATID" Placeholder="DE123456789"></SfTextBox>
+                                            <SfButton CssClass="e-outline e-small" IconCss="bi bi-globe"
+                                                      @onclick="VerifyVies" Disabled="@string.IsNullOrEmpty(Model.VATID)">
+                                                VIES
+                                            </SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @* Contact *@
+                    <div class="form-section">
+                        <h6>Contact</h6>
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>Email</label>
+                                <SfTextBox @bind-Value="Model.Email" Placeholder="email@exemplu.ro" Type="InputType.Email"></SfTextBox>
+                            </div>
+                            <div class="form-group col-6">
+                                <label>Telefon</label>
+                                <SfTextBox @bind-Value="Model.Telefon" Placeholder="+40 721 123 456"></SfTextBox>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-12">
+                                <label>Website</label>
+                                <SfTextBox @bind-Value="Model.Website" Placeholder="https://www.exemplu.ro"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* TVA și Comercial *@
+                    <div class="form-section">
+                        <h6>Setări Comerciale</h6>
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <SfCheckBox @bind-Checked="Model.EstePlatitorTVA" Label="Plătitor TVA"></SfCheckBox>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Limită Credit (RON)</label>
+                                <SfNumericTextBox TValue="decimal?" @bind-Value="Model.LimitaCredit" 
+                                                  Format="N2" Min="0" Placeholder="0.00"></SfNumericTextBox>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Termen Plată (zile)</label>
+                                <SfNumericTextBox TValue="int?" @bind-Value="Model.TermenPlataDef" 
+                                                  Format="N0" Min="0" Max="365" Placeholder="30"></SfNumericTextBox>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-flat" @onclick="Cancel">Anulează</SfButton>
+                <SfButton CssClass="e-primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+                    @if (IsSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    @(IsEdit ? "Salvează" : "Adaugă")
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    [Parameter]
+    public CreatePartnerDto Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<CreatePartnerDto> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnVerifyAnaf { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnVerifyVies { get; set; }
+
+    private bool IsSubmitting { get; set; }
+    
+    // Rol flags
+    private bool IsFurnizor
+    {
+        get => Model.RolPartener.HasFlag(RolPartener.Furnizor);
+        set => UpdateRol(RolPartener.Furnizor, value);
+    }
+
+    private bool IsClient
+    {
+        get => Model.RolPartener.HasFlag(RolPartener.Client);
+        set => UpdateRol(RolPartener.Client, value);
+    }
+
+    private bool IsColaborator
+    {
+        get => Model.RolPartener.HasFlag(RolPartener.Colaborator);
+        set => UpdateRol(RolPartener.Colaborator, value);
+    }
+
+    private bool IsAngajat
+    {
+        get => Model.RolPartener.HasFlag(RolPartener.Angajat);
+        set => UpdateRol(RolPartener.Angajat, value);
+    }
+
+    private bool IsAsociat
+    {
+        get => Model.RolPartener.HasFlag(RolPartener.Asociat);
+        set => UpdateRol(RolPartener.Asociat, value);
+    }
+
+    private void UpdateRol(RolPartener rol, bool value)
+    {
+        if (value)
+            Model.RolPartener |= rol;
+        else
+            Model.RolPartener &= ~rol;
+    }
+
+    // Visibility flags based on categorie
+    private bool ShowDenumire => Model.Categoria != CategoriePartener.PF;
+    private bool ShowNumePrenume => Model.Categoria == CategoriePartener.PF || Model.Categoria == CategoriePartener.PFA;
+    private bool ShowCUI => Model.Categoria != CategoriePartener.PF;
+    private bool ShowCNP => Model.Categoria == CategoriePartener.PF;
+    private bool ShowRegCom => Model.Categoria == CategoriePartener.SC || Model.Categoria == CategoriePartener.PFA;
+    private bool ShowCIF => Model.Categoria == CategoriePartener.IP || Model.Categoria == CategoriePartener.NP;
+    private bool ShowVATID => Model.Categoria == CategoriePartener.STR || Model.Categoria == CategoriePartener.OI;
+    private bool IsCUIRequired => Model.Categoria == CategoriePartener.SC || Model.Categoria == CategoriePartener.PFA;
+
+    // Dropdown options
+    private List<CategorieOption> CategorieOptions => Enum.GetValues<CategoriePartener>()
+        .Select(c => new CategorieOption { Value = c, Text = TipuriEntitati.GetCategorieName(c) })
+        .ToList();
+
+    private List<TipEntitateInfo> FilteredTipuriEntitati => 
+        TipuriEntitati.PerCategorie.TryGetValue(Model.Categoria, out var tipuri) 
+            ? tipuri 
+            : new List<TipEntitateInfo>();
+
+    private void OnCategorieChanged(ChangeEventArgs<CategoriePartener, CategorieOption> args)
+    {
+        Model.TipEntitate = string.Empty;
+        // Clear fields not applicable to new category
+        if (!ShowDenumire) Model.Denumire = null;
+        if (!ShowNumePrenume) { Model.Nume = null; Model.Prenume = null; }
+        if (!ShowCUI) Model.CUI = null;
+        if (!ShowCNP) Model.CNP = null;
+        if (!ShowRegCom) Model.RegCom = null;
+        if (!ShowCIF) Model.CIF = null;
+        if (!ShowVATID) Model.VATID = null;
+    }
+
+    private async Task HandleSubmit()
+    {
+        IsSubmitting = true;
+        try
+        {
+            await OnSave.InvokeAsync(Model);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task VerifyAnaf()
+    {
+        if (!string.IsNullOrEmpty(Model.CUI))
+        {
+            await OnVerifyAnaf.InvokeAsync(Model.CUI);
+        }
+    }
+
+    private async Task VerifyVies()
+    {
+        if (!string.IsNullOrEmpty(Model.VATID))
+        {
+            await OnVerifyVies.InvokeAsync(Model.VATID);
+        }
+    }
+
+    public class CategorieOption
+    {
+        public CategoriePartener Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .partner-dialog .e-dlg-header-content {
+        background: linear-gradient(135deg, #93c5fd, #60a5fa);
+        padding: 16px 24px;
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .dialog-header i {
+        font-size: 20px;
+    }
+
+    .dialog-content {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .form-section {
+        margin-bottom: 24px;
+    }
+
+    .form-section h6 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group.col-4 {
+        flex: 0 0 calc(33.333% - 11px);
+    }
+
+    .form-group.col-6 {
+        flex: 0 0 calc(50% - 8px);
+    }
+
+    .form-group.col-12 {
+        flex: 0 0 100%;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .roles-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+    }
+
+    .input-with-button {
+        display: flex;
+        gap: 8px;
+    }
+
+    .input-with-button .e-textbox {
+        flex: 1;
+    }
+
+    .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+    }
+</style>

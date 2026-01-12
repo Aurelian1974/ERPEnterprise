@@ -113,6 +113,9 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.IOrganizationRepository, ValyanERP.Web.Features.Administrare.SocietateaProprie.Repositories.OrganizationRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.SocietateaProprie.Services.IOrganizationService, ValyanERP.Web.Features.Administrare.SocietateaProprie.Services.OrganizationService>();
 
+// Partners (Business Partners Management)
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Parteneri.Repositories.IPartnerRepository, ValyanERP.Web.Features.Administrare.Parteneri.Repositories.PartnerRepository>();
+
 // DataGrid Operations Service (server-side grouping, sorting, filtering)
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.DataGrid.IDataGridOperationsService, ValyanERP.Web.Features.Infrastructure.DataGrid.DataGridOperationsService>();
 

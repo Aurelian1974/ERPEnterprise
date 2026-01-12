@@ -1,0 +1,221 @@
+@using ValyanERP.Web.Features.Administrare.Parteneri.Models
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+
+<SfDialog @bind-Visible="IsVisible" Width="600px" IsModal="true" ShowCloseIcon="true"
+          CssClass="bank-dialog" AllowDragging="true">
+    <DialogTemplates>
+        <Header>
+            <div class="dialog-header">
+                <i class="bi bi-bank"></i>
+                <span>@(IsEdit ? "Editează Cont Bancar" : "Adaugă Cont Bancar")</span>
+            </div>
+        </Header>
+        <Content>
+            <div class="dialog-content">
+                <EditForm Model="Model" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-row">
+                        <div class="form-group col-8">
+                            <label>IBAN <span class="required">*</span></label>
+                            <SfTextBox @bind-Value="Model.IBAN" Placeholder="RO49AAAA1B31007593840000"
+                                       @onblur="ValidateIBAN"></SfTextBox>
+                            @if (!string.IsNullOrEmpty(ibanError))
+                            {
+                                <span class="field-error">@ibanError</span>
+                            }
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Moneda <span class="required">*</span></label>
+                            <SfDropDownList TValue="string" TItem="MonedaOption"
+                                            @bind-Value="Model.Moneda"
+                                            DataSource="MonedaOptions"
+                                            Placeholder="RON">
+                                <DropDownListFieldSettings Value="Value" Text="Text"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-8">
+                            <label>Nume Bancă <span class="required">*</span></label>
+                            <SfTextBox @bind-Value="Model.NumeBanca" Placeholder="Banca Transilvania"></SfTextBox>
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Cod SWIFT/BIC</label>
+                            <SfTextBox @bind-Value="Model.BIC" Placeholder="BTRLRO22"></SfTextBox>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label>Sucursala</label>
+                            <SfTextBox @bind-Value="Model.Sucursala" Placeholder="Sucursala Centrală București"></SfTextBox>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <SfCheckBox @bind-Checked="Model.EstePrincipal" Label="Cont Principal"></SfCheckBox>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-flat" @onclick="Cancel">Anulează</SfButton>
+                <SfButton CssClass="e-primary" @onclick="HandleSubmit" Disabled="@(!string.IsNullOrEmpty(ibanError))">
+                    @(IsEdit ? "Salvează" : "Adaugă")
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    [Parameter]
+    public PartnerBankAccount Model { get; set; } = new() { Moneda = "RON" };
+
+    [Parameter]
+    public EventCallback<PartnerBankAccount> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private string? ibanError;
+
+    private List<MonedaOption> MonedaOptions => new()
+    {
+        new() { Value = "RON", Text = "RON - Leu Românesc" },
+        new() { Value = "EUR", Text = "EUR - Euro" },
+        new() { Value = "USD", Text = "USD - Dolar American" },
+        new() { Value = "GBP", Text = "GBP - Liră Sterlină" },
+        new() { Value = "CHF", Text = "CHF - Franc Elvețian" }
+    };
+
+    private void ValidateIBAN()
+    {
+        if (string.IsNullOrWhiteSpace(Model.IBAN))
+        {
+            ibanError = null;
+            return;
+        }
+
+        var iban = Model.IBAN.Replace(" ", "").ToUpper();
+        
+        if (iban.Length < 15 || iban.Length > 34)
+        {
+            ibanError = "IBAN-ul trebuie să aibă între 15 și 34 caractere.";
+            return;
+        }
+
+        if (iban.StartsWith("RO") && iban.Length != 24)
+        {
+            ibanError = "IBAN-ul românesc trebuie să aibă exact 24 caractere.";
+            return;
+        }
+
+        // Basic format validation
+        if (!System.Text.RegularExpressions.Regex.IsMatch(iban, @"^[A-Z]{2}[0-9]{2}[A-Z0-9]+$"))
+        {
+            ibanError = "Format IBAN invalid.";
+            return;
+        }
+
+        ibanError = null;
+        Model.IBAN = iban; // Normalize
+    }
+
+    private async Task HandleSubmit()
+    {
+        ValidateIBAN();
+        if (!string.IsNullOrEmpty(ibanError)) return;
+
+        await OnSave.InvokeAsync(Model);
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Cancel()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnCancel.InvokeAsync();
+    }
+
+    public class MonedaOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}
+
+<style>
+    .bank-dialog .e-dlg-header-content {
+        background: linear-gradient(135deg, #93c5fd, #60a5fa);
+        padding: 16px 24px;
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .dialog-content {
+        padding: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group.col-4 { flex: 0 0 calc(33.333% - 11px); }
+    .form-group.col-8 { flex: 0 0 calc(66.666% - 5px); }
+    .form-group.col-12 { flex: 0 0 100%; }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .required { color: #ef4444; }
+
+    .field-error {
+        font-size: 12px;
+        color: #ef4444;
+    }
+
+    .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+    }
+</style>
