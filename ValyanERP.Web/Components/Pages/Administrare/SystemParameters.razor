@@ -9,23 +9,66 @@
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Popups
 @using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Data
+@using ValyanERP.Web.Components.Shared.DataGrid
+@using ValyanERP.Web.Features.Infrastructure.SystemParameters
 @inject ISystemParametersService ParametersService
 @inject ILogger<SystemParameters> Logger
 
 <PageTitle>Parametri Sistem</PageTitle>
 
 <div class="container-fluid p-0">
-    <div class="row mb-3 align-items-center">
-        <div class="col">
-            <h3><i class="bi bi-gear-fill me-2"></i>Parametri Sistem</h3>
-            <p class="text-muted mb-0">Configurare centralizată a sistemului - modificările se aplică imediat</p>
+    <div class="page-header">
+        <div class="header-content">
+            <h3 class="page-title"><i class="bi bi-gear-fill me-2"></i>Parametri Sistem</h3>
+            <span class="record-count">@parameters.Count înregistrări</span>
         </div>
-        <div class="col-auto">
-            <button class="btn btn-outline-primary btn-sm" @onclick="RefreshGrid">
+        <div class="header-actions">
+            <GridStateManager @ref="gridStateManager"
+                              GridId="SystemParameters"
+                              GridReference="@grid"
+                              ShowConfigurationSelector="true"
+                              ShowButtonLabels="false"
+                              ShowExportButton="true"
+                              OnStateSaved="OnGridStateSaved"
+                              OnStateLoaded="OnGridStateLoaded"
+                              OnStateReset="OnGridStateReset" />
+            <button class="btn btn-outline-primary btn-sm" @onclick="RefreshGrid" title="Reîmprospătează date" aria-label="Reîmprospătează date">
                 <i class="bi bi-arrow-clockwise me-1"></i>Reîmprospătează
             </button>
         </div>
     </div>
+
+    @* Error Alert *@
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+    
+    @* Loading Indicator *@
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Se încarcă datele...</span>
+            </div>
+        </div>
+    }
+    
+    @* Success Alert *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess"></button>
+        </div>
+    }
 
     <SfToast @ref="ToastObj" 
              ID="toast_systemparams" 
@@ -41,24 +84,45 @@
                     TValue="SystemParameter" 
                     DataSource="@parameters"
                     AllowPaging="true" 
-                    AllowSorting="true" 
+                    AllowSorting="true"
+                    AllowMultiSorting="true"
                     AllowFiltering="true"
                     AllowGrouping="true" 
                     AllowResizing="true"
+                    AllowReordering="true"
                     AllowTextWrap="true"
                     AllowExcelExport="true"
-                    Toolbar="@(new List<string>() { "Edit", "Delete", "Update", "Cancel", "ExcelExport", "Search", "ColumnChooser" })"
+                    AllowPdfExport="true"
+                    ShowColumnChooser="true"
+                    ShowColumnMenu="true"
+                    EnablePersistence="true"
+                    EnableStickyHeader="true"
+                    EnableHover="true"
+                    EnableAltRow="true"
+                    Height="calc(100vh - 280px)"
+                    Toolbar="@toolbar"
                     OnToolbarClick="ToolbarClickHandler">
-                
                 <GridPageSettings PageSize="20" PageSizes="@(new int[] { 10, 20, 50, 100 })"></GridPageSettings>
-                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" EnableCaseSensitivity="false" ImmediateModeDelay="300"></GridFilterSettings>
                 <GridGroupSettings ShowDropArea="true"></GridGroupSettings>
-                
-                <GridEditSettings AllowAdding="false" 
+                <GridSortSettings AllowUnsort="true"></GridSortSettings>
+                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Row" EnableToggle="true"></GridSelectionSettings>
+                <GridSearchSettings IgnoreCase="true" Operator="Syncfusion.Blazor.Operator.Contains"></GridSearchSettings>
+
+                <SfDataManager AdaptorInstance="@typeof(SystemParametersAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+
+                <GridEditSettings AllowAdding="true" 
                                   AllowEditing="true" 
                                   AllowDeleting="true" 
                                   Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"
+                                  ShowDeleteConfirmDialog="true"
+                                  ShowConfirmDialog="true"
                                   Dialog="dialogParams">
+                    <HeaderTemplate>
+                        <span class="e-dialog-header">
+                            <i class="bi bi-gear-fill me-2"></i>@GetEditDialogHeaderText(context)
+                        </span>
+                    </HeaderTemplate>
                     <Template>
                         @{
                             var param = context as SystemParameter;
@@ -67,59 +131,94 @@
                         <div class="edit-parameter-form">
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="e-float-text">Cheie Parametru</label>
+                                    <label class="form-label">Cheie Parametru <span class="text-danger">*</span></label>
                                     <SfTextBox @bind-Value="param.ParameterKey" 
-                                               Enabled="false"
+                                               Enabled="@(param.Id == default(Guid))"
                                                CssClass="e-outline"
-                                               Placeholder="Cheie parametru">
-                                    </SfTextBox>
-                                    <small class="text-muted">Imutabil după creare</small>
+                                               Placeholder="Cheie parametru"
+                                               Attributes="@(new Dictionary<string, object>{{"aria-required","true"},{"aria-label","Cheie parametru"}})" />
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="e-float-text">Nume Afișat</label>
+                                    <label class="form-label">Nume Afișat</label>
                                     <SfTextBox @bind-Value="param.DisplayName" 
-                                               Enabled="false"
+                                               Enabled="true"
                                                CssClass="e-outline"
-                                               Placeholder="Nume afișat">
-                                    </SfTextBox>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="e-float-text"><span class="text-danger">*</span> Valoare</label>
-                                    <SfTextBox @bind-Value="param.ParameterValue" 
-                                               CssClass="e-outline"
-                                               Placeholder="Introduceți valoarea">
-                                    </SfTextBox>
+                                               Placeholder="Nume afișat"
+                                               Attributes="@(new Dictionary<string, object>{{"aria-label","Nume afișat"}})" />
                                 </div>
                             </div>
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="e-float-text">Valoare Implicită</label>
+                                    <label class="form-label">Tip Date</label>
+                                    <SfDropDownList TItem="string" TValue="string" DataSource="@dataTypeList" @bind-Value="param.DataType" CssClass="e-outline" PopupHeight="160px" Placeholder="Selectează tip date" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Categorie</label>
+                                    <SfDropDownList TItem="string" TValue="string" DataSource="@categoryList" @bind-Value="param.Category" CssClass="e-outline" PopupHeight="160px" Placeholder="Selectează categorie" />
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label"><span class="text-danger">*</span> Valoare</label>
+                                    <div class="parameter-value-wrapper @(fieldValidationMessages.ContainsKey(param.Id) ? "invalid" : "")">
+                                        @if (param.DataType == "bool")
+                                        {
+<SfDropDownList TValue="string" TItem="string" DataSource="@(new List<string>{ "true", "false" })" 
+                                                            @bind-Value="param.ParameterValue"
+                                                            Placeholder="Selectează valoarea"
+                                                            PopupHeight="120px"
+                                                            CssClass="e-outline"
+                                                            Attributes="@(new Dictionary<string, object>{{"aria-required", "true"}, {"aria-label","Valoare parametrului"}})">
+                                            </SfDropDownList>
+                                        }
+                                        else if (param.DataType == "json")
+                                        {
+                                            <div class="json-input">
+                                                <SfTextBox @bind-Value="param.ParameterValue" Multiline="true" CssClass="e-outline" Placeholder="JSON">
+                                                </SfTextBox>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <SfTextBox @bind-Value="param.ParameterValue" 
+                                                       CssClass="e-outline"
+                                                       Placeholder="Introduceți valoarea"
+                                                       Attributes="@(new Dictionary<string, object>{{"aria-required", "true"}, {"aria-label","Valoare parametrului"}})">
+                                            </SfTextBox>
+                                        }
+                                        <small class="form-hint text-muted">@GetDataTypeHint(param.DataType)</small>
+                                        @if (fieldValidationMessages.TryGetValue(param.Id, out var vmsg) && !string.IsNullOrEmpty(vmsg))
+                                        {
+                                            <div class="invalid-feedback d-block">@vmsg</div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Valoare Implicită</label>
                                     <SfTextBox @bind-Value="param.DefaultValue" 
                                                CssClass="e-outline"
-                                               Placeholder="Valoare implicită">
-                                    </SfTextBox>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="e-float-text">Tip Date</label>
-                                    <SfTextBox Value="@param.DataType" 
-                                               Enabled="false"
-                                               CssClass="e-outline">
-                                    </SfTextBox>
+                                               Placeholder="Valoare implicită"
+                                               Attributes="@(new Dictionary<string, object>{{"aria-label","Valoare implicită"}})" />
+
+                                    <div class="mt-3">
+                                        <label class="form-label">Tip Date</label>
+                                        <div>
+                                            <span class="badge badge-type-default" title="Tipul de date">@param.DataType</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="row mb-3">
                                 <div class="col-md-12">
-                                    <label class="e-float-text">Descriere</label>
+                                    <label class="form-label">Descriere</label>
                                     <SfTextBox @bind-Value="param.Description" 
                                                Multiline="true"
-                                               CssClass="e-outline"
-                                               Placeholder="Explică scopul parametrului și impactul modificării">
-                                    </SfTextBox>
+                                               CssClass="e-outline description-input"
+                                               Placeholder="Explică scopul parametrului și impactul modificării"
+                                               Attributes="@(new Dictionary<string, object>{{"aria-label","Descriere"}})" />
                                 </div>
                             </div>
                             
@@ -148,12 +247,30 @@
                     </Template>
                 </GridEditSettings>
 
+                <SfDataManager AdaptorInstance="@typeof(SystemParametersAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
                 <GridEvents TValue="SystemParameter" 
                             RowSelected="OnRowSelected"
+                            RowDeselected="OnRowDeselected"
                             OnActionBegin="ActionBeginHandler"
                             OnActionComplete="ActionCompleteHandler"
-                            OnActionFailure="ActionFailureHandler">
+                            OnActionFailure="ActionFailureHandler"
+                            OnToolbarClick="ToolbarClickHandler">
                 </GridEvents>
+
+                <GridAggregates>
+                    <GridAggregate>
+                        <GridAggregateColumns>
+                            <GridAggregateColumn Field="@nameof(SystemParameter.ParameterKey)" Type="AggregateType.Count">
+                                <FooterTemplate>
+                                    @{
+                                        var aggregate = (context as AggregateTemplateContext);
+                                    }
+                                    <span class="aggregate-footer">Total: <strong>@aggregate?.Count</strong> parametri</span>
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                        </GridAggregateColumns>
+                    </GridAggregate>
+                </GridAggregates>
 
                 <GridTemplates>
                     <DetailTemplate>
@@ -216,7 +333,7 @@
                                     _ => "badge-type-default"
                                 };
                             }
-                            <span class="badge @badgeClass">@param?.DataType</span>
+                            <span class="badge @badgeClass" title="@GetDataTypeHint(param?.DataType)">@param?.DataType</span>
                         </Template>
                     </GridColumn>
                     
@@ -236,7 +353,7 @@
                                 var param = context as SystemParameter;
                                 if (param?.IsReadOnly == true)
                                 {
-                                    <span class="badge bg-warning">
+                                    <span class="badge bg-warning" title="Read-only - nu poate fi modificat">
                                         <i class="bi bi-lock-fill"></i> Locked
                                     </span>
                                 }
@@ -264,11 +381,7 @@
                         </Template>
                     </GridColumn>
                     
-                    <GridColumn Field=@nameof(SystemParameter.Description) 
-                                HeaderText="Descriere" 
-                                Width="250"
-                                ClipMode="ClipMode.EllipsisWithTooltip">
-                    </GridColumn>
+
                     
                     <GridColumn HeaderText="Acțiuni" Width="120" TextAlign="TextAlign.Center">
                         <GridCommandColumns>

@@ -27,6 +27,7 @@ public class SystemParametersService : ISystemParametersService
     private readonly ISystemParametersRepository _repository;
     private readonly IMemoryCache _cache;
     private readonly ILogger<SystemParametersService> _logger;
+    private readonly ISystemParametersNotifier _notifier;
     
     // Cache key prefix for individual parameters
     private const string CACHE_KEY_PREFIX = "SystemParameter_";
@@ -41,12 +42,19 @@ public class SystemParametersService : ISystemParametersService
     public SystemParametersService(
         ISystemParametersRepository repository,
         IMemoryCache cache,
-        ILogger<SystemParametersService> logger)
+        ILogger<SystemParametersService> logger,
+        ISystemParametersNotifier notifier)
     {
         _repository = repository;
         _cache = cache;
         _logger = logger;
+        _notifier = notifier;
     }
+
+    /// <summary>
+    /// Raised when a parameter is changed or cache is cleared.
+    /// </summary>
+    public event EventHandler<SystemParameterChangedEventArgs>? ParameterChanged;
 
     // ================================================================
     // Type-Safe Parameter Accessors
@@ -244,6 +252,26 @@ public class SystemParametersService : ISystemParametersService
         
         // Clear cache for this parameter
         ClearParameterCache(parameter.ParameterKey);
+
+        // Notify local scoped subscribers
+        try
+        {
+            ParameterChanged?.Invoke(this, new SystemParameterChangedEventArgs(parameter.ParameterKey, parameter.ParameterValue));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while raising ParameterChanged event for {ParameterKey}", parameter.ParameterKey);
+        }
+
+        // Notify application-wide subscribers via notifier (singleton)
+        try
+        {
+            _notifier.NotifyParameterChanged(parameter.ParameterKey, parameter.ParameterValue);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while notifying application-wide parameter change for {ParameterKey}", parameter.ParameterKey);
+        }
         
         return id;
     }
@@ -259,6 +287,26 @@ public class SystemParametersService : ISystemParametersService
         {
             // Clear cache for this parameter
             ClearParameterCache(parameter.ParameterKey);
+
+            // Notify local scoped subscribers
+            try
+            {
+                ParameterChanged?.Invoke(this, new SystemParameterChangedEventArgs(parameter.ParameterKey, parameter.ParameterValue));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while raising ParameterChanged event for {ParameterKey}", parameter.ParameterKey);
+            }
+
+            // Notify application-wide subscribers via notifier (singleton)
+            try
+            {
+                _notifier.NotifyParameterChanged(parameter.ParameterKey, parameter.ParameterValue);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while notifying application-wide parameter change for {ParameterKey}", parameter.ParameterKey);
+            }
         }
         
         return success;
@@ -277,6 +325,26 @@ public class SystemParametersService : ISystemParametersService
         {
             // Clear cache for this parameter
             ClearParameterCache(parameter.ParameterKey);
+
+            // Notify local scoped subscribers
+            try
+            {
+                ParameterChanged?.Invoke(this, new SystemParameterChangedEventArgs(parameter.ParameterKey, null));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while raising ParameterChanged event for deleted parameter {ParameterKey}", parameter.ParameterKey);
+            }
+
+            // Notify application-wide subscribers via notifier (singleton)
+            try
+            {
+                _notifier.NotifyParameterChanged(parameter.ParameterKey, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while notifying application-wide parameter deletion for {ParameterKey}", parameter.ParameterKey);
+            }
         }
         
         return success;
@@ -298,6 +366,25 @@ public class SystemParametersService : ISystemParametersService
         // Note: IMemoryCache doesn't provide a way to enumerate keys
         // We'd need to track keys separately if we want bulk clear
         // For now, cache is cleared per-parameter on updates
+        // Raise a generic notification so subscribers can refresh if needed
+        try
+        {
+            ParameterChanged?.Invoke(this, new SystemParameterChangedEventArgs(null, null));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while raising ParameterChanged event during ClearCache");
+        }
+
+        // Notify application-wide subscribers about cache clear
+        try
+        {
+            _notifier.NotifyParameterChanged(null, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while notifying application-wide cache clear");
+        }
     }
 
     // ================================================================

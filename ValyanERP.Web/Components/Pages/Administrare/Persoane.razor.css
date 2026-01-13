@@ -1,110 +1,196 @@
 /* Persoane.razor.css - Scoped styles for Persoane page */
 
-/* Page Header */
-.persoane-header {
-    color: var(--primary-dark);
-    font-weight: 600;
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
-.persoane-header i {
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-title {
+    margin: 0;
     color: var(--primary-color);
-}
-
-/* Table Styling */
-.table thead th {
-    background: var(--primary-gradient);
-    color: white;
-    font-weight: 500;
-    border: none;
-    padding: 12px 16px;
-}
-
-.table tbody tr:hover {
-    background-color: var(--soft-blue);
-}
-
-.table td {
-    vertical-align: middle;
-    padding: 12px 16px;
-}
-
-/* Badge Styling */
-.badge.bg-success {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-}
-
-.badge.bg-secondary {
-    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
-}
-
-/* Modal Header */
-.modal-header {
-    background: var(--primary-gradient);
-    color: white;
-    border-bottom: none;
-}
-
-.modal-header .btn-close {
-    filter: brightness(0) invert(1);
-}
-
-.modal-title {
     font-weight: 600;
 }
 
-/* Modal Footer */
-.modal-footer {
-    border-top: 1px solid #e5e7eb;
-    padding: 16px 24px;
+.record-count {
+    font-size: 0.9em;
+    color: var(--bs-secondary-color);
+    font-weight: 500;
 }
 
-/* Form Labels */
-.form-label {
-    font-size: 13px;
+.nume-cell {
+    display: flex;
+    align-items: center;
+}
+
+.nume-text {
     font-weight: 500;
-    color: #374151;
+}
+
+.email-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.email-link:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.aggregate-footer {
+    font-weight: 600;
+    color: var(--primary-color);
+    padding: 8px 0;
+}
+
+/* Edit Form Styles */
+.edit-form-container {
+    padding: 1rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: var(--bs-body-color);
+}
+
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-hint {
+    font-size: 0.875em;
+    color: var(--bs-secondary-color);
+    margin-top: 0.25rem;
+}
+
+/* Dialog Styles */
+.view-persoana-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa);
+    color: white;
+}
+
+.delete-confirm-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #fca5a5, #ef4444);
+    color: white;
+}
+
+.view-dialog-content {
+    padding: 1rem 0;
+}
+
+.persoana-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #60a5fa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.avatar-info h5 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+
+.persoana-email {
+    color: var(--bs-secondary-color);
+    font-size: 0.9em;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--bs-border-color);
+    margin: 1rem 0;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-label {
+    font-weight: 500;
+    font-size: 0.875em;
+    color: var(--bs-secondary-color);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
 }
 
-/* Action Buttons */
-.btn-outline-primary {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+.detail-value {
+    font-weight: 500;
+    color: var(--bs-body-color);
 }
 
-.btn-outline-primary:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
+.badge {
+    font-size: 0.75em;
+    padding: 0.375rem 0.75rem;
 }
 
-/* Search Input Group */
-.input-group .form-control {
-    border-radius: 8px 0 0 8px;
+/* Inactive row styling */
+.inactive-row {
+    opacity: 0.6;
+    background-color: var(--bs-light) !important;
 }
 
-.input-group .btn {
-    border-radius: 0 8px 8px 0;
-}
-
-/* Loading State */
-.spinner-border.text-primary {
-    color: var(--primary-color) !important;
-}
-
-/* Alert Styling */
-.alert {
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-/* Card Header Search Area */
-.card-header {
-    padding: 16px 20px;
-}
-
-.card-header .btn-primary {
-    font-size: 14px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .persoana-avatar-section {
+        flex-direction: column;
+        text-align: center;
+    }
 }

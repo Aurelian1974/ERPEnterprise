@@ -9,73 +9,189 @@
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.DropDowns
+@using ValyanERP.Web.Components.Shared.DataGrid
 @using Blazored.FluentValidation
 
 <PageTitle>Administrare Persoane</PageTitle>
 
-<div class="container-fluid p-0">
-    <div class="row mb-3">
-        <div class="col">
-            <h3><i class="bi bi-person-vcard me-2"></i>Persoane</h3>
+<div class="persoane-page">
+    @* Page Header *@
+    <div class="page-header">
+        <div class="header-content">
+            <h3 class="page-title">
+                <i class="bi bi-person-vcard-fill me-2"></i>Persoane
+            </h3>
+            <span class="record-count">@totalRecords înregistrări</span>
         </div>
+        
+        @* Grid State Manager - for saving/loading configurations *@
+        <GridStateManager @ref="gridStateManager" 
+                          GridId="Persoane" 
+                          GridReference="@grid"
+                          ShowConfigurationSelector="true"
+                          ShowButtonLabels="false"
+                          OnStateSaved="OnGridStateSaved"
+                          OnStateLoaded="OnGridStateLoaded"
+                          OnStateReset="OnGridStateReset" />
     </div>
 
+    @* Error Alert *@
     @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
-            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+    
+    @* Loading Indicator *@
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Se încarcă datele...</span>
+            </div>
+        </div>
+    }
+    
+    @* Success Alert *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess"></button>
         </div>
     }
 
     <SfGrid @ref="grid" TValue="Persoana" AllowPaging="true" AllowSorting="true" AllowFiltering="true"
             AllowGrouping="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true"
-            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Search", "ColumnChooser" })"
-            OnActionBegin="ActionBeginHandler" 
-            OnActionComplete="ActionCompleteHandler" 
-            OnActionFailure="ActionFailureHandler">
+            Toolbar="@toolbar" OnActionBegin="ActionBeginHandler" 
+            OnActionComplete="ActionCompleteHandler" OnActionFailure="ActionFailureHandler"
+            ID="PersoaneGrid"
+            AllowMultiSorting="true"
+            AllowSelection="true"
+            AllowExcelExport="true"
+            AllowPdfExport="true"
+            ShowColumnMenu="true"
+            EnablePersistence="true"
+            EnableStickyHeader="true"
+            EnableHover="true"
+            EnableAltRow="true"
+            Height="auto"
+            MaxHeight="calc(100vh - 280px)">
         
         <SfDataManager AdaptorInstance="@typeof(PersoaneAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
         
-        <GridPageSettings PageSize="20" PageSizes="@(new int[] { 20, 50, 100 })"></GridPageSettings>
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
-        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog">
+        <GridPageSettings PageSize="@pageSize" 
+                          PageSizes="@pageSizeOptions" 
+                          PageCount="5">
+        </GridPageSettings>
+        
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" 
+                            EnableCaseSensitivity="false"
+                            ImmediateModeDelay="300">
+        </GridFilterSettings>
+        
+        <GridGroupSettings ShowDropArea="true" 
+                           ShowGroupedColumn="true"
+                           ShowToggleButton="true"
+                           ShowUngroupButton="true"
+                           AllowReordering="true"
+                           EnableLazyLoading="true">
+        </GridGroupSettings>
+        
+        <GridSortSettings AllowUnsort="true">
+        </GridSortSettings>
+        
+        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Single" 
+                               Mode="Syncfusion.Blazor.Grids.SelectionMode.Row"
+                               EnableToggle="true">
+        </GridSelectionSettings>
+        
+        <GridSearchSettings IgnoreCase="true" 
+                            Operator="Syncfusion.Blazor.Operator.Contains">
+        </GridSearchSettings>
+        
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"
+             ShowDeleteConfirmDialog="false" ShowConfirmDialog="true">
+             <HeaderTemplate>
+                <span class="e-dialog-header">
+                    <i class="bi bi-person-plus me-2"></i>@GetEditDialogHeaderText(context)
+                </span>
+            </HeaderTemplate>
              <Template>
                 @{
                     var p = context as Persoana;
                     if (p == null) return;
                 }
-                <div>
+                <div class="edit-form-container">
+                    @* Nume & Prenume - side by side *@
                     <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(p.Nume)" Placeholder="Nume" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <div class="form-group">
+                            <label class="form-label required-field">Nume</label>
+                            <SfTextBox @bind-Value="@(p.Nume)" 
+                                       Placeholder="Introduceți numele"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
                             <ValidationMessage For="@(() => p.Nume)" />
                         </div>
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(p.Prenume)" Placeholder="Prenume" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <div class="form-group">
+                            <label class="form-label required-field">Prenume</label>
+                            <SfTextBox @bind-Value="@(p.Prenume)" 
+                                       Placeholder="Introduceți prenumele"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
                             <ValidationMessage For="@(() => p.Prenume)" />
                         </div>
                     </div>
-                     <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(p.CNP)" Placeholder="CNP" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+
+                    @* CNP & Email - side by side *@
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required-field">CNP</label>
+                            <SfTextBox @bind-Value="@(p.CNP)" 
+                                       Placeholder="Introduceți CNP-ul"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
                             <ValidationMessage For="@(() => p.CNP)" />
                         </div>
-                        <div class="form-group col-md-6">
-                            <SfTextBox @bind-Value="@(p.Email)" Placeholder="Email" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <SfTextBox @bind-Value="@(p.Email)" 
+                                       Placeholder="Introduceți adresa de email"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
                             <ValidationMessage For="@(() => p.Email)" />
                         </div>
                     </div>
+
+                    @* Oras & Judet - side by side *@
                     <div class="form-row">
-                         <div class="form-group col-md-4">
-                             <SfTextBox @bind-Value="@(p.Oras)" Placeholder="Oras" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                         </div>
-                         <div class="form-group col-md-4">
-                             <SfTextBox @bind-Value="@(p.Judet)" Placeholder="Judet" FloatLabelType="FloatLabelType.Always"></SfTextBox>
-                         </div>
-                         <div class="form-group col-md-4">
-                             <SfCheckBox @bind-Checked="@(p.IsActive)" Label="Activ"></SfCheckBox>
-                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Oraș</label>
+                            <SfTextBox @bind-Value="@(p.Oras)" 
+                                       Placeholder="Introduceți orașul"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Județ</label>
+                            <SfTextBox @bind-Value="@(p.Judet)" 
+                                       Placeholder="Introduceți județul"
+                                       FloatLabelType="FloatLabelType.Always">
+                            </SfTextBox>
+                        </div>
+                    </div>
+
+                    @* Is Active *@
+                    <div class="form-group">
+                        <SfCheckBox @bind-Checked="@(p.IsActive)" 
+                                    Label="Persoană Activ">
+                        </SfCheckBox>
                     </div>
                 </div>
             </Template>
@@ -83,13 +199,198 @@
 
         <GridColumns>
             <GridColumn Field=@nameof(Persoana.Id) IsPrimaryKey="true" Visible="false"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.Nume) HeaderText="Nume" Width="150"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.Prenume) HeaderText="Prenume" Width="150"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.CNP) HeaderText="CNP" Width="130"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.Email) HeaderText="Email" Width="200"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.Oras) HeaderText="Oras" Width="150"></GridColumn>
-            <GridColumn Field=@nameof(Persoana.IsActive) HeaderText="Activ" Width="100" DisplayAsCheckBox="true"></GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.Nume) HeaderText="Nume" Width="150" MinWidth="120"
+                        ClipMode="ClipMode.EllipsisWithTooltip" AllowSearching="true" AllowFiltering="true"
+                        AllowSorting="true" AllowGrouping="true">
+                <Template>
+                    @{
+                        var data = context as Persoana;
+                    }
+                    <div class="nume-cell" @key="data?.Id">
+                        <i class="bi bi-person-circle me-2 text-primary"></i>
+                        <span class="nume-text">@data?.Nume</span>
+                    </div>
+                </Template>
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.Prenume) HeaderText="Prenume" Width="150" MinWidth="120"
+                        ClipMode="ClipMode.EllipsisWithTooltip" AllowSearching="true" AllowFiltering="true"
+                        AllowSorting="true" AllowGrouping="true">
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.CNP) HeaderText="CNP" Width="140" MinWidth="130"
+                        AllowSearching="true" AllowFiltering="true" AllowSorting="true">
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.Email) HeaderText="Email" Width="250" MinWidth="150"
+                        ClipMode="ClipMode.EllipsisWithTooltip" AllowSearching="true" AllowFiltering="true"
+                        AllowSorting="true">
+                <Template>
+                    @{
+                        var data = context as Persoana;
+                    }
+                    @if (!string.IsNullOrEmpty(data?.Email))
+                    {
+                        <a href="mailto:@data?.Email" class="email-link" @key="data?.Id">
+                            <i class="bi bi-envelope me-1"></i>@data?.Email
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">N/A</span>
+                    }
+                </Template>
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.Oras) HeaderText="Oraș" Width="150" MinWidth="120"
+                        AllowSearching="true" AllowFiltering="true" AllowSorting="true" AllowGrouping="true">
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.Judet) HeaderText="Județ" Width="150" MinWidth="120"
+                        AllowSearching="true" AllowFiltering="true" AllowSorting="true" AllowGrouping="true">
+            </GridColumn>
+            
+            <GridColumn Field=@nameof(Persoana.IsActive) HeaderText="Activ" Width="100"
+                        DisplayAsCheckBox="true" AllowFiltering="true" AllowSorting="true"
+                        TextAlign="TextAlign.Center" Type="ColumnType.Boolean">
+                <FilterTemplate>
+                    <SfDropDownList TValue="string" TItem="StatusItem" 
+                                    DataSource="@statusOptions"
+                                    Value="@GetFilterValue(context)"
+                                    Placeholder="Toate">
+                        <DropDownListFieldSettings Text="Text" Value="Value"></DropDownListFieldSettings>
+                        <DropDownListEvents TValue="string" TItem="StatusItem" 
+                                            ValueChange="@(e => OnStatusFilterChange(e, context))">
+                        </DropDownListEvents>
+                    </SfDropDownList>
+                </FilterTemplate>
+            </GridColumn>
         </GridColumns>
-        <GridEvents OnActionBegin="ActionBeginHandler" TValue="Persoana"></GridEvents>
+
+        <GridEvents TValue="Persoana"
+                    OnActionBegin="ActionBeginHandler"
+                    OnActionComplete="ActionCompleteHandler"
+                    RowSelected="OnRowSelected"
+                    RowDeselected="OnRowDeselected"
+                    RowDataBound="OnRowDataBound"
+                    DataBound="OnDataBound"
+                    OnToolbarClick="@(async args => await OnToolbarClick(args))">
+        </GridEvents>
+        
+        <GridAggregates>
+            <GridAggregate>
+                <GridAggregateColumns>
+                    <GridAggregateColumn Field="@nameof(Persoana.Nume)" Type="AggregateType.Count">
+                        <FooterTemplate>
+                            @{
+                                var aggregate = (context as AggregateTemplateContext);
+                            }
+                            <span class="aggregate-footer">
+                                Total: <strong>@aggregate?.Count</strong> persoane
+                            </span>
+                        </FooterTemplate>
+                    </GridAggregateColumn>
+                </GridAggregateColumns>
+            </GridAggregate>
+        </GridAggregates>
     </SfGrid>
 </div>
+
+@* Delete Confirmation Dialog *@
+<SfDialog @bind-Visible="showDeleteConfirm" 
+          Width="400px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          CssClass="delete-confirm-dialog">
+    <DialogTemplates>
+        <Header>
+            <span class="text-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmare Ștergere
+            </span>
+        </Header>
+        <Content>
+            <p>Sigur doriți să ștergeți persoana <strong>@selectedPersoanaName</strong>?</p>
+            <p class="text-muted small">Această acțiune nu poate fi anulată.</p>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Șterge" CssClass="e-danger" IsPrimary="true" OnClick="ConfirmDelete"></DialogButton>
+        <DialogButton Content="Anulează" OnClick="@(() => showDeleteConfirm = false)"></DialogButton>
+    </DialogButtons>
+</SfDialog>
+
+@* View Persoana Dialog (Read-Only) *@
+<SfDialog @bind-Visible="showViewDialog" 
+          Width="500px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          CssClass="view-persoana-dialog">
+    <DialogTemplates>
+        <Header>
+            <span class="view-dialog-header">
+                <i class="bi bi-person-lines-fill me-2"></i>Detalii Persoană
+            </span>
+        </Header>
+        <Content>
+            @if (viewPersoana != null)
+            {
+                <div class="view-dialog-content">
+                    @* Persoana Avatar & Name *@
+                    <div class="persoana-avatar-section">
+                        <div class="avatar-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="avatar-info">
+                            <h5 class="persoana-name">@viewPersoana.Nume @viewPersoana.Prenume</h5>
+                            <span class="persoana-email">@viewPersoana.Email</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="divider" />
+                    
+                    @* Persoana Details *@
+                    <div class="details-grid">
+                        @* CNP *@
+                        <div class="detail-item">
+                            <label class="detail-label">CNP</label>
+                            <span class="detail-value">@(viewPersoana.CNP ?? "N/A")</span>
+                        </div>
+                        
+                        @* Oras *@
+                        <div class="detail-item">
+                            <label class="detail-label">Oraș</label>
+                            <span class="detail-value">@(viewPersoana.Oras ?? "N/A")</span>
+                        </div>
+                        
+                        @* Judet *@
+                        <div class="detail-item">
+                            <label class="detail-label">Județ</label>
+                            <span class="detail-value">@(viewPersoana.Judet ?? "N/A")</span>
+                        </div>
+                        
+                        @* Status *@
+                        <div class="detail-item">
+                            <label class="detail-label">Status</label>
+                            @if (viewPersoana.IsActive)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Activ
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-x-circle-fill me-1"></i>Inactiv
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Închide" IsPrimary="true" OnClick="CloseViewDialog"></DialogButton>
+    </DialogButtons>
+</SfDialog>

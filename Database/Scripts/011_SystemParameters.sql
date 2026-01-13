@@ -152,6 +152,14 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS (SELECT * FROM [dbo].[SystemParameters] WHERE [ParameterKey] = 'Validation.Password.RequireSpecialChar')
+BEGIN
+    INSERT INTO [dbo].[SystemParameters] ([ParameterKey], [Category], [SubCategory], [ParameterValue], [DataType], [DefaultValue], [Description], [DisplayName], [IsReadOnly])
+    VALUES ('Validation.Password.RequireSpecialChar', 'Validation', 'Password', 'true', 'bool', 'true', 'Require special character in passwords (!@#$%^&* etc.)', 'Require Special Char', 0);
+    PRINT '✓ Seeded: Validation.Password.RequireSpecialChar';
+END
+GO
+
 IF NOT EXISTS (SELECT * FROM [dbo].[SystemParameters] WHERE [ParameterKey] = 'Validation.Nume.MaxLength')
 BEGIN
     INSERT INTO [dbo].[SystemParameters] ([ParameterKey], [Category], [SubCategory], [ParameterValue], [DataType], [DefaultValue], [Description], [DisplayName], [MinValue], [MaxValue], [IsReadOnly])
@@ -184,8 +192,15 @@ GO
 IF NOT EXISTS (SELECT * FROM [dbo].[SystemParameters] WHERE [ParameterKey] = 'Business.Pagination.DefaultPageSize')
 BEGIN
     INSERT INTO [dbo].[SystemParameters] ([ParameterKey], [Category], [SubCategory], [ParameterValue], [DataType], [DefaultValue], [Description], [DisplayName], [MinValue], [MaxValue], [IsReadOnly])
-    VALUES ('Business.Pagination.DefaultPageSize', 'Business', 'Grid', '20', 'int', '20', 'Default page size for grid pagination', 'Default Page Size', 10, 100, 0);
+    VALUES ('Business.Pagination.DefaultPageSize', 'Business', 'Grid', '20', 'int', '20', 'Default page size for grid pagination (must be multiple of 5)', 'Default Page Size', 5, 200, 0);
     PRINT '✓ Seeded: Business.Pagination.DefaultPageSize';
+END
+ELSE
+BEGIN
+    UPDATE [dbo].[SystemParameters]
+    SET [MinValue] = 5, [MaxValue] = 200, [Description] = 'Default page size for grid pagination (must be multiple of 5)'
+    WHERE [ParameterKey] = 'Business.Pagination.DefaultPageSize';
+    PRINT '✓ Updated: Business.Pagination.DefaultPageSize';
 END
 GO
 

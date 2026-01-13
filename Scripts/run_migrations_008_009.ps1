@@ -7,8 +7,8 @@ Write-Host "Running Security Fixes - Stored Procedures Migrations" -ForegroundCo
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$server = "TS1828\SQLEXPRESS"
-$database = "ERPEnterprise"
+$server = "TS1828\ERP"
+$database = "ValyanERP"
 
 # Migration 008 - Persoane Stored Procedures
 Write-Host "Running 008_StoredProcedures_Persoane.sql..." -ForegroundColor Yellow

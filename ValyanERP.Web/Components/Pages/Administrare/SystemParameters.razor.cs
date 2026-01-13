@@ -8,8 +8,11 @@ using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Grids;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
+using ValyanERP.Web.Components.Shared.DataGrid;
 using ValyanERP.Web.Features.Infrastructure.SystemParameters.Models;
 using ValyanERP.Web.Features.Infrastructure.SystemParameters.Services;
+using System.Linq;
+using Microsoft.JSInterop;
 
 namespace ValyanERP.Web.Components.Pages.Administrare;
 
@@ -19,11 +22,41 @@ namespace ValyanERP.Web.Components.Pages.Administrare;
 public partial class SystemParameters : ComponentBase
 {
     private SfGrid<SystemParameter>? grid;
+    private GridStateManager? gridStateManager;
     private SfToast? ToastObj;
     private SfDialog? confirmDeleteDialog;
     private List<SystemParameter> parameters = new();
+
+    // JS runtime to trigger short toast sounds
+    private IJSRuntime JS { get; set; } = default!;
+
+    // Toggle play sound on toast (default: enabled)
+    private bool playToastSoundEnabled = true;
     private SystemParameter? parameterToDelete;
     private bool isDeleteDialogVisible = false;
+
+    // UI state helpers (alerts/loading)
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading = false;
+
+    // Field-specific inline validation messages (per parameter Id)
+    private readonly Dictionary<Guid, string> fieldValidationMessages = new();
+
+    // Toolbar configuration (consistent with other pages)
+    private List<object> toolbar = new()
+    {
+        "Add",
+        new Syncfusion.Blazor.Navigations.ItemModel { Text = "Edit", PrefixIcon = "e-icons e-edit", Id = "Edit", CssClass = "e-disabled" },
+        new Syncfusion.Blazor.Navigations.ItemModel { Text = "Delete", PrefixIcon = "e-icons e-delete", Id = "Delete" },
+        new Syncfusion.Blazor.Navigations.ItemModel { Text = "Reîmprospătează", TooltipText = "Reîmprospătează datele", PrefixIcon = "e-icons e-refresh", Id = "Refresh" },
+        "Search",
+        new Syncfusion.Blazor.Navigations.ItemModel { Type = Syncfusion.Blazor.Navigations.ItemType.Separator },
+        "ExcelExport",
+        "PdfExport",
+        new Syncfusion.Blazor.Navigations.ItemModel { Type = Syncfusion.Blazor.Navigations.ItemType.Separator },
+        "ColumnChooser"
+    };
     
     // Dialog parameters for edit form
     private readonly DialogSettings dialogParams = new()
@@ -69,6 +102,11 @@ public partial class SystemParameters : ComponentBase
     /// </summary>
     private async Task LoadParametersAsync()
     {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+
         try
         {
             var result = await ParametersService.GetAllAsync(includeReadOnly: true);
@@ -76,12 +114,18 @@ public partial class SystemParameters : ComponentBase
         }
         catch (Exception ex)
         {
+            errorMessage = "Eroare la încărcarea parametrilor. Vă rugăm reîncercați.";
             await ShowToastAsync(
-                "Eroare la încărcarea parametrilor. Vă rugăm reîncercați.",
+                errorMessage,
                 "Eroare",
                 "e-toast-danger"
             );
             Logger.LogError(ex, "Error loading system parameters");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -103,9 +147,24 @@ public partial class SystemParameters : ComponentBase
     /// <summary>
     /// Handle row selection (for manual edit).
     /// </summary>
-    private void OnRowSelected(RowSelectEventArgs<SystemParameter> args)
+    private async Task OnRowSelected(RowSelectEventArgs<SystemParameter> args)
     {
-        // Row selected - we can trigger edit manually here if needed
+        ToggleEditToolbar(true);
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Header text for the edit dialog - matches Utilizatori pattern.
+    /// </summary>
+    private string GetEditDialogHeaderText(object context)
+    {
+        if (context is SystemParameter param)
+        {
+            var isNew = param.Id == default(Guid) || string.IsNullOrWhiteSpace(param.ParameterKey);
+            return isNew ? "Creare parametru" : $"Editează: {param.DisplayName ?? param.ParameterKey}";
+        }
+
+        return "Editează parametru";
     }
 
     /// <summary>
@@ -130,6 +189,26 @@ public partial class SystemParameters : ComponentBase
                 Timeout = 5000
             };
             await ToastObj.ShowAsync(toastModel);
+
+            // Optionally play a short sound to draw attention (WebAudio API)
+            if (playToastSoundEnabled)
+            {
+                var t = cssClass switch
+                {
+                    "e-toast-success" => "success",
+                    "e-toast-danger" => "error",
+                    "e-toast-warning" => "warning",
+                    _ => "info"
+                };
+                try
+                {
+                    await JS.InvokeVoidAsync("playToastSound", t);
+                }
+                catch
+                {
+                    // ignore any JS errors
+                }
+            }
         }
     }
 
@@ -143,75 +222,142 @@ public partial class SystemParameters : ComponentBase
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
                 var param = args.Data;
+                // Clear previous inline validation for this parameter when attempting to save
+                if (param != null)
+                {
+                    fieldValidationMessages.Remove(param.Id);
+                }
                 
                 // Check if read-only
                 if (param.IsReadOnly)
                 {
                     args.Cancel = true;
+                    errorMessage = "Parametrii read-only nu pot fi modificați! Aceștia sunt critici pentru sistem.";
+                    // show inline message next to field in dialog
+                    fieldValidationMessages[param.Id] = errorMessage;
                     await ShowToastAsync(
-                        "Parametrii read-only nu pot fi modificați! Aceștia sunt critici pentru sistem.",
+                        errorMessage,
                         "Eroare",
                         "e-toast-danger"
                     );
+                    StateHasChanged();
                     return;
                 }
 
-                // Validation
-                if (string.IsNullOrWhiteSpace(param.ParameterValue))
+                // If creating, ensure ParameterKey is provided
+                var isCreating = param.Id == default(Guid) || param.Id == Guid.Empty;
+                if (isCreating && string.IsNullOrWhiteSpace(param.ParameterKey))
                 {
                     args.Cancel = true;
-                    await ShowToastAsync(
-                        "Valoarea parametrului este obligatorie!",
-                        "Validare eșuată",
-                        "e-toast-warning"
-                    );
+                    errorMessage = "Cheia parametrului este obligatorie pentru crearea unui parametru.";
+                    fieldValidationMessages[param.Id] = errorMessage;
+                    await ShowToastAsync(errorMessage, "Validare eșuată", "e-toast-warning");
+                    StateHasChanged();
                     return;
                 }
 
-                // Additional validation based on data type
-                if (param.DataType == "int" && !int.TryParse(param.ParameterValue, out _))
+                // Consolidated validation based on data type
+                if (param.DataType != "json" && string.IsNullOrWhiteSpace(param.ParameterValue))
                 {
                     args.Cancel = true;
-                    await ShowToastAsync(
-                        "Valoarea trebuie să fie un număr întreg!",
-                        "Validare eșuată",
-                        "e-toast-warning"
-                    );
+                    errorMessage = "Valoarea parametrului este obligatorie!";
+                    fieldValidationMessages[param.Id] = errorMessage;
+                    await ShowToastAsync(errorMessage, "Validare eșuată", "e-toast-warning");
+                    StateHasChanged();
                     return;
                 }
-                
-                if (param.DataType == "decimal" && !decimal.TryParse(param.ParameterValue, out _))
+
+                if (param.DataType == "int")
                 {
-                    args.Cancel = true;
-                    await ShowToastAsync(
-                        "Valoarea trebuie să fie un număr zecimal valid!",
-                        "Validare eșuată",
-                        "e-toast-warning"
-                    );
-                    return;
+                    if (!int.TryParse(param.ParameterValue, out _))
+                    {
+                        args.Cancel = true;
+                        errorMessage = "Valoarea trebuie să fie un număr întreg!";
+                        fieldValidationMessages[param.Id] = errorMessage;
+                        await ShowToastAsync(errorMessage, "Validare eșuată", "e-toast-warning");
+                        StateHasChanged();
+                        return;
+                    }
+                }
+                else if (param.DataType == "decimal")
+                {
+                    if (!decimal.TryParse(param.ParameterValue, out _))
+                    {
+                        args.Cancel = true;
+                        errorMessage = "Valoarea trebuie să fie un număr zecimal valid!";
+                        fieldValidationMessages[param.Id] = errorMessage;
+                        await ShowToastAsync(errorMessage, "Validare eșuată", "e-toast-warning");
+                        StateHasChanged();
+                        return;
+                    }
+                }
+                else if (param.DataType == "json" && !string.IsNullOrWhiteSpace(param.ParameterValue))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(param.ParameterValue);
+                    }
+                    catch (System.Text.Json.JsonException jex)
+                    {
+                        args.Cancel = true;
+                        errorMessage = "Valoarea JSON nu este validă: " + jex.Message;
+                        fieldValidationMessages[param.Id] = errorMessage;
+                        await ShowToastAsync(errorMessage, "Validare eșuată", "e-toast-warning");
+                        StateHasChanged();
+                        return;
+                    }
                 }
 
                 try
                 {
-                    var success = await ParametersService.UpdateAsync(param);
-                    
+                    // Normalize values before persisting
+                    param.ParameterValue = param.ParameterValue?.Trim();
+                    param.DefaultValue = param.DefaultValue?.Trim();
+
+                    // Determine create vs update by Id
+                    bool success;
+                    bool isCreate = false;
+                if (param.Id == default(Guid) || param.Id == Guid.Empty)
+                {
+                    // Create
+                    var newId = await ParametersService.CreateAsync(param);
+                    success = newId != default(Guid) && newId != Guid.Empty;
                     if (success)
                     {
-                        await ShowToastAsync(
-                            $"Parametrul '{param.DisplayName}' a fost actualizat cu succes!",
-                            "Succes",
-                            "e-toast-success"
-                        );
+                        param.Id = newId;
+                        isCreate = true;
                     }
-                    else
-                    {
-                        args.Cancel = true;
-                        await ShowToastAsync(
-                            "Parametrul nu a putut fi actualizat. Verificați dacă există sau nu este read-only.",
-                            "Eroare",
-                            "e-toast-danger"
-                        );
-                    }
+                }
+                else
+                {
+                    // Update
+                    success = await ParametersService.UpdateAsync(param);
+                }
+                
+                if (success)
+                {
+                    // clear inline field errors after successful update/create
+                    fieldValidationMessages.Remove(param.Id);
+                    successMessage = isCreate ? $"Parametrul '{param.DisplayName}' a fost creat cu succes!" : $"Parametrul '{param.DisplayName}' a fost actualizat cu succes!";
+                    errorMessage = null;
+                    await ShowToastAsync(
+                        successMessage,
+                        "Succes",
+                        "e-toast-success"
+                    );
+                    StateHasChanged();
+                }
+                else
+                {
+                    args.Cancel = true;
+                    errorMessage = "Parametrul nu a putut fi actualizat. Verificați dacă există sau nu este read-only.";
+                    await ShowToastAsync(
+                        errorMessage,
+                        "Eroare",
+                        "e-toast-danger"
+                    );
+                    StateHasChanged();
+                }
                 }
                 catch (Exception ex)
                 {
@@ -271,8 +417,10 @@ public partial class SystemParameters : ComponentBase
             
             if (success)
             {
+                successMessage = $"Parametrul '{parameterToDelete.DisplayName}' a fost șters cu succes!";
+                errorMessage = null;
                 await ShowToastAsync(
-                    $"Parametrul '{parameterToDelete.DisplayName}' a fost șters cu succes!",
+                    successMessage,
                     "Succes",
                     "e-toast-success"
                 );
@@ -286,8 +434,9 @@ public partial class SystemParameters : ComponentBase
             }
             else
             {
+                errorMessage = "Parametrul nu a putut fi șters. Verificați dacă există sau nu este read-only.";
                 await ShowToastAsync(
-                    "Parametrul nu a putut fi șters. Verificați dacă există sau nu este read-only.",
+                    errorMessage,
                     "Eroare",
                     "e-toast-danger"
                 );
@@ -340,12 +489,14 @@ public partial class SystemParameters : ComponentBase
     /// </summary>
     private async Task ActionFailureHandler(FailureEventArgs args)
     {
+        errorMessage = $"Operație eșuată: {args.Error}";
         await ShowToastAsync(
-            $"Operație eșuată: {args.Error}",
+            errorMessage,
             "Eroare",
             "e-toast-danger"
         );
         Logger.LogError("Grid action failed: {Error}", args.Error);
+        StateHasChanged();
     }
     
     /// <summary>
@@ -353,6 +504,25 @@ public partial class SystemParameters : ComponentBase
     /// </summary>
     private async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
+        // Handle Edit - ensure a row is selected otherwise show a toast instead of the default blocking dialog
+        if (args.Item.Id == "Edit" || args.Item.Text == "Edit")
+        {
+            if (grid != null)
+            {
+                var selectedObjs = await grid.GetSelectedRecordsAsync();
+                var selected = selectedObjs?.Cast<SystemParameter>().ToList();
+                if (selected == null || !selected.Any())
+                {
+                    await ShowToastAsync("Selectați un rând pentru editare.", "Atenție", "e-toast-warning");
+                    return;
+                }
+
+                // Start edit on the currently selected row
+                await grid.StartEditAsync();
+                return;
+            }
+        }
+
         if (args.Item.Id == "grid_excelexport")
         {
             if (grid != null)
@@ -370,5 +540,84 @@ public partial class SystemParameters : ComponentBase
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// Grid state events from GridStateManager.
+    /// </summary>
+    private async Task OnGridStateSaved(string configName)
+    {
+        successMessage = $"Configurația '{configName}' a fost salvată.";
+        await ShowToastAsync(successMessage, "Succes", "e-toast-success");
+        StateHasChanged();
+    }
+
+    private async Task OnGridStateLoaded(string configName)
+    {
+        successMessage = $"Configurația '{configName}' a fost încărcată.";
+        await ShowToastAsync(successMessage, "Succes", "e-toast-success");
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Returns a short hint for a data type to show as a tooltip.
+    /// </summary>
+    private string GetDataTypeHint(string? dataType)
+    {
+        return dataType switch
+        {
+            "int" => "Număr întreg (ex: 42)",
+            "string" => "Text liber",
+            "bool" => "Valoare adevărat/fals",
+            "decimal" => "Număr zecimal (ex: 3.14)",
+            "json" => "JSON (formatat)",
+            "enum" => "Valoare dintr-o listă predefinită",
+            _ => ""
+        };
+    }
+
+    private async Task OnGridStateReset()
+    {
+        successMessage = "Configurația a fost resetată la implicit.";
+        await ShowToastAsync(successMessage, "Succes", "e-toast-success");
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Handle row deselection to update toolbar state.
+    /// </summary>
+    private async Task OnRowDeselected(RowDeselectEventArgs<SystemParameter> args)
+    {
+        ToggleEditToolbar(false);
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Update the Edit toolbar item enabled/disabled state.
+    /// </summary>
+    private void ToggleEditToolbar(bool enabled)
+    {
+        var item = toolbar.OfType<Syncfusion.Blazor.Navigations.ItemModel>().FirstOrDefault(i => i.Id == "Edit" || i.Text == "Edit");
+        if (item != null)
+        {
+            // Syncfusion ItemModel doesn't expose an Enabled property; use CssClass to visually disable
+            item.CssClass = enabled ? null : "e-disabled";
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Clear transient alerts.
+    /// </summary>
+    private void ClearError()
+    {
+        errorMessage = null;
+        StateHasChanged();
+    }
+
+    private void ClearSuccess()
+    {
+        successMessage = null;
+        StateHasChanged();
     }
 }

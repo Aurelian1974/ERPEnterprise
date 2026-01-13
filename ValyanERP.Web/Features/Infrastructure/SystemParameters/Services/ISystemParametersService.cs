@@ -141,4 +141,10 @@ public interface ISystemParametersService
     /// Can be called manually if parameters changed externally.
     /// </remarks>
     void ClearCache();
+
+    /// <summary>
+    /// Event that is triggered when a system parameter is changed or cache is cleared.
+    /// ParameterKey will be null when a bulk/clear operation occurs.
+    /// </summary>
+    event EventHandler<SystemParameterChangedEventArgs>? ParameterChanged;
 }

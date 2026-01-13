@@ -41,6 +41,11 @@ public interface IUsersService
     /// Gets a user by ID.
     /// </summary>
     Task<User?> GetByIdAsync(Guid id);
+
+    /// <summary>
+    /// Resets a user's password.
+    /// </summary>
+    Task<bool> ResetPasswordAsync(Guid userId, string newPassword);
 }
 
 /// <summary>
@@ -161,6 +166,46 @@ public class UsersService : IUsersService
     public async Task<User?> GetByIdAsync(Guid id)
     {
         return await _usersRepo.GetByIdAsync(id);
+    }
+
+    public async Task<bool> ResetPasswordAsync(Guid userId, string newPassword)
+    {
+        // Validate input
+        if (userId == Guid.Empty)
+        {
+            _logger.LogWarning("ResetPassword failed: Invalid user Id");
+            throw new ArgumentException("ID-ul utilizatorului este invalid.", nameof(userId));
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            _logger.LogWarning("ResetPassword failed: Password is required");
+            throw new ArgumentException("Parola nouă este obligatorie.", nameof(newPassword));
+        }
+
+        if (newPassword.Length < 8)
+        {
+            _logger.LogWarning("ResetPassword failed: Password too short ({Length} chars)", newPassword.Length);
+            throw new ArgumentException("Parola trebuie să aibă cel puțin 8 caractere.", nameof(newPassword));
+        }
+
+        // Check if user exists
+        var existing = await _usersRepo.GetByIdAsync(userId);
+        if (existing == null)
+        {
+            _logger.LogWarning("ResetPassword failed: User Id={Id} not found", userId);
+            throw new InvalidOperationException($"Utilizatorul cu ID {userId} nu există.");
+        }
+
+        // Hash password using Argon2id (via custom IPasswordHasher)
+        var dummyUser = new ApplicationUser(); // Dummy for hashing interface
+        var passwordHash = _passwordHasher.HashPassword(dummyUser, newPassword);
+
+        // Reset password via repository
+        await _usersRepo.ResetPasswordAsync(userId, passwordHash);
+
+        _logger.LogInformation("Password reset successfully for User Id={Id}", userId);
+        return true;
     }
 
     /// <summary>

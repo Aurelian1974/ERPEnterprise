@@ -200,4 +200,30 @@ public class UsersRepository : IUsersRepository
             throw new InvalidOperationException($"Database error in DeleteAsync: {ex.Message}", ex);
         }
     }
+
+    public async Task<bool> ResetPasswordAsync(Guid userId, string newPasswordHash)
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new
+            {
+                UserId = userId,
+                PasswordHash = newPasswordHash,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var result = await connection.ExecuteAsync(
+                "sp_Users_ResetPassword",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return result > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password for User Id={UserId}", userId);
+            throw new InvalidOperationException($"Database error in ResetPasswordAsync: {ex.Message}", ex);
+        }
+    }
 }

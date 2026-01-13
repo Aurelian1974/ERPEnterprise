@@ -86,11 +86,29 @@ Această documentație oferă o privire completă asupra tuturor parametrilor de
   - ⬇️ Valoare mai mică = risc securitate, UX mai ușor
 - **Folosit În:**
   - `Program.cs` - Identity options (NOTĂ: citit la startup)
-  - Poate fi folosit în validări custom pentru schimbare parolă
+  - `ResetPasswordValidator.cs` - validare parole noi
 - **Read-Only:** ❌ Nu
 - **Ultima Modificare:** 2026-01-09 (creare inițială)
 - **Modificat De:** System (seed data)
 - **⚠️ ATENȚIE:** Modificarea acestui parametru NU afectează parole existente, doar validarea pentru parole noi!
+
+---
+
+### 🔹 Validation.Password.RequireSpecialChar
+- **Tip Date:** `bool`
+- **Valoare Curentă:** `true`
+- **Valoare Implicită:** `true`
+- **Interval Valid:** true/false
+- **Descriere:** Cere caracter special în parole (!@#$%^&*()_+-=[]{}|;:,.<>?)
+- **Impact Modificare:**
+  - `true` = securitate crescută, parole mai puternice
+  - `false` = UX mai ușor, dar securitate scăzută
+- **Folosit În:**
+  - `ResetPasswordValidator.cs` - validare parole noi
+- **Read-Only:** ❌ Nu
+- **Ultima Modificare:** 2026-01-13 (adăugat pentru FluentValidation)
+- **Modificat De:** GitHub Copilot
+- **⚠️ ATENȚIE:** Modificarea afectează doar validarea parolelor noi, nu cele existente!
 
 ---
 
@@ -153,16 +171,16 @@ Această documentație oferă o privire completă asupra tuturor parametrilor de
 - **Tip Date:** `int`
 - **Valoare Curentă:** `20`
 - **Valoare Implicită:** `20`
-- **Interval Valid:** 10 - 100 înregistrări
-- **Descriere:** Numărul implicit de înregistrări per pagină în grid-uri
+- **Interval Valid:** 5 - 200 înregistrări (multipli de 5)
+- **Descriere:** Numărul implicit de înregistrări per pagină în grid-uri (trebuie să fie multiplu de 5)
 - **Impact Modificare:**
   - ⬆️ Valoare mai mare = mai puține request-uri, mai mult trafic per request
   - ⬇️ Valoare mai mică = mai multe request-uri, navigare mai frecventă
 - **Folosit În:**
-  - Toate grid-urile Syncfusion (poate fi integrat)
+  - Toate grid-urile Syncfusion (Persoane, Utilizatori, etc.)
 - **Read-Only:** ❌ Nu
-- **Ultima Modificare:** 2026-01-09 (creare inițială)
-- **Modificat De:** System (seed data)
+- **Ultima Modificare:** 2026-01-13 (actualizare interval și validare)
+- **Modificat De:** GitHub Copilot
 
 ---
 

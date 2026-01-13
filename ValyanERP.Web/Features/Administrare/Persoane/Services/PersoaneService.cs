@@ -172,6 +172,12 @@ public class PersoaneService : IPersoaneService
         return data;
     }
 
+    public async Task<int> GetTotalCountAsync()
+    {
+        // Delegate to repository which handles SQL and security filtering
+        return await _repository.GetTotalCountAsync();
+    }
+
     public bool ValidateCNP(string? cnp)
     {
         if (string.IsNullOrWhiteSpace(cnp))

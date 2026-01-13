@@ -802,3 +802,58 @@
         font-size: 18px;
     }
 }
+
+/* =================================================================
+   PASSWORD VALIDATION STYLES
+   ================================================================= */
+
+.password-validation {
+    margin: 12px 0;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.validation-item {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.validation-item:last-child {
+    margin-bottom: 0;
+}
+
+.validation-success {
+    background: #dcfce7;
+    color: #166534;
+    border-left: 3px solid #16a34a;
+}
+
+.validation-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border-left: 3px solid #dc2626;
+}
+
+.validation-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-left: 3px solid #d97706;
+}
+
+/* Reset Password Dialog Enhancements */
+.reset-password-dialog .form-section {
+    margin-bottom: 16px;
+}
+
+.reset-password-dialog .password-requirements {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #64748b;
+}

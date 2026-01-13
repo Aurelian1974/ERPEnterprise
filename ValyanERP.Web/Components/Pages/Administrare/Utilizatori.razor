@@ -48,6 +48,19 @@
         </div>
     }
     
+    @* Loading Indicator *@
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Se încarcă datele...</span>
+            </div>
+        </div>
+    }
+    
     @* Success Alert *@
     @if (!string.IsNullOrEmpty(successMessage))
     {
@@ -129,19 +142,13 @@
                           ShowConfirmDialog="true">
             <HeaderTemplate>
                 <span class="e-dialog-header">
-                    @{
-                        var headerText = context.GetType().GetProperty("IsAdd")?.GetValue(context) is true 
-                            ? "Adaugă Utilizator Nou" 
-                            : "Editează Utilizator";
-                    }
-                    <i class="bi bi-person-plus me-2"></i>@headerText
+                    <i class="bi bi-person-plus me-2"></i>@GetEditDialogHeaderText(context)
                 </span>
             </HeaderTemplate>
             <Template>
                 @{
                     var user = context as User;
                     if (user == null) return;
-                    var isNewUser = user.Id == Guid.Empty;
                 }
                 <div class="edit-form-container">
                     @* Persoana Dropdown *@
@@ -178,7 +185,7 @@
                     </div>
 
                     @* Password (only for new users) *@
-                    @if (isNewUser)
+                    @if (IsNewUserFor(user))
                     {
                         <div class="form-group">
                             <label class="form-label">Parolă</label>
@@ -224,7 +231,7 @@
                     @{
                         var data = context as User;
                     }
-                    <div class="username-cell">
+                    <div class="username-cell" @key="data?.Id">
                         <i class="bi bi-person-circle me-2 text-primary"></i>
                         <span class="username-text">@data?.UserName</span>
                     </div>
@@ -257,7 +264,7 @@
                     @{
                         var data = context as User;
                     }
-                    <a href="mailto:@data?.Email" class="email-link">
+                    <a href="mailto:@data?.Email" class="email-link" @key="data?.Id">
                         <i class="bi bi-envelope me-1"></i>@data?.Email
                     </a>
                 </Template>
@@ -512,5 +519,130 @@
     </DialogTemplates>
     <DialogButtons>
         <DialogButton Content="Închide" IsPrimary="true" OnClick="CloseViewDialog"></DialogButton>
+    </DialogButtons>
+</SfDialog>
+
+@* Reset Password Dialog *@  
+<SfDialog @bind-Visible="showResetPasswordDialog" 
+          Width="450px" 
+          IsModal="true" 
+          ShowCloseIcon="true"
+          CssClass="reset-password-dialog">
+    <DialogTemplates>
+        <Header>
+            <span class="reset-dialog-header">
+                <i class="bi bi-key-fill me-2"></i>Resetare Parolă
+            </span>
+        </Header>
+        <Content>
+            @if (selectedUser != null)
+            {
+                <div class="reset-dialog-content">
+                    <div class="user-info-section">
+                        <div class="user-info">
+                            <strong>@selectedUser.UserName</strong><br />
+                            <small class="text-muted">@selectedUser.Email</small>
+                        </div>
+                    </div>
+                    
+                    <hr class="divider" />
+                    
+                    <div class="form-section">
+                        <p class="text-muted mb-3">
+                            Introduceți noua parolă pentru utilizatorul <strong>@selectedUser.UserName</strong>.
+                        </p>
+                        
+                        @* New Password *@  
+                        <div class="form-group">
+                            <label class="form-label required-field">Parolă Nouă</label>
+                            <SfTextBox @bind-Value="resetPasswordModel.NewPassword" 
+                                       Type="InputType.Password"
+                                       Placeholder="Introduceți parola nouă"
+                                       FloatLabelType="FloatLabelType.Never">
+                                <TextBoxEvents ValueChange="@(() => ValidateResetPasswordForm())"></TextBoxEvents>
+                            </SfTextBox>
+                            @if (validationResult.Errors.Any(e => e.PropertyName == nameof(ResetPasswordModel.NewPassword)))
+                            {
+                                <div class="validation-error">
+                                    @validationResult.Errors.First(e => e.PropertyName == nameof(ResetPasswordModel.NewPassword)).ErrorMessage
+                                </div>
+                            }
+                        </div>
+                        
+                        @* Password Requirements Visual Feedback *@  
+                        @if (!string.IsNullOrEmpty(resetPasswordModel.NewPassword))
+                        {
+                            <div class="password-validation">
+                                <div class="validation-item @GetRequirementClass(HasMinLength)">
+                                    @(HasMinLength ? "✅" : "❌") Cel puțin @minPasswordLength caractere
+                                </div>
+                                <div class="validation-item @GetRequirementClass(HasUppercase)">
+                                    @(HasUppercase ? "✅" : "❌") Cel puțin o literă mare
+                                </div>
+                                <div class="validation-item @GetRequirementClass(HasLowercase)">
+                                    @(HasLowercase ? "✅" : "❌") Cel puțin o literă mică
+                                </div>
+                                <div class="validation-item @GetRequirementClass(HasNumber)">
+                                    @(HasNumber ? "✅" : "❌") Cel puțin o cifră
+                                </div>
+                                @if (requireSpecialChar)
+                                {
+                                    <div class="validation-item @GetRequirementClass(HasSpecialChar)">
+                                        @(HasSpecialChar ? "✅" : "❌") Caracter special
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="validation-item validation-warning">
+                                        ⚠️ Caracter special (opțional)
+                                    </div>
+                                }
+                            </div>
+                        }
+                        
+                        @* Confirm Password *@  
+                        <div class="form-group">
+                            <label class="form-label required-field">Confirmare Parolă</label>
+                            <SfTextBox @bind-Value="resetPasswordModel.ConfirmPassword" 
+                                       Type="InputType.Password"
+                                       Placeholder="Confirmați parola nouă"
+                                       FloatLabelType="FloatLabelType.Never">
+                                <TextBoxEvents ValueChange="@(() => ValidateResetPasswordForm())"></TextBoxEvents>
+                            </SfTextBox>
+                            @if (validationResult.Errors.Any(e => e.PropertyName == nameof(ResetPasswordModel.ConfirmPassword)))
+                            {
+                                <div class="validation-error">
+                                    @validationResult.Errors.First(e => e.PropertyName == nameof(ResetPasswordModel.ConfirmPassword)).ErrorMessage
+                                </div>
+                            }
+                        </div>
+                        
+                        @* Password Match Indicator *@  
+                        @if (!string.IsNullOrEmpty(resetPasswordModel.ConfirmPassword))
+                        {
+                            <div class="validation-item @GetRequirementClass(PasswordsMatch)">
+                                @(PasswordsMatch ? "✅" : "❌") Parolele se potrivesc
+                            </div>
+                        }
+                        
+                        <div class="password-requirements">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Parola trebuie să aibă cel puțin 8 caractere.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Resetează Parola" 
+                      CssClass="e-danger" 
+                      IsPrimary="true" 
+                      Disabled="!IsResetPasswordFormValid"
+                      OnClick="ConfirmResetPassword">
+        </DialogButton>
+        <DialogButton Content="Anulează" OnClick="@(() => showResetPasswordDialog = false)"></DialogButton>
     </DialogButtons>
 </SfDialog>

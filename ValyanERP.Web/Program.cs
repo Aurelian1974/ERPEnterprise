@@ -70,10 +70,14 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.SystemParameter
 // Register Syncfusion Custom Adaptors
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Persoane.PersoaneAdaptor>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.UsersAdaptor>();
+// SystemParameters adaptor for server-side grid operations
+builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.SystemParameters.SystemParametersAdaptor>();
 
 // Register Services (Business Logic Layer)
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Persoane.Services.IPersoaneService, ValyanERP.Web.Features.Administrare.Persoane.Services.PersoaneService>();
+// SystemParametersService remains scoped (depends on scoped repository), but use a singleton notifier to broadcast changes across scopes
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.SystemParameters.Services.ISystemParametersService, ValyanERP.Web.Features.Infrastructure.SystemParameters.Services.SystemParametersService>();
+builder.Services.AddSingleton<ValyanERP.Web.Features.Infrastructure.SystemParameters.Services.ISystemParametersNotifier, ValyanERP.Web.Features.Infrastructure.SystemParameters.Services.SystemParametersNotifier>();
 
 // Audit System
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.Audit.Repositories.IAuditRepository, ValyanERP.Web.Features.Infrastructure.Audit.Repositories.AuditRepository>();

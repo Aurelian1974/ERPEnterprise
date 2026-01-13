@@ -8,6 +8,8 @@ using ValyanERP.Web.Components.Shared.DataGrid;
 using ValyanERP.Web.Features.Administrare.Persoane.Models;
 using ValyanERP.Web.Features.Administrare.Utilizatori.Models;
 using ValyanERP.Web.Features.Administrare.Utilizatori.Services;
+using FluentValidation;
+using FluentValidation.Results;
 
 namespace ValyanERP.Web.Components.Pages.Administrare;
 
@@ -32,6 +34,9 @@ public partial class Utilizatori : ComponentBase, IDisposable
     
     [Inject]
     private IJSRuntime JS { get; set; } = default!;
+    
+    [Inject]
+    private ValyanERP.Web.Features.Infrastructure.SystemParameters.Services.ISystemParametersService SystemParametersService { get; set; } = default!;
     
     #endregion
 
@@ -106,6 +111,84 @@ public partial class Utilizatori : ComponentBase, IDisposable
     /// </summary>
     private bool hasSelection = false;
     
+    /// <summary>
+    /// Whether the page is currently loading data.
+    /// </summary>
+    private bool isLoading = false;
+    
+    /// <summary>
+    /// Whether to show reset password dialog.
+    /// </summary>
+    private bool showResetPasswordDialog = false;
+    
+    /// <summary>
+    /// Model for password reset form.
+    /// </summary>
+    private ResetPasswordModel resetPasswordModel = new();
+
+    /// <summary>
+    /// Validator for password reset form.
+    /// </summary>
+    private ResetPasswordValidator resetPasswordValidator = new();
+
+    /// <summary>
+    /// Validation results from FluentValidation.
+    /// </summary>
+    private ValidationResult validationResult = new();
+    
+    /// <summary>
+    /// Individual password requirement checks for visual feedback.
+    /// </summary>
+    private bool HasMinLength => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && resetPasswordModel.NewPassword.Length >= minPasswordLength;
+    private bool HasUppercase => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && resetPasswordModel.NewPassword.Any(char.IsUpper);
+    private bool HasLowercase => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && resetPasswordModel.NewPassword.Any(char.IsLower);
+    private bool HasNumber => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && resetPasswordModel.NewPassword.Any(char.IsDigit);
+    private bool HasSpecialChar => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && resetPasswordModel.NewPassword.Any(c => !char.IsLetterOrDigit(c));
+    private bool PasswordsMatch => !string.IsNullOrEmpty(resetPasswordModel.NewPassword) && !string.IsNullOrEmpty(resetPasswordModel.ConfirmPassword) && resetPasswordModel.NewPassword == resetPasswordModel.ConfirmPassword;
+    
+    /// <summary>
+    /// Minimum password length from system parameters.
+    /// </summary>
+    private int minPasswordLength = 8;
+    
+    /// <summary>
+    /// Whether special characters are required from system parameters.
+    /// </summary>
+    private bool requireSpecialChar = true;
+
+    /// <summary>
+    /// Whether the reset password form is valid for submission.
+    /// </summary>
+    private bool IsResetPasswordFormValid => validationResult.IsValid;
+    
+    /// <summary>
+    /// Header text for edit dialog (computed property).
+    /// </summary>
+    private string EditDialogHeaderText => IsNewUser ? "Adaugă Utilizator Nou" : "Editează Utilizator";
+    
+    /// <summary>
+    /// Whether the current edit operation is for a new user.
+    /// </summary>
+    private bool IsNewUser => selectedUser?.Id == Guid.Empty;
+    
+    /// <summary>
+    /// Checks if a user object represents a new user (Id is empty).
+    /// </summary>
+    private bool IsNewUserFor(User user) => user?.Id == Guid.Empty;
+    
+    #endregion
+
+    #region Computed Properties
+    
+    /// <summary>
+    /// Gets the header text for edit dialog based on Syncfusion context.
+    /// </summary>
+    private string GetEditDialogHeaderText(object context)
+    {
+        var isAdd = context.GetType().GetProperty("IsAdd")?.GetValue(context) is true;
+        return isAdd ? "Adaugă Utilizator Nou" : "Editează Utilizator";
+    }
+    
     #endregion
 
     #region Grid Configuration
@@ -128,6 +211,7 @@ public partial class Utilizatori : ComponentBase, IDisposable
         "Add",
         "Edit",
         new ItemModel { Text = "Vizualizare", TooltipText = "Vizualizează detaliile utilizatorului selectat", PrefixIcon = "e-icons e-eye", Id = "View" },
+        new ItemModel { Text = "Resetare Parolă", TooltipText = "Resetează parola utilizatorului selectat", PrefixIcon = "e-icons e-lock", Id = "ResetPassword" },
         "Delete",
         new ItemModel { Text = "Reîmprospătează", TooltipText = "Reîmprospătează datele", PrefixIcon = "e-icons e-refresh", Id = "Refresh" },
         "Search",
@@ -154,10 +238,21 @@ public partial class Utilizatori : ComponentBase, IDisposable
     
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
         try
         {
             Logger.LogInformation("Utilizatori page initializing");
             errorMessage = null;
+            
+            // Load password validation parameters from system settings
+            minPasswordLength = await SystemParametersService.GetIntAsync("Validation.Password.MinLength", 8);
+            requireSpecialChar = await SystemParametersService.GetBoolAsync("Validation.Password.RequireSpecialChar", true);
+            
+            // Initialize password validator with system parameters
+            resetPasswordValidator = new ResetPasswordValidator(minPasswordLength, requireSpecialChar);
+            
+            Logger.LogInformation("Password validation configured: MinLength={MinLength}, RequireSpecialChar={RequireSpecialChar}", 
+                minPasswordLength, requireSpecialChar);
             
             // Load available persons for dropdown
             persoaneList = await UsersService.GetAvailablePersonsAsync();
@@ -170,12 +265,30 @@ public partial class Utilizatori : ComponentBase, IDisposable
             errorMessage = "Eroare la încărcarea listei de persoane. Vă rugăm reîncărcați pagina.";
             persoaneList = new List<Persoana>();
         }
+        finally
+        {
+            isLoading = false;
+        }
     }
     
     public void Dispose()
     {
         // Cleanup if needed
         Logger.LogDebug("Utilizatori page disposing");
+    }
+    
+    /// <summary>
+    /// Controls when the component should re-render for performance optimization.
+    /// </summary>
+    protected override bool ShouldRender()
+    {
+        // Don't re-render while loading to avoid flickering
+        if (isLoading)
+        {
+            return false;
+        }
+        
+        return base.ShouldRender();
     }
     
     #endregion
@@ -371,45 +484,6 @@ public partial class Utilizatori : ComponentBase, IDisposable
             {
                 // Ignore errors when getting count
             }
-        }
-    }
-    
-    /// <summary>
-    /// Handles toolbar button clicks.
-    /// </summary>
-    public async Task OnToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
-    {
-        try
-        {
-            Logger.LogDebug("Toolbar clicked: Item={Item}", args.Item?.Id);
-            
-            switch (args.Item?.Id)
-            {
-                case "View":
-                case "UtilizatoriGrid_view":
-                    await OpenViewDialog();
-                    break;
-                    
-                case "Refresh":
-                case "UtilizatoriGrid_refresh":
-                    await RefreshGrid();
-                    break;
-                    
-                case "UtilizatoriGrid_excelexport":
-                    args.Cancel = true; // Prevent default export behavior
-                    await ExportToExcel();
-                    break;
-                    
-                case "UtilizatoriGrid_pdfexport":
-                    args.Cancel = true; // Prevent default export behavior
-                    await ExportToPdf();
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error in OnToolbarClick: {Message}", ex.Message);
-            errorMessage = $"Eroare: {ex.Message}";
         }
     }
     
@@ -771,8 +845,173 @@ public partial class Utilizatori : ComponentBase, IDisposable
     
     #endregion
 
-    #region Helper Classes
+    #region Toolbar Methods
     
+    /// <summary>
+    /// Handles toolbar button clicks.
+    /// </summary>
+    public async Task OnToolbarClick(ClickEventArgs args)
+    {
+        try
+        {
+            ClearMessages();
+            
+            switch (args.Item.Id)
+            {
+                case "View":
+                    await HandleViewClick();
+                    break;
+                    
+                case "ResetPassword":
+                    await HandleResetPasswordClick();
+                    break;
+                    
+                case "Refresh":
+                    await HandleRefreshClick();
+                    break;
+                    
+                default:
+                    Logger.LogDebug("Unhandled toolbar click: {Id}", args.Item.Id);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error in OnToolbarClick: {Id}", args.Item.Id);
+            errorMessage = $"Eroare: {ex.Message}";
+        }
+    }
+    
+    /// <summary>
+    /// Handles the View button click.
+    /// </summary>
+    private async Task HandleViewClick()
+    {
+        if (selectedUser == null)
+        {
+            errorMessage = "Selectați un utilizator pentru vizualizare.";
+            return;
+        }
+        
+        viewUser = await UsersService.GetByIdAsync(selectedUser.Id);
+        if (viewUser != null)
+        {
+            showViewDialog = true;
+        }
+        else
+        {
+            errorMessage = "Utilizatorul nu a putut fi încărcat.";
+        }
+    }
+    
+    /// <summary>
+    /// Handles the Reset Password button click.
+    /// </summary>
+    private async Task HandleResetPasswordClick()
+    {
+        if (selectedUser == null)
+        {
+            errorMessage = "Selectați un utilizator pentru resetarea parolei.";
+            return;
+        }
+        
+        // Reset form fields and validation
+        resetPasswordModel = new ResetPasswordModel();
+        validationResult = new ValidationResult();
+        
+        showResetPasswordDialog = true;
+    }
+    
+    /// <summary>
+    /// Handles the Refresh button click.
+    /// </summary>
+    private async Task HandleRefreshClick()
+    {
+        try
+        {
+            if (grid != null)
+            {
+                await grid.Refresh();
+                successMessage = "Date reîmprospătate.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing grid");
+            errorMessage = $"Eroare la reîmprospătare: {ex.Message}";
+        }
+    }
+    
+    /// <summary>
+    /// Confirms and executes password reset.
+    /// </summary>
+    private async Task ConfirmResetPassword()
+    {
+        if (selectedUser == null)
+        {
+            errorMessage = "Niciun utilizator selectat.";
+            showResetPasswordDialog = false;
+            return;
+        }
+
+        try
+        {
+            // Validate form using FluentValidation
+            validationResult = resetPasswordValidator.Validate(resetPasswordModel);
+            if (!validationResult.IsValid)
+            {
+                errorMessage = "Datele introduse nu sunt valide. Verificați mesajele de eroare.";
+                return;
+            }
+
+            // Reset password
+            await UsersService.ResetPasswordAsync(selectedUser.Id, resetPasswordModel.NewPassword);
+
+            // Close dialog and show success
+            showResetPasswordDialog = false;
+            successMessage = $"Parola pentru utilizatorul {selectedUser.UserName} a fost resetată cu succes.";
+
+            // Clear form
+            resetPasswordModel = new ResetPasswordModel();
+            validationResult = new ValidationResult();
+
+            Logger.LogInformation("Password reset successful for user {UserName} (Id: {Id})", selectedUser.UserName, selectedUser.Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error resetting password for user {UserName}", selectedUser?.UserName);
+            errorMessage = $"Eroare la resetarea parolei: {ex.Message}";
+        }
+    }
+    
+    /// <summary>
+    /// Validates password in real-time as user types.
+    /// </summary>
+    /// <summary>
+    /// Validates the password reset form using FluentValidation.
+    /// </summary>
+    private void ValidateResetPasswordForm()
+    {
+        validationResult = resetPasswordValidator.Validate(resetPasswordModel);
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Gets CSS class for password requirement indicators.
+    /// </summary>
+    private string GetRequirementClass(bool isValid, bool isOptional = false)
+    {
+        if (isOptional && !isValid)
+        {
+            return "validation-warning";
+        }
+        return isValid ? "validation-success" : "validation-error";
+    }
+    
+    #endregion
+
+    #region Helper Classes
+
     /// <summary>
     /// Model for status filter dropdown.
     /// </summary>
@@ -781,6 +1020,6 @@ public partial class Utilizatori : ComponentBase, IDisposable
         public string Text { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
     }
-    
+
     #endregion
 }

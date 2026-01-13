@@ -20,6 +20,11 @@ public interface IPersoaneRepository
     /// <param name="dm">DataManager request with paging, filtering, sorting parameters.</param>
     /// <returns>DataResult containing records and total count.</returns>
     Task<DataResult> GetPagedAsync(DataManagerRequest dm);
+
+    /// <summary>
+    /// Returns total number of active Persoane in the database (used for header/pager display).
+    /// </summary>
+    Task<int> GetTotalCountAsync();
     
     /// <summary>
     /// Retrieves a single person by unique identifier.

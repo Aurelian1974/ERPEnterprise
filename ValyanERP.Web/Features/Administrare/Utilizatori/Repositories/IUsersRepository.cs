@@ -12,4 +12,5 @@ public interface IUsersRepository
     Task CreateAsync(UserCreateDto user);
     Task UpdateAsync(User user);
     Task DeleteAsync(Guid id);
+    Task<bool> ResetPasswordAsync(Guid userId, string newPasswordHash);
 }

@@ -98,7 +98,8 @@ public class PersoaneRepository : IPersoaneRepository
             parameters.Add("@SortField", sortField);
             parameters.Add("@SortDirection", sortDirection);
             parameters.Add("@Skip", dm.Skip);
-            parameters.Add("@Take", dm.Take == 0 ? 20 : dm.Take);
+            // Treat Take == 0 as a request for all (use a large limit) so export/grouping/counts work correctly
+            parameters.Add("@Take", dm.Take == 0 ? 10000 : dm.Take);
 
             // Execute stored procedure - returns multiple result sets
             using var multi = await connection.QueryMultipleAsync(
@@ -385,6 +386,25 @@ public class PersoaneRepository : IPersoaneRepository
         {
             _logger.LogError(ex, "SQL error in GetByEmailAsync for Email={Email}", email);
             throw new InvalidOperationException($"Database error in GetByEmailAsync: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Returns a total count of active Persoane (applies basic IsActive filter).
+    /// </summary>
+    public async Task<int> GetTotalCountAsync()
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            var sql = "SELECT COUNT(*) FROM Persoane WHERE IsActive = 1";
+            var count = await connection.ExecuteScalarAsync<int>(sql);
+            return count;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error in GetTotalCountAsync");
+            throw new InvalidOperationException($"Database error in GetTotalCountAsync: {ex.Message}", ex);
         }
     }
 

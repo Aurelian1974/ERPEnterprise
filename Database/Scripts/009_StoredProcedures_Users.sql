@@ -219,4 +219,40 @@ BEGIN
 END
 GO
 
+-- =============================================
+-- sp_Users_ResetPassword - Secure password reset
+-- =============================================
+IF OBJECT_ID('dbo.sp_Users_ResetPassword', 'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_Users_ResetPassword;
+GO
+
+CREATE PROCEDURE dbo.sp_Users_ResetPassword
+    @UserId UNIQUEIDENTIFIER,
+    @PasswordHash NVARCHAR(256),
+    @UpdatedAt DATETIME2
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if user exists
+    IF NOT EXISTS (SELECT 1 FROM Users WHERE Id = @UserId)
+    BEGIN
+        RAISERROR('User not found', 16, 1);
+        RETURN;
+    END
+    
+    -- Reset password and update timestamp
+    UPDATE Users 
+    SET PasswordHash = @PasswordHash,
+        UpdatedAt = @UpdatedAt,
+        SecurityStamp = NEWID(), -- Invalidate existing tokens
+        AccessFailedCount = 0,   -- Reset failed login attempts
+        LockoutEnd = NULL        -- Remove any lockout
+    WHERE Id = @UserId;
+    
+    -- Return success indicator
+    SELECT @@ROWCOUNT AS RowsAffected;
+END
+GO
+
 PRINT '✅ Users stored procedures created successfully!';
