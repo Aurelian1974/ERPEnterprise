@@ -395,7 +395,11 @@ CREATE PROCEDURE dbo.sp_Partners_Update
     @IdentificatorTemp VARCHAR(50) = NULL,
     @MotivLipsaIdentificator NVARCHAR(200) = NULL,
     @Observatii NVARCHAR(2000) = NULL,
-    @UpdatedBy UNIQUEIDENTIFIER = NULL
+    @UpdatedBy UNIQUEIDENTIFIER = NULL,
+    -- Ownership parameters
+    @OwnerCompanyId UNIQUEIDENTIFIER = NULL,
+    @OwnerWorkPlaceId UNIQUEIDENTIFIER = NULL,
+    @OwnerLocationId UNIQUEIDENTIFIER = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -451,6 +455,10 @@ BEGIN
         IdentificatorTemp = @IdentificatorTemp,
         MotivLipsaIdentificator = @MotivLipsaIdentificator,
         Observatii = @Observatii,
+        -- Ownership columns
+        OwnerCompanyId = @OwnerCompanyId,
+        OwnerWorkPlaceId = @OwnerWorkPlaceId,
+        OwnerLocationId = @OwnerLocationId,
         UpdatedAt = GETDATE(),
         UpdatedBy = @UpdatedBy
     WHERE Id = @Id;

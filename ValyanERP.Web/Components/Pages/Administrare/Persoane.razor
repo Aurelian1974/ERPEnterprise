@@ -11,6 +11,7 @@
 @using Syncfusion.Blazor.Popups
 @using Syncfusion.Blazor.DropDowns
 @using ValyanERP.Web.Components.Shared.DataGrid
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Administrare Persoane</PageTitle>
 
@@ -128,53 +129,55 @@
                     if (p == null) return;
                 }
                 <EditForm Model="p" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" Context="editContext">
+                    <DataAnnotationsValidator />
+                    
+                    @* Store EditContext reference for validation *@
+                    @{ _currentEditContext = editContext; }
+                    
                     <div class="edit-form-container">
                         @* Nume & Prenume - side by side *@
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group @(GetValidationClass(editContext, p, nameof(Persoana.Nume)))">
                                 <label class="form-label required-field">Nume</label>
                                 <SfTextBox @bind-Value="@(p.Nume)" 
                                            Placeholder="Introduceți numele"
                                            FloatLabelType="FloatLabelType.Always"
-                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Nume)) ?? string.Empty)">
+                                           CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.Nume)))">
                                 </SfTextBox>
-                                <ValidationMessage For="@(() => p.Nume)" />
+                                <ValidationMessage For="@(() => p.Nume)" class="validation-error" />
                             </div>
-                            <div class="form-group">
+                            <div class="form-group @(GetValidationClass(editContext, p, nameof(Persoana.Prenume)))">
                                 <label class="form-label required-field">Prenume</label>
                                 <SfTextBox @bind-Value="@(p.Prenume)" 
                                            Placeholder="Introduceți prenumele"
                                            FloatLabelType="FloatLabelType.Always"
-                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Prenume)) ?? string.Empty)">
+                                           CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.Prenume)))">
                                 </SfTextBox>
-                                <ValidationMessage For="@(() => p.Prenume)" />
+                                <ValidationMessage For="@(() => p.Prenume)" class="validation-error" />
                             </div>
                         </div>
 
                         @* CNP & Email - side by side *@
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group @(GetValidationClass(editContext, p, nameof(Persoana.CNP)))">
                                 <label class="form-label required-field">CNP</label>
                                 <SfTextBox @bind-Value="@(p.CNP)" 
                                            Placeholder="Introduceți CNP-ul"
                                            FloatLabelType="FloatLabelType.Always"
-                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.CNP)) ?? string.Empty)"
-                                           @oninput="(e => { p.CNP = e.Value?.ToString(); ValidateCnpField(p.CNP); })">
+                                           CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.CNP)))"
+                                           @oninput="(e => { p.CNP = e.Value?.ToString(); ValidateCnpField(p.CNP, editContext); })"
+                                           Blur="@(() => ValidateCnpOnBlur(p.CNP, editContext))">
                                 </SfTextBox>
-                                <ValidationMessage For="@(() => p.CNP)" />
-                                @if (!string.IsNullOrEmpty(cnpCustomError))
-                                {
-                                    <span class="validation-message">@cnpCustomError</span>
-                                }
+                                <ValidationMessage For="@(() => p.CNP)" class="validation-error" />
                             </div>
-                            <div class="form-group">
+                            <div class="form-group @(GetValidationClass(editContext, p, nameof(Persoana.Email)))">
                                 <label class="form-label">Email</label>
                                 <SfTextBox @bind-Value="@(p.Email)" 
                                        Placeholder="Introduceți adresa de email"
                                        FloatLabelType="FloatLabelType.Always"
-                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Email)) ?? string.Empty)">
+                                       CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.Email)))">
                             </SfTextBox>
-                            <ValidationMessage For="@(() => p.Email)" />
+                            <ValidationMessage For="@(() => p.Email)" class="validation-error" />
                         </div>
                     </div>
 
@@ -185,7 +188,7 @@
                             <SfTextBox @bind-Value="@(p.Oras)" 
                                        Placeholder="Introduceți orașul"
                                        FloatLabelType="FloatLabelType.Always"
-                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Oras)) ?? string.Empty)">
+                                       CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.Oras)))">
                             </SfTextBox>
                         </div>
                         <div class="form-group">
@@ -193,7 +196,7 @@
                             <SfTextBox @bind-Value="@(p.Judet)" 
                                        Placeholder="Introduceți județul"
                                        FloatLabelType="FloatLabelType.Always"
-                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Judet)) ?? string.Empty)">
+                                       CssClass="@(CombineFieldCss(editContext, p, nameof(Persoana.Judet)))">
                             </SfTextBox>
                         </div>
                     </div>

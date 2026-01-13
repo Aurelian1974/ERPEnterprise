@@ -172,32 +172,116 @@
     background-color: var(--bs-light) !important;
 }
 
-/* Validation Styles */
-.validation-message {
+/* ===== VALIDATION STYLES ===== */
+
+/* Validation Summary - lista de erori */
+.validation-summary {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.validation-summary ul {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+}
+
+.validation-summary li {
+    margin-bottom: 0.25rem;
+}
+
+/* Mesaje de eroare individuale pe câmpuri */
+.validation-error {
     color: #dc3545;
     font-size: 0.875em;
-    margin-top: 0.25rem;
-    display: block;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    animation: slideDown 0.2s ease-out;
 }
 
-.invalid-feedback {
-    display: block;
+.validation-error::before {
+    content: "⚠ ";
+    margin-right: 0.25rem;
+    font-weight: bold;
 }
 
-/* Feedback vizual pentru inputuri invalide (Syncfusion + Blazor) */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Group cu eroare - border roșu și background light */
+.form-group.has-error {
+    padding: 0.75rem;
+    background-color: rgba(220, 53, 69, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid #dc3545;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-group.has-error .form-label {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Input-uri invalide (Syncfusion) */
 .is-invalid .e-input,
 .is-invalid .e-input-group,
 .is-invalid .e-float-input {
     border-color: #dc3545 !important;
-    box-shadow: 0 0 0 0.15rem rgba(220,53,69,.15);
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    background-color: #fff;
 }
 
 .is-invalid .e-float-text {
     color: #dc3545 !important;
+    font-weight: 600;
 }
 
-/* Highlight invalid fields */
-.form-group:has(.validation-message) .e-input-group,
+/* Focus state pentru input-uri invalide */
+.is-invalid .e-input:focus,
+.is-invalid .e-input-group:focus-within {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.3rem rgba(220, 53, 69, 0.3) !important;
+}
+
+/* Input-uri valide (feedback pozitiv) */
+.form-group:not(.has-error) .e-input:focus,
+.form-group:not(.has-error) .e-input-group:focus-within {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25);
+}
+
+/* Required field indicator */
+.required-field::after {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Shake animation pentru erori critice */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.form-group.has-error.shake {
+    animation: shake 0.3s ease;
+}
+
+/* Highlight invalid fields - fallback */
+.form-group:has(.validation-error) .e-input-group,
 .form-group:has(.validation-message) .e-float-input {
     border-color: #dc3545 !important;
 }

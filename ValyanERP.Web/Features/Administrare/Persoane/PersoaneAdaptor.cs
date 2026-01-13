@@ -149,22 +149,50 @@ public class PersoaneAdaptor : DataAdaptor
     
     public override async Task<object> InsertAsync(DataManager dm, object value, string key)
     {
-        var persoana = value as Persoana;
-        if (persoana == null)
-            throw new ArgumentNullException(nameof(value));
-            
-        await _service.CreateAsync(persoana);
-        return value;
+        try
+        {
+            var persoana = value as Persoana;
+            if (persoana == null)
+                throw new ArgumentNullException(nameof(value));
+                
+            await _service.CreateAsync(persoana);
+            return value;
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Re-throw with clear message for UI
+            _logger.LogWarning(ex, "Validation error in InsertAsync");
+            throw new InvalidOperationException(ex.Message, ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in InsertAsync");
+            throw new InvalidOperationException("Eroare la crearea persoanei. Vă rugăm verificați datele introduse.", ex);
+        }
     }
     
     public override async Task<object> UpdateAsync(DataManager dm, object value, string keyField, string key)
     {
-        var persoana = value as Persoana;
-        if (persoana == null)
-            throw new ArgumentNullException(nameof(value));
-            
-        await _service.UpdateAsync(persoana);
-        return value;
+        try
+        {
+            var persoana = value as Persoana;
+            if (persoana == null)
+                throw new ArgumentNullException(nameof(value));
+                
+            await _service.UpdateAsync(persoana);
+            return value;
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Re-throw with clear message for UI
+            _logger.LogWarning(ex, "Validation error in UpdateAsync");
+            throw new InvalidOperationException(ex.Message, ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in UpdateAsync");
+            throw new InvalidOperationException("Eroare la actualizarea persoanei. Vă rugăm verificați datele introduse.", ex);
+        }
     }
     
     public override async Task<object> RemoveAsync(DataManager dm, object value, string keyField, string key)

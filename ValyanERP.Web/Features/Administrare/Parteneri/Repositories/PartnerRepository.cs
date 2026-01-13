@@ -427,29 +427,14 @@ public class PartnerRepository : IPartnerRepository
             parameters.Add("@CNP", dto.CNP);
             parameters.Add("@CUI", dto.CUI);
             parameters.Add("@CIF", dto.CIF);
-            parameters.Add("@VATID", dto.VATID);
             parameters.Add("@RegCom", dto.RegCom);
-            parameters.Add("@NrAutorizatie", dto.NrAutorizatie);
-            parameters.Add("@Pasaport", dto.Pasaport);
             parameters.Add("@TaraOrigine", dto.TaraOrigine);
-            parameters.Add("@CAENPrincipal", dto.CAENPrincipal);
-            parameters.Add("@CapitalSocial", dto.CapitalSocial);
             parameters.Add("@Email", dto.Email);
             parameters.Add("@Telefon", dto.Telefon);
-            parameters.Add("@TelefonSecundar", dto.TelefonSecundar);
-            parameters.Add("@Website", dto.Website);
             parameters.Add("@EstePlatitorTVA", dto.EstePlatitorTVA);
-            parameters.Add("@DataInregistrareTVA", dto.DataInregistrareTVA);
-            parameters.Add("@StatusSplitTVA", dto.StatusSplitTVA);
             parameters.Add("@PartnerStatus", dto.PartnerStatus);
-            parameters.Add("@EsteActiv", dto.EsteActiv);
-            parameters.Add("@BlocatFacturare", dto.BlocatFacturare);
-            parameters.Add("@BlocatLivrare", dto.BlocatLivrare);
-            parameters.Add("@MotivBlocare", dto.MotivBlocare);
-            parameters.Add("@LimitaCredit", dto.LimitaCredit);
-            parameters.Add("@TermenPlataDef", dto.TermenPlataDef);
-            parameters.Add("@CategorieComercialaTxt", (string?)null); // Column renamed, pass null for now
             parameters.Add("@Observatii", dto.Observatii);
+            parameters.Add("@IsActive", dto.EsteActiv); // SP uses @IsActive, not @EsteActiv
             parameters.Add("@UpdatedBy", updatedBy);
             
             // Ownership - în ce entitate organizațională aparține partenerul
