@@ -11,7 +11,6 @@
 @using Syncfusion.Blazor.Popups
 @using Syncfusion.Blazor.DropDowns
 @using ValyanERP.Web.Components.Shared.DataGrid
-@using Blazored.FluentValidation
 
 <PageTitle>Administrare Persoane</PageTitle>
 
@@ -128,42 +127,52 @@
                     var p = context as Persoana;
                     if (p == null) return;
                 }
-                <div class="edit-form-container">
-                    @* Nume & Prenume - side by side *@
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required-field">Nume</label>
-                            <SfTextBox @bind-Value="@(p.Nume)" 
-                                       Placeholder="Introduceți numele"
-                                       FloatLabelType="FloatLabelType.Always">
-                            </SfTextBox>
-                            <ValidationMessage For="@(() => p.Nume)" />
+                <EditForm Model="p" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" Context="editContext">
+                    <div class="edit-form-container">
+                        @* Nume & Prenume - side by side *@
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required-field">Nume</label>
+                                <SfTextBox @bind-Value="@(p.Nume)" 
+                                           Placeholder="Introduceți numele"
+                                           FloatLabelType="FloatLabelType.Always"
+                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Nume)) ?? string.Empty)">
+                                </SfTextBox>
+                                <ValidationMessage For="@(() => p.Nume)" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required-field">Prenume</label>
+                                <SfTextBox @bind-Value="@(p.Prenume)" 
+                                           Placeholder="Introduceți prenumele"
+                                           FloatLabelType="FloatLabelType.Always"
+                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Prenume)) ?? string.Empty)">
+                                </SfTextBox>
+                                <ValidationMessage For="@(() => p.Prenume)" />
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label required-field">Prenume</label>
-                            <SfTextBox @bind-Value="@(p.Prenume)" 
-                                       Placeholder="Introduceți prenumele"
-                                       FloatLabelType="FloatLabelType.Always">
-                            </SfTextBox>
-                            <ValidationMessage For="@(() => p.Prenume)" />
-                        </div>
-                    </div>
 
-                    @* CNP & Email - side by side *@
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required-field">CNP</label>
-                            <SfTextBox @bind-Value="@(p.CNP)" 
-                                       Placeholder="Introduceți CNP-ul"
-                                       FloatLabelType="FloatLabelType.Always">
-                            </SfTextBox>
-                            <ValidationMessage For="@(() => p.CNP)" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <SfTextBox @bind-Value="@(p.Email)" 
+                        @* CNP & Email - side by side *@
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required-field">CNP</label>
+                                <SfTextBox @bind-Value="@(p.CNP)" 
+                                           Placeholder="Introduceți CNP-ul"
+                                           FloatLabelType="FloatLabelType.Always"
+                                           CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.CNP)) ?? string.Empty)"
+                                           @oninput="(e => { p.CNP = e.Value?.ToString(); ValidateCnpField(p.CNP); })">
+                                </SfTextBox>
+                                <ValidationMessage For="@(() => p.CNP)" />
+                                @if (!string.IsNullOrEmpty(cnpCustomError))
+                                {
+                                    <span class="validation-message">@cnpCustomError</span>
+                                }
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <SfTextBox @bind-Value="@(p.Email)" 
                                        Placeholder="Introduceți adresa de email"
-                                       FloatLabelType="FloatLabelType.Always">
+                                       FloatLabelType="FloatLabelType.Always"
+                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Email)) ?? string.Empty)">
                             </SfTextBox>
                             <ValidationMessage For="@(() => p.Email)" />
                         </div>
@@ -175,14 +184,16 @@
                             <label class="form-label">Oraș</label>
                             <SfTextBox @bind-Value="@(p.Oras)" 
                                        Placeholder="Introduceți orașul"
-                                       FloatLabelType="FloatLabelType.Always">
+                                       FloatLabelType="FloatLabelType.Always"
+                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Oras)) ?? string.Empty)">
                             </SfTextBox>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Județ</label>
                             <SfTextBox @bind-Value="@(p.Judet)" 
                                        Placeholder="Introduceți județul"
-                                       FloatLabelType="FloatLabelType.Always">
+                                       FloatLabelType="FloatLabelType.Always"
+                                       CssClass="@(editContext?.FieldCssClass(FieldIdentifier.Create(() => p.Judet)) ?? string.Empty)">
                             </SfTextBox>
                         </div>
                     </div>
@@ -194,6 +205,7 @@
                         </SfCheckBox>
                     </div>
                 </div>
+                </EditForm>
             </Template>
         </GridEditSettings>
 

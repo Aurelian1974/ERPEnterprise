@@ -172,6 +172,40 @@
     background-color: var(--bs-light) !important;
 }
 
+/* Validation Styles */
+.validation-message {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.invalid-feedback {
+    display: block;
+}
+
+/* Feedback vizual pentru inputuri invalide (Syncfusion + Blazor) */
+.is-invalid .e-input,
+.is-invalid .e-input-group,
+.is-invalid .e-float-input {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.15rem rgba(220,53,69,.15);
+}
+
+.is-invalid .e-float-text {
+    color: #dc3545 !important;
+}
+
+/* Highlight invalid fields */
+.form-group:has(.validation-message) .e-input-group,
+.form-group:has(.validation-message) .e-float-input {
+    border-color: #dc3545 !important;
+}
+
+.form-group:has(.validation-message) .e-float-text {
+    color: #dc3545 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .page-header {

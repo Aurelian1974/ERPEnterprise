@@ -178,7 +178,7 @@ public class PersoaneService : IPersoaneService
         return await _repository.GetTotalCountAsync();
     }
 
-    public bool ValidateCNP(string? cnp)
+    public static bool ValidateCNP(string? cnp)
     {
         if (string.IsNullOrWhiteSpace(cnp))
         {

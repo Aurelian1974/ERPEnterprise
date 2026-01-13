@@ -43,9 +43,4 @@ public interface IPersoaneService
     /// Returns a total number of active persons in the database.
     /// </summary>
     Task<int> GetTotalCountAsync();
-
-    /// <summary>
-    /// Validates CNP (Romanian Personal Numeric Code).
-    /// </summary>
-    bool ValidateCNP(string? cnp);
 }

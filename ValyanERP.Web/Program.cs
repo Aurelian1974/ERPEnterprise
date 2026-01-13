@@ -13,7 +13,6 @@ using Syncfusion.Blazor;
 using Syncfusion.Licensing;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Blazored.FluentValidation;
 using ValyanERP.Web.Features.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -87,9 +86,6 @@ builder.Services.AddSingleton<ValyanERP.Web.Features.Infrastructure.Audit.Servic
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<ValyanERP.Web.Features.Administrare.Persoane.Validators.PersoanaValidator>();
-
-// Blazored FluentValidation for Blazor EditForm integration
-// (no explicit service registration required for Blazored.FluentValidation v2+)
 
 // Sessions repository & service
 builder.Services.AddScoped<ISessionsRepository, SessionsRepository>();

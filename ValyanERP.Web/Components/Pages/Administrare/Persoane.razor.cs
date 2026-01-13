@@ -59,6 +59,8 @@ public partial class Persoane : ComponentBase, IDisposable
         new StatusItem { Text = "Active", Value = "true" },
         new StatusItem { Text = "Inactive", Value = "false" }
     };
+    
+    private string? cnpCustomError;
 
     /// <summary>
     /// Handles grid action events (Save, Delete, etc.)
@@ -504,6 +506,45 @@ public partial class Persoane : ComponentBase, IDisposable
         // This would be determined by the grid's edit mode
         // For now, return a generic header
         return "Editare Persoană";
+    }
+    
+    /// <summary>
+    /// Handles valid form submission.
+    /// </summary>
+    private void HandleValidSubmit()
+    {
+        // Form is valid, grid will proceed with save
+    }
+    
+    /// <summary>
+    /// Handles invalid form submission.
+    /// </summary>
+    private void HandleInvalidSubmit()
+    {
+        errorMessage = "Vă rugăm corectați erorile din formular înainte de salvare.";
+    }
+
+    private void ValidateCnpField(string? cnp)
+    {
+        cnpCustomError = null;
+        if (!string.IsNullOrWhiteSpace(cnp))
+        {
+            if (!ValyanERP.Web.Features.Administrare.Persoane.Services.PersoaneService.ValidateCNP(cnp))
+            {
+                if (cnp.Length != 13 || !cnp.All(char.IsDigit))
+                {
+                    cnpCustomError = "CNP-ul trebuie să conțină exact 13 cifre.";
+                }
+                else if (int.Parse(cnp[0].ToString()) < 1 || int.Parse(cnp[0].ToString()) > 8)
+                {
+                    cnpCustomError = "CNP-ul nu are un format valid (prima cifră).";
+                }
+                else
+                {
+                    cnpCustomError = "CNP-ul introdus nu este valid (checksum).";
+                }
+            }
+        }
     }
 }
 
