@@ -94,6 +94,8 @@ public partial class TipuriArticole : ComponentBase
             }
 
             errorMessage = null;
+            dialogOpen = false;
+
             // Reload data
             data = (await ItemTypesService.GetAllAsync()).ToList();
             StateHasChanged();
@@ -107,14 +109,21 @@ public partial class TipuriArticole : ComponentBase
 
     private async Task OnDeleteConfirmed(bool confirmed)
     {
-        if (!confirmed || deleteItemId == null) return;
+        if (!confirmed || deleteItemId == null)
+        {
+            deleteDialogOpen = false;
+            deleteItemId = null;
+            return;
+        }
 
         try
         {
             await ItemTypesService.DeleteAsync(deleteItemId.Value);
             deleteItemId = null;
+            deleteDialogOpen = false;
             successMessage = "Tipul de articol a fost șters.";
             errorMessage = null;
+
             // Reload data
             data = (await ItemTypesService.GetAllAsync()).ToList();
             StateHasChanged();
@@ -123,6 +132,7 @@ public partial class TipuriArticole : ComponentBase
         {
             errorMessage = ex.Message;
             successMessage = null;
+            deleteDialogOpen = false;
         }
     }
 

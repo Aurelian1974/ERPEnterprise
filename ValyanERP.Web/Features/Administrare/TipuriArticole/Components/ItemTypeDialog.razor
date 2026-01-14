@@ -25,19 +25,19 @@
             }
             else
             {
-                <EditForm Model="Model" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" Context="editContext">
+                <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit">
                     <DataAnnotationsValidator />
 
                     <div class="dialog-form-container">
                         @* ItemTypeCode *@
-                        <div class="form-group @(GetValidationClass(editContext, Model, nameof(ItemType.ItemTypeCode)))">
+                        <div class="form-group @(GetValidationClass(nameof(ItemType.ItemTypeCode)))">
                             <label class="form-label required-field">
                                 <i class="bi bi-hash me-1"></i>Cod
                             </label>
                             <SfTextBox @bind-Value="@Model.ItemTypeCode"
                                        Placeholder="Introduceți codul tipului de articol"
                                        FloatLabelType="FloatLabelType.Always"
-                                       CssClass="@(CombineFieldCss(editContext, Model, nameof(ItemType.ItemTypeCode)))"
+                                       CssClass="@(CombineFieldCss(nameof(ItemType.ItemTypeCode)))"
                                        Enabled="!IsLoading">
                                 <SfTextBoxEvents ValueChange="OnCodeChanged"></SfTextBoxEvents>
                             </SfTextBox>
@@ -51,14 +51,14 @@
                         </div>
 
                         @* ItemTypeName *@
-                        <div class="form-group @(GetValidationClass(editContext, Model, nameof(ItemType.ItemTypeName)))">
+                        <div class="form-group @(GetValidationClass(nameof(ItemType.ItemTypeName)))">
                             <label class="form-label required-field">
                                 <i class="bi bi-card-text me-1"></i>Denumire
                             </label>
                             <SfTextBox @bind-Value="@Model.ItemTypeName"
                                        Placeholder="Introduceți denumirea tipului de articol"
                                        FloatLabelType="FloatLabelType.Always"
-                                       CssClass="@(CombineFieldCss(editContext, Model, nameof(ItemType.ItemTypeName)))"
+                                       CssClass="@(CombineFieldCss(nameof(ItemType.ItemTypeName)))"
                                        Enabled="!IsLoading">
                             </SfTextBox>
                             <ValidationMessage For="@(() => Model.ItemTypeName)" class="validation-error" />
@@ -124,8 +124,10 @@
         return Model.Id == Guid.Empty ? "Adaugă" : "Salvează";
     }
 
-    private string GetValidationClass(EditContext editContext, ItemType model, string fieldName)
+    private string GetValidationClass(string fieldName)
     {
+        if (editContext == null) return string.Empty;
+
         var field = editContext.Field(fieldName);
         if (!editContext.IsValid(field))
         {
@@ -134,10 +136,10 @@
         return string.Empty;
     }
 
-    private string CombineFieldCss(EditContext editContext, ItemType model, string fieldName)
+    private string CombineFieldCss(string fieldName)
     {
         var baseCss = "form-control";
-        var validationClass = GetValidationClass(editContext, model, fieldName);
+        var validationClass = GetValidationClass(fieldName);
         return string.IsNullOrEmpty(validationClass) ? baseCss : $"{baseCss} {validationClass}";
     }
 
@@ -145,6 +147,8 @@
     {
         Model.ItemTypeCode = value?.ToUpper() ?? string.Empty;
         CheckCodeAvailability();
+        editContext?.NotifyFieldChanged(editContext.Field(nameof(ItemType.ItemTypeCode)));
+        StateHasChanged();
     }
 
     private void CheckCodeAvailability()
@@ -198,21 +202,21 @@
     private async Task CloseDialog()
     {
         IsOpen = false;
-        IsLoading = false;
-        IsCodeTaken = false;
         await IsOpenChanged.InvokeAsync(IsOpen);
     }
 
     private void OnDialogClosed()
     {
-        // Reset state if needed
+        // Reset state when dialog is closed
         IsLoading = false;
         IsCodeTaken = false;
+        Model = new ItemType();
     }
 
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
+        editContext = new EditContext(Model);
         CheckCodeAvailability();
     }
 }
