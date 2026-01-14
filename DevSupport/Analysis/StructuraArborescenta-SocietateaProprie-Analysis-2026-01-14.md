@@ -35,3 +35,5 @@ Permite adăugarea de Societăți, Puncte de Lucru și Locații în pagina "Soci
 ---
 
 Dacă ești de acord cu pașii, trec la implementarea testelor (unit + component) și la actualizarea documentației.
+
+**Status:** Merged into `main` on 2026-01-14 (branch `feature/societatea-proprie-admin-auth`).
