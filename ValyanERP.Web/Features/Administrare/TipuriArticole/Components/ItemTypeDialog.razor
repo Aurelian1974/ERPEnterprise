@@ -2,9 +2,95 @@
 @using System.ComponentModel.DataAnnotations
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
 @using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Inputs.Internal
 
-<SfDialog Width="400px" IsModal="true" ShowCloseIcon="true" Visible="@IsOpen" Content="DialogContent">
+<SfDialog @bind-Visible="IsOpen"
+          Width="450px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="@GetDialogTitle()"
+          CssClass="item-type-dialog">
+    <DialogTemplates>
+        <Content>
+            @if (IsLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Se încarcă...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Se salvează...</p>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="Model" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" Context="editContext">
+                    <DataAnnotationsValidator />
+
+                    <div class="dialog-form-container">
+                        @* ItemTypeCode *@
+                        <div class="form-group @(GetValidationClass(editContext, Model, nameof(ItemType.ItemTypeCode)))">
+                            <label class="form-label required-field">
+                                <i class="bi bi-hash me-1"></i>Cod
+                            </label>
+                            <SfTextBox @bind-Value="@Model.ItemTypeCode"
+                                       Placeholder="Introduceți codul tipului de articol"
+                                       FloatLabelType="FloatLabelType.Always"
+                                       CssClass="@(CombineFieldCss(editContext, Model, nameof(ItemType.ItemTypeCode)))"
+                                       Enabled="!IsLoading">
+                                <SfTextBoxEvents ValueChange="OnCodeChanged"></SfTextBoxEvents>
+                            </SfTextBox>
+                            <ValidationMessage For="@(() => Model.ItemTypeCode)" class="validation-error" />
+                            @if (IsCodeTaken)
+                            {
+                                <div class="validation-error">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Codul este deja folosit
+                                </div>
+                            }
+                        </div>
+
+                        @* ItemTypeName *@
+                        <div class="form-group @(GetValidationClass(editContext, Model, nameof(ItemType.ItemTypeName)))">
+                            <label class="form-label required-field">
+                                <i class="bi bi-card-text me-1"></i>Denumire
+                            </label>
+                            <SfTextBox @bind-Value="@Model.ItemTypeName"
+                                       Placeholder="Introduceți denumirea tipului de articol"
+                                       FloatLabelType="FloatLabelType.Always"
+                                       CssClass="@(CombineFieldCss(editContext, Model, nameof(ItemType.ItemTypeName)))"
+                                       Enabled="!IsLoading">
+                            </SfTextBox>
+                            <ValidationMessage For="@(() => Model.ItemTypeName)" class="validation-error" />
+                        </div>
+
+                        @* Preview *@
+                        @if (!string.IsNullOrWhiteSpace(Model.ItemTypeCode) || !string.IsNullOrWhiteSpace(Model.ItemTypeName))
+                        {
+                            <div class="preview-section">
+                                <label class="form-label">
+                                    <i class="bi bi-eye me-1"></i>Previzualizare
+                                </label>
+                                <div class="preview-card">
+                                    <div class="preview-code">@(string.IsNullOrWhiteSpace(Model.ItemTypeCode) ? "COD" : Model.ItemTypeCode.ToUpper())</div>
+                                    <div class="preview-name">@(string.IsNullOrWhiteSpace(Model.ItemTypeName) ? "Denumire tip articol" : Model.ItemTypeName)</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </EditForm>
+            }
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-outline" @onclick="CloseDialog" Disabled="IsLoading">Anulează</SfButton>
+                <SfButton CssClass="e-primary" IsPrimary="true" @onclick="SubmitForm" Disabled="IsLoading || IsCodeTaken">
+                    @GetSaveButtonText()
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+    <DialogEvents Closed="OnDialogClosed" />
 </SfDialog>
 
 @code {
@@ -20,76 +106,113 @@
     [Parameter]
     public EventCallback<ItemType> OnValidSubmit { get; set; }
 
-    private RenderFragment DialogContent => builder =>
+    [Parameter]
+    public IEnumerable<ItemType> ExistingItems { get; set; } = new List<ItemType>();
+
+    private bool IsLoading { get; set; }
+    private bool IsCodeTaken { get; set; }
+    private EditContext? editContext;
+
+    private string GetDialogTitle()
     {
-        var seq = 0;
-        builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "dialog-form-container");
+        return Model.Id == Guid.Empty ? "Adăugare Tip Articol" : "Editare Tip Articol";
+    }
 
-        builder.OpenComponent<EditForm>(seq++);
-        builder.AddAttribute(seq++, "Model", Model);
-        builder.AddAttribute(seq++, "OnValidSubmit", EventCallback.Factory.Create(this, HandleValidSubmit));
-        builder.AddAttribute(seq++, "ChildContent", (RenderFragment)((formBuilder) =>
+    private string GetSaveButtonText()
+    {
+        if (IsLoading) return "Se salvează...";
+        return Model.Id == Guid.Empty ? "Adaugă" : "Salvează";
+    }
+
+    private string GetValidationClass(EditContext editContext, ItemType model, string fieldName)
+    {
+        var field = editContext.Field(fieldName);
+        if (!editContext.IsValid(field))
         {
-            var s = 0;
-            formBuilder.OpenComponent<DataAnnotationsValidator>(s++);
-            formBuilder.CloseComponent();
+            return "has-error";
+        }
+        return string.Empty;
+    }
 
-            // ItemTypeCode
-            formBuilder.OpenElement(s++, "div");
-            formBuilder.AddAttribute(s++, "class", "form-group");
-            formBuilder.AddMarkupContent(s++, "<label class=\"form-label required-field\">Cod</label>");
-            formBuilder.OpenComponent<SfTextBox>(s++);
-            formBuilder.AddAttribute(s++, "@bind-Value", BindConverter.FormatValue(Model.ItemTypeCode));
-            formBuilder.AddAttribute(s++, "ValueChanged", EventCallback.Factory.Create<string>(this, __value => Model.ItemTypeCode = __value));
-            formBuilder.AddAttribute(s++, "Placeholder", "Introduceți codul");
-            formBuilder.CloseComponent();
-            formBuilder.CloseElement();
+    private string CombineFieldCss(EditContext editContext, ItemType model, string fieldName)
+    {
+        var baseCss = "form-control";
+        var validationClass = GetValidationClass(editContext, model, fieldName);
+        return string.IsNullOrEmpty(validationClass) ? baseCss : $"{baseCss} {validationClass}";
+    }
 
-            // ItemTypeName
-            formBuilder.OpenElement(s++, "div");
-            formBuilder.AddAttribute(s++, "class", "form-group");
-            formBuilder.AddMarkupContent(s++, "<label class=\"form-label required-field\">Denumire</label>");
-            formBuilder.OpenComponent<SfTextBox>(s++);
-            formBuilder.AddAttribute(s++, "@bind-Value", BindConverter.FormatValue(Model.ItemTypeName));
-            formBuilder.AddAttribute(s++, "ValueChanged", EventCallback.Factory.Create<string>(this, __value => Model.ItemTypeName = __value));
-            formBuilder.AddAttribute(s++, "Placeholder", "Introduceți denumirea");
-            formBuilder.CloseComponent();
-            formBuilder.CloseElement();
+    private void OnCodeChanged(string value)
+    {
+        Model.ItemTypeCode = value?.ToUpper() ?? string.Empty;
+        CheckCodeAvailability();
+    }
 
-            // Footer buttons
-            formBuilder.OpenElement(s++, "div");
-            formBuilder.AddAttribute(s++, "class", "mt-3 text-end");
-            formBuilder.OpenElement(s++, "button");
-            formBuilder.AddAttribute(s++, "class", "btn btn-secondary me-2");
-            formBuilder.AddAttribute(s++, "type", "button");
-            formBuilder.AddAttribute(s++, "onclick", EventCallback.Factory.Create(this, Close));
-            formBuilder.AddContent(s++, "Anulează");
-            formBuilder.CloseElement();
+    private void CheckCodeAvailability()
+    {
+        if (string.IsNullOrWhiteSpace(Model.ItemTypeCode))
+        {
+            IsCodeTaken = false;
+            return;
+        }
 
-            formBuilder.OpenElement(s++, "button");
-            formBuilder.AddAttribute(s++, "class", "btn btn-primary");
-            formBuilder.AddAttribute(s++, "type", "submit");
-            formBuilder.AddContent(s++, "Salvează");
-            formBuilder.CloseElement();
-
-            formBuilder.CloseElement();
-        }));
-        builder.CloseComponent();
-
-        builder.CloseElement();
-    };
+        IsCodeTaken = ExistingItems.Any(x =>
+            x.Id != Model.Id &&
+            x.ItemTypeCode.Equals(Model.ItemTypeCode, StringComparison.OrdinalIgnoreCase));
+    }
 
     private async Task HandleValidSubmit()
     {
-        await OnValidSubmit.InvokeAsync(Model);
-        await Close();
+        if (IsCodeTaken) return;
+
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            await OnValidSubmit.InvokeAsync(Model);
+            await CloseDialog();
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
-    private async Task Close()
+    private async Task HandleInvalidSubmit()
+    {
+        // Validation failed - stay open
+    }
+
+    private async Task SubmitForm()
+    {
+        if (editContext == null) return;
+
+        var isValid = editContext.Validate();
+        if (isValid && !IsCodeTaken)
+        {
+            await HandleValidSubmit();
+        }
+    }
+
+    private async Task CloseDialog()
     {
         IsOpen = false;
+        IsLoading = false;
+        IsCodeTaken = false;
         await IsOpenChanged.InvokeAsync(IsOpen);
-        StateHasChanged();
+    }
+
+    private void OnDialogClosed()
+    {
+        // Reset state if needed
+        IsLoading = false;
+        IsCodeTaken = false;
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        CheckCodeAvailability();
     }
 }

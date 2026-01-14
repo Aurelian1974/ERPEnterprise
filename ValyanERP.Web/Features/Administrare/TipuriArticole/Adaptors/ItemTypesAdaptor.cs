@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Data;
+using Microsoft.Extensions.Logging;
 using ValyanERP.Web.Features.Administrare.TipuriArticole.Services;
 
 namespace ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors
@@ -11,23 +12,45 @@ namespace ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors
     public class ItemTypesAdaptor : DataAdaptor
     {
         private readonly IItemTypesService _service;
+        private readonly ILogger<ItemTypesAdaptor> _logger;
 
-        public ItemTypesAdaptor(IItemTypesService service)
+        public ItemTypesAdaptor(IItemTypesService service, ILogger<ItemTypesAdaptor> logger)
         {
             _service = service;
+            _logger = logger;
+            _logger.LogDebug("ItemTypesAdaptor created");
         }
 
         public override async Task<object> ReadAsync(DataManagerRequest dm, string? key = null)
         {
-            var all = (await _service.GetAllAsync()).ToList();
+            try
+            {
+                _logger.LogDebug("ItemTypesAdaptor.ReadAsync called with Skip={Skip}, Take={Take}", dm.Skip, dm.Take);
+                
+                var all = (await _service.GetAllAsync()).ToList();
+                _logger.LogDebug("Service returned {Count} items", all.Count);
 
-            // Simple in-memory filtering/sorting/paging for now
-            var result = all.AsQueryable();
+                // Handle paging
+                var data = all.AsQueryable();
+                if (dm.Skip > 0)
+                {
+                    data = data.Skip(dm.Skip);
+                }
+                if (dm.Take > 0)
+                {
+                    data = data.Take(dm.Take);
+                }
 
-            // Filtering: not implementing full DataManager parsing yet; repository returns all active items and grid will handle simple client-side filters
-
-            var data = result.ToList();
-            return new DataResult { Result = data, Count = data.Count };
+                var result = data.ToList();
+                _logger.LogDebug("Returning {Count} items after paging (total: {Total})", result.Count, all.Count);
+                
+                return new DataResult { Result = result, Count = all.Count };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ItemTypesAdaptor.ReadAsync");
+                throw;
+            }
         }
 
         public override async Task<object> InsertAsync(DataManager dm, object value, string? key)

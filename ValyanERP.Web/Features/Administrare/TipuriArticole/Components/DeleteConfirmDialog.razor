@@ -1,6 +1,34 @@
 @using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
 
-<SfDialog Width="350px" IsModal="true" ShowCloseIcon="true" Visible="@IsOpen" Content="DialogContent">
+<SfDialog @bind-Visible="IsOpen"
+          Width="350px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="@Title"
+          CssClass="delete-confirm-dialog">
+    <DialogTemplates>
+        <Content>
+            <div class="confirm-content">
+                <div class="confirm-icon">
+                    <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                </div>
+                <p>@Message</p>
+                <div class="confirm-details">
+                    <small class="text-muted">Această acțiune nu poate fi anulată.</small>
+                </div>
+            </div>
+        </Content>
+        <FooterTemplate>
+            <div class="dialog-footer">
+                <SfButton CssClass="e-outline" @onclick="Cancel">Anulează</SfButton>
+                <SfButton CssClass="e-danger" IsPrimary="true" @onclick="Confirm">
+                    <i class="bi bi-trash me-1"></i>Șterge
+                </SfButton>
+            </div>
+        </FooterTemplate>
+    </DialogTemplates>
+    <DialogEvents Closed="OnDialogClosed" />
 </SfDialog>
 
 @code {
@@ -19,45 +47,22 @@
     [Parameter]
     public EventCallback<bool> OnConfirmed { get; set; }
 
-    private RenderFragment DialogContent => builder =>
-    {
-        var seq = 0;
-        builder.OpenElement(seq++, "div");
-        builder.AddContent(seq++, Message);
-
-        builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "mt-3 text-end");
-
-        // Cancel
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "class", "btn btn-secondary me-2");
-        builder.AddAttribute(seq++, "type", "button");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, Close));
-        builder.AddContent(seq++, "Anulează");
-        builder.CloseElement();
-
-        // Confirm
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "class", "btn btn-danger");
-        builder.AddAttribute(seq++, "type", "button");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, Confirm));
-        builder.AddContent(seq++, "Șterge");
-        builder.CloseElement();
-
-        builder.CloseElement();
-        builder.CloseElement();
-    };
-
-    private async Task Close()
-    {
-        IsOpen = false;
-        await IsOpenChanged.InvokeAsync(IsOpen);
-        StateHasChanged();
-    }
-
     private async Task Confirm()
     {
         await OnConfirmed.InvokeAsync(true);
-        await Close();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(IsOpen);
+    }
+
+    private async Task Cancel()
+    {
+        await OnConfirmed.InvokeAsync(false);
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(IsOpen);
+    }
+
+    private void OnDialogClosed()
+    {
+        // Reset state if needed
     }
 }

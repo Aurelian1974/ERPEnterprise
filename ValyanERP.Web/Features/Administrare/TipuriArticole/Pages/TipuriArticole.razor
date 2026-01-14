@@ -1,10 +1,12 @@
 @page "/administrare/tipuri-articole"
 @attribute [Authorize]
+@rendermode InteractiveServer
 
 @using ValyanERP.Web.Features.Administrare.TipuriArticole.Models
 @using ItemTypeModel = ValyanERP.Web.Features.Administrare.TipuriArticole.Models.ItemType
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Data
+
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Buttons
@@ -14,10 +16,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors
 
-@inject ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors.ItemTypesAdaptor Adaptor
-@inject IServiceProvider ServiceProvider
-@inject ValyanERP.Web.Features.Administrare.TipuriArticole.Services.IItemTypesService ItemTypesService
 @using ValyanERP.Web.Features.Administrare.TipuriArticole.Components
 
 <PageTitle>Tipuri de articole</PageTitle>
@@ -31,6 +32,7 @@
                 <button class="btn btn-primary" @onclick="ShowCreateDialog">Adaugă tip articol</button>
             </div>
             <div>
+                <button class="btn btn-outline-secondary me-2" @onclick="CheckDb">Verifică DB</button>
                 @if (!string.IsNullOrEmpty(successMessage))
                 {
                     <div class="alert alert-success mb-0">@successMessage</div>
@@ -39,13 +41,16 @@
                 {
                     <div class="alert alert-danger mb-0">@errorMessage</div>
                 }
+                @if (!string.IsNullOrEmpty(debugMessage))
+                {
+                    <div class="alert alert-info mt-1 mb-0">@debugMessage</div>
+                }
             </div>
         </div>
     </Authorized>
 </AuthorizeView>
 
-<SfGrid @ref="grid" TValue="ItemTypeModel" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowGrouping="true" AllowResizing="true" Height="calc(100vh - 280px)">
-    <SfDataManager AdaptorInstance="@typeof(ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors.ItemTypesAdaptor)"></SfDataManager>
+<SfGrid @ref="grid" TValue="ItemTypeModel" DataSource="data" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowGrouping="true" AllowResizing="true" EnableHover="true" EnableAltRow="true" Height="calc(100vh - 280px)">
 
     <GridPageSettings PageSize="10"></GridPageSettings>
 
@@ -62,98 +67,6 @@
     </GridColumns>
 </SfGrid>
 
-<ItemTypeDialog IsOpen="@dialogOpen" IsOpenChanged="@((bool v) => dialogOpen = v)" Model="@dialogModel" OnValidSubmit="OnDialogSubmit"></ItemTypeDialog>
+<ItemTypeDialog IsOpen="@dialogOpen" IsOpenChanged="@((bool v) => dialogOpen = v)" Model="@dialogModel" OnValidSubmit="OnDialogSubmit" ExistingItems="@data"></ItemTypeDialog>
 
 <DeleteConfirmDialog IsOpen="@deleteDialogOpen" IsOpenChanged="@((bool v) => deleteDialogOpen = v)" Title="Șterge tip articol" Message="Sunteți sigur că doriți să ștergeți tipul de articol selectat?" OnConfirmed="OnDeleteConfirmed"></DeleteConfirmDialog>
-
-<ItemTypeDialog IsOpen="@dialogOpen" IsOpenChanged="@((bool v) => dialogOpen = v)" Model="@dialogModel" OnValidSubmit="OnDialogSubmit"></ItemTypeDialog>
-
-<DeleteConfirmDialog IsOpen="@deleteDialogOpen" IsOpenChanged="@((bool v) => deleteDialogOpen = v)" Title="Șterge tip articol" Message="Sunteți sigur că doriți să ștergeți tipul de articol selectat?" OnConfirmed="OnDeleteConfirmed"></DeleteConfirmDialog>
-
-@code {
-    private SfGrid<ItemTypeModel>? grid;
-
-    private bool dialogOpen = false;
-    private ItemTypeModel dialogModel = new ItemTypeModel();
-
-    private bool deleteDialogOpen = false;
-    private Guid? deleteItemId = null;
-
-    private string? successMessage;
-    private string? errorMessage;
-
-    private void ShowCreateDialog()
-    {
-        dialogModel = new ItemTypeModel();
-        dialogOpen = true;
-    }
-
-    private void OnEdit(object? context)
-    {
-        if (context is ItemTypeModel it)
-        {
-            // clone to avoid editing grid instance until saved
-            dialogModel = new ItemTypeModel
-            {
-                Id = it.Id,
-                ItemTypeCode = it.ItemTypeCode,
-                ItemTypeName = it.ItemTypeName,
-                IsActive = it.IsActive
-            };
-            dialogOpen = true;
-        }
-    }
-
-    private void OnDelete(object? context)
-    {
-        if (context is ItemTypeModel it)
-        {
-            deleteItemId = it.Id;
-            deleteDialogOpen = true;
-        }
-    }
-
-    private async Task OnDialogSubmit(ItemTypeModel model)
-    {
-        try
-        {
-            if (model.Id == Guid.Empty)
-            {
-                var id = await ItemTypesService.CreateAsync(model.ItemTypeCode, model.ItemTypeName);
-                successMessage = "Tipul de articol a fost creat.";
-            }
-            else
-            {
-                await ItemTypesService.UpdateAsync(model.Id, model.ItemTypeCode, model.ItemTypeName);
-                successMessage = "Tipul de articol a fost actualizat.";
-            }
-
-            errorMessage = null;
-            await grid?.Refresh();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-            successMessage = null;
-        }
-    }
-
-    private async Task OnDeleteConfirmed(bool confirmed)
-    {
-        if (!confirmed || deleteItemId == null) return;
-
-        try
-        {
-            await ItemTypesService.DeleteAsync(deleteItemId.Value);
-            deleteItemId = null;
-            successMessage = "Tipul de articol a fost șters.";
-            errorMessage = null;
-            await grid?.Refresh();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-            successMessage = null;
-        }
-    }
-}

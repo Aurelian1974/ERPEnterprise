@@ -32,7 +32,9 @@ namespace ValyanERP.Web.Features.Administrare.TipuriArticole.Services
 
         public async Task<IEnumerable<ItemType>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            var items = (await _repository.GetAllAsync()).ToList();
+            _logger.LogDebug("ItemTypesService.GetAllAsync returned {Count} items", items.Count);
+            return items;
         }
 
         public async Task<ItemType?> GetByIdAsync(Guid id)
