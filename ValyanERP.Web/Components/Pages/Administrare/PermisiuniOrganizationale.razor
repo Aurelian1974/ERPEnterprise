@@ -40,9 +40,8 @@
                 <div class="user-search">
                     <SfTextBox @bind-Value="userSearchTerm" 
                                Placeholder="Caută utilizator..."
-                               ShowClearButton="true">
-                        <TextBoxEvents TValue="string" ValueChange="OnUserSearchChanged" />
-                    </SfTextBox>
+                               ShowClearButton="true"
+                               ValueChange="OnUserSearchChanged" />
                 </div>
                 
                 <!-- Users List -->

@@ -558,9 +558,8 @@
                             <SfTextBox @bind-Value="resetPasswordModel.NewPassword" 
                                        Type="InputType.Password"
                                        Placeholder="Introduceți parola nouă"
-                                       FloatLabelType="FloatLabelType.Never">
-                                <TextBoxEvents ValueChange="@(() => ValidateResetPasswordForm())"></TextBoxEvents>
-                            </SfTextBox>
+                                       FloatLabelType="FloatLabelType.Never"
+                                       ValueChange="@(args => ValidateResetPasswordForm())" />
                             @if (validationResult.Errors.Any(e => e.PropertyName == nameof(ResetPasswordModel.NewPassword)))
                             {
                                 <div class="validation-error">
@@ -606,9 +605,8 @@
                             <SfTextBox @bind-Value="resetPasswordModel.ConfirmPassword" 
                                        Type="InputType.Password"
                                        Placeholder="Confirmați parola nouă"
-                                       FloatLabelType="FloatLabelType.Never">
-                                <TextBoxEvents ValueChange="@(() => ValidateResetPasswordForm())"></TextBoxEvents>
-                            </SfTextBox>
+                                       FloatLabelType="FloatLabelType.Never"
+                                       ValueChange="@(args => ValidateResetPasswordForm())" />
                             @if (validationResult.Errors.Any(e => e.PropertyName == nameof(ResetPasswordModel.ConfirmPassword)))
                             {
                                 <div class="validation-error">

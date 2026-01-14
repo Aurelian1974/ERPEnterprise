@@ -137,8 +137,8 @@
                                     var log = context as AuditLog;
                                 }
                                 <div class="user-info">
-                                    <strong>@log.UserFullName</strong>
-                                    <small class="text-muted d-block">@log.UserEmail</small>
+                                    <strong>@(log?.UserFullName ?? "-")</strong>
+                                    <small class="text-muted d-block">@(log?.UserEmail ?? "-")</small>
                                 </div>
                             </Template>
                         </GridColumn>
@@ -150,9 +150,10 @@
                             <Template>
                                 @{
                                     var log = context as AuditLog;
+                                    var opType = (log?.OperationType ?? string.Empty).ToLower();
                                 }
-                                <span class="badge operation-@log.OperationType.ToLower()">
-                                    @log.OperationType
+                                <span class="badge operation-@opType">
+                                    @log?.OperationType
                                 </span>
                             </Template>
                         </GridColumn>
@@ -165,11 +166,11 @@
                                     var log = context as AuditLog;
                                 }
                                 <div class="entity-info">
-                                    <strong>@log.EntityType</strong>
-                                    <small class="text-muted d-block">ID: @log.EntityId</small>
-                                    @if (!string.IsNullOrEmpty(log.TableName))
+                                    <strong>@(log?.EntityType ?? "-")</strong>
+                                    <small class="text-muted d-block">ID: @(log?.EntityId ?? "-")</small>
+                                    @if (!string.IsNullOrEmpty(log?.TableName))
                                     {
-                                        <small class="text-muted d-block">Tabelă: @log.TableName</small>
+                                        <small class="text-muted d-block">Tabelă: @(log?.TableName ?? "-")</small>
                                     }
                                 </div>
                             </Template>
@@ -183,7 +184,7 @@
                                 @{
                                     var log = context as AuditLog;
                                 }
-                                <span class="badge bg-info">@log.ChangedFieldsCount câmpuri</span>
+                                <span class="badge bg-info">@(log?.ChangedFieldsCount ?? 0) câmpuri</span>
                             </Template>
                         </GridColumn>
                         
@@ -194,7 +195,7 @@
                                 @{
                                     var log = context as AuditLog;
                                 }
-                                <small class="text-muted">@(log.IPAddress ?? "N/A")</small>
+                                <small class="text-muted">@(log?.IPAddress ?? "N/A")</small>
                             </Template>
                         </GridColumn>
                         
@@ -204,7 +205,7 @@
                                     var log = context as AuditLog;
                                 }
                                 <button class="btn btn-sm btn-outline-primary" 
-                                        @onclick="@(async () => await ShowDetailsAsync(log!.Id))">
+                                        @onclick="@(async () => { if (log != null) await ShowDetailsAsync(log.Id); })">
                                     <i class="bi bi-eye me-1"></i> Detalii
                                 </button>
                             </Template>

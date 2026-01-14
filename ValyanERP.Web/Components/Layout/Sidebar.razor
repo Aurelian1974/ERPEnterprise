@@ -56,27 +56,28 @@
                     <span class="nav-text">Parteneri</span>
                 </NavLink>
 
-                <!-- Articole Sub-section -->
-                <button type="button" class="nav-subsection-header" @onclick="ToggleArticole">
-                    <span class="nav-icon">
-                        <i class="bi bi-card-text"></i>
-                    </span>
-                    <span class="nav-text">Articole</span>
-                    <i class="chevron-icon bi @(articoleExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
-                </button>
-                <div class="nav-submenu nested @(articoleExpanded ? "expanded" : "")">
-                    <NavLink class="nav-item submenu-item" href="administrare/articole">
+                <div class="nav-section">
+                    <button type="button" class="nav-section-header" @onclick="ToggleArticole">
                         <span class="nav-icon">
                             <i class="bi bi-card-text"></i>
                         </span>
                         <span class="nav-text">Articole</span>
-                    </NavLink>
-                    <NavLink class="nav-item submenu-item" href="administrare/tipuri-articole">
-                        <span class="nav-icon">
-                            <i class="bi bi-tags"></i>
-                        </span>
-                        <span class="nav-text">Tipuri de Articole</span>
-                    </NavLink>
+                        <i class="chevron-icon bi @(articoleExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </button>
+                    <div class="nav-submenu @(articoleExpanded ? "expanded" : "")">
+                        <NavLink class="nav-item submenu-item" href="administrare/articole">
+                            <span class="nav-icon">
+                                <i class="bi bi-card-text"></i>
+                            </span>
+                            <span class="nav-text">Articole</span>
+                        </NavLink>
+                        <NavLink class="nav-item submenu-item" href="administrare/tipuri-articole">
+                            <span class="nav-icon">
+                                <i class="bi bi-tags"></i>
+                            </span>
+                            <span class="nav-text">Tipuri de Articole</span>
+                        </NavLink>
+                    </div>
                 </div>
 
                 <NavLink class="nav-item submenu-item" href="administrare/societatea-proprie">

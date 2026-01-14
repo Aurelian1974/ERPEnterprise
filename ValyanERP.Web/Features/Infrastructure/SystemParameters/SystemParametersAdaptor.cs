@@ -31,7 +31,7 @@ public class SystemParametersAdaptor : DataAdaptor
     {
         try
         {
-            var all = (await _service.GetAllAsync(includeReadOnly: true)).ToList();
+            var all = (await _service.GetAllAsync(includeReadOnly: true) ?? Enumerable.Empty<SystemParameter>()).ToList();
 
             // For export/filter-choice requests (Take==0)
             if (!dm.LazyLoad && dm.Take == 0 && !_gridOperations.RequiresGrouping(dm))
@@ -47,14 +47,15 @@ public class SystemParametersAdaptor : DataAdaptor
             var hasFilters = dm.Where != null && dm.Where.Count > 0;
 
             // Lazy grouping handling
-            if (_gridOperations.RequiresGrouping(dm) && all != null)
+            if (_gridOperations.RequiresGrouping(dm))
             {
-                return _gridOperations.ApplyLazyLoadGrouping(all, dm, all.Count);
+                var groupingRes = _gridOperations.ApplyLazyLoadGrouping(all!, dm, all.Count);
+                return groupingRes ?? new DataResult { Result = new List<SystemParameter>(), Count = 0 };
             }
 
             if (hasFilters && !_gridOperations.RequiresGrouping(dm))
             {
-                var filtered = _gridOperations.ApplyFiltering(all, dm);
+                var filtered = _gridOperations.ApplyFiltering(all!, dm) ?? Enumerable.Empty<SystemParameter>();
                 return new DataResult
                 {
                     Result = filtered.ToList(),
@@ -63,8 +64,11 @@ public class SystemParametersAdaptor : DataAdaptor
             }
 
             // Apply full set of operations (filtering, sorting, paging, grouping)
-            var result = _gridOperations.ApplyOperations(all, dm);
-            return result;        }
+            var result = _gridOperations.ApplyOperations(all!, dm);
+            return result ?? new DataResult { Result = new List<SystemParameter>(), Count = 0 };
+
+
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in SystemParametersAdaptor.ReadAsync");
@@ -83,7 +87,7 @@ public class SystemParametersAdaptor : DataAdaptor
         }
 
         _logger.LogWarning("SystemParametersAdaptor.InsertAsync: Unknown data type {DataType}", data?.GetType().Name);
-        return data;
+        return data ?? new object();
     }
 
     public override async Task<object> UpdateAsync(DataManager dm, object data, string keyField, string key)
@@ -96,7 +100,7 @@ public class SystemParametersAdaptor : DataAdaptor
         }
 
         _logger.LogWarning("SystemParametersAdaptor.UpdateAsync: Unknown data type {DataType}", data?.GetType().Name);
-        return data;
+        return data ?? new object();
     }
 
     public override async Task<object> RemoveAsync(DataManager dm, object primaryKeyValue, string keyField, string key)
@@ -114,11 +118,11 @@ public class SystemParametersAdaptor : DataAdaptor
             {
                 _logger.LogInformation("SystemParametersAdaptor.RemoveAsync: Deleting parameter {Id} (parsed)", parsed);
                 await _service.DeleteAsync(parsed);
-                return primaryKeyValue;
+                return primaryKeyValue ?? new object();
             }
 
             _logger.LogWarning("SystemParametersAdaptor.RemoveAsync: Invalid primary key {Key}", primaryKeyValue);
-            return primaryKeyValue;
+            return primaryKeyValue ?? new object();
         }
         catch (Exception ex)
         {

@@ -222,11 +222,17 @@ public partial class SystemParameters : ComponentBase
             if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
             {
                 var param = args.Data;
-                // Clear previous inline validation for this parameter when attempting to save
-                if (param != null)
+                if (param == null)
                 {
-                    fieldValidationMessages.Remove(param.Id);
+                    args.Cancel = true;
+                    errorMessage = "Date invalide pentru parametrul transmis.";
+                    await ShowToastAsync(errorMessage, "Eroare", "e-toast-danger");
+                    StateHasChanged();
+                    return;
                 }
+
+                // Clear previous inline validation for this parameter when attempting to save
+                fieldValidationMessages.Remove(param.Id);
                 
                 // Check if read-only
                 if (param.IsReadOnly)
@@ -311,7 +317,7 @@ public partial class SystemParameters : ComponentBase
                 try
                 {
                     // Normalize values before persisting
-                    param.ParameterValue = param.ParameterValue?.Trim();
+                    param.ParameterValue = param.ParameterValue?.Trim() ?? string.Empty;
                     param.DefaultValue = param.DefaultValue?.Trim();
 
                     // Determine create vs update by Id
@@ -601,7 +607,7 @@ public partial class SystemParameters : ComponentBase
         if (item != null)
         {
             // Syncfusion ItemModel doesn't expose an Enabled property; use CssClass to visually disable
-            item.CssClass = enabled ? null : "e-disabled";
+            item.CssClass = enabled ? string.Empty : "e-disabled";
             StateHasChanged();
         }
     }

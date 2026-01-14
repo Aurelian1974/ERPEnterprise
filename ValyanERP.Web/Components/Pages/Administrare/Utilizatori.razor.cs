@@ -109,7 +109,9 @@ public partial class Utilizatori : ComponentBase, IDisposable
     /// <summary>
     /// Whether there is a row selected.
     /// </summary>
+#pragma warning disable CS0414
     private bool hasSelection = false;
+#pragma warning restore CS0414
     
     /// <summary>
     /// Whether the page is currently loading data.

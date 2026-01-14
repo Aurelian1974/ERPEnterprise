@@ -161,11 +161,11 @@ public class UsersAdaptor : DataAdaptor
                 };
                 
                 await _service.CreateUserAsync(createDto);
-                return data;
+                return data ?? new object();
             }
             
             _logger.LogWarning("UsersAdaptor.InsertAsync: Unknown data type {DataType}", data?.GetType().Name);
-            return data;
+            return data ?? new object();
         }
         catch (Exception ex)
         {
@@ -185,11 +185,11 @@ public class UsersAdaptor : DataAdaptor
             {
                 _logger.LogInformation("UsersAdaptor.UpdateAsync: Updating user Id={UserId}", user.Id);
                 await _service.UpdateUserAsync(user);
-                return data;
+                return data ?? new object();
             }
             
             _logger.LogWarning("UsersAdaptor.UpdateAsync: Unknown data type {DataType}", data?.GetType().Name);
-            return data;
+            return data ?? new object();
         }
         catch (Exception ex)
         {
@@ -209,17 +209,17 @@ public class UsersAdaptor : DataAdaptor
             {
                 _logger.LogInformation("UsersAdaptor.RemoveAsync: Deleting user Id={UserId}", userId);
                 await _service.DeleteUserAsync(userId);
-                return primaryKeyValue;
+                return primaryKeyValue ?? new object();
             }
             else if (Guid.TryParse(primaryKeyValue?.ToString(), out var parsedId))
             {
                 _logger.LogInformation("UsersAdaptor.RemoveAsync: Deleting user Id={UserId} (parsed)", parsedId);
                 await _service.DeleteUserAsync(parsedId);
-                return primaryKeyValue;
+                return primaryKeyValue ?? new object();
             }
             
             _logger.LogWarning("UsersAdaptor.RemoveAsync: Invalid primary key value {PrimaryKeyValue}", primaryKeyValue);
-            return primaryKeyValue;
+            return primaryKeyValue ?? new object();
         }
         catch (Exception ex)
         {

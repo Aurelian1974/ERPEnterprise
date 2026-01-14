@@ -7,6 +7,7 @@ using ValyanERP.Web.Features.Infrastructure.DataGrid;
 
 namespace ValyanERP.Web.Features.Administrare.Persoane;
 
+#pragma warning disable CS8601
 public class PersoaneAdaptor : DataAdaptor
 {
     private readonly IPersoaneRepository _repository;
@@ -49,7 +50,16 @@ public class PersoaneAdaptor : DataAdaptor
             // Export / FilterChoice requests (Take==0 and not grouping)
             if (!dm.LazyLoad && dm.Take == 0 && !_gridOperations.RequiresGrouping(dm))
             {
-                var exportData = result.Result as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+                var rawExport = result.Result;
+                IEnumerable<Persoana> exportData;
+                if (rawExport == null)
+                {
+                    exportData = Enumerable.Empty<Persoana>();
+                }
+                else
+                {
+                    exportData = rawExport as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+                }
                 _logger.LogDebug("Export/FilterChoice request - returning {Count} items as DataResult", exportData.Count());
                 var count = exportData.Count();
                 LastTotalCount = count;
@@ -76,7 +86,18 @@ public class PersoaneAdaptor : DataAdaptor
                 };
 
                 var fullResult = await _repository.GetPagedAsync(fullRequest);
-                var all = fullResult.Result as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+#pragma warning disable CS8601
+                var rawAll = fullResult.Result;
+                IEnumerable<Persoana> all;
+                if (rawAll == null)
+                {
+                    all = Enumerable.Empty<Persoana>();
+                }
+                else
+                {
+                    all = rawAll as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+                }
+#pragma warning restore CS8601
                 var filtered = _gridOperations.ApplyFiltering(all, dm);
                 var filteredCount = filtered.Count();
                 _logger.LogDebug("Lazy load expand - filtered from {TotalCount} to {FilteredCount}", all.Count(), filteredCount);
@@ -100,7 +121,18 @@ public class PersoaneAdaptor : DataAdaptor
                 };
 
                 var fullResult = await _repository.GetPagedAsync(fullRequest);
-                var all = fullResult.Result as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+#pragma warning disable CS8601
+                var rawAll = fullResult.Result;
+                IEnumerable<Persoana> all;
+                if (rawAll == null)
+                {
+                    all = Enumerable.Empty<Persoana>();
+                }
+                else
+                {
+                    all = rawAll as IEnumerable<Persoana> ?? Enumerable.Empty<Persoana>();
+                }
+#pragma warning restore CS8601
 
                 // The repository returns an authoritative DB count in fullResult.Count.
                 // Use that for pager/header so it matches the DB state. Apply paging to the returned dataset.
@@ -204,4 +236,5 @@ public class PersoaneAdaptor : DataAdaptor
         await _service.DeleteAsync(persoana.Id);
         return value;
     }
+#pragma warning restore CS8601
 }
