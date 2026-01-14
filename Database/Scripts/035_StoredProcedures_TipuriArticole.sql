@@ -33,9 +33,9 @@ CREATE PROCEDURE dbo.sp_ItemTypes_Create
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @Id UNIQUEIDENTIFIER = NEWSEQUENTIALID();
+    DECLARE @Id UNIQUEIDENTIFIER = NEWID();
     INSERT INTO dbo.ItemTypes (Id, ItemTypeCode, ItemTypeName, CreatedAt, CreatedBy)
-    VALUES (@Id, @ItemTypeCode, @ItemTypeName, SYSUTCDATETIME(), @CreatedBy);
+    VALUES (@Id, @ItemTypeCode, @ItemTypeName, CAST(SYSUTCDATETIME() AT TIME ZONE 'E. Europe Standard Time' AS datetime2), @CreatedBy);
     SELECT @Id AS Id;
 END
 GO
@@ -54,7 +54,7 @@ BEGIN
     UPDATE dbo.ItemTypes
     SET ItemTypeCode = @ItemTypeCode,
         ItemTypeName = @ItemTypeName,
-        UpdatedAt = SYSUTCDATETIME(),
+        UpdatedAt = CAST(SYSUTCDATETIME() AT TIME ZONE 'E. Europe Standard Time' AS datetime2),
         UpdatedBy = @UpdatedBy
     WHERE Id = @Id;
     SELECT @@ROWCOUNT AS RowsAffected;
@@ -72,7 +72,7 @@ BEGIN
     SET NOCOUNT ON;
     UPDATE dbo.ItemTypes
     SET IsActive = 0,
-        UpdatedAt = SYSUTCDATETIME(),
+        UpdatedAt = CAST(SYSUTCDATETIME() AT TIME ZONE 'E. Europe Standard Time' AS datetime2),
         UpdatedBy = @UpdatedBy
     WHERE Id = @Id;
     SELECT @@ROWCOUNT AS RowsAffected;
