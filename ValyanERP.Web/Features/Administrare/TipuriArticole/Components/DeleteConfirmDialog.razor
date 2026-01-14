@@ -1,0 +1,63 @@
+@using Syncfusion.Blazor.Popups
+
+<SfDialog Width="350px" IsModal="true" ShowCloseIcon="true" Visible="@IsOpen" Content="DialogContent">
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Confirmare ștergere";
+
+    [Parameter]
+    public string Message { get; set; } = "Sunteți sigur că doriți să ștergeți această înregistrare?";
+
+    [Parameter]
+    public EventCallback<bool> OnConfirmed { get; set; }
+
+    private RenderFragment DialogContent => builder =>
+    {
+        var seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddContent(seq++, Message);
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "mt-3 text-end");
+
+        // Cancel
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-secondary me-2");
+        builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, Close));
+        builder.AddContent(seq++, "Anulează");
+        builder.CloseElement();
+
+        // Confirm
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-danger");
+        builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, Confirm));
+        builder.AddContent(seq++, "Șterge");
+        builder.CloseElement();
+
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(IsOpen);
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        await OnConfirmed.InvokeAsync(true);
+        await Close();
+    }
+}
