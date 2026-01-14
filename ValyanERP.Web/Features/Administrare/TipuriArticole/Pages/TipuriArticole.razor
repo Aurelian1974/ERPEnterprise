@@ -1,0 +1,68 @@
+@page "/administrare/tipuri-articole"
+@attribute [Authorize]
+
+@using ValyanERP.Web.Features.Administrare.TipuriArticole.Models
+@using ItemTypeModel = ValyanERP.Web.Features.Administrare.TipuriArticole.Models.ItemType
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Navigations
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+@inject ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors.ItemTypesAdaptor Adaptor
+@inject IServiceProvider ServiceProvider
+
+<PageTitle>Tipuri de articole</PageTitle>
+
+<h3>Tipuri de articole</h3>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <div class="mb-3">
+            <button class="btn btn-primary" @onclick="ShowCreateDialog">Adaugă tip articol</button>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+<SfGrid @ref="grid" TValue="ItemTypeModel" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowGrouping="true" AllowResizing="true" Height="calc(100vh - 280px)">
+    <SfDataManager AdaptorInstance="@typeof(ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors.ItemTypesAdaptor)"></SfDataManager>
+
+    <GridPageSettings PageSize="10"></GridPageSettings>
+
+    <GridColumns>
+        <GridColumn Field="Id" HeaderText="Id" IsPrimaryKey="true" Visible="false"></GridColumn>
+        <GridColumn Field="ItemTypeCode" HeaderText="Cod" Width="120"></GridColumn>
+        <GridColumn Field="ItemTypeName" HeaderText="Denumire" Width="300"></GridColumn>
+        <GridColumn HeaderText="Acțiuni" Width="150">
+            <Template>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OnEdit(context)">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => OnDelete(context)">Delete</button>
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    private SfGrid<ItemTypeModel>? grid;
+
+    private void ShowCreateDialog()
+    {
+        // For now use built-in create via grid toolbar or custom dialog later
+    }
+
+    private void OnEdit(object? context)
+    {
+        // Implement Edit dialog in next step
+    }
+
+    private void OnDelete(object? context)
+    {
+        // Implement delete confirmation in next step
+    }
+}
