@@ -77,6 +77,11 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.It
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.IItemTypesRepository, ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.ItemTypesRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Services.IItemTypesService, ValyanERP.Web.Features.Administrare.TipuriArticole.Services.ItemTypesService>();
 
+// Articole adaptor, repository and service
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Articole.ArticoleAdaptor>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Articole.Repositories.IArticoleRepository, ValyanERP.Web.Features.Administrare.Articole.Repositories.ArticoleRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Articole.Services.IArticoleService, ValyanERP.Web.Features.Administrare.Articole.Services.ArticoleService>();
+
 // Register Services (Business Logic Layer)
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Persoane.Services.IPersoaneService, ValyanERP.Web.Features.Administrare.Persoane.Services.PersoaneService>();
 // SystemParametersService remains scoped (depends on scoped repository), but use a singleton notifier to broadcast changes across scopes

@@ -2,19 +2,433 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 
-<PageTitle>Administrare - Articole</PageTitle>
+@using ValyanERP.Web.Features.Administrare.Articole.Models
+@using ValyanERP.Web.Features.Administrare.Articole
+@using ValyanERP.Web.Features.Administrare.Articole.Services
+@using ValyanERP.Web.Features.Administrare.TipuriArticole.Models
+@using ValyanERP.Web.Features.Administrare.TipuriArticole.Services
+@using ValyanERP.Web.Components.Shared.DataGrid
 
-<div class="admin-page">
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Navigations
+
+<PageTitle>Administrare Articole</PageTitle>
+
+<div class="articole-page">
+    @* Page Header *@
     <div class="page-header">
         <div class="header-content">
             <h3 class="page-title">
-                <i class="bi bi-card-text me-2"></i>Articole
+                <i class="bi bi-box-seam-fill me-2"></i>Articole
             </h3>
-            <span class="page-subtitle">Gestionați articolele din catalog</span>
+            <span class="record-count">@totalRecords înregistrări</span>
         </div>
+
+        @* Grid State Manager - for saving/loading configurations *@
+        <GridStateManager @ref="gridStateManager"
+                          GridId="Articole"
+                          GridReference="@grid"
+                          ShowConfigurationSelector="true"
+                          ShowButtonLabels="false"
+                          OnStateSaved="OnGridStateSaved"
+                          OnStateLoaded="OnGridStateLoaded"
+                          OnStateReset="OnGridStateReset" />
     </div>
 
-    <div class="page-body">
-        <p>Pagina va conține lista de articole, filtrare și operațiuni CRUD (în lucru).</p>
-    </div>
+    @* Error Alert *@
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+
+    @* Loading Indicator *@
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Se încarcă datele...</span>
+            </div>
+        </div>
+    }
+
+    @* Success Alert *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess"></button>
+        </div>
+    }
+
+    @* Main Grid *@
+    <SfGrid @ref="grid"
+            TValue="ValyanERP.Web.Features.Administrare.Articole.Models.Articol"
+            ID="ArticoleGrid"
+            AllowPaging="true"
+            AllowSorting="true"
+            AllowMultiSorting="true"
+            AllowFiltering="true"
+            AllowGrouping="true"
+            AllowResizing="true"
+            AllowReordering="true"
+            AllowSelection="true"
+            AllowExcelExport="true"
+            AllowPdfExport="true"
+            ShowColumnChooser="true"
+            ShowColumnMenu="true"
+            EnablePersistence="true"
+            EnableStickyHeader="true"
+            EnableHover="true"
+            EnableAltRow="true"
+            Height="calc(100vh - 280px)"
+            Toolbar="@toolbar">
+
+        @* Custom Data Adaptor for server-side operations *@
+        <SfDataManager AdaptorInstance="@typeof(ArticoleAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+
+        @* Page Settings - Server-side pagination *@
+        <GridPageSettings PageSize="@pageSize"
+                          PageSizes="@pageSizeOptions"
+                          PageCount="5">
+        </GridPageSettings>
+
+        @* Search Settings *@
+        <GridSearchSettings IgnoreCase="true"
+                            Operator="Syncfusion.Blazor.Operator.Contains">
+        </GridSearchSettings>
+
+        @* Edit Settings - Custom dialogs for better UX *@
+        <GridEditSettings AllowAdding="false"
+                          AllowEditing="false"
+                          AllowDeleting="true"
+                          Mode="Syncfusion.Blazor.Grids.EditMode.Dialog"
+                          ShowDeleteConfirmDialog="true"
+                          ShowConfirmDialog="true">
+        </GridEditSettings>
+
+        @* Grid Columns *@
+        <GridColumns>
+            @* Primary Key - Hidden *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.Id)"
+                        IsPrimaryKey="true"
+                        Visible="false"
+                        AllowEditing="false">
+            </GridColumn>
+
+            @* ArticolCode *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.ArticolCode)"
+                        HeaderText="Cod Articol"
+                        Width="120"
+                        AllowEditing="false">
+                <Template>
+                    <span class="badge bg-primary">@((context as Articol)?.ArticolCode)</span>
+                </Template>
+            </GridColumn>
+
+            @* ArticolName *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.ArticolName)"
+                        HeaderText="Nume Articol"
+                        Width="200">
+            </GridColumn>
+
+            @* TipArticolCode *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.TipArticolCode)"
+                        HeaderText="Cod Tip"
+                        Width="100"
+                        AllowEditing="false">
+                <Template>
+                    <span class="badge bg-info">@((context as Articol)?.TipArticolCode)</span>
+                </Template>
+            </GridColumn>
+
+            @* TipArticolName *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.TipArticolName)"
+                        HeaderText="Tip Articol"
+                        Width="150"
+                        AllowEditing="false">
+            </GridColumn>
+
+            @* Description *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.Description)"
+                        HeaderText="Descriere"
+                        Width="200">
+                <Template>
+                    @{
+                        var desc = (context as Articol)?.Description;
+                        if (string.IsNullOrEmpty(desc))
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                        else if (desc.Length > 50)
+                        {
+                            <span title="@desc">@desc.Substring(0, 50)...</span>
+                        }
+                        else
+                        {
+                            <span>@desc</span>
+                        }
+                    }
+                </Template>
+            </GridColumn>
+
+            @* IsActive *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.IsActive)"
+                        HeaderText="Activ"
+                        Width="80"
+                        DisplayAsCheckBox="true"
+                        AllowEditing="false">
+            </GridColumn>
+
+            @* CreatedAt *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.CreatedAt)"
+                        HeaderText="Creat La"
+                        Width="140"
+                        Format="dd.MM.yyyy HH:mm"
+                        AllowEditing="false">
+            </GridColumn>
+        </GridColumns>
+
+        @* Grid Events *@
+        <GridEvents OnToolbarClick="OnToolbarClick"
+                    RowSelected="OnRowSelected"
+                    RowDeselected="OnRowDeselected"
+                    DataBound="OnDataBound"
+                    TValue="ValyanERP.Web.Features.Administrare.Articole.Models.Articol">
+        </GridEvents>
+    </SfGrid>
+
+    @* Add Dialog *@
+    @if (showAddDialog)
+    {
+        <SfDialog Width="600px"
+                  IsModal="true"
+                  ShowCloseIcon="true"
+                  CloseOnEscape="true"
+                  @bind-Visible="showAddDialog">
+            <DialogTemplates>
+                <Header>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-box-plus me-2 text-primary"></i>
+                        <span>Adăugare Articol Nou</span>
+                    </div>
+                </Header>
+                <Content>
+                    <div class="edit-form-container">
+                        @* ArticolCode & ArticolName - side by side *@
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required-field">Cod Articol</label>
+                                <SfTextBox @bind-Value="newArticol.ArticolCode"
+                                           Placeholder="Introduceți codul articolului"
+                                           FloatLabelType="FloatLabelType.Never">
+                                </SfTextBox>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required-field">Nume Articol</label>
+                                <SfTextBox @bind-Value="newArticol.ArticolName"
+                                           Placeholder="Introduceți numele articolului"
+                                           FloatLabelType="FloatLabelType.Never">
+                                </SfTextBox>
+                            </div>
+                        </div>
+
+                        @* TipArticol - mandatory dropdown *@
+                        <div class="form-group">
+                            <label class="form-label required-field">Tip Articol</label>
+                            <SfDropDownList @bind-Value="newArticol.TipArticolId"
+                                            DataSource="tipuriArticole"
+                                            Placeholder="Selectați tipul de articol"
+                                            FloatLabelType="FloatLabelType.Never">
+                                <DropDownListFieldSettings Text="ItemTypeName" Value="Id"></DropDownListFieldSettings>
+                                <DropDownListEvents ValueChange="OnTipArticolChanged" TValue="Guid" TItem="ValyanERP.Web.Features.Administrare.TipuriArticole.Models.ItemType"></DropDownListEvents>
+                            </SfDropDownList>
+                        </div>
+
+                        @* Description - full width *@
+                        <div class="form-group">
+                            <label class="form-label">Descriere</label>
+                            <SfTextBox @bind-Value="newArticol.Description"
+                                       Placeholder="Introduceți descrierea (opțional)"
+                                       FloatLabelType="FloatLabelType.Never"
+                                       Multiline="true">
+                            </SfTextBox>
+                        </div>
+
+                        @* Is Active *@
+                        <div class="form-group">
+                            <SfCheckBox @bind-Checked="newArticol.IsActive"
+                                        Label="Articol Activ">
+                            </SfCheckBox>
+                        </div>
+                    </div>
+                </Content>
+                <FooterTemplate>
+                    <div class="d-flex justify-content-end gap-2">
+                        <SfButton Content="Anulare"
+                                  CssClass="e-flat"
+                                  @onclick="CloseAddDialog">
+                        </SfButton>
+                        <SfButton Content="Salvare"
+                                  CssClass="e-primary"
+                                  @onclick="SaveNewArticol">
+                        </SfButton>
+                    </div>
+                </FooterTemplate>
+            </DialogTemplates>
+        </SfDialog>
+    }
+
+    @* Edit Dialog *@
+    @if (showEditDialog && editingArticol != null)
+    {
+        <SfDialog Width="600px"
+                  IsModal="true"
+                  ShowCloseIcon="true"
+                  CloseOnEscape="true"
+                  @bind-Visible="showEditDialog">
+            <DialogTemplates>
+                <Header>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-box me-2 text-warning"></i>
+                        <span>Editare Articol</span>
+                    </div>
+                </Header>
+                <Content>
+                    <div class="edit-form-container">
+                        @* ArticolCode & ArticolName - side by side *@
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required-field">Cod Articol</label>
+                                <SfTextBox @bind-Value="editingArticol.ArticolCode"
+                                           Placeholder="Introduceți codul articolului"
+                                           FloatLabelType="FloatLabelType.Never">
+                                </SfTextBox>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required-field">Nume Articol</label>
+                                <SfTextBox @bind-Value="editingArticol.ArticolName"
+                                           Placeholder="Introduceți numele articolului"
+                                           FloatLabelType="FloatLabelType.Never">
+                                </SfTextBox>
+                            </div>
+                        </div>
+
+                        @* TipArticol - mandatory dropdown *@
+                        <div class="form-group">
+                            <label class="form-label required-field">Tip Articol</label>
+                            <SfDropDownList @bind-Value="editingArticol.TipArticolId"
+                                            DataSource="tipuriArticole"
+                                            Placeholder="Selectați tipul de articol"
+                                            FloatLabelType="FloatLabelType.Never">
+                                <DropDownListFieldSettings Text="ItemTypeName" Value="Id"></DropDownListFieldSettings>
+                                <DropDownListEvents ValueChange="OnEditTipArticolChanged" TValue="Guid" TItem="ValyanERP.Web.Features.Administrare.TipuriArticole.Models.ItemType"></DropDownListEvents>
+                            </SfDropDownList>
+                        </div>
+
+                        @* Description - full width *@
+                        <div class="form-group">
+                            <label class="form-label">Descriere</label>
+                            <SfTextBox @bind-Value="editingArticol.Description"
+                                       Placeholder="Introduceți descrierea (opțional)"
+                                       FloatLabelType="FloatLabelType.Never"
+                                       Multiline="true">
+                            </SfTextBox>
+                        </div>
+
+                        @* Is Active *@
+                        <div class="form-group">
+                            <SfCheckBox @bind-Checked="editingArticol.IsActive"
+                                        Label="Articol Activ">
+                        </SfCheckBox>
+                        </div>
+                    </div>
+                </Content>
+                <FooterTemplate>
+                    <div class="d-flex justify-content-end gap-2">
+                        <SfButton Content="Anulare"
+                                  CssClass="e-flat"
+                                  @onclick="CloseEditDialog">
+                        </SfButton>
+                        <SfButton Content="Salvare"
+                                  CssClass="e-primary"
+                                  @onclick="SaveEditedArticol">
+                        </SfButton>
+                    </div>
+                </FooterTemplate>
+            </DialogTemplates>
+        </SfDialog>
+    }
+
+    @* View Dialog *@
+    @if (showViewDialog && viewedArticol != null)
+    {
+        <SfDialog Width="600px"
+                  IsModal="true"
+                  ShowCloseIcon="true"
+                  CloseOnEscape="true"
+                  @bind-Visible="showViewDialog">
+            <DialogTemplates>
+                <Header>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-eye me-2 text-info"></i>
+                        <span>Detalii Articol</span>
+                    </div>
+                </Header>
+                <Content>
+                    <div class="view-details">
+                        <div class="detail-row">
+                            <strong>Cod Articol:</strong>
+                            <span class="badge bg-primary">@viewedArticol.ArticolCode</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Nume Articol:</strong>
+                            <span>@viewedArticol.ArticolName</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Tip Articol:</strong>
+                            <span class="badge bg-info">@viewedArticol.TipArticolCode - @viewedArticol.TipArticolName</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Descriere:</strong>
+                            <span>@(string.IsNullOrEmpty(viewedArticol.Description) ? "-" : viewedArticol.Description)</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Activ:</strong>
+                            <span class="@(viewedArticol.IsActive ? "text-success" : "text-danger")">
+                                @(viewedArticol.IsActive ? "Da" : "Nu")
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Creat La:</strong>
+                            <span>@viewedArticol.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        @if (viewedArticol.UpdatedAt.HasValue)
+                        {
+                            <div class="detail-row">
+                                <strong>Actualizat La:</strong>
+                                <span>@viewedArticol.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        }
+                    </div>
+                </Content>
+                <FooterTemplate>
+                    <SfButton Content="Închide"
+                              CssClass="e-flat"
+                              @onclick="CloseViewDialog">
+                    </SfButton>
+                </FooterTemplate>
+            </DialogTemplates>
+        </SfDialog>
+    }
 </div>
