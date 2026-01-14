@@ -73,7 +73,7 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Utilizatori.Users
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.SystemParameters.SystemParametersAdaptor>();
 
 // ItemTypes (Tipuri Articole) adaptor, repository and service
-builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Adaptors.ItemTypesAdaptor>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.ItemTypesAdaptor>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.IItemTypesRepository, ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.ItemTypesRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Services.IItemTypesService, ValyanERP.Web.Features.Administrare.TipuriArticole.Services.ItemTypesService>();
 
