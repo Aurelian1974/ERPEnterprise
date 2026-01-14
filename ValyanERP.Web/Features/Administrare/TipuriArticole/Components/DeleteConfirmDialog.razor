@@ -56,13 +56,12 @@
 
     private async Task Cancel()
     {
-        await OnConfirmed.InvokeAsync(false);
         IsOpen = false;
         await IsOpenChanged.InvokeAsync(IsOpen);
     }
 
     private void OnDialogClosed()
     {
-        // Reset state if needed
+        // Dialog closed event - no action needed
     }
 }

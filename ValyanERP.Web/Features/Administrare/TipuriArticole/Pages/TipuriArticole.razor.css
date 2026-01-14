@@ -31,6 +31,23 @@
     border-top: 1px solid #e5e7eb;
 }
 
+/* Dialog animation */
+.item-type-dialog .e-dlg-container,
+.delete-confirm-dialog .e-dlg-container {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Dialog header styling */
 .item-type-dialog .e-dlg-header-content {
     background: linear-gradient(135deg, #93c5fd, #60a5fa);
@@ -172,9 +189,15 @@
     border: none;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -182,8 +205,9 @@
     border: none;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
     background-color: #4b5563;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-danger {
@@ -191,9 +215,33 @@
     border: none;
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);
+}
+
+/* Syncfusion button overrides for dialog */
+.dialog-footer .e-btn {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.dialog-footer .e-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+}
+
+.dialog-footer .e-outline:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dialog-footer .e-danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);
 }
 
 /* Grid styles */
