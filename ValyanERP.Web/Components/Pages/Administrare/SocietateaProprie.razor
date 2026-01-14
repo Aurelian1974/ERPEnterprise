@@ -26,14 +26,18 @@
             </h3>
             <span class="page-subtitle">Gestionarea structurii organizaționale</span>
         </div>
-        <div class="header-actions">
-            <SfButton CssClass="e-outline e-primary" IconCss="bi bi-folder-plus" @onclick="ShowAddGroupDialog">
-                Grup Nou
-            </SfButton>
-            <SfButton CssClass="e-primary" IconCss="bi bi-bank" @onclick="() => ShowAddCompanyDialog()">
-                Companie Nouă
-            </SfButton>
-        </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="header-actions">
+                    <SfButton CssClass="e-outline e-primary" IconCss="bi bi-folder-plus" @onclick="ShowAddGroupDialog">
+                        Grup Nou
+                    </SfButton>
+                    <SfButton CssClass="e-primary" IconCss="bi bi-bank" @onclick="() => ShowAddCompanyDialog()">
+                        Companie Nouă
+                    </SfButton>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </div>
 
     @* Main Content *@
@@ -63,9 +67,13 @@
                     <div class="tree-empty">
                         <i class="bi bi-building-x"></i>
                         <p>Nu există date în structura organizațională.</p>
-                        <SfButton CssClass="e-primary" @onclick="() => ShowAddCompanyDialog()">
-                            Adaugă prima companie
-                        </SfButton>
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <SfButton CssClass="e-primary" @onclick="() => ShowAddCompanyDialog()">
+                                    Adaugă prima companie
+                                </SfButton>
+                            </Authorized>
+                        </AuthorizeView>
                     </div>
                 }
                 else
