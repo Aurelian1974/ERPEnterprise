@@ -15,6 +15,7 @@ public class OrganizationService : IOrganizationService
     private readonly ILocationRepository _locationRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILogger<OrganizationService> _logger;
+    private readonly ValyanERP.Web.Features.Infrastructure.Security.Services.ICurrentUserService _currentUserService;
 
     /// <summary>
     /// Constructor cu injectare dependențe.
@@ -25,6 +26,7 @@ public class OrganizationService : IOrganizationService
         IWorkPlaceRepository workPlaceRepository,
         ILocationRepository locationRepository,
         IOrganizationRepository organizationRepository,
+        ValyanERP.Web.Features.Infrastructure.Security.Services.ICurrentUserService currentUserService,
         ILogger<OrganizationService> logger)
     {
         _groupRepository = groupRepository;
@@ -32,6 +34,7 @@ public class OrganizationService : IOrganizationService
         _workPlaceRepository = workPlaceRepository;
         _locationRepository = locationRepository;
         _organizationRepository = organizationRepository;
+        _currentUserService = currentUserService;
         _logger = logger;
     }
 
@@ -65,11 +68,20 @@ public class OrganizationService : IOrganizationService
         }
     }
 
+    private async Task EnsureAdminAsync()
+    {
+        if (!await _currentUserService.IsInRoleAsync("Admin"))
+        {
+            throw new UnauthorizedAccessException("Acces restricționat: necesită rol Admin.");
+        }
+    }
+
     /// <inheritdoc />
     public async Task<Guid> CreateGroupAsync(CompanyGroup group, Guid? userId = null)
     {
         try
         {
+            await EnsureAdminAsync();
             var id = await _groupRepository.CreateAsync(group, userId);
             _logger.LogInformation("Grup creat: {GroupId} - {Denumire}", id, group.Denumire);
             return id;
@@ -86,6 +98,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _groupRepository.UpdateAsync(group, userId);
             if (result)
             {
@@ -105,6 +118,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _groupRepository.DeleteAsync(id, userId);
             if (result)
             {
@@ -168,6 +182,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             // Validare CUI unic
             if (await _companyRepository.ExistsByCUIAsync(company.CUI))
             {
@@ -190,6 +205,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             // Validare CUI unic (exclude compania curentă)
             if (await _companyRepository.ExistsByCUIAsync(company.CUI, company.Id))
             {
@@ -215,6 +231,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _companyRepository.DeleteAsync(id, userId);
             if (result)
             {
@@ -270,6 +287,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var id = await _workPlaceRepository.CreateAsync(workPlace, userId);
             _logger.LogInformation("Punct de lucru creat: {WorkPlaceId} - {Denumire}", id, workPlace.Denumire);
             return id;
@@ -286,6 +304,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _workPlaceRepository.UpdateAsync(workPlace, userId);
             if (result)
             {
@@ -305,6 +324,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _workPlaceRepository.DeleteAsync(id, userId);
             if (result)
             {
@@ -354,6 +374,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             // Validare cod intern unic
             if (await _locationRepository.ExistsByCodInternAsync(location.CompanyId, location.CodIntern))
             {
@@ -376,6 +397,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             // Validare cod intern unic (exclude locația curentă)
             if (await _locationRepository.ExistsByCodInternAsync(location.CompanyId, location.CodIntern, location.Id))
             {
@@ -401,6 +423,7 @@ public class OrganizationService : IOrganizationService
     {
         try
         {
+            await EnsureAdminAsync();
             var result = await _locationRepository.DeleteAsync(id, userId);
             if (result)
             {

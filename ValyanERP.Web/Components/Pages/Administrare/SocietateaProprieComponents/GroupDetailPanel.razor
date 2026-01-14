@@ -38,17 +38,21 @@
         </div>
     </div>
     
-    <div class="card-actions">
-        <SfButton CssClass="e-outline e-primary" IconCss="bi bi-pencil" @onclick="OnEdit">
-            Editează
-        </SfButton>
-        <SfButton CssClass="e-outline" IconCss="bi bi-bank" @onclick="OnAddCompany">
-            Adaugă Companie
-        </SfButton>
-        <SfButton CssClass="e-outline e-danger" IconCss="bi bi-trash" @onclick="OnDelete">
-            Șterge
-        </SfButton>
-    </div>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <div class="card-actions">
+                <SfButton CssClass="e-outline e-primary" IconCss="bi bi-pencil" @onclick="OnEdit">
+                    Editează
+                </SfButton>
+                <SfButton CssClass="e-outline" IconCss="bi bi-bank" @onclick="OnAddCompany">
+                    Adaugă Companie
+                </SfButton>
+                <SfButton CssClass="e-outline e-danger" IconCss="bi bi-trash" @onclick="OnDelete">
+                    Șterge
+                </SfButton>
+            </div>
+        </Authorized>
+    </AuthorizeView>
 </div>
 
 @code {
