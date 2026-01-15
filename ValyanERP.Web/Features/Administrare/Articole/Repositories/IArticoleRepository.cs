@@ -14,4 +14,5 @@ public interface IArticoleRepository
     Task<bool> UpdateAsync(ArticolUpdateDto articol);
     Task<bool> DeleteAsync(Guid id);
     Task<bool> ExistsAsync(string code, Guid? excludeId = null);
+    Task<int> GetTotalCountAsync();
 }

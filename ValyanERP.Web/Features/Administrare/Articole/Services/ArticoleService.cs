@@ -231,4 +231,19 @@ public class ArticoleService : IArticoleService
         if (dto.Description?.Length > 500)
             throw new ArgumentException("Descrierea nu poate depăși 500 de caractere.", nameof(dto.Description));
     }
+
+    public async Task<int> GetTotalArticoleCountAsync()
+    {
+        try
+        {
+            var count = await _articoleRepo.GetTotalCountAsync();
+            _logger.LogInformation("Retrieved total articole count: {Count}", count);
+            return count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving total articole count");
+            throw;
+        }
+    }
 }

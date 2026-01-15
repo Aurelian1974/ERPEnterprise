@@ -158,6 +158,7 @@ public partial class Articole : ComponentBase
         try
         {
             await LoadTipuriArticoleAsync();
+            await LoadTotalRecordsAsync();
         }
         catch (Exception ex)
         {
@@ -184,6 +185,23 @@ public partial class Articole : ComponentBase
         {
             Logger.LogError(ex, "Error loading tipuri articole");
             errorMessage = "Eroare la încărcarea tipurilor de articole.";
+        }
+    }
+
+    /// <summary>
+    /// Loads the total number of articole records.
+    /// </summary>
+    private async Task LoadTotalRecordsAsync()
+    {
+        try
+        {
+            totalRecords = await ArticoleService.GetTotalArticoleCountAsync();
+            Logger.LogDebug("Loaded total records count: {Count}", totalRecords);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading total records count");
+            totalRecords = 0; // Fallback to 0
         }
     }
 

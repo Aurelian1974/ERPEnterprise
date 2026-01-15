@@ -243,4 +243,23 @@ public class ArticoleRepository : IArticoleRepository
             throw;
         }
     }
+
+    public async Task<int> GetTotalCountAsync()
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            var result = await connection.ExecuteScalarAsync<int>(
+                "sp_Articole_GetTotalCount",
+                commandType: CommandType.StoredProcedure);
+
+            _logger.LogInformation("Retrieved total count: {Count}", result);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving total count");
+            throw;
+        }
+    }
 }

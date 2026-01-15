@@ -11,4 +11,5 @@ public interface IArticoleService
     Task<bool> UpdateArticolAsync(ArticolUpdateDto articolDto);
     Task<bool> DeleteArticolAsync(Guid id);
     Task<bool> ArticolExistsAsync(string code, Guid? excludeId = null);
+    Task<int> GetTotalArticoleCountAsync();
 }

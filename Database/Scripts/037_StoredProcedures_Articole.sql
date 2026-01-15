@@ -269,4 +269,16 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('dbo.sp_Articole_GetTotalCount', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Articole_GetTotalCount;
+GO
+CREATE PROCEDURE dbo.sp_Articole_GetTotalCount
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT COUNT(*) AS TotalCount FROM dbo.Articole WHERE IsActive = 1;
+END
+GO
+GO
+
 PRINT '✅ Stored procedures Articole create/ update/ delete/ get complete';
