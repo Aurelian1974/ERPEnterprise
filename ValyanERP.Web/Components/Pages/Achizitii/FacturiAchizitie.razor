@@ -93,9 +93,9 @@
             <GridColumn Field="@nameof(Invoice.TotalPayment)" HeaderText="Total cu TVA" Format="N2" Width="120"></GridColumn>
             <GridColumn Field="@nameof(Invoice.Document.DocumentStateName)" HeaderText="Stare" Width="100"></GridColumn>
             <GridColumn HeaderText="Acțiuni" Width="120" TextAlign="TextAlign.Center">
-                <GridTemplate Context="context">
+                <Template>
                     @{
-                        var invoice = (Invoice)context;
+                        var invoice = context as Invoice;
                     }
                     <div class="action-buttons">
                         <SfButton @onclick="() => ViewInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-info" Size="ButtonSize.Small">
@@ -105,7 +105,7 @@
                             <i class="bi bi-pencil"></i>
                         </SfButton>
                     </div>
-                </GridTemplate>
+                </Template>
             </GridColumn>
         </GridColumns>
 
