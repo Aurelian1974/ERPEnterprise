@@ -1,0 +1,32 @@
+@using ValyanERP.Web.Features.Achizitii.Models
+
+<div class="action-buttons">
+    <SfButton @onclick="OnViewClick" CssClass="e-outline e-info" Size="ButtonSize.Small">
+        <i class="bi bi-eye"></i>
+    </SfButton>
+    <SfButton @onclick="OnEditClick" CssClass="e-outline e-warning" Size="ButtonSize.Small">
+        <i class="bi bi-pencil"></i>
+    </SfButton>
+</div>
+
+@code {
+    [Parameter] public object Context { get; set; } = null!;
+    [Parameter] public EventCallback<Invoice> ViewInvoice { get; set; }
+    [Parameter] public EventCallback<Invoice> EditInvoice { get; set; }
+
+    private async Task OnViewClick()
+    {
+        if (Context is Invoice invoice)
+        {
+            await ViewInvoice.InvokeAsync(invoice);
+        }
+    }
+
+    private async Task OnEditClick()
+    {
+        if (Context is Invoice invoice)
+        {
+            await EditInvoice.InvokeAsync(invoice);
+        }
+    }
+}

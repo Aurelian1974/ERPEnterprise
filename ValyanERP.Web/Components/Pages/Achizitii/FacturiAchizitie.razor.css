@@ -1,0 +1,224 @@
+/* FacturiAchizitie.razor.css */
+
+.facturi-achizitie-page {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 60px);
+}
+
+.page-header {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.record-count {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.form-container {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.form-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #60a5fa;
+}
+
+.section-title {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.line-items-table {
+    margin-bottom: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.line-items-table table {
+    background: white;
+    border-radius: 4px;
+}
+
+.line-items-table th {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa);
+    color: white;
+    font-weight: 500;
+    padding: 8px;
+    text-align: center;
+    border: none;
+}
+
+.line-items-table td {
+    padding: 8px;
+    border: none;
+    vertical-align: middle;
+}
+
+.line-items-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.line-items-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+.dialog-header {
+    font-size: 18px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 0;
+}
+
+/* Syncfusion overrides */
+.e-dialog .e-dlg-header-content {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa) !important;
+    color: white;
+}
+
+.e-dialog .e-footer-content .e-primary {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+    border: none;
+}
+
+.e-dialog .e-footer-content .e-outline {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.e-dialog .e-footer-content .e-outline:hover {
+    background-color: #f8f9fa;
+}
+
+/* Grid styling */
+.e-grid .e-headercell {
+    background: linear-gradient(135deg, #93c5fd, #60a5fa) !important;
+    color: white !important;
+    font-weight: 500;
+}
+
+.e-grid .e-altrow {
+    background-color: #f8f9fa !important;
+}
+
+/* Alert styling */
+.alert {
+    border: none;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #fca5a5, #ef4444);
+    color: white;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #86efac, #22c55e);
+    color: white;
+}
+
+/* Button styling */
+.e-btn.e-primary {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+    border: none !important;
+}
+
+.e-btn.e-outline {
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+}
+
+.e-btn.e-outline:hover {
+    background-color: #f8f9fa !important;
+}
+
+.e-btn.e-success {
+    background: linear-gradient(135deg, #86efac, #22c55e) !important;
+    border: none !important;
+}
+
+.e-btn.e-danger {
+    background: linear-gradient(135deg, #fca5a5, #ef4444) !important;
+    border: none !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .facturi-achizitie-page {
+        padding: 10px;
+    }
+
+    .page-header {
+        padding: 15px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .toolbar {
+        flex-direction: column;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .dialog-footer {
+        flex-direction: column;
+    }
+}
