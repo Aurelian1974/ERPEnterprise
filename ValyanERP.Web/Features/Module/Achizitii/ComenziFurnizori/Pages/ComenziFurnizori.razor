@@ -1,0 +1,42 @@
+@page "/module/achizitii/comenzi-furnizori"
+@inject NavigationManager Navigation
+
+<PageTitle>Comenzi Furnizori - ValyanERP</PageTitle>
+
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title">
+                    <i class="bi bi-receipt"></i>
+                    <span>Comenzi Furnizori</span>
+                </h1>
+                <p class="page-subtitle">Gestionați comenzile către furnizori</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-primary" @onclick="NavigateToCreate">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Comandă Nouă</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+        <div class="content-card">
+            <div class="card-body">
+                <p class="text-muted">Funcționalitatea pentru gestionarea comenzilor furnizori va fi implementată în curând.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void NavigateToCreate()
+    {
+        // TODO: Navigate to create form
+        Navigation.NavigateTo("/module/achizitii/comenzi-furnizori/create");
+    }
+}

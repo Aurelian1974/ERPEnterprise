@@ -77,6 +77,10 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.It
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.IItemTypesRepository, ValyanERP.Web.Features.Administrare.TipuriArticole.Repositories.ItemTypesRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriArticole.Services.IItemTypesService, ValyanERP.Web.Features.Administrare.TipuriArticole.Services.ItemTypesService>();
 
+// TipuriDocumente repository and service
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriDocumente.Repositories.ITipuriDocumenteRepository, ValyanERP.Web.Features.Administrare.TipuriDocumente.Repositories.TipuriDocumenteRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.TipuriDocumente.Services.ITipuriDocumenteService, ValyanERP.Web.Features.Administrare.TipuriDocumente.Services.TipuriDocumenteService>();
+
 // Articole adaptor, repository and service
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Articole.ArticoleAdaptor>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Administrare.Articole.Repositories.IArticoleRepository, ValyanERP.Web.Features.Administrare.Articole.Repositories.ArticoleRepository>();

@@ -104,10 +104,16 @@
                     </span>
                     <span class="nav-text">Permisiuni Organizaționale</span>
                 </NavLink>
+                <NavLink class="nav-item submenu-item" href="administrare/tipuri-documente">
+                    <span class="nav-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </span>
+                    <span class="nav-text">Tipuri de Documente</span>
+                </NavLink>
             </div>
         </div>
 
-        <!-- Module Section (Placeholder) -->
+        <!-- Module Section -->
         <div class="nav-section">
             <button type="button" class="nav-section-header" @onclick="ToggleModule">
                 <span class="nav-icon">
@@ -117,18 +123,29 @@
                 <i class="chevron-icon bi @(moduleExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
             </button>
             <div class="nav-submenu @(moduleExpanded ? "expanded" : "")">
-                <NavLink class="nav-item submenu-item" href="#">
-                    <span class="nav-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </span>
-                    <span class="nav-text">Documente</span>
-                </NavLink>
-                <NavLink class="nav-item submenu-item" href="#">
-                    <span class="nav-icon">
-                        <i class="bi bi-cash-stack"></i>
-                    </span>
-                    <span class="nav-text">Financiar</span>
-                </NavLink>
+                <div class="nav-section">
+                    <button type="button" class="nav-section-header" @onclick="ToggleAchizitii">
+                        <span class="nav-icon">
+                            <i class="bi bi-cart-plus-fill"></i>
+                        </span>
+                        <span class="nav-text">Achiziții</span>
+                        <i class="chevron-icon bi @(achizitiiExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </button>
+                    <div class="nav-submenu @(achizitiiExpanded ? "expanded" : "")">
+                        <NavLink class="nav-item submenu-item" href="module/achizitii/comenzi-furnizori">
+                            <span class="nav-icon">
+                                <i class="bi bi-receipt"></i>
+                            </span>
+                            <span class="nav-text">Comenzi Furnizori</span>
+                        </NavLink>
+                        <NavLink class="nav-item submenu-item" href="module/achizitii/facturi-furnizori">
+                            <span class="nav-icon">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </span>
+                            <span class="nav-text">Facturi Furnizori</span>
+                        </NavLink>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -239,5 +256,12 @@
     private void ToggleArticole()
     {
         articoleExpanded = !articoleExpanded;
+    }
+
+    // Achizitii subsection
+    private bool achizitiiExpanded = false;
+    private void ToggleAchizitii()
+    {
+        achizitiiExpanded = !achizitiiExpanded;
     }
 }
