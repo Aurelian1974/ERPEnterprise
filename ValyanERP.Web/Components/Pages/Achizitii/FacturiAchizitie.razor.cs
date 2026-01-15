@@ -63,6 +63,7 @@ public partial class FacturiAchizitie : ComponentBase
     private string? successMessage;
     private bool isDialogVisible;
     private bool isEditMode;
+    private bool isLoading = true;
     private PurchaseInvoiceCreateDto? purchaseInvoiceDto;
     private DocumentState? selectedDocumentState;
     private Partner? selectedPartner;
@@ -83,11 +84,14 @@ public partial class FacturiAchizitie : ComponentBase
 
             // Load initial data
             await LoadDataAsync();
+            
+            isLoading = false;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error initializing FacturiAchizitie component");
             errorMessage = "Eroare la inițializarea componentei";
+            isLoading = false;
         }
     }
 
@@ -200,6 +204,15 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
+            Logger.LogInformation("OpenCreateDialog called");
+            Logger.LogInformation($"DocumentStates count: {documentStates?.Count() ?? 0}");
+            
+            if (isLoading)
+            {
+                Logger.LogWarning("OpenCreateDialog called while loading");
+                return;
+            }
+            
             isEditMode = false;
             purchaseInvoiceDto = new PurchaseInvoiceCreateDto
             {

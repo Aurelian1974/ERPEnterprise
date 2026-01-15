@@ -61,7 +61,7 @@
 
     @* Toolbar *@
     <div class="toolbar mb-3">
-        <SfButton @onclick="async () => await OpenCreateDialog()" CssClass="e-primary">
+        <SfButton @onclick="async () => await OpenCreateDialog()" CssClass="e-primary" Disabled="isLoading">
             <i class="bi bi-plus-circle me-2"></i>Adaugă Factură
         </SfButton>
 
