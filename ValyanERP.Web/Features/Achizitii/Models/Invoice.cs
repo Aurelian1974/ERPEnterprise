@@ -18,6 +18,12 @@ public class Invoice
     // Computed property from join
     public string? PartnerName { get; set; }
 
+    // Flat properties for grid binding
+    public string? DocumentNumber { get; set; }
+    public DateTime? DocumentDate { get; set; }
+    public DateTime? DueDate { get; set; }
+    public string? DocumentStateName { get; set; }
+
     [Required]
     [Range(0, double.MaxValue)]
     public decimal TotalAmount { get; set; } = 0;

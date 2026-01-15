@@ -132,18 +132,19 @@
                         <i class="chevron-icon bi @(achizitiiExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
                     </button>
                     <div class="nav-submenu @(achizitiiExpanded ? "expanded" : "")">
-                        <NavLink class="nav-item submenu-item" href="module/achizitii/comenzi-furnizori">
+                        <NavLink class="nav-item submenu-item" href="/module/achizitii/comenzi-furnizori">
                             <span class="nav-icon">
                                 <i class="bi bi-receipt"></i>
                             </span>
                             <span class="nav-text">Comenzi Furnizori</span>
                         </NavLink>
-                        <NavLink class="nav-item submenu-item" href="module/achizitii/facturi-furnizori">
+                        <NavLink class="nav-item submenu-item" href="/module/achizitii/facturi">
                             <span class="nav-icon">
                                 <i class="bi bi-file-earmark-text"></i>
                             </span>
-                            <span class="nav-text">Facturi Furnizori</span>
+                            <span class="nav-text">Facturi Achiziție</span>
                         </NavLink>
+                   
                     </div>
                 </div>
             </div>
@@ -259,7 +260,7 @@
     }
 
     // Achizitii subsection
-    private bool achizitiiExpanded = false;
+    private bool achizitiiExpanded = true;
     private void ToggleAchizitii()
     {
         achizitiiExpanded = !achizitiiExpanded;

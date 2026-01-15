@@ -1,0 +1,41 @@
+Text                                                                                                                                                                                                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE PROCEDURE dbo.sp_Stock_UpdateQuantity
+    @ItemId UNIQUEIDENTIFIER,
+    @LocationId UNIQUEIDENTIFIER,
+    @QuantityChange DECIMAL(18,2),
+    @UserId UNIQUEIDENTIFIER,
+    @OwnerCompanyId UNIQUEIDENTIFIER = NULL,
+    @OwnerWorkPlaceId UNIQUEIDENTIF
+IER = NULL,
+    @OwnerLocationId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM dbo.Stock WHERE ItemId = @ItemId AND LocationId = @LocationId)
+    BEGIN
+        UPDATE dbo.Stock
+        SET Quantity = Quantity + @Quanti
+tyChange,
+            UpdatedAt = GETDATE(),
+            UpdatedBy = @UserId
+        WHERE ItemId = @ItemId AND LocationId = @LocationId;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO dbo.Stock (
+            Id, ItemId, LocationId, Quantity,
+            
+CreatedBy, UpdatedBy,
+            OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
+        ) VALUES (
+            NEWID(), @ItemId, @LocationId, @QuantityChange,
+            @UserId, @UserId,
+            @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocation
+Id
+        );
+    END
+END
+                                                                                                                                                                                                                                     

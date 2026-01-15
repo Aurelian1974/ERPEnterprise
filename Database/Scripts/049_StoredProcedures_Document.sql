@@ -82,6 +82,9 @@ IF OBJECT_ID('dbo.sp_Document_InsertPurchaseInvoice', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_Document_InsertPurchaseInvoice;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE PROCEDURE dbo.sp_Document_InsertPurchaseInvoice
     @DocumentDate DATE,
     @DueDate DATE = NULL,
@@ -102,6 +105,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
+    SET QUOTED_IDENTIFIER ON;
 
     BEGIN TRY
         BEGIN TRANSACTION;

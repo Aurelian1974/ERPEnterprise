@@ -9,6 +9,9 @@ IF OBJECT_ID('dbo.sp_Stock_UpdateQuantity', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_Stock_UpdateQuantity;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE PROCEDURE dbo.sp_Stock_UpdateQuantity
     @ItemId UNIQUEIDENTIFIER,
     @LocationId UNIQUEIDENTIFIER,
@@ -20,6 +23,7 @@ CREATE PROCEDURE dbo.sp_Stock_UpdateQuantity
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET QUOTED_IDENTIFIER ON;
 
     -- Check if stock record exists
     IF EXISTS (SELECT 1 FROM dbo.Stock WHERE ItemId = @ItemId AND LocationId = @LocationId)

@@ -1342,13 +1342,54 @@ PRINT '=== Secțiune 4/4 completă: Sub-entity procedures ===';
 GO
 
 -- =============================================
+-- PARTNERS: GET ALL FOR DROPDOWN
+-- =============================================
+
+IF OBJECT_ID('dbo.sp_Partners_GetAll_ForDropdown', 'P') IS NOT NULL 
+    DROP PROCEDURE dbo.sp_Partners_GetAll_ForDropdown;
+GO
+
+CREATE PROCEDURE dbo.sp_Partners_GetAll_ForDropdown
+    @IncludeInactive BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        Id,
+        -- Pentru dropdown, folosim Denumire pentru PJ, sau Nume + Prenume pentru PF
+        CASE 
+            WHEN Denumire IS NOT NULL AND Denumire != '' THEN Denumire
+            WHEN Nume IS NOT NULL AND Nume != '' THEN 
+                CASE 
+                    WHEN Prenume IS NOT NULL AND Prenume != '' THEN Nume + ' ' + Prenume
+                    ELSE Nume
+                END
+            ELSE Cod -- fallback la cod intern
+        END AS Nume
+    FROM dbo.Partners
+    WHERE IsActive = 1 OR @IncludeInactive = 1
+    ORDER BY 
+        CASE 
+            WHEN Denumire IS NOT NULL AND Denumire != '' THEN Denumire
+            WHEN Nume IS NOT NULL AND Nume != '' THEN 
+                CASE 
+                    WHEN Prenume IS NOT NULL AND Prenume != '' THEN Nume + ' ' + Prenume
+                    ELSE Nume
+                END
+            ELSE Cod
+        END;
+END
+GO
+
+-- =============================================
 -- FINALIZARE
 -- =============================================
 PRINT '';
 PRINT '=== Migrare 021_StoredProcedures_Partners finalizată! ===';
 PRINT '';
 PRINT 'Proceduri create:';
-PRINT '  Partners: GetAll, GetById, GetByCUI, GetByCNP, Search, Create, Update, Delete';
+PRINT '  Partners: GetAll, GetById, GetByCUI, GetByCNP, Search, Create, Update, Delete, GetAllForDropdown';
 PRINT '  Partners: UpdateAnafStatus, SetPrincipalAddress';
 PRINT '  AnafCache: Get, Save, Cleanup';
 PRINT '  PartnerAddresses: GetByPartnerId, Create, Update, Delete';

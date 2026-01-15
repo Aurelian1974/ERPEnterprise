@@ -295,6 +295,144 @@ public class AchizitiiRepository : IAchizitiiRepository
 
     #endregion
 
+    #region Document Validation Operations
+
+    public async Task<bool> ValidateDocumentAsync(Guid documentId, Guid userId)
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+
+            // Get user's current working location
+            var userLocation = await GetUserCurrentLocationAsync(userId);
+            
+            var parameters = new DynamicParameters();
+            parameters.Add("@DocumentId", documentId);
+            parameters.Add("@UserId", userId);
+            parameters.Add("@OwnerCompanyId", (Guid?)null);
+            parameters.Add("@OwnerWorkPlaceId", (Guid?)null);
+            parameters.Add("@OwnerLocationId", userLocation);
+
+            var result = await connection.QueryFirstAsync<dynamic>(
+                "sp_Document_Validate",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return result.Success == 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating document {DocumentId}", documentId);
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdateInvoiceAsync(PurchaseInvoiceEditDto dto, Guid userId)
+    {
+        try
+        {
+            _logger.LogInformation("Updating invoice {DocumentId}", dto.DocumentId);
+
+            using var connection = _context.CreateConnection();
+
+            // Get invoice ID from document ID
+            var invoiceId = await connection.QueryFirstOrDefaultAsync<Guid?>(
+                "SELECT Id FROM dbo.Invoice WHERE DocumentId = @DocumentId AND IsActive = 1",
+                new { DocumentId = dto.DocumentId });
+
+            if (invoiceId == null)
+            {
+                _logger.LogWarning("Invoice not found for document {DocumentId}", dto.DocumentId);
+                return false;
+            }
+
+            // Get document state ID from code
+            var documentStateId = await connection.QueryFirstOrDefaultAsync<Guid?>(
+                "SELECT Id FROM dbo.DocumentState WHERE CodStare = @CodStare AND IsActive = 1",
+                new { CodStare = "C" }); // Default to draft for now
+
+            if (documentStateId == null)
+            {
+                _logger.LogWarning("Document state not found");
+                return false;
+            }
+
+            // Create table-valued parameter for line items
+            var lineItemsTable = new DataTable();
+            lineItemsTable.Columns.Add("ItemId", typeof(Guid));
+            lineItemsTable.Columns.Add("Quantity", typeof(decimal));
+            lineItemsTable.Columns.Add("UnitMeasure", typeof(string));
+            lineItemsTable.Columns.Add("UnitPrice", typeof(decimal));
+            lineItemsTable.Columns.Add("VATRate", typeof(decimal));
+
+            foreach (var item in dto.LineItems)
+            {
+                lineItemsTable.Rows.Add(item.ItemId, item.Quantity, item.UnitMeasure, item.UnitPrice, item.VATRate);
+            }
+
+            var parameters = new
+            {
+                InvoiceId = invoiceId,
+                DocumentDate = dto.DocumentDate,
+                DueDate = dto.DueDate,
+                DocumentNumber = dto.DocumentNumber,
+                DocumentStateId = documentStateId,
+                DocumentObservations = dto.DocumentObservations,
+                PartnerId = dto.PartnerId,
+                InvoiceObservations = dto.InvoiceObservations,
+                LineItems = lineItemsTable.AsTableValuedParameter("dbo.InvoiceLineItemType"),
+                UpdatedBy = userId
+            };
+
+            var result = await connection.ExecuteAsync(
+                "sp_Invoice_UpdateComplete",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            _logger.LogInformation("Invoice {DocumentId} updated successfully", dto.DocumentId);
+            return result > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating invoice {DocumentId}", dto.DocumentId);
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region User Context Operations
+
+    public async Task<Guid?> GetUserCurrentLocationAsync(Guid userId)
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            
+            // Get the first location the user has access to
+            // TODO: In the future, this should come from user's working context/session
+            var locationId = await connection.QueryFirstOrDefaultAsync<Guid?>(
+                @"SELECT TOP 1 ua.EntityId 
+                  FROM dbo.UserOrganizationalAccess ua 
+                  WHERE ua.UserId = @UserId 
+                  AND ua.EntityType = 'LOCATION' 
+                  AND ua.IsActive = 1 
+                  AND (ua.ValidTo IS NULL OR ua.ValidTo > GETDATE())
+                  ORDER BY ua.CreatedAt",
+                new { UserId = userId },
+                commandType: CommandType.Text);
+
+            return locationId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user current location for user {UserId}", userId);
+            return null;
+        }
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private string BuildOrderByClause(List<Sort> sorted)

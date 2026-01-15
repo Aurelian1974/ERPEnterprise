@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 using ValyanERP.Web.Features.Achizitii.Models;
 using ValyanERP.Web.Features.Achizitii.Repositories;
 
@@ -44,6 +45,21 @@ public interface IAchizitiiService
     /// Validates purchase invoice data before creation.
     /// </summary>
     Task<ValidationResult> ValidatePurchaseInvoiceAsync(PurchaseInvoiceCreateDto dto);
+
+    /// <summary>
+    /// Validates a document (changes state from Draft to Valid) and updates stock.
+    /// </summary>
+    Task<bool> ValidateDocumentAsync(Guid documentId, Guid userId);
+
+    /// <summary>
+    /// Updates an existing purchase invoice.
+    /// </summary>
+    Task<bool> UpdateInvoiceAsync(PurchaseInvoiceEditDto dto, Guid userId);
+
+    /// <summary>
+    /// Gets the current user's working location.
+    /// </summary>
+    Task<Guid?> GetUserCurrentLocationAsync(Guid userId);
 }
 
 /// <summary>
@@ -242,6 +258,64 @@ public class AchizitiiService : IAchizitiiService
             IsValid = !errors.Any(),
             Errors = errors
         };
+    }
+
+    public async Task<bool> ValidateDocumentAsync(Guid documentId, Guid userId)
+    {
+        try
+        {
+            return await _repository.ValidateDocumentAsync(documentId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating document {DocumentId}", documentId);
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdateInvoiceAsync(PurchaseInvoiceEditDto dto, Guid userId)
+    {
+        try
+        {
+            _logger.LogInformation("Updating invoice {DocumentId} by user {UserId}", dto.DocumentId, userId);
+
+            // Validate the DTO
+            var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationContext = new ValidationContext(dto);
+            if (!Validator.TryValidateObject(dto, validationContext, validationResults, true))
+            {
+                var errors = string.Join("; ", validationResults.Select(v => v.ErrorMessage));
+                throw new ValidationException($"Validation failed: {errors}");
+            }
+
+            // Update the invoice
+            var result = await _repository.UpdateInvoiceAsync(dto, userId);
+
+            if (result)
+            {
+                _logger.LogInformation("Invoice {DocumentId} updated successfully by user {UserId}", dto.DocumentId, userId);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating invoice {DocumentId}", dto.DocumentId);
+            throw;
+        }
+    }
+
+    public async Task<Guid?> GetUserCurrentLocationAsync(Guid userId)
+    {
+        try
+        {
+            return await _repository.GetUserCurrentLocationAsync(userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user current location for user {UserId}", userId);
+            return null;
+        }
     }
 }
 

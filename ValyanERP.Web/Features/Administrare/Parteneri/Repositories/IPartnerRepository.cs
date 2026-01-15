@@ -25,6 +25,12 @@ public interface IPartnerRepository
     Task<(IEnumerable<PartnerListDto> Partners, int TotalCount)> GetAllAsync(int skip = 0, int take = 50);
 
     /// <summary>
+    /// Obține toți partenerii activi pentru dropdown-uri (Id, Nume/Denumire).
+    /// </summary>
+    /// <returns>Lista simplă de parteneri pentru dropdown</returns>
+    Task<IEnumerable<Partner>> GetAllForDropdownAsync();
+
+    /// <summary>
     /// Obține un partener după ID cu toate relațiile.
     /// </summary>
     /// <param name="id">ID-ul partenerului</param>

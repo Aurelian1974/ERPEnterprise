@@ -55,11 +55,13 @@ BEGIN
         i.DocumentId,
         d.DocumentNumber,
         d.DocumentDate,
+        d.DueDate,
         i.PartnerId,
-        p.Nume as PartnerName,
+        p.Denumire as PartnerName,
         i.TotalAmount,
         i.VATAmount,
         i.TotalPayment,
+        ds.DenumireStare as DocumentStateName,
         i.Observations,
         i.UserId,
         i.IsActive,
@@ -70,6 +72,7 @@ BEGIN
     FROM dbo.Invoice i
     INNER JOIN dbo.Document d ON i.DocumentId = d.Id
     INNER JOIN dbo.Partners p ON i.PartnerId = p.Id
+    INNER JOIN dbo.DocumentState ds ON d.DocumentStateId = ds.Id
     WHERE i.IsActive = 1
     AND d.IsActive = 1
     AND (@OwnerCompanyId IS NULL OR i.OwnerCompanyId = @OwnerCompanyId)

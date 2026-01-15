@@ -112,6 +112,30 @@ public class PartnerRepository : IPartnerRepository
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<Partner>> GetAllForDropdownAsync()
+    {
+        try
+        {
+            using var connection = _context.CreateConnection();
+            
+            var parameters = new DynamicParameters();
+            parameters.Add("@IncludeInactive", false);
+            
+            var partners = await connection.QueryAsync<Partner>(
+                "sp_Partners_GetAll_ForDropdown",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+            
+            return partners;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "Eroare la obținerea listei de parteneri pentru dropdown");
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Partner?> GetByIdAsync(Guid id)
     {
         try

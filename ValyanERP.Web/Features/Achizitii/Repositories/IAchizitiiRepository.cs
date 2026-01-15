@@ -27,4 +27,13 @@ public interface IAchizitiiRepository
 
     // Purchase invoice operations
     Task<(Guid DocumentId, Guid InvoiceId)> CreatePurchaseInvoiceAsync(PurchaseInvoiceCreateDto dto, Guid userId);
+
+    // Document validation operations
+    Task<bool> ValidateDocumentAsync(Guid documentId, Guid userId);
+
+    // Invoice update operations
+    Task<bool> UpdateInvoiceAsync(PurchaseInvoiceEditDto dto, Guid userId);
+
+    // User context operations
+    Task<Guid?> GetUserCurrentLocationAsync(Guid userId);
 }

@@ -10,7 +10,10 @@ using ValyanERP.Web.Features.Achizitii;
 using ValyanERP.Web.Features.Achizitii.Models;
 using ValyanERP.Web.Features.Achizitii.Services;
 using ValyanERP.Web.Features.Achizitii.Repositories;
+using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models;
+using ValyanERP.Web.Features.Administrare.Articole.Repositories;
+using System.Security.Claims;
 using ValyanERP.Web.Features.Administrare.Articole.Models;
 
 namespace ValyanERP.Web.Components.Pages.Achizitii;
@@ -24,9 +27,11 @@ public partial class FacturiAchizitie : ComponentBase
     [Inject] private ILogger<FacturiAchizitie> Logger { get; set; } = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
 
-    // TODO: Inject services for Partners and Articole when available
-    // [Inject] private IParteneriService ParteneriService { get; set; } = null!;
-    // [Inject] private IArticoleService ArticoleService { get; set; } = null!;
+    // Inject Partner Repository for dropdown data
+    [Inject] private IPartnerRepository PartnerRepository { get; set; } = null!;
+
+    // Inject Articole Repository for dropdown data
+    [Inject] private IArticoleRepository ArticoleRepository { get; set; } = null!;
 
     #endregion
 
@@ -67,6 +72,18 @@ public partial class FacturiAchizitie : ComponentBase
     private PurchaseInvoiceCreateDto? purchaseInvoiceDto;
     private DocumentState? selectedDocumentState;
     private Partner? selectedPartner;
+
+    // View Dialog
+    private bool showViewDialog;
+    private Invoice? viewInvoice;
+    private List<InvoiceDetail> viewInvoiceDetails = new();
+
+    // Edit Dialog
+    private bool showEditDialog;
+    private SfDialog? editDialog;
+    private PurchaseInvoiceEditDto? editInvoiceDto;
+    private DocumentState? editSelectedDocumentState;
+    private Partner? editSelectedPartner;
 
     #endregion
 
@@ -118,18 +135,13 @@ public partial class FacturiAchizitie : ComponentBase
             // partners = await ParteneriService.GetAllPartnersAsync();
             // articole = await ArticoleService.GetAllArticoleAsync();
 
-            // For now, create mock data
-            partners = new List<Partner>
-            {
-                new Partner { Id = Guid.NewGuid(), Nume = "SC EXEMPLU SRL" },
-                new Partner { Id = Guid.NewGuid(), Nume = "SC TEST SA" }
-            };
+            // Load partners from database
+            partners = await PartnerRepository.GetAllForDropdownAsync();
+            Logger.LogWarning($"Partners loaded: {partners?.Count() ?? 0} items");
 
-            articole = new List<Articol>
-            {
-                new Articol { Id = Guid.NewGuid(), ArticolName = "Articol 1", UnitateMasura = "buc" },
-                new Articol { Id = Guid.NewGuid(), ArticolName = "Articol 2", UnitateMasura = "kg" }
-            };
+            // Load articole from database
+            articole = await ArticoleRepository.GetAllAsync();
+            Logger.LogWarning($"Articole loaded: {articole?.Count() ?? 0} items");
         }
         catch (Exception ex)
         {
@@ -225,10 +237,15 @@ public partial class FacturiAchizitie : ComponentBase
             Logger.LogWarning("OpenCreateDialog proceeding with dialog creation");
             
             isEditMode = false;
+            
+            // Get current user location
+            var userLocationId = await GetCurrentUserLocationIdAsync();
+            
             purchaseInvoiceDto = new PurchaseInvoiceCreateDto
             {
                 DocumentDate = DateTime.Now,
                 DocumentStateCode = "C", // Draft
+                OwnerLocationId = userLocationId,
                 LineItems = new List<InvoiceLineItemDto>
                 {
                     new InvoiceLineItemDto() // Add one empty line
@@ -251,14 +268,146 @@ public partial class FacturiAchizitie : ComponentBase
 
     private async Task ViewInvoice(Invoice invoice)
     {
-        // TODO: Implement view functionality
-        successMessage = $"Vizualizare factură {invoice.Document?.DocumentNumber}";
+        try
+        {
+            Logger.LogInformation("Opening view dialog for invoice {DocumentNumber}", invoice.Document?.DocumentNumber);
+
+            // Load full invoice details including line items
+            var fullInvoice = await AchizitiiRepository.GetInvoiceByIdAsync(invoice.Id);
+            var invoiceDetails = await AchizitiiRepository.GetInvoiceDetailsByInvoiceIdAsync(invoice.Id);
+
+            if (fullInvoice == null)
+            {
+                errorMessage = "Factura nu a fost găsită";
+                return;
+            }
+
+            // Create a view model with details
+            viewInvoice = new Invoice
+            {
+                Id = fullInvoice.Id,
+                DocumentId = fullInvoice.DocumentId,
+                Document = fullInvoice.Document,
+                PartnerId = fullInvoice.PartnerId,
+                PartnerName = fullInvoice.PartnerName,
+                DocumentNumber = fullInvoice.DocumentNumber,
+                DocumentDate = fullInvoice.DocumentDate,
+                DueDate = fullInvoice.DueDate,
+                DocumentStateName = fullInvoice.DocumentStateName,
+                TotalAmount = fullInvoice.TotalAmount,
+                VATAmount = fullInvoice.VATAmount,
+                TotalPayment = fullInvoice.TotalPayment,
+                Observations = fullInvoice.Observations,
+                UserId = fullInvoice.UserId,
+                IsActive = fullInvoice.IsActive,
+                CreatedAt = fullInvoice.CreatedAt,
+                CreatedBy = fullInvoice.CreatedBy,
+                UpdatedAt = fullInvoice.UpdatedAt,
+                UpdatedBy = fullInvoice.UpdatedBy
+            };
+
+            // Store details separately for display
+            viewInvoiceDetails = invoiceDetails?.ToList() ?? new List<InvoiceDetail>();
+
+            showViewDialog = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error opening view dialog for invoice {InvoiceId}", invoice.Id);
+            errorMessage = "Eroare la deschiderea dialogului de vizualizare";
+        }
     }
 
     private async Task EditInvoice(Invoice invoice)
     {
-        // TODO: Implement edit functionality
-        successMessage = $"Editare factură {invoice.Document?.DocumentNumber}";
+        try
+        {
+            Logger.LogInformation("Opening edit dialog for invoice {DocumentNumber}", invoice.Document?.DocumentNumber);
+
+            // Check if invoice is validated - cannot edit validated invoices
+            if (invoice.DocumentStateName == "Valid")
+            {
+                errorMessage = "Factura validată nu poate fi modificată";
+                return;
+            }
+
+            // Load full invoice details for editing
+            var fullInvoice = await AchizitiiRepository.GetInvoiceByIdAsync(invoice.Id);
+            var invoiceDetails = await AchizitiiRepository.GetInvoiceDetailsByInvoiceIdAsync(invoice.Id);
+
+            if (fullInvoice == null)
+            {
+                errorMessage = "Factura nu a fost găsită";
+                return;
+            }
+
+            // Convert to edit DTO
+            editInvoiceDto = new PurchaseInvoiceEditDto
+            {
+                DocumentId = fullInvoice.DocumentId,
+                DocumentNumber = fullInvoice.Document?.DocumentNumber ?? "",
+                DocumentDate = fullInvoice.Document?.DocumentDate ?? DateTime.Now,
+                DueDate = fullInvoice.Document?.DueDate,
+                DocumentObservations = fullInvoice.Document?.Observations ?? "",
+                InvoiceObservations = fullInvoice.Observations ?? "",
+                PartnerId = fullInvoice.PartnerId,
+                LineItems = invoiceDetails?.Select(detail => new InvoiceLineItemDto
+                {
+                    ItemId = detail.ItemId,
+                    Quantity = detail.Quantity,
+                    UnitMeasure = detail.UnitMeasure ?? "",
+                    UnitPrice = detail.UnitPrice,
+                    VATRate = detail.VATPercent
+                }).ToList() ?? new List<InvoiceLineItemDto>()
+            };
+
+            // Set selected values for dropdowns
+            editSelectedDocumentState = documentStates.FirstOrDefault(ds => ds.Id == fullInvoice.Document?.DocumentStateId);
+            editSelectedPartner = partners.FirstOrDefault(p => p.Id == fullInvoice.PartnerId);
+
+            showEditDialog = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error opening edit dialog for invoice {InvoiceId}", invoice.Id);
+            errorMessage = "Eroare la deschiderea dialogului de editare";
+        }
+    }
+
+    private async Task ValidateInvoice(Invoice invoice)
+    {
+        try
+        {
+            // Get current user
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                errorMessage = "Utilizatorul nu este autentificat corespunzător";
+                return;
+            }
+
+            // Validate the document
+            var success = await AchizitiiService.ValidateDocumentAsync(invoice.DocumentId, userId);
+
+            if (success)
+            {
+                successMessage = $"Factura {invoice.Document?.DocumentNumber} a fost validată cu succes și stocul a fost actualizat";
+                await LoadDataAsync();
+            }
+            else
+            {
+                errorMessage = "Eroare la validarea facturii";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error validating invoice {InvoiceId}", invoice.Id);
+            errorMessage = "Eroare la validarea facturii";
+        }
     }
 
     private async Task SaveInvoice()
@@ -282,7 +431,7 @@ public partial class FacturiAchizitie : ComponentBase
             // Get current user
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
-            var userIdClaim = user.FindFirst("sub") ?? user.FindFirst("UserId");
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
             {
                 errorMessage = "Utilizatorul nu este autentificat corespunzător";
@@ -342,9 +491,45 @@ public partial class FacturiAchizitie : ComponentBase
         }
     }
 
+    private async Task ValidateInvoiceByIndex(int index)
+    {
+        var invoice = invoices.ElementAtOrDefault(index);
+        if (invoice != null)
+        {
+            await ValidateInvoice(invoice);
+        }
+    }
+
     private async Task RefreshData()
     {
         await LoadDataAsync();
+    }
+
+    #endregion
+
+    #region User Context Methods
+
+    private async Task<Guid?> GetCurrentUserLocationIdAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                Logger.LogWarning("Cannot get user ID for location lookup");
+                return null;
+            }
+
+            return await AchizitiiService.GetUserCurrentLocationAsync(userId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error getting current user location");
+            return null;
+        }
     }
 
     #endregion
@@ -370,6 +555,99 @@ public partial class FacturiAchizitie : ComponentBase
     }
 
     private decimal CalculateLineTotal(InvoiceLineItemDto item)
+    {
+        var subtotal = item.Quantity * item.UnitPrice;
+        var vatAmount = subtotal * (item.VATRate / 100);
+        return subtotal + vatAmount;
+    }
+
+    #endregion
+
+    #region Dialog Management
+
+    private void CloseViewDialog()
+    {
+        showViewDialog = false;
+        viewInvoice = null;
+        viewInvoiceDetails.Clear();
+        StateHasChanged();
+    }
+
+    private void CloseEditDialog()
+    {
+        showEditDialog = false;
+        editInvoiceDto = null;
+        editSelectedDocumentState = null;
+        editSelectedPartner = null;
+        StateHasChanged();
+    }
+
+    private async Task HandleEditValidSubmit()
+    {
+        await SaveEditInvoice();
+    }
+
+    private async Task SaveEditInvoice()
+    {
+        if (editInvoiceDto == null)
+            return;
+
+        try
+        {
+            // Get current user
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                errorMessage = "Utilizatorul nu este autentificat corespunzător";
+                return;
+            }
+
+            // Update the invoice
+            var success = await AchizitiiService.UpdateInvoiceAsync(editInvoiceDto, userId);
+
+            if (success)
+            {
+                successMessage = $"Factura {editInvoiceDto.DocumentNumber} a fost actualizată cu succes";
+                CloseEditDialog();
+                await LoadDataAsync();
+            }
+            else
+            {
+                errorMessage = "Eroare la actualizarea facturii";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating invoice {DocumentId}", editInvoiceDto.DocumentId);
+            errorMessage = "Eroare la actualizarea facturii";
+        }
+    }
+
+    #endregion
+
+    #region Edit Line Items Management
+
+    private void AddEditLineItem()
+    {
+        if (editInvoiceDto != null)
+        {
+            editInvoiceDto.LineItems.Add(new InvoiceLineItemDto());
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveEditLineItem(int index)
+    {
+        if (editInvoiceDto != null && index >= 0 && index < editInvoiceDto.LineItems.Count)
+        {
+            editInvoiceDto.LineItems.RemoveAt(index);
+            StateHasChanged();
+        }
+    }
+
+    private decimal CalculateEditLineTotal(InvoiceLineItemDto item)
     {
         var subtotal = item.Quantity * item.UnitPrice;
         var vatAmount = subtotal * (item.VATRate / 100);

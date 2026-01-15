@@ -21,9 +21,6 @@
 <PageTitle>Facturi Achiziție</PageTitle>
 
 <div class="facturi-achizitie-page">
-    <div style="background-color: yellow; padding: 20px; margin: 20px 0; border: 3px solid red; font-size: 18px; font-weight: bold;">
-        🚨 DEBUG: Dacă vezi acest mesaj, componenta se randează! Problema este în secțiunea toolbar.
-    </div>
     @* Page Header *@
     <div class="page-header">
         <div class="header-content">
@@ -87,14 +84,14 @@
             Height="600px">
 
         <GridColumns>
-            <GridColumn Field="@nameof(Invoice.Document.DocumentNumber)" HeaderText="Nr. Document" Width="120"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.Document.DocumentDate)" HeaderText="Data Document" Format="d" Width="110"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.Document.DueDate)" HeaderText="Data Scadență" Format="d" Width="110"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.PartnerName)" HeaderText="Partener" Width="200"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.TotalAmount)" HeaderText="Total fără TVA" Format="N2" Width="120"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.VATAmount)" HeaderText="TVA" Format="N2" Width="100"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.TotalPayment)" HeaderText="Total cu TVA" Format="N2" Width="120"></GridColumn>
-            <GridColumn Field="@nameof(Invoice.Document.DocumentStateName)" HeaderText="Stare" Width="100"></GridColumn>
+            <GridColumn Field="DocumentNumber" HeaderText="Nr. Document" Width="120"></GridColumn>
+            <GridColumn Field="DocumentDate" HeaderText="Data Document" Format="d" Width="110"></GridColumn>
+            <GridColumn Field="DueDate" HeaderText="Data Scadență" Format="d" Width="110"></GridColumn>
+            <GridColumn Field="PartnerName" HeaderText="Partener" Width="200"></GridColumn>
+            <GridColumn Field="TotalAmount" HeaderText="Total fără TVA" Format="N2" Width="120"></GridColumn>
+            <GridColumn Field="VATAmount" HeaderText="TVA" Format="N2" Width="100"></GridColumn>
+            <GridColumn Field="TotalPayment" HeaderText="Total cu TVA" Format="N2" Width="120"></GridColumn>
+            <GridColumn Field="DocumentStateName" HeaderText="Stare" Width="100"></GridColumn>
             <GridColumn HeaderText="Acțiuni" Width="120" TextAlign="TextAlign.Center">
                 <Template>
                     @{
@@ -104,9 +101,18 @@
                         <SfButton @onclick="async () => await ViewInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-info" Size="ButtonSize.Small">
                             <i class="bi bi-eye"></i>
                         </SfButton>
-                        <SfButton @onclick="async () => await EditInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-warning" Size="ButtonSize.Small">
+                        <SfButton @onclick="async () => await EditInvoiceByIndex(invoice.RowIndex)" 
+                                  CssClass="e-outline e-warning" 
+                                  Size="ButtonSize.Small"
+                                  Disabled='invoice.DocumentStateName == "Valid"'>
                             <i class="bi bi-pencil"></i>
                         </SfButton>
+                        @if (invoice.DocumentStateName == "Draft")
+                        {
+                            <SfButton @onclick="async () => await ValidateInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-success" Size="ButtonSize.Small">
+                                <i class="bi bi-check-circle"></i>
+                            </SfButton>
+                        }
                     </div>
                 </Template>
             </GridColumn>
@@ -313,6 +319,323 @@
                 <div class="dialog-footer">
                     <SfButton @onclick="CloseDialog" CssClass="e-outline">Anulează</SfButton>
                     <SfButton @onclick="async () => await SaveInvoice()" CssClass="e-primary" Type="ButtonType.Submit">
+                        <i class="bi bi-check-circle me-2"></i>Salvează
+                    </SfButton>
+                </div>
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+
+    @* View Invoice Dialog (Read-Only) *@
+    <SfDialog @bind-Visible="showViewDialog"
+              Width="800px"
+              Height="600px"
+              IsModal="true"
+              ShowCloseIcon="true"
+              AllowDragging="true"
+              CssClass="view-invoice-dialog">
+        <DialogTemplates>
+            <Header>
+                <div class="dialog-header">
+                    <i class="bi bi-eye me-2"></i>Vizualizare Factură Achiziție
+                </div>
+            </Header>
+            <Content>
+                @if (viewInvoice != null)
+                {
+                    <div class="view-dialog-content">
+                        @* Invoice Header Info *@
+                        <div class="invoice-header-section">
+                            <div class="header-grid">
+                                <div class="header-item">
+                                    <label class="header-label">Nr. Document</label>
+                                    <span class="header-value">@viewInvoice.Document?.DocumentNumber</span>
+                                </div>
+                                <div class="header-item">
+                                    <label class="header-label">Data Document</label>
+                                    <span class="header-value">@viewInvoice?.Document?.DocumentDate.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="header-item">
+                                    <label class="header-label">Data Scadență</label>
+                                    <span class="header-value">@viewInvoice?.Document?.DueDate?.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="header-item">
+                                    <label class="header-label">Stare</label>
+                                    <span class="header-value">@viewInvoice.DocumentStateName</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="divider" />
+
+                        @* Partner Info *@
+                        <div class="partner-section">
+                            <h6 class="section-title">
+                                <i class="bi bi-building me-2"></i>Informații Partener
+                            </h6>
+                            <div class="partner-info">
+                                <div class="partner-name">@viewInvoice.PartnerName</div>
+                                <div class="partner-details">
+                                    @* Add partner details if available *@
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="divider" />
+
+                        @* Invoice Lines *@
+                        <div class="lines-section">
+                            <h6 class="section-title">
+                                <i class="bi bi-list-ul me-2"></i>Linie Factură
+                            </h6>
+                            @if (viewInvoiceDetails != null && viewInvoiceDetails.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Articol</th>
+                                                <th>Cantitate</th>
+                                                <th>Preț Unit.</th>
+                                                <th>Valoare</th>
+                                                <th>%TVA</th>
+                                                <th>TVA</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var detail in viewInvoiceDetails)
+                                            {
+                                                <tr>
+                                                    <td>@detail.ProductName</td>
+                                                    <td>@detail.Quantity</td>
+                                                    <td>@detail.UnitPrice.ToString("N2")</td>
+                                                    <td>@detail.LineTotal.ToString("N2")</td>
+                                                    <td>@detail.VATPercent.ToString("N2")%</td>
+                                                    <td>@detail.VATAmount.ToString("N2")</td>
+                                                    <td>@detail.TotalWithVAT.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-active">
+                                                <td colspan="3"><strong>Total</strong></td>
+                                                <td><strong>@viewInvoice?.TotalAmount.ToString("N2")</strong></td>
+                                                <td></td>
+                                                <td><strong>@viewInvoice?.VATAmount.ToString("N2")</strong></td>
+                                                <td><strong>@viewInvoice?.TotalPayment.ToString("N2")</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted">Nu există linii de factură</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Închide" IsPrimary="true" OnClick="CloseViewDialog"></DialogButton>
+        </DialogButtons>
+    </SfDialog>
+
+    @* Edit Invoice Dialog *@
+    <SfDialog @ref="editDialog"
+              Width="900px"
+              Height="700px"
+              IsModal="true"
+              ShowCloseIcon="true"
+              AllowDragging="true"
+              @bind-Visible="showEditDialog">
+        <DialogTemplates>
+            <Header>
+                <div class="dialog-header">
+                    <i class="bi bi-pencil me-2"></i>Editare Factură Achiziție
+                </div>
+            </Header>
+            <Content>
+                @if (editInvoiceDto != null)
+                {
+                    <EditForm Model="editInvoiceDto" OnValidSubmit="HandleEditValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="form-container">
+                            @* Document Section *@                            @* Document Section *@
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <i class="bi bi-file-earmark-text me-2"></i>Date Document
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <SfTextBox @bind-Value="editInvoiceDto.DocumentNumber"
+                                                       Placeholder="Număr document"
+                                                       FloatLabelType="FloatLabelType.Auto">
+                                            </SfTextBox>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <SfDropDownList TValue="DocumentState"
+                                                            TItem="DocumentState"
+                                                            @bind-Value="editSelectedDocumentState"
+                                                            DataSource="documentStates"
+                                                            Placeholder="Stare document"
+                                                            FloatLabelType="FloatLabelType.Auto">
+                                                <DropDownListFieldSettings Value="CodStare" Text="DenumireStare"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <SfDatePicker @bind-Value="editInvoiceDto.DocumentDate"
+                                                          Placeholder="Data document"
+                                                          FloatLabelType="FloatLabelType.Auto">
+                                            </SfDatePicker>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <SfDatePicker @bind-Value="editInvoiceDto.DueDate"
+                                                          Placeholder="Data scadență (opțional)"
+                                                          FloatLabelType="FloatLabelType.Auto">
+                                            </SfDatePicker>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <SfTextBox @bind-Value="editInvoiceDto.DocumentObservations"
+                                               Placeholder="Observații document"
+                                               Multiline="true"
+                                               FloatLabelType="FloatLabelType.Auto">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+
+                            @* Partner Section *@
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <i class="bi bi-building me-2"></i>Partener
+                                </h5>
+
+                                <div class="form-group">
+                                    <SfDropDownList TValue="Partner"
+                                                    TItem="Partner"
+                                                    @bind-Value="editSelectedPartner"
+                                                    DataSource="partners"
+                                                    Placeholder="Selectați partenerul"
+                                                    FloatLabelType="FloatLabelType.Auto">
+                                        <DropDownListFieldSettings Value="Id" Text="Nume"></DropDownListFieldSettings>
+                                    </SfDropDownList>
+                                </div>
+
+                                <div class="form-group">
+                                    <SfTextBox @bind-Value="editInvoiceDto.InvoiceObservations"
+                                               Placeholder="Observații factură"
+                                               Multiline="true"
+                                               FloatLabelType="FloatLabelType.Auto">
+                                    </SfTextBox>
+                                </div>
+                            </div>
+
+                            @* Line Items Section *@
+                            <div class="form-section">
+                                <h6 class="section-title">
+                                    <i class="bi bi-list-ul me-2"></i>Linii Factură
+                                </h6>
+
+                                @if (editInvoiceDto.LineItems.Any())
+                                {
+                                    <div class="line-items-table">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Articol</th>
+                                                    <th>Cantitate</th>
+                                                    <th>UM</th>
+                                                    <th>Preț Unit.</th>
+                                                    <th>Cota TVA</th>
+                                                    <th>Total</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var (item, index) in editInvoiceDto.LineItems.Select((item, i) => (item, i)))
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <SfDropDownList TValue="Guid"
+                                                                            TItem="Articol"
+                                                                            @bind-Value="item.ItemId"
+                                                                            DataSource="articole"
+                                                                            Placeholder="Articol">
+                                                                <DropDownListFieldSettings Value="Id" Text="ArticolName"></DropDownListFieldSettings>
+                                                            </SfDropDownList>
+                                                        </td>
+                                                        <td>
+                                                            <SfNumericTextBox TValue="decimal"
+                                                                              @bind-Value="item.Quantity"
+                                                                              Min="0.01m"
+                                                                              Decimals="2">
+                                                            </SfNumericTextBox>
+                                                        </td>
+                                                        <td>
+                                                            <SfTextBox @bind-Value="item.UnitMeasure"
+                                                                   Placeholder="UM">
+                                                            </SfTextBox>
+                                                        </td>
+                                                        <td>
+                                                            <SfNumericTextBox TValue='decimal'
+                                                                              @bind-Value="item.UnitPrice"
+                                                                              Min="0m"
+                                                                              Decimals="2">
+                                                            </SfNumericTextBox>
+                                                        </td>
+                                                        <td>
+                                                            <SfNumericTextBox TValue='decimal'
+                                                                              @bind-Value="item.VATRate"
+                                                                              Min="0m"
+                                                                              Max="100m"
+                                                                              Decimals="2">
+                                                            </SfNumericTextBox>
+                                                        </td>
+                                                        <td>@CalculateEditLineTotal(item).ToString("N2")</td>
+                                                        <td>
+                                                            <SfButton @onclick="() => RemoveEditLineItem(index)"
+                                                                      CssClass="e-outline e-danger"
+                                                                      Size="ButtonSize.Small">
+                                                                <i class="bi bi-trash"></i>
+                                                            </SfButton>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+
+                                <SfButton @onclick="AddEditLineItem" CssClass="e-outline e-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Adaugă Linie
+                                </SfButton>
+                            </div>
+                        </div>
+                    </EditForm>
+                }
+            </Content>
+            <FooterTemplate>
+                <div class="edit-dialog-footer">
+                    <SfButton @onclick="CloseEditDialog" CssClass="e-outline">Anulează</SfButton>
+                    <SfButton @onclick="async () => await SaveEditInvoice()" CssClass="e-primary" Type="ButtonType.Submit">
                         <i class="bi bi-check-circle me-2"></i>Salvează
                     </SfButton>
                 </div>
