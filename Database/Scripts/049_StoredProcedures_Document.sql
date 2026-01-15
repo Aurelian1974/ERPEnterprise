@@ -1,0 +1,244 @@
+PRINT '=== Începere migrare 049_StoredProcedures_Document ===';
+
+-- =============================================
+-- Document Stored Procedures
+-- =============================================
+
+-- sp_Document_GetById
+IF OBJECT_ID('dbo.sp_Document_GetById', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Document_GetById;
+GO
+
+CREATE PROCEDURE dbo.sp_Document_GetById
+    @Id UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        d.Id,
+        d.DocumentDate,
+        d.DueDate,
+        d.DocumentNumber,
+        d.DocumentTypeCode,
+        d.DocumentStateId,
+        ds.DenumireStare as DocumentStateName,
+        d.Observations,
+        d.UserId,
+        d.EntityIntroduced,
+        d.IntroductionDate,
+        d.IsActive,
+        d.CreatedAt,
+        d.CreatedBy,
+        d.UpdatedAt,
+        d.UpdatedBy,
+        d.OwnerCompanyId,
+        d.OwnerWorkPlaceId,
+        d.OwnerLocationId
+    FROM dbo.Document d
+    INNER JOIN dbo.DocumentState ds ON d.DocumentStateId = ds.Id
+    WHERE d.Id = @Id AND d.IsActive = 1;
+END
+GO
+
+-- sp_Document_GetAll
+IF OBJECT_ID('dbo.sp_Document_GetAll', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Document_GetAll;
+GO
+
+CREATE PROCEDURE dbo.sp_Document_GetAll
+    @OwnerCompanyId UNIQUEIDENTIFIER = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        d.Id,
+        d.DocumentDate,
+        d.DueDate,
+        d.DocumentNumber,
+        d.DocumentTypeCode,
+        d.DocumentStateId,
+        ds.DenumireStare as DocumentStateName,
+        d.Observations,
+        d.UserId,
+        d.EntityIntroduced,
+        d.IntroductionDate,
+        d.IsActive,
+        d.CreatedAt,
+        d.CreatedBy,
+        d.UpdatedAt,
+        d.UpdatedBy
+    FROM dbo.Document d
+    INNER JOIN dbo.DocumentState ds ON d.DocumentStateId = ds.Id
+    WHERE d.IsActive = 1
+    AND (@OwnerCompanyId IS NULL OR d.OwnerCompanyId = @OwnerCompanyId)
+    ORDER BY d.CreatedAt DESC;
+END
+GO
+
+-- sp_Document_InsertPurchaseInvoice - Master SP for inserting purchase invoice
+IF OBJECT_ID('dbo.sp_Document_InsertPurchaseInvoice', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Document_InsertPurchaseInvoice;
+GO
+
+CREATE PROCEDURE dbo.sp_Document_InsertPurchaseInvoice
+    @DocumentDate DATE,
+    @DueDate DATE = NULL,
+    @DocumentNumber NVARCHAR(50),
+    @DocumentTypeCode NVARCHAR(10) = 'FFA', -- Factura Furnizor Achizitie
+    @DocumentStateCode NVARCHAR(10) = 'C', -- Default to Draft
+    @Observations NVARCHAR(500) = NULL,
+    @UserId UNIQUEIDENTIFIER,
+    @EntityIntroduced UNIQUEIDENTIFIER = NULL,
+    @PartnerId UNIQUEIDENTIFIER,
+    @OwnerCompanyId UNIQUEIDENTIFIER = NULL,
+    @OwnerWorkPlaceId UNIQUEIDENTIFIER = NULL,
+    @OwnerLocationId UNIQUEIDENTIFIER = NULL,
+    @InvoiceObservations NVARCHAR(500) = NULL,
+    -- XML parameter for line items
+    @LineItems XML
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Get DocumentStateId from code
+        DECLARE @DocumentStateId UNIQUEIDENTIFIER;
+        SELECT @DocumentStateId = Id FROM dbo.DocumentState WHERE CodStare = @DocumentStateCode AND IsActive = 1;
+
+        IF @DocumentStateId IS NULL
+        BEGIN
+            RAISERROR('Invalid DocumentStateCode: %s', 16, 1, @DocumentStateCode);
+            RETURN;
+        END
+
+        -- Insert Document
+        DECLARE @DocumentId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO dbo.Document (
+            Id, DocumentDate, DueDate, DocumentNumber, DocumentTypeCode,
+            DocumentStateId, Observations, UserId, EntityIntroduced,
+            CreatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
+        ) VALUES (
+            @DocumentId, @DocumentDate, @DueDate, @DocumentNumber, @DocumentTypeCode,
+            @DocumentStateId, @Observations, @UserId, @EntityIntroduced,
+            @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
+        );
+
+        -- Insert Invoice
+        DECLARE @InvoiceId UNIQUEIDENTIFIER = NEWID();
+        INSERT INTO dbo.Invoice (
+            Id, DocumentId, PartnerId, Observations, UserId,
+            CreatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
+        ) VALUES (
+            @InvoiceId, @DocumentId, @PartnerId, @InvoiceObservations, @UserId,
+            @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
+        );
+
+        -- Variables for totals
+        DECLARE @TotalAmount DECIMAL(18,2) = 0;
+        DECLARE @TotalVAT DECIMAL(18,2) = 0;
+
+        -- Process line items from XML
+        DECLARE @LineItem TABLE (
+            ItemId UNIQUEIDENTIFIER,
+            Quantity DECIMAL(18,2),
+            UnitMeasure NVARCHAR(20),
+            UnitPrice DECIMAL(18,2),
+            VATRate DECIMAL(5,2)
+        );
+
+        INSERT INTO @LineItem (ItemId, Quantity, UnitMeasure, UnitPrice, VATRate)
+        SELECT
+            Item.value('(ItemId)[1]', 'UNIQUEIDENTIFIER'),
+            Item.value('(Quantity)[1]', 'DECIMAL(18,2)'),
+            Item.value('(UnitMeasure)[1]', 'NVARCHAR(20)'),
+            Item.value('(UnitPrice)[1]', 'DECIMAL(18,2)'),
+            Item.value('(VATRate)[1]', 'DECIMAL(5,2)')
+        FROM @LineItems.nodes('/LineItems/Item') AS Items(Item);
+
+        -- Insert DocumentDetail and InvoiceDetail
+        DECLARE @ItemId UNIQUEIDENTIFIER, @Quantity DECIMAL(18,2), @UnitMeasure NVARCHAR(20),
+                @UnitPrice DECIMAL(18,2), @VATRate DECIMAL(5,2);
+
+        DECLARE line_cursor CURSOR FOR
+        SELECT ItemId, Quantity, UnitMeasure, UnitPrice, VATRate FROM @LineItem;
+
+        OPEN line_cursor;
+        FETCH NEXT FROM line_cursor INTO @ItemId, @Quantity, @UnitMeasure, @UnitPrice, @VATRate;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            -- Insert DocumentDetail
+            DECLARE @DocumentDetailId UNIQUEIDENTIFIER = NEWID();
+            INSERT INTO dbo.DocumentDetail (
+                Id, DocumentId, ItemId, Quantity, UnitMeasure,
+                CreatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
+            ) VALUES (
+                @DocumentDetailId, @DocumentId, @ItemId, @Quantity, @UnitMeasure,
+                @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
+            );
+
+            -- Calculate line totals
+            DECLARE @LineTotal DECIMAL(18,2) = @Quantity * @UnitPrice;
+            DECLARE @VATAmount DECIMAL(18,2) = @LineTotal * (@VATRate / 100);
+
+            -- Insert InvoiceDetail
+            INSERT INTO dbo.InvoiceDetail (
+                Id, InvoiceId, DocumentDetailId, UnitPrice, VATRate, VATAmount, LineTotal,
+                CreatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
+            ) VALUES (
+                NEWID(), @InvoiceId, @DocumentDetailId, @UnitPrice, @VATRate, @VATAmount, @LineTotal + @VATAmount,
+                @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
+            );
+
+            -- Accumulate totals
+            SET @TotalAmount = @TotalAmount + @LineTotal;
+            SET @TotalVAT = @TotalVAT + @VATAmount;
+
+            -- Update stock if item is stockable and document is valid
+            IF @DocumentStateCode = 'V'
+            BEGIN
+                IF EXISTS (SELECT 1 FROM dbo.Articole WHERE Id = @ItemId AND IsStockable = 1)
+                BEGIN
+                    -- Call stock update procedure (will be created later)
+                    EXEC dbo.sp_Stock_UpdateQuantity @ItemId, @OwnerLocationId, @Quantity, @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId;
+                END
+            END
+
+            FETCH NEXT FROM line_cursor INTO @ItemId, @Quantity, @UnitMeasure, @UnitPrice, @VATRate;
+        END
+
+        CLOSE line_cursor;
+        DEALLOCATE line_cursor;
+
+        -- Update Invoice totals
+        UPDATE dbo.Invoice
+        SET TotalAmount = @TotalAmount,
+            VATAmount = @TotalVAT,
+            TotalPayment = @TotalAmount + @TotalVAT,
+            UpdatedAt = GETDATE(),
+            UpdatedBy = @UserId
+        WHERE Id = @InvoiceId;
+
+        COMMIT TRANSACTION;
+
+        -- Return the created IDs
+        SELECT @DocumentId as DocumentId, @InvoiceId as InvoiceId;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END
+GO
+
+PRINT '✅ Stored procedures pentru Document create';
+
+PRINT '=== Migrare 049_StoredProcedures_Document completă ===';
