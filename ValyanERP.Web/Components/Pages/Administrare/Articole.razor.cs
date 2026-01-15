@@ -330,7 +330,8 @@ public partial class Articole : ComponentBase
     {
         newArticol = new ValyanERP.Web.Features.Administrare.Articole.Models.Articol
         {
-            IsActive = true // Default to active
+            IsActive = true, // Default to active
+            IsStockable = true // Default to stockable
         };
         showAddDialog = true;
         Logger.LogDebug("Add dialog shown");
@@ -377,7 +378,8 @@ public partial class Articole : ComponentBase
                 ArticolCode = newArticol.ArticolCode,
                 ArticolName = newArticol.ArticolName,
                 Description = newArticol.Description,
-                TipArticolId = newArticol.TipArticolId
+                TipArticolId = newArticol.TipArticolId,
+                IsStockable = newArticol.IsStockable
             });
 
             successMessage = $"Articolul '{newArticol.ArticolCode}' a fost adăugat cu succes.";
@@ -475,7 +477,8 @@ public partial class Articole : ComponentBase
                 ArticolCode = editingArticol.ArticolCode,
                 ArticolName = editingArticol.ArticolName,
                 Description = editingArticol.Description,
-                TipArticolId = editingArticol.TipArticolId
+                TipArticolId = editingArticol.TipArticolId,
+                IsStockable = editingArticol.IsStockable
             });
 
             successMessage = $"Articolul '{updatedCode}' a fost actualizat cu succes.";

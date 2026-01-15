@@ -37,6 +37,8 @@ public class Articol
     [Range(0, int.MaxValue)]
     public int? StocMaxim { get; set; }
 
+    public bool IsStockable { get; set; } = true;
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -85,6 +87,8 @@ public class ArticolCreateDto
     [Range(0, int.MaxValue)]
     public int? StocMaxim { get; set; }
 
+    public bool IsStockable { get; set; } = true;
+
     // Ownership
     public Guid? OwnerCompanyId { get; set; }
     public Guid? OwnerWorkPlaceId { get; set; }
@@ -126,4 +130,6 @@ public class ArticolUpdateDto
 
     [Range(0, int.MaxValue)]
     public int? StocMaxim { get; set; }
+
+    public bool IsStockable { get; set; } = true;
 }

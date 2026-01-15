@@ -74,7 +74,7 @@ BEGIN
     SELECT a.Id, a.ArticolCode, a.ArticolName, a.Description,
            a.TipArticolId, it.ItemTypeName AS TipArticolName,
            a.UnitateMasura, a.PretAchizitie, a.PretVanzare,
-           a.StocMinim, a.StocMaxim, a.IsActive, a.CreatedAt, a.UpdatedAt
+           a.StocMinim, a.StocMaxim, a.IsStockable, a.IsActive, a.CreatedAt, a.UpdatedAt
     FROM dbo.Articole a
     INNER JOIN dbo.ItemTypes it ON a.TipArticolId = it.Id
     WHERE a.IsActive = 1
@@ -93,7 +93,7 @@ BEGIN
     SELECT a.Id, a.ArticolCode, a.ArticolName, a.Description,
            a.TipArticolId, it.ItemTypeName AS TipArticolName,
            a.UnitateMasura, a.PretAchizitie, a.PretVanzare,
-           a.StocMinim, a.StocMaxim, a.IsActive, a.CreatedAt, a.UpdatedAt
+           a.StocMinim, a.StocMaxim, a.IsStockable, a.IsActive, a.CreatedAt, a.UpdatedAt
     FROM dbo.Articole a
     INNER JOIN dbo.ItemTypes it ON a.TipArticolId = it.Id
     WHERE a.Id = @Id;
@@ -111,7 +111,7 @@ BEGIN
     SELECT a.Id, a.ArticolCode, a.ArticolName, a.Description,
            a.TipArticolId, it.ItemTypeName AS TipArticolName,
            a.UnitateMasura, a.PretAchizitie, a.PretVanzare,
-           a.StocMinim, a.StocMaxim, a.IsActive, a.CreatedAt, a.UpdatedAt
+           a.StocMinim, a.StocMaxim, a.IsStockable, a.IsActive, a.CreatedAt, a.UpdatedAt
     FROM dbo.Articole a
     INNER JOIN dbo.ItemTypes it ON a.TipArticolId = it.Id
     WHERE a.ArticolCode = @ArticolCode AND a.IsActive = 1;
@@ -131,6 +131,7 @@ CREATE PROCEDURE dbo.sp_Articole_Create
     @PretVanzare DECIMAL(18,2) = NULL,
     @StocMinim DECIMAL(18,2) = 0,
     @StocMaxim DECIMAL(18,2) = NULL,
+    @IsStockable BIT = 1,
     @OwnerCompanyId UNIQUEIDENTIFIER = NULL,
     @OwnerWorkPlaceId UNIQUEIDENTIFIER = NULL,
     @OwnerLocationId UNIQUEIDENTIFIER = NULL,
@@ -155,11 +156,11 @@ BEGIN
 
     DECLARE @Id UNIQUEIDENTIFIER = NEWID();
     INSERT INTO dbo.Articole (Id, ArticolCode, ArticolName, Description, TipArticolId,
-                             UnitateMasura, PretAchizitie, PretVanzare, StocMinim, StocMaxim,
+                             UnitateMasura, PretAchizitie, PretVanzare, StocMinim, StocMaxim, IsStockable,
                              OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId,
                              CreatedAt, CreatedBy)
     VALUES (@Id, @ArticolCode, @ArticolName, @Description, @TipArticolId,
-            @UnitateMasura, @PretAchizitie, @PretVanzare, @StocMinim, @StocMaxim,
+            @UnitateMasura, @PretAchizitie, @PretVanzare, @StocMinim, @StocMaxim, @IsStockable,
             @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId,
             GETDATE(), @CreatedBy);
 
@@ -181,6 +182,7 @@ CREATE PROCEDURE dbo.sp_Articole_Update
     @PretVanzare DECIMAL(18,2) = NULL,
     @StocMinim DECIMAL(18,2) = 0,
     @StocMaxim DECIMAL(18,2) = NULL,
+    @IsStockable BIT = 1,
     @UpdatedBy UNIQUEIDENTIFIER = NULL
 AS
 BEGIN
@@ -210,6 +212,7 @@ BEGIN
         PretVanzare = @PretVanzare,
         StocMinim = @StocMinim,
         StocMaxim = @StocMaxim,
+        IsStockable = @IsStockable,
         UpdatedAt = GETDATE(),
         UpdatedBy = @UpdatedBy
     WHERE Id = @Id;

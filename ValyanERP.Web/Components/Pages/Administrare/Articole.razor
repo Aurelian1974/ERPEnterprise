@@ -190,6 +190,14 @@
                         AllowEditing="false">
             </GridColumn>
 
+            @* IsStockable *@
+            <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.IsStockable)"
+                        HeaderText="Gestionare Stoc"
+                        Width="120"
+                        DisplayAsCheckBox="true"
+                        AllowEditing="false">
+            </GridColumn>
+
             @* CreatedAt *@
             <GridColumn Field="@nameof(ValyanERP.Web.Features.Administrare.Articole.Models.Articol.CreatedAt)"
                         HeaderText="Creat La"
@@ -269,6 +277,18 @@
                         <div class="form-group">
                             <SfCheckBox @bind-Checked="newArticol.IsActive"
                                         Label="Articol Activ">
+                            </SfCheckBox>
+                        </div>
+                        @* Is Stockable *@
+                        <div class="form-group">
+                            <SfCheckBox @bind-Checked="editingArticol.IsStockable"
+                                        Label="Gestionare Stoc">
+                            </SfCheckBox>
+                        </div>
+                        @* Is Stockable *@
+                        <div class="form-group">
+                            <SfCheckBox @bind-Checked="newArticol.IsStockable"
+                                        Label="Gestionare Stoc">
                             </SfCheckBox>
                         </div>
                     </div>

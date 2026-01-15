@@ -135,6 +135,7 @@ public class ArticoleRepository : IArticoleRepository
             parameters.Add("@ArticolName", articol.ArticolName);
             parameters.Add("@Description", articol.Description);
             parameters.Add("@TipArticolId", articol.TipArticolId);
+            parameters.Add("@IsStockable", articol.IsStockable);
             parameters.Add("@OwnerCompanyId", articol.OwnerCompanyId);
             parameters.Add("@OwnerWorkPlaceId", articol.OwnerWorkPlaceId);
             parameters.Add("@OwnerLocationId", articol.OwnerLocationId);
@@ -165,6 +166,7 @@ public class ArticoleRepository : IArticoleRepository
             parameters.Add("@ArticolName", articol.ArticolName);
             parameters.Add("@Description", articol.Description);
             parameters.Add("@TipArticolId", articol.TipArticolId);
+            parameters.Add("@IsStockable", articol.IsStockable);
 
             var rowsAffected = await connection.ExecuteAsync(
                 "sp_Articole_Update",
