@@ -76,6 +76,7 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
+            Logger.LogWarning("OnInitializedAsync started");
             // Initialize adaptor
             invoiceAdaptor = new AchizitiiAdaptor(AchizitiiRepository);
 
@@ -86,12 +87,17 @@ public partial class FacturiAchizitie : ComponentBase
             await LoadDataAsync();
             
             isLoading = false;
+            Logger.LogWarning("OnInitializedAsync completed successfully");
+            
+            // TEMP: Test if dialog works
+            // isDialogVisible = true;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error initializing FacturiAchizitie component");
             errorMessage = "Eroare la inițializarea componentei";
             isLoading = false;
+            Logger.LogWarning("OnInitializedAsync failed");
         }
     }
 
@@ -103,8 +109,10 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
+            Logger.LogWarning("LoadReferenceData started");
             // Load document states
             documentStates = await AchizitiiService.GetDocumentStatesAsync();
+            Logger.LogWarning($"DocumentStates loaded: {documentStates?.Count() ?? 0} items");
 
             // TODO: Load partners and articole when services are available
             // partners = await ParteneriService.GetAllPartnersAsync();
@@ -134,10 +142,12 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
+            Logger.LogWarning("LoadDataAsync started");
             ClearMessages();
             invoices = await AchizitiiService.GetAllInvoicesAsync();
             invoices = invoices.Select((i, index) => { i.RowIndex = index; return i; }).ToList();
             totalRecords = invoices.Count();
+            Logger.LogWarning($"LoadDataAsync completed: {totalRecords} invoices loaded");
         }
         catch (Exception ex)
         {
@@ -204,11 +214,15 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
+            Logger.LogWarning($"OpenCreateDialog called. isLoading: {isLoading}, documentStates count: {documentStates?.Count() ?? 0}");
+            
             if (isLoading)
             {
+                Logger.LogWarning("OpenCreateDialog called while loading");
                 return;
             }
             
+            Logger.LogWarning("OpenCreateDialog proceeding with dialog creation");
             isEditMode = false;
             purchaseInvoiceDto = new PurchaseInvoiceCreateDto
             {
@@ -224,6 +238,7 @@ public partial class FacturiAchizitie : ComponentBase
             selectedPartner = null;
 
             isDialogVisible = true;
+            Logger.LogWarning("Dialog visibility set to true");
             StateHasChanged();
         }
         catch (Exception ex)
