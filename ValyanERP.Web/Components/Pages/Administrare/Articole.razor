@@ -279,12 +279,7 @@
                                         Label="Articol Activ">
                             </SfCheckBox>
                         </div>
-                        @* Is Stockable *@
-                        <div class="form-group">
-                            <SfCheckBox @bind-Checked="editingArticol.IsStockable"
-                                        Label="Gestionare Stoc">
-                            </SfCheckBox>
-                        </div>
+
                         @* Is Stockable *@
                         <div class="form-group">
                             <SfCheckBox @bind-Checked="newArticol.IsStockable"
@@ -370,7 +365,14 @@
                         <div class="form-group">
                             <SfCheckBox @bind-Checked="editingArticol.IsActive"
                                         Label="Articol Activ">
-                        </SfCheckBox>
+                            </SfCheckBox>
+                        </div>
+
+                        @* Is Stockable *@
+                        <div class="form-group">
+                            <SfCheckBox @bind-Checked="editingArticol.IsStockable"
+                                        Label="Gestionare Stoc">
+                            </SfCheckBox>
                         </div>
                     </div>
                 </Content>
@@ -427,6 +429,12 @@
                             <strong>Activ:</strong>
                             <span class="@(viewedArticol.IsActive ? "text-success" : "text-danger")">
                                 @(viewedArticol.IsActive ? "Da" : "Nu")
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Gestionare Stoc:</strong>
+                            <span class="@(viewedArticol.IsStockable ? "text-success" : "text-warning")">
+                                @(viewedArticol.IsStockable ? "Da" : "Nu")
                             </span>
                         </div>
                         <div class="detail-row">
