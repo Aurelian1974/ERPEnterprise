@@ -61,11 +61,11 @@
 
     @* Toolbar *@
     <div class="toolbar mb-3">
-        <SfButton @onclick="OpenCreateDialog" CssClass="e-primary">
+        <SfButton @onclick="async () => await OpenCreateDialog()" CssClass="e-primary">
             <i class="bi bi-plus-circle me-2"></i>Adaugă Factură
         </SfButton>
 
-        <SfButton @onclick="RefreshData" CssClass="e-outline">
+        <SfButton @onclick="async () => await RefreshData()" CssClass="e-outline">
             <i class="bi bi-arrow-clockwise me-2"></i>Reîmprospătează
         </SfButton>
     </div>
@@ -98,10 +98,10 @@
                         var invoice = context as Invoice;
                     }
                     <div class="action-buttons">
-                        <SfButton @onclick="() => ViewInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-info" Size="ButtonSize.Small">
+                        <SfButton @onclick="async () => await ViewInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-info" Size="ButtonSize.Small">
                             <i class="bi bi-eye"></i>
                         </SfButton>
-                        <SfButton @onclick="() => EditInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-warning" Size="ButtonSize.Small">
+                        <SfButton @onclick="async () => await EditInvoiceByIndex(invoice.RowIndex)" CssClass="e-outline e-warning" Size="ButtonSize.Small">
                             <i class="bi bi-pencil"></i>
                         </SfButton>
                     </div>
@@ -309,7 +309,7 @@
             <FooterTemplate>
                 <div class="dialog-footer">
                     <SfButton @onclick="CloseDialog" CssClass="e-outline">Anulează</SfButton>
-                    <SfButton @onclick="SaveInvoice" CssClass="e-primary" Type="ButtonType.Submit">
+                    <SfButton @onclick="async () => await SaveInvoice()" CssClass="e-primary" Type="ButtonType.Submit">
                         <i class="bi bi-check-circle me-2"></i>Salvează
                     </SfButton>
                 </div>
