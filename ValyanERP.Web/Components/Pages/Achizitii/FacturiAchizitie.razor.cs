@@ -204,12 +204,8 @@ public partial class FacturiAchizitie : ComponentBase
     {
         try
         {
-            Logger.LogInformation("OpenCreateDialog called");
-            Logger.LogInformation($"DocumentStates count: {documentStates?.Count() ?? 0}");
-            
             if (isLoading)
             {
-                Logger.LogWarning("OpenCreateDialog called while loading");
                 return;
             }
             
