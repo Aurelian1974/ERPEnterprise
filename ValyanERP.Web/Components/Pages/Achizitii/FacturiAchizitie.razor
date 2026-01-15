@@ -1,6 +1,6 @@
-@page "/achizitii/facturi"
+@page "/module/achizitii/facturi"
 @attribute [Authorize]
-@rendermode InteractiveAuto
+@rendermode InteractiveServer
 
 @using ValyanERP.Web.Features.Achizitii.Models
 @using ValyanERP.Web.Features.Achizitii.Services
@@ -21,6 +21,9 @@
 <PageTitle>Facturi Achiziție</PageTitle>
 
 <div class="facturi-achizitie-page">
+    <div style="background-color: yellow; padding: 20px; margin: 20px 0; border: 3px solid red; font-size: 18px; font-weight: bold;">
+        🚨 DEBUG: Dacă vezi acest mesaj, componenta se randează! Problema este în secțiunea toolbar.
+    </div>
     @* Page Header *@
     <div class="page-header">
         <div class="header-content">
@@ -61,7 +64,7 @@
 
     @* Toolbar *@
     <div class="toolbar mb-3">
-        <SfButton @onclick="async () => await OpenCreateDialog()" CssClass="e-primary" Disabled="isLoading">
+        <SfButton @onclick="OpenCreateDialog" CssClass="e-primary" Disabled="isLoading">
             <i class="bi bi-plus-circle me-2"></i>Adaugă Factură
         </SfButton>
 

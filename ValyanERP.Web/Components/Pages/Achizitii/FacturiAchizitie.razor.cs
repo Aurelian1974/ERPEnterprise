@@ -223,10 +223,6 @@ public partial class FacturiAchizitie : ComponentBase
             }
             
             Logger.LogWarning("OpenCreateDialog proceeding with dialog creation");
-            // TEMP: Just show success message instead of opening dialog
-            successMessage = "Butonul funcționează! Dialog-ul va fi implementat în curând.";
-            StateHasChanged();
-            return;
             
             isEditMode = false;
             purchaseInvoiceDto = new PurchaseInvoiceCreateDto
