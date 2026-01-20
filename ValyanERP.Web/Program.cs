@@ -101,6 +101,10 @@ builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.Audit.Repositor
 builder.Services.AddScoped<ValyanERP.Web.Features.Infrastructure.Audit.Services.IAuditService, ValyanERP.Web.Features.Infrastructure.Audit.Services.AuditService>();
 builder.Services.AddSingleton<ValyanERP.Web.Features.Infrastructure.Audit.Services.SensitiveDataMasker>();
 
+// Rapoarte - Stoc (repository + service)
+builder.Services.AddScoped<ValyanERP.Web.Features.Rapoarte.Stoc.Repositories.IStocRepository, ValyanERP.Web.Features.Rapoarte.Stoc.Repositories.StocRepository>();
+builder.Services.AddScoped<ValyanERP.Web.Features.Rapoarte.Stoc.Services.IStocService, ValyanERP.Web.Features.Rapoarte.Stoc.Services.StocService>();
+
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<ValyanERP.Web.Features.Administrare.Persoane.Validators.PersoanaValidator>();

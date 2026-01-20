@@ -151,12 +151,23 @@
         </div>
 
         <!-- Reports -->
-        <NavLink class="nav-item" href="#" title="Rapoarte">
-            <span class="nav-icon">
-                <i class="bi bi-graph-up"></i>
-            </span>
-            <span class="nav-text">Rapoarte</span>
-        </NavLink>
+        <div class="nav-section">
+            <button type="button" class="nav-section-header" @onclick="ToggleRapoarte">
+                <span class="nav-icon">
+                    <i class="bi bi-graph-up"></i>
+                </span>
+                <span class="nav-text">Rapoarte</span>
+                <i class="chevron-icon bi @(rapoarteExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </button>
+            <div class="nav-submenu @(rapoarteExpanded ? "expanded" : "")">
+                <NavLink class="nav-item submenu-item" href="/rapoarte/stoc">
+                    <span class="nav-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </span>
+                    <span class="nav-text">Stoc</span>
+                </NavLink>
+            </div>
+        </div>
 
         <!-- Settings -->
         <NavLink class="nav-item" href="#" title="Setări">
@@ -257,6 +268,13 @@
     private void ToggleArticole()
     {
         articoleExpanded = !articoleExpanded;
+    }
+    
+    // Rapoarte subsection
+    private bool rapoarteExpanded = false;
+    private void ToggleRapoarte()
+    {
+        rapoarteExpanded = !rapoarteExpanded;
     }
 
     // Achizitii subsection
