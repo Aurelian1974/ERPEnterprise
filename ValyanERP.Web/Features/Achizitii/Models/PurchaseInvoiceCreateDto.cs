@@ -37,6 +37,16 @@ public class PurchaseInvoiceCreateDto
     public Guid? OwnerCompanyId { get; set; }
     public Guid? OwnerWorkPlaceId { get; set; }
     public Guid? OwnerLocationId { get; set; }
+
+    // Selected partner addresses by type (nullable)
+    public Guid? PartnerAddressSediuId { get; set; }
+    public Guid? PartnerAddressCorespondentaId { get; set; }
+    public Guid? PartnerAddressLivrareId { get; set; }
+    public Guid? PartnerAddressFacturareId { get; set; }
+
+    // Selected partner contact and bank account
+    public Guid? PartnerContactId { get; set; }
+    public Guid? PartnerBankAccountId { get; set; }
 }
 
 public class InvoiceLineItemDto

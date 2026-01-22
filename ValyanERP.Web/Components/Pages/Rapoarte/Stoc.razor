@@ -1,54 +1,70 @@
-@rendermode InteractiveServer
 @page "/rapoarte/stoc"
+@rendermode InteractiveServer
 @using ValyanERP.Web.Features.Rapoarte.Stoc.Models
-@inject Microsoft.JSInterop.IJSRuntime JS
+@using ValyanERP.Web.Features.Rapoarte.Stoc
+@using ValyanERP.Web.Components.Shared.DataGrid
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
 
-<h3>Raport Stoc</h3>
+<PageTitle>Raport Stoc</PageTitle>
 
-<div class="mb-3">
-    <button class="btn btn-primary" @onclick="Load">Încarcă</button>
-    <span class="ms-2 text-muted">(filtre vor fi adăugate ulterior)</span>
+<div class="stoc-page">
+    <div class="page-header">
+        <div class="header-content">
+            <h3 class="page-title">
+                <i class="bi bi-box-seam me-2"></i>Raport Stoc
+            </h3>
+            <span class="record-count">@totalRecords înregistrări</span>
+        </div>
+        <GridStateManager @ref="gridStateManager"
+                          GridId="Stoc"
+                          GridReference="@grid"
+                          ShowConfigurationSelector="true"
+                          ShowButtonLabels="false"
+                          OnStateSaved="OnGridStateSaved"
+                          OnStateLoaded="OnGridStateLoaded"
+                          OnStateReset="OnGridStateReset" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Se încarcă datele...</span>
+            </div>
+        </div>
+    }
+
+    <SfGrid @ref="grid"
+            TValue="StocReportItemDto"
+            ID="StocGrid"
+            AllowPaging="true"
+            AllowSorting="true"
+            AllowMultiSorting="true"
+            AllowFiltering="true"
+            Toolbar="@ToolbarItems"
+            OnToolbarClick="OnToolbarClick"
+            OnDataBound="OnDataBound">
+        <SfDataManager AdaptorInstance="@typeof(ValyanERP.Web.Features.Rapoarte.Stoc.StocAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+        <GridColumns>
+            <GridColumn Field="Cod" HeaderText="Cod" Width="120" TextAlign="TextAlign.Left" />
+            <GridColumn Field="Denumire" HeaderText="Denumire" Width="220" TextAlign="TextAlign.Left" />
+            <GridColumn Field="Cantitate" HeaderText="Cantitate" Width="120" Format="N2" TextAlign="TextAlign.Right" />
+            <GridColumn Field="Valoare" HeaderText="Valoare" Width="120" Format="N2" TextAlign="TextAlign.Right" />
+        </GridColumns>
+        <GridPageSettings PageSize="20" PageSizes="@(new int[] { 10, 20, 50, 100 })" />
+    </SfGrid>
 </div>
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger">@errorMessage</div>
-}
-
-<script>
-    window.fetchWithCredentials = (url) => {
-        return fetch(url, { credentials: 'same-origin' }).then(response => {
-            if (!response.ok) throw new Error(response.statusText || 'Network error');
-            return response.text();
-        });
-    };
-</script>
-
-@if (items == null)
-{
-    <p>Apăsați 'Încarcă' pentru a afișa datele.</p>
-}
-else
-{
-    <table class="table table-striped table-sm">
-        <thead>
-            <tr>
-                <th>Cod</th>
-                <th>Denumire</th>
-                <th class="text-end">Cantitate</th>
-                <th class="text-end">Valoare</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var it in items)
-            {
-                <tr>
-                    <td>@it.Cod</td>
-                    <td>@it.Denumire</td>
-                    <td class="text-end">@it.Cantitate</td>
-                    <td class="text-end">@it.Valoare</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}

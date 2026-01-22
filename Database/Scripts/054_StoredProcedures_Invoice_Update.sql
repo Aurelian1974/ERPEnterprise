@@ -44,6 +44,10 @@ GO
 CREATE PROCEDURE dbo.sp_Invoice_Update
     @Id UNIQUEIDENTIFIER,
     @PartnerId UNIQUEIDENTIFIER,
+    @PartnerAddressSediuId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
     @Observations NVARCHAR(500) = NULL,
     @UpdatedBy UNIQUEIDENTIFIER
 AS
@@ -53,6 +57,10 @@ BEGIN
     UPDATE dbo.Invoice
     SET
         PartnerId = @PartnerId,
+        PartnerAddressSediuId = @PartnerAddressSediuId,
+        PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
+        PartnerAddressLivrareId = @PartnerAddressLivrareId,
+        PartnerAddressFacturareId = @PartnerAddressFacturareId,
         Observations = @Observations,
         UpdatedAt = GETDATE(),
         UpdatedBy = @UpdatedBy
@@ -159,6 +167,10 @@ CREATE PROCEDURE dbo.sp_Invoice_UpdateComplete
     @DocumentStateId UNIQUEIDENTIFIER,
     @DocumentObservations NVARCHAR(500) = NULL,
     @PartnerId UNIQUEIDENTIFIER,
+    @PartnerAddressSediuId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
     @InvoiceObservations NVARCHAR(500) = NULL,
     @LineItems dbo.InvoiceLineItemType READONLY,
     @UpdatedBy UNIQUEIDENTIFIER
@@ -194,6 +206,10 @@ BEGIN
         EXEC dbo.sp_Invoice_Update
             @Id = @InvoiceId,
             @PartnerId = @PartnerId,
+            @PartnerAddressSediuId = @PartnerAddressSediuId,
+            @PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
+            @PartnerAddressLivrareId = @PartnerAddressLivrareId,
+            @PartnerAddressFacturareId = @PartnerAddressFacturareId,
             @Observations = @InvoiceObservations,
             @UpdatedBy = @UpdatedBy;
 

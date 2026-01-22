@@ -72,6 +72,15 @@ public partial class FacturiAchizitie : ComponentBase
     private PurchaseInvoiceCreateDto? purchaseInvoiceDto;
     private DocumentState? selectedDocumentState;
     private Partner? selectedPartner;
+    // Partner addresses for the create dialog
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress> partnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+    private Dictionary<ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa, List<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>> partnerAddressesByType = new();
+    private Dictionary<ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa, Guid?> selectedAddressByType = new();
+    // Partner contacts and bank accounts for the create dialog
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact> partnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount> partnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+    private Guid? selectedPartnerContactId;
+    private Guid? selectedPartnerBankAccountId;
 
     // View Dialog
     private bool showViewDialog;
@@ -84,6 +93,15 @@ public partial class FacturiAchizitie : ComponentBase
     private PurchaseInvoiceEditDto? editInvoiceDto;
     private DocumentState? editSelectedDocumentState;
     private Partner? editSelectedPartner;
+    // Partner addresses for the edit dialog
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress> editPartnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+    private Dictionary<ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa, List<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>> editPartnerAddressesByType = new();
+    private Dictionary<ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa, Guid?> editSelectedAddressByType = new();
+    // Partner contacts and bank accounts for the edit dialog
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact> editPartnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+    private IEnumerable<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount> editPartnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+    private Guid? editSelectedPartnerContactId;
+    private Guid? editSelectedPartnerBankAccountId;
 
     #endregion
 
@@ -266,6 +284,297 @@ public partial class FacturiAchizitie : ComponentBase
         }
     }
 
+    /// <summary>
+    /// Loads partner addresses for the create dialog and groups them by TipAdresa.
+    /// </summary>
+    private async Task LoadPartnerAddressesAsync(Guid partnerId)
+    {
+        try
+        {
+            partnerAddresses = await PartnerRepository.GetAddressesByPartnerIdAsync(partnerId);
+            partnerAddressesByType = partnerAddresses
+                .GroupBy(a => a.TipAdresa)
+                .ToDictionary(g => g.Key, g => g.OrderBy(a => a.SortOrder).ThenByDescending(a => a.EstePrincipala).ToList());
+
+            selectedAddressByType.Clear();
+            foreach (var kv in partnerAddressesByType)
+            {
+                // default to principal address if available, otherwise first
+                var principal = kv.Value.FirstOrDefault(a => a.EstePrincipala) ?? kv.Value.FirstOrDefault();
+                selectedAddressByType[kv.Key] = principal?.Id;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading partner addresses for partner {PartnerId}", partnerId);
+            partnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+            partnerAddressesByType.Clear();
+            selectedAddressByType.Clear();
+        }
+    }
+
+    private async Task LoadPartnerContactsAsync(Guid partnerId)
+    {
+        try
+        {
+            partnerContacts = await PartnerRepository.GetContactsByPartnerIdAsync(partnerId);
+            // default select principal contact if any
+            var principal = partnerContacts.FirstOrDefault(c => c.EstePrincipal) ?? partnerContacts.FirstOrDefault();
+            selectedPartnerContactId = principal?.Id;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading partner contacts for partner {PartnerId}", partnerId);
+            partnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+            selectedPartnerContactId = null;
+        }
+    }
+
+    private async Task LoadPartnerBankAccountsAsync(Guid partnerId)
+    {
+        try
+        {
+            partnerBankAccounts = await PartnerRepository.GetBankAccountsByPartnerIdAsync(partnerId);
+            var principal = partnerBankAccounts.FirstOrDefault(b => b.EstePrincipal) ?? partnerBankAccounts.FirstOrDefault();
+            selectedPartnerBankAccountId = principal?.Id;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading partner bank accounts for partner {PartnerId}", partnerId);
+            partnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+            selectedPartnerBankAccountId = null;
+        }
+    }
+
+    private async Task LoadEditPartnerAddressesAsync(Guid partnerId)
+    {
+        try
+        {
+            editPartnerAddresses = await PartnerRepository.GetAddressesByPartnerIdAsync(partnerId);
+            editPartnerAddressesByType = editPartnerAddresses
+                .GroupBy(a => a.TipAdresa)
+                .ToDictionary(g => g.Key, g => g.OrderBy(a => a.SortOrder).ThenByDescending(a => a.EstePrincipala).ToList());
+
+            editSelectedAddressByType.Clear();
+            foreach (var kv in editPartnerAddressesByType)
+            {
+                var principal = kv.Value.FirstOrDefault(a => a.EstePrincipala) ?? kv.Value.FirstOrDefault();
+                editSelectedAddressByType[kv.Key] = principal?.Id;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading edit partner addresses for partner {PartnerId}", partnerId);
+            editPartnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+            editPartnerAddressesByType.Clear();
+            editSelectedAddressByType.Clear();
+        }
+    }
+
+    private async Task LoadEditPartnerContactsAsync(Guid partnerId)
+    {
+        try
+        {
+            editPartnerContacts = await PartnerRepository.GetContactsByPartnerIdAsync(partnerId);
+            var principal = editPartnerContacts.FirstOrDefault(c => c.EstePrincipal) ?? editPartnerContacts.FirstOrDefault();
+            editSelectedPartnerContactId = principal?.Id;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading edit partner contacts for partner {PartnerId}", partnerId);
+            editPartnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+            editSelectedPartnerContactId = null;
+        }
+    }
+
+    private async Task LoadEditPartnerBankAccountsAsync(Guid partnerId)
+    {
+        try
+        {
+            editPartnerBankAccounts = await PartnerRepository.GetBankAccountsByPartnerIdAsync(partnerId);
+            var principal = editPartnerBankAccounts.FirstOrDefault(b => b.EstePrincipal) ?? editPartnerBankAccounts.FirstOrDefault();
+            editSelectedPartnerBankAccountId = principal?.Id;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading edit partner bank accounts for partner {PartnerId}", partnerId);
+            editPartnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+            editSelectedPartnerBankAccountId = null;
+        }
+    }
+
+    private async Task OnPartnerChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Partner, Partner> args)
+    {
+        try
+        {
+            selectedPartner = args?.Value;
+            if (selectedPartner != null)
+            {
+                if (purchaseInvoiceDto != null)
+                    purchaseInvoiceDto.PartnerId = selectedPartner.Id;
+
+                await LoadPartnerAddressesAsync(selectedPartner.Id);
+                await LoadPartnerContactsAsync(selectedPartner.Id);
+                await LoadPartnerBankAccountsAsync(selectedPartner.Id);
+            }
+            else
+            {
+                partnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+                partnerAddressesByType.Clear();
+                selectedAddressByType.Clear();
+                partnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+                partnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+                selectedPartnerContactId = null;
+                selectedPartnerBankAccountId = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error handling partner change");
+        }
+    }
+
+    // Overload to handle ValueChange event which passes the Partner directly
+    private async Task OnPartnerChanged(Partner partner)
+    {
+        try
+        {
+            selectedPartner = partner;
+            if (selectedPartner != null)
+            {
+                if (purchaseInvoiceDto != null)
+                    purchaseInvoiceDto.PartnerId = selectedPartner.Id;
+
+                await LoadPartnerAddressesAsync(selectedPartner.Id);
+                await LoadPartnerContactsAsync(selectedPartner.Id);
+                await LoadPartnerBankAccountsAsync(selectedPartner.Id);
+            }
+            else
+            {
+                partnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+                partnerAddressesByType.Clear();
+                selectedAddressByType.Clear();
+                partnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+                partnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+                selectedPartnerContactId = null;
+                selectedPartnerBankAccountId = null;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error handling partner change (overload)");
+        }
+    }
+
+    private async Task OnEditPartnerChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Partner, Partner> args)
+    {
+        try
+        {
+            editSelectedPartner = args?.Value;
+            if (editSelectedPartner != null)
+            {
+                if (editInvoiceDto != null)
+                    editInvoiceDto.PartnerId = editSelectedPartner.Id;
+
+                await LoadEditPartnerAddressesAsync(editSelectedPartner.Id);
+                await LoadEditPartnerContactsAsync(editSelectedPartner.Id);
+                await LoadEditPartnerBankAccountsAsync(editSelectedPartner.Id);
+            }
+            else
+            {
+                editPartnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+                editPartnerAddressesByType.Clear();
+                editSelectedAddressByType.Clear();
+                editPartnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+                editPartnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+                editSelectedPartnerContactId = null;
+                editSelectedPartnerBankAccountId = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error handling edit partner change");
+        }
+    }
+
+    // Overload to handle ValueChange event which passes the Partner directly (edit dialog)
+    private async Task OnEditPartnerChanged(Partner partner)
+    {
+        try
+        {
+            editSelectedPartner = partner;
+            if (editSelectedPartner != null)
+            {
+                if (editInvoiceDto != null)
+                    editInvoiceDto.PartnerId = editSelectedPartner.Id;
+
+                await LoadEditPartnerAddressesAsync(editSelectedPartner.Id);
+                await LoadEditPartnerContactsAsync(editSelectedPartner.Id);
+                await LoadEditPartnerBankAccountsAsync(editSelectedPartner.Id);
+            }
+            else
+            {
+                editPartnerAddresses = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress>();
+                editPartnerAddressesByType.Clear();
+                editSelectedAddressByType.Clear();
+                editPartnerContacts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact>();
+                editPartnerBankAccounts = Array.Empty<ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount>();
+                editSelectedPartnerContactId = null;
+                editSelectedPartnerBankAccountId = null;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error handling edit partner change (overload)");
+        }
+    }
+
+    private void OnAddressSelected(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa tip, Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress> args)
+    {
+        selectedAddressByType[tip] = args.Value;
+        StateHasChanged();
+    }
+
+    private void OnContactSelected(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact> args)
+    {
+        selectedPartnerContactId = args.Value;
+        StateHasChanged();
+    }
+
+    private void OnBankAccountSelected(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount> args)
+    {
+        selectedPartnerBankAccountId = args.Value;
+        StateHasChanged();
+    }
+
+    private void OnEditAddressSelected(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa tip, Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress> args)
+    {
+        editSelectedAddressByType[tip] = args.Value;
+        StateHasChanged();
+    }
+
+    private void OnEditContactSelected(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact> args)
+    {
+        editSelectedPartnerContactId = args.Value;
+        StateHasChanged();
+    }
+
+    private void OnEditBankAccountSelected(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount> args)
+    {
+        editSelectedPartnerBankAccountId = args.Value;
+        StateHasChanged();
+    }
+
     private async Task ViewInvoice(Invoice invoice)
     {
         try
@@ -427,6 +736,19 @@ public partial class FacturiAchizitie : ComponentBase
             {
                 purchaseInvoiceDto.PartnerId = selectedPartner.Id;
             }
+
+            // Map selected partner addresses into DTO
+            if (selectedAddressByType != null && selectedAddressByType.Any())
+            {
+                purchaseInvoiceDto.PartnerAddressSediuId = selectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Sediu) ? selectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Sediu] : null;
+                purchaseInvoiceDto.PartnerAddressCorespondentaId = selectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Corespondenta) ? selectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Corespondenta] : null;
+                purchaseInvoiceDto.PartnerAddressLivrareId = selectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Livrare) ? selectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Livrare] : null;
+                purchaseInvoiceDto.PartnerAddressFacturareId = selectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Facturare) ? selectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Facturare] : null;
+            }
+
+            // Map selected partner contact and bank account
+            purchaseInvoiceDto.PartnerContactId = selectedPartnerContactId;
+            purchaseInvoiceDto.PartnerBankAccountId = selectedPartnerBankAccountId;
 
             // Get current user
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -605,6 +927,19 @@ public partial class FacturiAchizitie : ComponentBase
             }
 
             // Update the invoice
+            // Map selected edit addresses into DTO
+            if (editSelectedAddressByType != null && editSelectedAddressByType.Any())
+            {
+                editInvoiceDto.PartnerAddressSediuId = editSelectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Sediu) ? editSelectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Sediu] : null;
+                editInvoiceDto.PartnerAddressCorespondentaId = editSelectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Corespondenta) ? editSelectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Corespondenta] : null;
+                editInvoiceDto.PartnerAddressLivrareId = editSelectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Livrare) ? editSelectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Livrare] : null;
+                editInvoiceDto.PartnerAddressFacturareId = editSelectedAddressByType.ContainsKey(ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Facturare) ? editSelectedAddressByType[ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums.TipAdresa.Facturare] : null;
+            }
+
+            // Map selected partner contact and bank account for edit
+            editInvoiceDto.PartnerContactId = editSelectedPartnerContactId;
+            editInvoiceDto.PartnerBankAccountId = editSelectedPartnerBankAccountId;
+
             var success = await AchizitiiService.UpdateInvoiceAsync(editInvoiceDto, userId);
 
             if (success)

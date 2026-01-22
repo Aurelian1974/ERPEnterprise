@@ -53,6 +53,16 @@ public class Invoice
     public Guid? OwnerWorkPlaceId { get; set; }
     public Guid? OwnerLocationId { get; set; }
 
+    // Selected partner addresses (if stored on invoice)
+    public Guid? PartnerAddressSediuId { get; set; }
+    public Guid? PartnerAddressCorespondentaId { get; set; }
+    public Guid? PartnerAddressLivrareId { get; set; }
+    public Guid? PartnerAddressFacturareId { get; set; }
+
+    // Selected partner contact and bank account (if stored)
+    public Guid? PartnerContactId { get; set; }
+    public Guid? PartnerBankAccountId { get; set; }
+
     // UI helper
     public int RowIndex { get; set; }
 }

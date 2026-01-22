@@ -277,6 +277,14 @@ public class AchizitiiRepository : IAchizitiiRepository
             parameters.Add("@OwnerWorkPlaceId", dto.OwnerWorkPlaceId);
             parameters.Add("@OwnerLocationId", dto.OwnerLocationId);
             parameters.Add("@LineItems", lineItemsXml);
+            // Partner address selections
+            parameters.Add("@PartnerAddressSediuId", dto.PartnerAddressSediuId);
+            parameters.Add("@PartnerAddressCorespondentaId", dto.PartnerAddressCorespondentaId);
+            parameters.Add("@PartnerAddressLivrareId", dto.PartnerAddressLivrareId);
+            parameters.Add("@PartnerAddressFacturareId", dto.PartnerAddressFacturareId);
+            // Partner contact and bank account
+            parameters.Add("@PartnerContactId", dto.PartnerContactId);
+            parameters.Add("@PartnerBankAccountId", dto.PartnerBankAccountId);
 
             // Execute the master stored procedure
             var result = await connection.QueryFirstAsync<dynamic>(
@@ -284,7 +292,29 @@ public class AchizitiiRepository : IAchizitiiRepository
                 parameters,
                 commandType: CommandType.StoredProcedure);
 
-            return ((Guid)result.DocumentId, (Guid)result.InvoiceId);
+            var documentId = (Guid)result.DocumentId;
+            var invoiceId = (Guid)result.InvoiceId;
+
+            // Persist partner contact and bank account via helper proc (non-destructive)
+            try
+            {
+                await connection.ExecuteAsync(
+                    "sp_Invoice_SetPartnerContactAndBankAccount",
+                    new
+                    {
+                        InvoiceId = invoiceId,
+                        PartnerContactId = dto.PartnerContactId,
+                        PartnerBankAccountId = dto.PartnerBankAccountId,
+                        UpdatedBy = userId
+                    },
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to set partner contact/bank account for Invoice {InvoiceId} via helper proc", invoiceId);
+            }
+
+            return (documentId, invoiceId);
         }
         catch (Exception ex)
         {
@@ -380,6 +410,12 @@ public class AchizitiiRepository : IAchizitiiRepository
                 DocumentObservations = dto.DocumentObservations,
                 PartnerId = dto.PartnerId,
                 InvoiceObservations = dto.InvoiceObservations,
+                PartnerAddressSediuId = dto.PartnerAddressSediuId,
+                PartnerAddressCorespondentaId = dto.PartnerAddressCorespondentaId,
+                PartnerAddressLivrareId = dto.PartnerAddressLivrareId,
+                PartnerAddressFacturareId = dto.PartnerAddressFacturareId,
+                PartnerContactId = dto.PartnerContactId,
+                PartnerBankAccountId = dto.PartnerBankAccountId,
                 LineItems = lineItemsTable.AsTableValuedParameter("dbo.InvoiceLineItemType"),
                 UpdatedBy = userId
             };
@@ -390,7 +426,26 @@ public class AchizitiiRepository : IAchizitiiRepository
                 commandType: CommandType.StoredProcedure);
 
             _logger.LogInformation("Invoice {DocumentId} updated successfully", dto.DocumentId);
-            return result > 0;
+                // Ensure partner contact/bank account persisted via helper proc
+                try
+                {
+                    await connection.ExecuteAsync(
+                        "sp_Invoice_SetPartnerContactAndBankAccount",
+                        new
+                        {
+                            InvoiceId = invoiceId,
+                            PartnerContactId = dto.PartnerContactId,
+                            PartnerBankAccountId = dto.PartnerBankAccountId,
+                            UpdatedBy = userId
+                        },
+                        commandType: CommandType.StoredProcedure);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to set partner contact/bank account for Invoice {InvoiceId} via helper proc", invoiceId);
+                }
+
+                return result > 0;
         }
         catch (Exception ex)
         {

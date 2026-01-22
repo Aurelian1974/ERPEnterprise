@@ -104,6 +104,8 @@ builder.Services.AddSingleton<ValyanERP.Web.Features.Infrastructure.Audit.Servic
 // Rapoarte - Stoc (repository + service)
 builder.Services.AddScoped<ValyanERP.Web.Features.Rapoarte.Stoc.Repositories.IStocRepository, ValyanERP.Web.Features.Rapoarte.Stoc.Repositories.StocRepository>();
 builder.Services.AddScoped<ValyanERP.Web.Features.Rapoarte.Stoc.Services.IStocService, ValyanERP.Web.Features.Rapoarte.Stoc.Services.StocService>();
+// Register StocAdaptor for Syncfusion grid operations
+builder.Services.AddScoped<ValyanERP.Web.Features.Rapoarte.Stoc.StocAdaptor>();
 
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();

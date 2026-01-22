@@ -1,96 +1,26 @@
-PRINT '=== Începere migrare 049_StoredProcedures_Document ===';
+-- 056_StoredProcedures_Invoice_ExtendParams.sql
+-- Add PartnerContactId and PartnerBankAccountId parameters to master SPs
+-- and persist them inline to dbo.Invoice
 
--- =============================================
--- Document Stored Procedures
--- =============================================
+PRINT '=== Begin migration 056_StoredProcedures_Invoice_ExtendParams ===';
 
--- sp_Document_GetById
-IF OBJECT_ID('dbo.sp_Document_GetById', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Document_GetById;
+-- Ensure session options
+SET NOCOUNT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
-CREATE PROCEDURE dbo.sp_Document_GetById
-    @Id UNIQUEIDENTIFIER
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        d.Id,
-        d.DocumentDate,
-        d.DueDate,
-        d.DocumentNumber,
-        d.DocumentTypeCode,
-        d.DocumentStateId,
-        ds.DenumireStare as DocumentStateName,
-        d.Observations,
-        d.UserId,
-        d.EntityIntroduced,
-        d.IntroductionDate,
-        d.IsActive,
-        d.CreatedAt,
-        d.CreatedBy,
-        d.UpdatedAt,
-        d.UpdatedBy,
-        d.OwnerCompanyId,
-        d.OwnerWorkPlaceId,
-        d.OwnerLocationId
-    FROM dbo.Document d
-    INNER JOIN dbo.DocumentState ds ON d.DocumentStateId = ds.Id
-    WHERE d.Id = @Id AND d.IsActive = 1;
-END
-GO
-
--- sp_Document_GetAll
-IF OBJECT_ID('dbo.sp_Document_GetAll', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Document_GetAll;
-GO
-
-CREATE PROCEDURE dbo.sp_Document_GetAll
-    @OwnerCompanyId UNIQUEIDENTIFIER = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        d.Id,
-        d.DocumentDate,
-        d.DueDate,
-        d.DocumentNumber,
-        d.DocumentTypeCode,
-        d.DocumentStateId,
-        ds.DenumireStare as DocumentStateName,
-        d.Observations,
-        d.UserId,
-        d.EntityIntroduced,
-        d.IntroductionDate,
-        d.IsActive,
-        d.CreatedAt,
-        d.CreatedBy,
-        d.UpdatedAt,
-        d.UpdatedBy
-    FROM dbo.Document d
-    INNER JOIN dbo.DocumentState ds ON d.DocumentStateId = ds.Id
-    WHERE d.IsActive = 1
-    AND (@OwnerCompanyId IS NULL OR d.OwnerCompanyId = @OwnerCompanyId)
-    ORDER BY d.CreatedAt DESC;
-END
-GO
-
--- sp_Document_InsertPurchaseInvoice - Master SP for inserting purchase invoice
+-- Drop and recreate sp_Document_InsertPurchaseInvoice with new params
 IF OBJECT_ID('dbo.sp_Document_InsertPurchaseInvoice', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_Document_InsertPurchaseInvoice;
-GO
-
-SET QUOTED_IDENTIFIER ON;
 GO
 
 CREATE PROCEDURE dbo.sp_Document_InsertPurchaseInvoice
     @DocumentDate DATE,
     @DueDate DATE = NULL,
     @DocumentNumber NVARCHAR(50),
-    @DocumentTypeCode NVARCHAR(10) = 'FFA', -- Factura Furnizor Achizitie
-    @DocumentStateCode NVARCHAR(10) = 'C', -- Default to Draft
+    @DocumentTypeCode NVARCHAR(10) = 'FFA',
+    @DocumentStateCode NVARCHAR(10) = 'C',
     @Observations NVARCHAR(500) = NULL,
     @UserId UNIQUEIDENTIFIER,
     @EntityIntroduced UNIQUEIDENTIFIER = NULL,
@@ -99,6 +29,8 @@ CREATE PROCEDURE dbo.sp_Document_InsertPurchaseInvoice
     @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
     @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
     @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
+    @PartnerContactId UNIQUEIDENTIFIER = NULL,
+    @PartnerBankAccountId UNIQUEIDENTIFIER = NULL,
     @OwnerCompanyId UNIQUEIDENTIFIER = NULL,
     @OwnerWorkPlaceId UNIQUEIDENTIFIER = NULL,
     @OwnerLocationId UNIQUEIDENTIFIER = NULL,
@@ -136,16 +68,18 @@ BEGIN
             @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
         );
 
-        -- Insert Invoice
+        -- Insert Invoice (now persisting partner contact and bank account)
         DECLARE @InvoiceId UNIQUEIDENTIFIER = NEWID();
         INSERT INTO dbo.Invoice (
             Id, DocumentId, PartnerId, Observations, UserId,
             CreatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId,
-            PartnerAddressSediuId, PartnerAddressCorespondentaId, PartnerAddressLivrareId, PartnerAddressFacturareId
+            PartnerAddressSediuId, PartnerAddressCorespondentaId, PartnerAddressLivrareId, PartnerAddressFacturareId,
+            PartnerContactId, PartnerBankAccountId
         ) VALUES (
             @InvoiceId, @DocumentId, @PartnerId, @InvoiceObservations, @UserId,
-            @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId
-            , @PartnerAddressSediuId, @PartnerAddressCorespondentaId, @PartnerAddressLivrareId, @PartnerAddressFacturareId
+            @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId,
+            @PartnerAddressSediuId, @PartnerAddressCorespondentaId, @PartnerAddressLivrareId, @PartnerAddressFacturareId,
+            @PartnerContactId, @PartnerBankAccountId
         );
 
         -- Variables for totals
@@ -214,7 +148,6 @@ BEGIN
             BEGIN
                 IF EXISTS (SELECT 1 FROM dbo.Articole WHERE Id = @ItemId AND IsStockable = 1)
                 BEGIN
-                    -- Call stock update procedure (will be created later)
                     EXEC dbo.sp_Stock_UpdateQuantity @ItemId, @OwnerLocationId, @Quantity, @UserId, @OwnerCompanyId, @OwnerWorkPlaceId, @OwnerLocationId;
                 END
             END
@@ -249,6 +182,132 @@ BEGIN
 END
 GO
 
-PRINT '✅ Stored procedures pentru Document create';
+PRINT 'Recreated sp_Document_InsertPurchaseInvoice with partner contact/bank params';
 
-PRINT '=== Migrare 049_StoredProcedures_Document completă ===';
+-- Update sp_Invoice_Update to include contact and bank account
+IF OBJECT_ID('dbo.sp_Invoice_Update', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Invoice_Update;
+GO
+
+CREATE PROCEDURE dbo.sp_Invoice_Update
+    @Id UNIQUEIDENTIFIER,
+    @PartnerId UNIQUEIDENTIFIER,
+    @PartnerAddressSediuId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
+    @PartnerContactId UNIQUEIDENTIFIER = NULL,
+    @PartnerBankAccountId UNIQUEIDENTIFIER = NULL,
+    @Observations NVARCHAR(500) = NULL,
+    @UpdatedBy UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.Invoice
+    SET
+        PartnerId = @PartnerId,
+        PartnerAddressSediuId = @PartnerAddressSediuId,
+        PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
+        PartnerAddressLivrareId = @PartnerAddressLivrareId,
+        PartnerAddressFacturareId = @PartnerAddressFacturareId,
+        PartnerContactId = @PartnerContactId,
+        PartnerBankAccountId = @PartnerBankAccountId,
+        Observations = @Observations,
+        UpdatedAt = GETDATE(),
+        UpdatedBy = @UpdatedBy
+    WHERE Id = @Id;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+END
+GO
+
+PRINT 'Recreated sp_Invoice_Update with contact/bank params';
+
+-- Recreate sp_Invoice_UpdateComplete to pass through the new params
+IF OBJECT_ID('dbo.sp_Invoice_UpdateComplete', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_Invoice_UpdateComplete;
+GO
+
+CREATE PROCEDURE dbo.sp_Invoice_UpdateComplete
+    @InvoiceId UNIQUEIDENTIFIER,
+    @DocumentDate DATETIME2,
+    @DueDate DATETIME2 = NULL,
+    @DocumentNumber NVARCHAR(50),
+    @DocumentStateId UNIQUEIDENTIFIER,
+    @DocumentObservations NVARCHAR(500) = NULL,
+    @PartnerId UNIQUEIDENTIFIER,
+    @PartnerAddressSediuId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
+    @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
+    @PartnerContactId UNIQUEIDENTIFIER = NULL,
+    @PartnerBankAccountId UNIQUEIDENTIFIER = NULL,
+    @InvoiceObservations NVARCHAR(500) = NULL,
+    @LineItems dbo.InvoiceLineItemType READONLY,
+    @UpdatedBy UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- Get DocumentId from Invoice
+        DECLARE @DocumentId UNIQUEIDENTIFIER;
+        SELECT @DocumentId = DocumentId FROM dbo.Invoice WHERE Id = @InvoiceId;
+
+        IF @DocumentId IS NULL
+        BEGIN
+            RAISERROR('Invoice not found', 16, 1);
+            RETURN;
+        END
+
+        -- Update Document
+        EXEC dbo.sp_Document_Update
+            @Id = @DocumentId,
+            @DocumentDate = @DocumentDate,
+            @DueDate = @DueDate,
+            @DocumentNumber = @DocumentNumber,
+            @DocumentStateId = @DocumentStateId,
+            @Observations = @DocumentObservations,
+            @UpdatedBy = @UpdatedBy;
+
+        -- Update Invoice (now with contact/bank fields)
+        EXEC dbo.sp_Invoice_Update
+            @Id = @InvoiceId,
+            @PartnerId = @PartnerId,
+            @PartnerAddressSediuId = @PartnerAddressSediuId,
+            @PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
+            @PartnerAddressLivrareId = @PartnerAddressLivrareId,
+            @PartnerAddressFacturareId = @PartnerAddressFacturareId,
+            @PartnerContactId = @PartnerContactId,
+            @PartnerBankAccountId = @PartnerBankAccountId,
+            @Observations = @InvoiceObservations,
+            @UpdatedBy = @UpdatedBy;
+
+        -- Update Line Items
+        EXEC dbo.sp_InvoiceDetail_UpdateLineItems
+            @InvoiceId = @InvoiceId,
+            @LineItems = @LineItems,
+            @UpdatedBy = @UpdatedBy;
+
+        COMMIT TRANSACTION;
+
+        SELECT 1 AS Success;
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR(@ErrorMessage, 16, 1);
+    END CATCH
+END
+GO
+
+PRINT 'Recreated sp_Invoice_UpdateComplete to include contact/bank params';
+
+PRINT '=== Migration 056 completed ===';
+GO

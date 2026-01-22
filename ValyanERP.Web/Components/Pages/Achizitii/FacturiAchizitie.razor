@@ -148,86 +148,229 @@
                         <ValidationSummary />
 
                         <div class="form-container">
-                            @* Document Section *@
-                            <div class="form-section">
-                                <h5 class="section-title">
-                                    <i class="bi bi-file-earmark-text me-2"></i>Date Document
-                                </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    @* Document Section *@
+                                    <div class="form-section">
+                                        <h5 class="section-title">
+                                            <i class="bi bi-file-earmark-text me-2"></i>Date Document
+                                        </h5>
 
-                                <div class="row">
-                                    <div class="col-md-6">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <SfTextBox @bind-Value="purchaseInvoiceDto.DocumentNumber"
+                                                               Placeholder="Număr document"
+                                                               FloatLabelType="FloatLabelType.Auto">
+                                                    </SfTextBox>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <SfDropDownList TValue="DocumentState"
+                                                                    TItem="DocumentState"
+                                                                    @bind-Value="selectedDocumentState"
+                                                                    DataSource="documentStates"
+                                                                    Placeholder="Stare document"
+                                                                    FloatLabelType="FloatLabelType.Auto">
+                                                        <DropDownListFieldSettings Value="CodStare" Text="DenumireStare"></DropDownListFieldSettings>
+                                                    </SfDropDownList>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <SfDatePicker @bind-Value="purchaseInvoiceDto.DocumentDate"
+                                                                  Placeholder="Data document"
+                                                                  FloatLabelType="FloatLabelType.Auto">
+                                                    </SfDatePicker>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <SfDatePicker @bind-Value="purchaseInvoiceDto.DueDate"
+                                                                  Placeholder="Data scadență (opțional)"
+                                                                  FloatLabelType="FloatLabelType.Auto">
+                                                    </SfDatePicker>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="form-group">
-                                            <SfTextBox @bind-Value="purchaseInvoiceDto.DocumentNumber"
-                                                       Placeholder="Număr document"
+                                            <SfTextBox @bind-Value="purchaseInvoiceDto.DocumentObservations"
+                                                       Placeholder="Observații document"
+                                                       Multiline="true"
                                                        FloatLabelType="FloatLabelType.Auto">
                                             </SfTextBox>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                </div>
+
+                                <div class="col-md-6">
+                                    @* Partner Section *@
+                                    <div class="form-section">
+                                        <h5 class="section-title">
+                                            <i class="bi bi-building me-2"></i>Partener
+                                        </h5>
+
                                         <div class="form-group">
-                                            <SfDropDownList TValue="DocumentState"
-                                                            TItem="DocumentState"
-                                                            @bind-Value="selectedDocumentState"
-                                                            DataSource="documentStates"
-                                                            Placeholder="Stare document"
+                                            <SfDropDownList TValue="Partner"
+                                                            TItem="Partner"
+                                                            Value="selectedPartner"
+                                                            ValueChange="OnPartnerChanged"
+                                                            DataSource="partners"
+                                                            Placeholder="Selectați partenerul"
                                                             FloatLabelType="FloatLabelType.Auto">
-                                                <DropDownListFieldSettings Value="CodStare" Text="DenumireStare"></DropDownListFieldSettings>
+                                                <DropDownListFieldSettings Value="Id" Text="Nume"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="Partner" TItem="Partner" ValueChange="OnPartnerChanged"></DropDownListEvents>
                                             </SfDropDownList>
                                         </div>
-                                    </div>
-                                </div>
+                                        @if (partnerAddressesByType != null && partnerAddressesByType.Any())
+                                        {
+                                            <div class="addresses-section mb-2">
+                                                @foreach (var kv in partnerAddressesByType)
+                                                {
+                                                    var tip = kv.Key;
+                                                    var list = kv.Value;
+                                                    <div class="address-group mb-2">
+                                                        <label class="form-label">@tip.ToString()</label>
+                                                        @if (list.Count == 1)
+                                                        {
+                                                            <div class="address-line">@list.First().AdresaCompleta</div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <SfDropDownList TValue="Guid?"
+                                                                            TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress"
+                                                                            DataSource="list"
+                                                                            Value="@(selectedAddressByType.ContainsKey(tip) ? selectedAddressByType[tip] : (Guid?)null)"
+                                                                            Placeholder="Selectați adresă">
+                                                                <DropDownListFieldSettings Value="Id" Text="AdresaCompleta"></DropDownListFieldSettings>
+                                                                <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress" ValueChange="@(args => OnAddressSelected(tip, args))"></DropDownListEvents>
+                                                            </SfDropDownList>
+                                                        }
+                                                    </div>
+                                                }
 
-                                <div class="row">
-                                    <div class="col-md-6">
+                                                    @* Partner contacts and bank accounts *@
+                                                    @if (partnerContacts != null && partnerContacts.Any())
+                                                    {
+                                                        @if (partnerContacts.Count() == 1)
+                                                        {
+                                                            var only = partnerContacts.First();
+                                                            <div class="form-group mt-2">
+                                                                <label class="form-label">Contact</label>
+                                                                <div class="contact-line">@only.NumeComplet</div>
+                                                                <div class="row mt-2">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">Email contact</label>
+                                                                        <SfTextBox Value="@(only.Email ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">Telefon contact</label>
+                                                                        <SfTextBox Value="@((only.TelefonMobil ?? only.Telefon) ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="form-group mt-2">
+                                                                <label class="form-label">Contact</label>
+                                                                <SfDropDownList TValue="Guid?"
+                                                                                TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact"
+                                                                                DataSource="partnerContacts"
+                                                                                Value="selectedPartnerContactId">
+                                                                    <DropDownListFieldSettings Value="Id" Text="NumeComplet"></DropDownListFieldSettings>
+                                                                    <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact" ValueChange="OnContactSelected"></DropDownListEvents>
+                                                                </SfDropDownList>
+                                                            </div>
+
+                                                            @if (partnerContacts?.FirstOrDefault(c => c.Id == selectedPartnerContactId) is var selContact && selContact != null)
+                                                            {
+                                                                <div class="row mt-2">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">Email contact</label>
+                                                                        <SfTextBox Value="@(selContact.Email ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">Telefon contact</label>
+                                                                        <SfTextBox Value="@((selContact.TelefonMobil ?? selContact.Telefon) ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    }
+
+                                                    @if (partnerBankAccounts != null && partnerBankAccounts.Any())
+                                                    {
+                                                        @if (partnerBankAccounts.Count() == 1)
+                                                        {
+                                                            var onlyBank = partnerBankAccounts.First();
+                                                            <div class="form-group mt-2">
+                                                                <label class="form-label">Cont bancar</label>
+                                                                <div class="bank-line">@onlyBank.IBANFormatat</div>
+                                                                <div class="row mt-2">
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Banca</label>
+                                                                        <div class="bank-info">@onlyBank.NumeBanca</div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Sucursala</label>
+                                                                        <div class="bank-info">@onlyBank.Sucursala</div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Moneda</label>
+                                                                        <div class="bank-info">@onlyBank.Moneda</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="form-group mt-2">
+                                                                <label class="form-label">Cont bancar</label>
+                                                                <SfDropDownList TValue="Guid?"
+                                                                                TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount"
+                                                                                DataSource="partnerBankAccounts"
+                                                                                Value="selectedPartnerBankAccountId">
+                                                                    <DropDownListFieldSettings Value="Id" Text="IBANFormatat"></DropDownListFieldSettings>
+                                                                    <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount" ValueChange="OnBankAccountSelected"></DropDownListEvents>
+                                                                </SfDropDownList>
+                                                            </div>
+
+                                                            @if (partnerBankAccounts?.FirstOrDefault(b => b.Id == selectedPartnerBankAccountId) is var selBank && selBank != null)
+                                                            {
+                                                                <div class="row mt-2">
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Banca</label>
+                                                                        <div class="bank-info">@selBank.NumeBanca</div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Sucursala</label>
+                                                                        <div class="bank-info">@selBank.Sucursala</div>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Moneda</label>
+                                                                        <div class="bank-info">@selBank.Moneda</div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    }
+                                            </div>
+                                        }
+
                                         <div class="form-group">
-                                            <SfDatePicker @bind-Value="purchaseInvoiceDto.DocumentDate"
-                                                          Placeholder="Data document"
-                                                          FloatLabelType="FloatLabelType.Auto">
-                                            </SfDatePicker>
+                                            <SfTextBox @bind-Value="purchaseInvoiceDto.InvoiceObservations"
+                                                       Placeholder="Observații factură"
+                                                       Multiline="true"
+                                                       FloatLabelType="FloatLabelType.Auto">
+                                            </SfTextBox>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <SfDatePicker @bind-Value="purchaseInvoiceDto.DueDate"
-                                                          Placeholder="Data scadență (opțional)"
-                                                          FloatLabelType="FloatLabelType.Auto">
-                                            </SfDatePicker>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <SfTextBox @bind-Value="purchaseInvoiceDto.DocumentObservations"
-                                               Placeholder="Observații document"
-                                               Multiline="true"
-                                               FloatLabelType="FloatLabelType.Auto">
-                                    </SfTextBox>
-                                </div>
-                            </div>
-
-                            @* Partner Section *@
-                            <div class="form-section">
-                                <h5 class="section-title">
-                                    <i class="bi bi-building me-2"></i>Partener
-                                </h5>
-
-                                <div class="form-group">
-                                    <SfDropDownList TValue="Partner"
-                                                    TItem="Partner"
-                                                    @bind-Value="selectedPartner"
-                                                    DataSource="partners"
-                                                    Placeholder="Selectați partenerul"
-                                                    FloatLabelType="FloatLabelType.Auto">
-                                        <DropDownListFieldSettings Value="Id" Text="Nume"></DropDownListFieldSettings>
-                                    </SfDropDownList>
-                                </div>
-
-                                <div class="form-group">
-                                    <SfTextBox @bind-Value="purchaseInvoiceDto.InvoiceObservations"
-                                               Placeholder="Observații factură"
-                                               Multiline="true"
-                                               FloatLabelType="FloatLabelType.Auto">
-                                    </SfTextBox>
                                 </div>
                             </div>
 
@@ -531,13 +674,150 @@
                                 <div class="form-group">
                                     <SfDropDownList TValue="Partner"
                                                     TItem="Partner"
-                                                    @bind-Value="editSelectedPartner"
+                                                    Value="editSelectedPartner"
+                                                    ValueChange="OnEditPartnerChanged"
                                                     DataSource="partners"
                                                     Placeholder="Selectați partenerul"
                                                     FloatLabelType="FloatLabelType.Auto">
                                         <DropDownListFieldSettings Value="Id" Text="Nume"></DropDownListFieldSettings>
+                                        <DropDownListEvents TValue="Partner" TItem="Partner" ValueChange="OnEditPartnerChanged"></DropDownListEvents>
                                     </SfDropDownList>
                                 </div>
+                                @if (editPartnerAddressesByType != null && editPartnerAddressesByType.Any())
+                                {
+                                    <div class="addresses-section mb-2">
+                                        @foreach (var kv in editPartnerAddressesByType)
+                                        {
+                                            var tip = kv.Key;
+                                            var list = kv.Value;
+                                            <div class="address-group mb-2">
+                                                <label class="form-label">@tip.ToString()</label>
+                                                @if (list.Count == 1)
+                                                {
+                                                    <div class="address-line">@list.First().AdresaCompleta</div>
+                                                }
+                                                else
+                                                {
+                                                    <SfDropDownList TValue="Guid?"
+                                                                    TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress"
+                                                                    DataSource="list"
+                                                                    Value="@(editSelectedAddressByType.ContainsKey(tip) ? editSelectedAddressByType[tip] : (Guid?)null)"
+                                                                    Placeholder="Selectați adresă">
+                                                        <DropDownListFieldSettings Value="Id" Text="AdresaCompleta"></DropDownListFieldSettings>
+                                                        <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerAddress" ValueChange="@(args => OnEditAddressSelected(tip, args))"></DropDownListEvents>
+                                                    </SfDropDownList>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @* Partner contacts and bank accounts for edit *@
+                                @if (editPartnerContacts != null && editPartnerContacts.Any())
+                                {
+                                    @if (editPartnerContacts.Count() == 1)
+                                    {
+                                        var only = editPartnerContacts.First();
+                                        <div class="form-group mt-2">
+                                            <label class="form-label">Contact</label>
+                                            <div class="contact-line">@only.NumeComplet</div>
+                                            <div class="row mt-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Email contact</label>
+                                                    <SfTextBox Value="@(only.Email ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Telefon contact</label>
+                                                    <SfTextBox Value="@((only.TelefonMobil ?? only.Telefon) ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="form-group mt-2">
+                                            <label class="form-label">Contact</label>
+                                            <SfDropDownList TValue="Guid?"
+                                                            TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact"
+                                                            DataSource="editPartnerContacts"
+                                                            Value="editSelectedPartnerContactId">
+                                                <DropDownListFieldSettings Value="Id" Text="NumeComplet"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerContact" ValueChange="OnEditContactSelected"></DropDownListEvents>
+                                            </SfDropDownList>
+                                        </div>
+
+                                        @if (editPartnerContacts?.FirstOrDefault(c => c.Id == editSelectedPartnerContactId) is var selEditContact && selEditContact != null)
+                                        {
+                                            <div class="row mt-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Email contact</label>
+                                                    <SfTextBox Value="@(selEditContact.Email ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Telefon contact</label>
+                                                    <SfTextBox Value="@((selEditContact.TelefonMobil ?? selEditContact.Telefon) ?? string.Empty)" Enabled="false"></SfTextBox>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+
+                                @if (editPartnerBankAccounts != null && editPartnerBankAccounts.Any())
+                                {
+                                    @if (editPartnerBankAccounts.Count() == 1)
+                                    {
+                                        var onlyBank = editPartnerBankAccounts.First();
+                                        <div class="form-group mt-2">
+                                            <label class="form-label">Cont bancar</label>
+                                            <div class="bank-line">@onlyBank.IBANFormatat</div>
+                                            <div class="row mt-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Banca</label>
+                                                    <div class="bank-info">@onlyBank.NumeBanca</div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Sucursala</label>
+                                                    <div class="bank-info">@onlyBank.Sucursala</div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Moneda</label>
+                                                    <div class="bank-info">@onlyBank.Moneda</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="form-group mt-2">
+                                            <label class="form-label">Cont bancar</label>
+                                            <SfDropDownList TValue="Guid?"
+                                                            TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount"
+                                                            DataSource="editPartnerBankAccounts"
+                                                            Value="editSelectedPartnerBankAccountId">
+                                                <DropDownListFieldSettings Value="Id" Text="IBANFormatat"></DropDownListFieldSettings>
+                                                <DropDownListEvents TValue="Guid?" TItem="ValyanERP.Web.Features.Administrare.Parteneri.Models.PartnerBankAccount" ValueChange="OnEditBankAccountSelected"></DropDownListEvents>
+                                            </SfDropDownList>
+                                        </div>
+
+                                        @if (editPartnerBankAccounts?.FirstOrDefault(b => b.Id == editSelectedPartnerBankAccountId) is var selEditBank && selEditBank != null)
+                                        {
+                                            <div class="row mt-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Banca</label>
+                                                    <div class="bank-info">@selEditBank.NumeBanca</div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Sucursala</label>
+                                                    <div class="bank-info">@selEditBank.Sucursala</div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Moneda</label>
+                                                    <div class="bank-info">@selEditBank.Moneda</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
 
                                 <div class="form-group">
                                     <SfTextBox @bind-Value="editInvoiceDto.InvoiceObservations"

@@ -23,6 +23,35 @@ CREATE TABLE dbo.Invoice (
     OwnerLocationId UNIQUEIDENTIFIER NULL
 );
 
+-- Partner address selections on invoice (nullable)
+ALTER TABLE dbo.Invoice ADD
+    PartnerAddressSediuId UNIQUEIDENTIFIER NULL,
+    PartnerAddressCorespondentaId UNIQUEIDENTIFIER NULL,
+    PartnerAddressLivrareId UNIQUEIDENTIFIER NULL,
+    PartnerAddressFacturareId UNIQUEIDENTIFIER NULL;
+
+-- Add foreign keys to PartnerAddresses
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Invoice_PartnerAddress_Sediu')
+BEGIN
+    ALTER TABLE dbo.Invoice ADD CONSTRAINT FK_Invoice_PartnerAddress_Sediu FOREIGN KEY (PartnerAddressSediuId) REFERENCES dbo.PartnerAddresses(Id);
+END
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Invoice_PartnerAddress_Corespondenta')
+BEGIN
+    ALTER TABLE dbo.Invoice ADD CONSTRAINT FK_Invoice_PartnerAddress_Corespondenta FOREIGN KEY (PartnerAddressCorespondentaId) REFERENCES dbo.PartnerAddresses(Id);
+END
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Invoice_PartnerAddress_Livrare')
+BEGIN
+    ALTER TABLE dbo.Invoice ADD CONSTRAINT FK_Invoice_PartnerAddress_Livrare FOREIGN KEY (PartnerAddressLivrareId) REFERENCES dbo.PartnerAddresses(Id);
+END
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Invoice_PartnerAddress_Facturare')
+BEGIN
+    ALTER TABLE dbo.Invoice ADD CONSTRAINT FK_Invoice_PartnerAddress_Facturare FOREIGN KEY (PartnerAddressFacturareId) REFERENCES dbo.PartnerAddresses(Id);
+END
+GO
+
 -- Add foreign key constraints
 ALTER TABLE dbo.Invoice
 ADD CONSTRAINT FK_Invoice_Document FOREIGN KEY (DocumentId) REFERENCES dbo.Document(Id);
