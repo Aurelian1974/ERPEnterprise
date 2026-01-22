@@ -1,76 +1,15 @@
-PRINT '=== Începere migrare 054_StoredProcedures_Invoice_Update ===';
+-- 057_Fix_InvoiceDetail_UpdateLineItems.sql
+-- Fix for detail table saving issue - updates sp_InvoiceDetail_UpdateLineItems
+-- to properly handle DocumentDetail and InvoiceDetail relationships
 
--- =============================================
--- Invoice Update Stored Procedures
--- =============================================
+PRINT '=== Begin migration 057_Fix_InvoiceDetail_UpdateLineItems ===';
 
--- sp_Document_Update
-IF OBJECT_ID('dbo.sp_Document_Update', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Document_Update;
+SET NOCOUNT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
-CREATE PROCEDURE dbo.sp_Document_Update
-    @Id UNIQUEIDENTIFIER,
-    @DocumentDate DATETIME2,
-    @DueDate DATETIME2 = NULL,
-    @DocumentNumber NVARCHAR(50),
-    @DocumentStateId UNIQUEIDENTIFIER,
-    @Observations NVARCHAR(500) = NULL,
-    @UpdatedBy UNIQUEIDENTIFIER
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.Document
-    SET
-        DocumentDate = @DocumentDate,
-        DueDate = @DueDate,
-        DocumentNumber = @DocumentNumber,
-        DocumentStateId = @DocumentStateId,
-        Observations = @Observations,
-        UpdatedAt = GETDATE(),
-        UpdatedBy = @UpdatedBy
-    WHERE Id = @Id;
-
-    SELECT @@ROWCOUNT AS RowsAffected;
-END
-GO
-
--- sp_Invoice_Update
-IF OBJECT_ID('dbo.sp_Invoice_Update', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_Invoice_Update;
-GO
-
-CREATE PROCEDURE dbo.sp_Invoice_Update
-    @Id UNIQUEIDENTIFIER,
-    @PartnerId UNIQUEIDENTIFIER,
-    @PartnerAddressSediuId UNIQUEIDENTIFIER = NULL,
-    @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
-    @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
-    @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
-    @Observations NVARCHAR(500) = NULL,
-    @UpdatedBy UNIQUEIDENTIFIER
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.Invoice
-    SET
-        PartnerId = @PartnerId,
-        PartnerAddressSediuId = @PartnerAddressSediuId,
-        PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
-        PartnerAddressLivrareId = @PartnerAddressLivrareId,
-        PartnerAddressFacturareId = @PartnerAddressFacturareId,
-        Observations = @Observations,
-        UpdatedAt = GETDATE(),
-        UpdatedBy = @UpdatedBy
-    WHERE Id = @Id;
-
-    SELECT @@ROWCOUNT AS RowsAffected;
-END
-GO
-
--- sp_InvoiceDetail_UpdateLineItems
+-- Fix sp_InvoiceDetail_UpdateLineItems to properly insert into both DocumentDetail and InvoiceDetail
 IF OBJECT_ID('dbo.sp_InvoiceDetail_UpdateLineItems', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_InvoiceDetail_UpdateLineItems;
 GO
@@ -109,7 +48,7 @@ BEGIN
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
-        -- Insert DocumentDetail first
+        -- Insert DocumentDetail first (contains ItemId, Quantity, UnitMeasure)
         DECLARE @DocumentDetailId UNIQUEIDENTIFIER = NEWID();
         INSERT INTO dbo.DocumentDetail (
             Id, DocumentId, ItemId, Quantity, UnitMeasure,
@@ -123,7 +62,7 @@ BEGIN
         DECLARE @LineTotal DECIMAL(18,2) = @Quantity * @UnitPrice;
         DECLARE @VATAmount DECIMAL(18,2) = @LineTotal * (@VATRate / 100);
 
-        -- Insert InvoiceDetail with reference to DocumentDetail
+        -- Insert InvoiceDetail with reference to DocumentDetail (contains pricing info)
         INSERT INTO dbo.InvoiceDetail (
             Id, InvoiceId, DocumentDetailId, UnitPrice, VATRate, VATAmount, LineTotal,
             CreatedBy, UpdatedBy, OwnerCompanyId, OwnerWorkPlaceId, OwnerLocationId
@@ -156,20 +95,9 @@ BEGIN
 END
 GO
 
--- First, create the table type for line items if it doesn't exist
-IF TYPE_ID('dbo.InvoiceLineItemType') IS NULL
-BEGIN
-    CREATE TYPE dbo.InvoiceLineItemType AS TABLE (
-        ItemId UNIQUEIDENTIFIER,
-        Quantity DECIMAL(18,2),
-        UnitMeasure NVARCHAR(20),
-        UnitPrice DECIMAL(18,2),
-        VATRate DECIMAL(5,2)
-    );
-END
-GO
+PRINT 'Fixed sp_InvoiceDetail_UpdateLineItems to properly handle DocumentDetail and InvoiceDetail';
 
--- sp_Invoice_UpdateComplete - Master procedure for updating entire invoice
+-- Update sp_Invoice_UpdateComplete to pass DocumentId and owner fields
 IF OBJECT_ID('dbo.sp_Invoice_UpdateComplete', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_Invoice_UpdateComplete;
 GO
@@ -186,6 +114,8 @@ CREATE PROCEDURE dbo.sp_Invoice_UpdateComplete
     @PartnerAddressCorespondentaId UNIQUEIDENTIFIER = NULL,
     @PartnerAddressLivrareId UNIQUEIDENTIFIER = NULL,
     @PartnerAddressFacturareId UNIQUEIDENTIFIER = NULL,
+    @PartnerContactId UNIQUEIDENTIFIER = NULL,
+    @PartnerBankAccountId UNIQUEIDENTIFIER = NULL,
     @InvoiceObservations NVARCHAR(500) = NULL,
     @LineItems dbo.InvoiceLineItemType READONLY,
     @UpdatedBy UNIQUEIDENTIFIER,
@@ -226,7 +156,7 @@ BEGIN
             @Observations = @DocumentObservations,
             @UpdatedBy = @UpdatedBy;
 
-        -- Update Invoice
+        -- Update Invoice (now with contact/bank fields)
         EXEC dbo.sp_Invoice_Update
             @Id = @InvoiceId,
             @PartnerId = @PartnerId,
@@ -234,6 +164,8 @@ BEGIN
             @PartnerAddressCorespondentaId = @PartnerAddressCorespondentaId,
             @PartnerAddressLivrareId = @PartnerAddressLivrareId,
             @PartnerAddressFacturareId = @PartnerAddressFacturareId,
+            @PartnerContactId = @PartnerContactId,
+            @PartnerBankAccountId = @PartnerBankAccountId,
             @Observations = @InvoiceObservations,
             @UpdatedBy = @UpdatedBy;
 
@@ -261,6 +193,7 @@ BEGIN
 END
 GO
 
-PRINT '✅ Stored procedures pentru Invoice Update create';
+PRINT 'Fixed sp_Invoice_UpdateComplete to pass DocumentId and owner fields';
 
-PRINT '=== Migrare 054_StoredProcedures_Invoice_Update completă ===';
+PRINT '=== Migration 057 completed - Detail table saving issue fixed ===';
+GO
