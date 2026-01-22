@@ -12,6 +12,7 @@ using ValyanERP.Web.Features.Achizitii.Services;
 using ValyanERP.Web.Features.Achizitii.Repositories;
 using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models;
+using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums;
 using ValyanERP.Web.Features.Administrare.Articole.Repositories;
 using System.Security.Claims;
 using ValyanERP.Web.Features.Administrare.Articole.Models;
@@ -26,7 +27,7 @@ public partial class FacturiAchizitie : ComponentBase
     [Inject] private IAchizitiiRepository AchizitiiRepository { get; set; } = null!;
     [Inject] private ILogger<FacturiAchizitie> Logger { get; set; } = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
-    [Inject] private IParteneriRepository ParteneriRepository { get; set; } = null!;
+    [Inject] private IPartnerRepository ParteneriRepository { get; set; } = null!;
     [Inject] private IArticoleRepository ArticoleRepository { get; set; } = null!;
 
     #endregion
@@ -125,7 +126,7 @@ public partial class FacturiAchizitie : ComponentBase
             Logger.LogInformation("Loaded {Count} document states", documentStates.Count);
 
             // Load partners
-            var partnersList = await ParteneriRepository.GetAllPartnersAsync();
+            var partnersList = await ParteneriRepository.GetAllAsync();
             partners = partnersList.Where(p => p.IsActive).ToList();
             Logger.LogInformation("Loaded {Count} active partners", partners.Count);
 

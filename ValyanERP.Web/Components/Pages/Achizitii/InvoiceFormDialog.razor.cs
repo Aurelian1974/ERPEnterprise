@@ -3,6 +3,7 @@ using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.DropDowns;
 using ValyanERP.Web.Features.Achizitii.Models;
 using ValyanERP.Web.Features.Administrare.Parteneri.Models;
+using ValyanERP.Web.Features.Administrare.Parteneri.Models.Enums;
 using ValyanERP.Web.Features.Administrare.Parteneri.Repositories;
 using ValyanERP.Web.Features.Administrare.Articole.Models;
 using ValyanERP.Web.Features.Administrare.Articole.Repositories;
@@ -14,7 +15,7 @@ public partial class InvoiceFormDialog : ComponentBase
 {
     #region Services
 
-    [Inject] private IParteneriRepository ParteneriRepository { get; set; } = default!;
+    [Inject] private IPartnerRepository ParteneriRepository { get; set; } = default!;
     [Inject] private IArticoleRepository ArticoleRepository { get; set; } = default!;
     [Inject] private IAchizitiiService AchizitiiService { get; set; } = default!;
     [Inject] private ILogger<InvoiceFormDialog> Logger { get; set; } = default!;
