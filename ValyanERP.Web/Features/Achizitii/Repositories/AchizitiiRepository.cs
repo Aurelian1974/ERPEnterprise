@@ -417,7 +417,10 @@ public class AchizitiiRepository : IAchizitiiRepository
                 PartnerContactId = dto.PartnerContactId,
                 PartnerBankAccountId = dto.PartnerBankAccountId,
                 LineItems = lineItemsTable.AsTableValuedParameter("dbo.InvoiceLineItemType"),
-                UpdatedBy = userId
+                UpdatedBy = userId,
+                OwnerCompanyId = dto.OwnerCompanyId,
+                OwnerWorkPlaceId = dto.OwnerWorkPlaceId,
+                OwnerLocationId = dto.OwnerLocationId
             };
 
             var result = await connection.ExecuteAsync(
