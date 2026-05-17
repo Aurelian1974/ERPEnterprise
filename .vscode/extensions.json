@@ -1,0 +1,52 @@
+{
+  "recommendations": [
+    // ─── GitHub Copilot ────────────────────────────────────────────────────
+    "github.copilot",
+    "github.copilot-chat",
+
+    // ─── C# / .NET ─────────────────────────────────────────────────────────
+    "ms-dotnettools.csdevkit",            // C# Dev Kit — IntelliSense, debug, test
+    "ms-dotnettools.csharp",             // C# language support
+    "ms-dotnettools.vscode-dotnet-runtime",
+    "csharpier.csharpier-vscode",        // CSharpier — formatter C#
+    "josefpihrt-vscode.roslynator",      // Roslyn analyzers — code quality
+    "formulahendry.dotnet-test-explorer", // Test explorer UI
+
+    // ─── SQL Server ────────────────────────────────────────────────────────
+    "ms-mssql.mssql",                    // SQL Server — IntelliSense, run queries
+    "ms-mssql.sql-database-projects-vscode", // SQL Database Projects
+
+    // ─── TypeScript / React ────────────────────────────────────────────────
+    "dbaeumer.vscode-eslint",            // ESLint
+    "esbenp.prettier-vscode",            // Prettier — formatter TS/TSX/JSON
+    "bradlc.vscode-tailwindcss",         // Tailwind CSS IntelliSense
+    "ms-vscode.vscode-typescript-next",  // TypeScript Nightly (latest features)
+    "styled-components.vscode-styled-components",
+
+    // ─── Testing ───────────────────────────────────────────────────────────
+    "ms-playwright.playwright",          // Playwright E2E test runner
+
+    // ─── Git ───────────────────────────────────────────────────────────────
+    "eamodio.gitlens",                   // GitLens — blame, history, comparisons
+    "mhutchie.git-graph",                // Git Graph — visual branch history
+    "github.vscode-pull-request-github", // GitHub Pull Requests
+
+    // ─── Editor ────────────────────────────────────────────────────────────
+    "editorconfig.editorconfig",         // EditorConfig support
+    "streetsidesoftware.code-spell-checker", // Spell checker
+    "gruntfuggly.todo-tree",             // TODO/FIXME highlights
+    "ms-vsliveshare.vsliveshare",        // Live Share — pair programming
+    "christian-kohler.path-intellisense", // Path autocomplete
+
+    // ─── REST / API ────────────────────────────────────────────────────────
+    "humao.rest-client",                 // REST Client — test API endpoints din .http files
+    "42crunch.vscode-openapi",           // OpenAPI editor și validator
+
+    // ─── Docker (opțional — pentru când rulezi Seq, Redis local) ───────────
+    "ms-azuretools.vscode-docker"
+  ],
+
+  "unwantedRecommendations": [
+    "ms-vscode.csharp"                   // înlocuit de ms-dotnettools.csdevkit
+  ]
+}

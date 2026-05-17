@@ -1,0 +1,135 @@
+{
+    // ─── GitHub Copilot ───────────────────────────────────────────────────────
+    // Activează citirea copilot-instructions.md și skills
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    // Model preferat — Copilot alege cel mai capabil disponibil
+    "github.copilot.selectedCompletionModel": "gpt-4o",
+    // Instrucțiuni suplimentare per tip de task — completează copilot-instructions.md
+    "github.copilot.chat.codeGeneration.instructions": [
+        {
+            "text": "Generează cod C# respectând convențiile din copilot-instructions.md. Zero SQL inline. Apelează exclusiv SP-uri din Dapper. Result<T> pentru erori business. Connection string din user-secrets."
+        },
+        {
+            "text": "Generează cod TypeScript cu strict mode. Tipuri din openapi-typescript generated. Niciodată any. Niciodată barrel files."
+        }
+    ],
+    "github.copilot.chat.testGeneration.instructions": [
+        {
+            "text": "Generează xUnit tests cu FluentAssertions și NSubstitute. Naming: {Method}_{Condition}_{ExpectedBehavior}. Structură Arrange/Act/Assert vizibil separată. Unit tests: repository mockit. Integration tests: SQL Server LocalDB cu DbUp fixture. Builder pattern pentru date de test complexe."
+        }
+    ],
+    "github.copilot.chat.reviewSelection.instructions": [
+        {
+            "text": "Verifică: SQL inline în C# (BLOCKER), connection string expus (BLOCKER), EF Core (BLOCKER), referință directă între module (BLOCKER). Verifică tenant_id în toate SP-urile, Result<T> în handlers, naming conventions SQL/C#/TS, [Authorize(Policy)] pe fiecare Controller action."
+        }
+    ],
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "Generează commit messages în format Conventional Commits: feat(module): descriere, fix(module): descriere, refactor(module): descriere, test(module): descriere, docs: descriere. Modulele: finance, hr, inventory, purchasing, sales, administration, shared."
+        }
+    ],
+    "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+        {
+            "text": "Generează PR description cu: Summary (ce face PR-ul), Changes (lista de fișiere cheie modificate grupate pe modul), Testing (ce teste au fost adăugate/modificate), SQL Changes (migrări sau SP-uri noi), Breaking Changes (dacă există)."
+        }
+    ],
+    // Activează Copilot în toate tipurile de fișiere relevante
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "sql": true,
+        "csharp": true,
+        "typescript": true,
+        "typescriptreact": true,
+        "json": true,
+        "yaml": true,
+        "xml": true
+    },
+    // ─── Editor ───────────────────────────────────────────────────────────────
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.rulers": [
+        120
+    ],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "editor.inlayHints.enabled": "on",
+    // ─── C# ───────────────────────────────────────────────────────────────────
+    "[csharp]": {
+        "editor.defaultFormatter": "csharpier.csharpier-vscode",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4
+    },
+    "dotnet.defaultSolution": "erp.sln",
+    "omnisharp.enableRoslynAnalyzers": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    // ─── TypeScript / React ───────────────────────────────────────────────────
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
+    },
+    "typescript.preferences.importModuleSpecifier": "non-relative",
+    "typescript.suggest.autoImports": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    // ─── SQL ──────────────────────────────────────────────────────────────────
+    "[sql]": {
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+    },
+    "mssql.connections": [
+        {
+            "server": ".",
+            "database": "ErpDev",
+            "authenticationType": "Integrated",
+            "profileName": "ERP Dev (LocalDB)",
+            "savePassword": false,
+            "groupId": "ROOT",
+            "id": "3711f11e-b9a4-4d7d-8293-cab23778a86c",
+            "profileSource": 0,
+            "encrypt": "Mandatory",
+            "trustServerCertificate": true,
+            "password": ""
+        }
+    ],
+    // ─── Files ────────────────────────────────────────────────────────────────
+    "files.encoding": "utf8",
+    "files.eol": "\r\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true,
+        "**/.vs": true,
+        "**/node_modules": true,
+        "**/.git": true
+    },
+    "search.exclude": {
+        "**/bin": true,
+        "**/obj": true,
+        "**/node_modules": true
+    },
+    // ─── Explorer ─────────────────────────────────────────────────────────────
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.csproj": "$(capture).user",
+        "appsettings.json": "appsettings.*.json",
+        "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, .npmrc",
+        "vite.config.*": "vitest.config.*",
+        "tailwind.config.*": "postcss.config.*",
+        "tsconfig.json": "tsconfig.*.json"
+    }
+}

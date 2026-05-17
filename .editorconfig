@@ -1,0 +1,108 @@
+root = true
+
+# ─── Global defaults ──────────────────────────────────────────────────────────
+[*]
+charset                  = utf-8
+end_of_line              = crlf
+indent_style             = space
+indent_size              = 4
+trim_trailing_whitespace = true
+insert_final_newline     = true
+max_line_length          = 120
+
+# ─── C# ───────────────────────────────────────────────────────────────────────
+[*.cs]
+indent_style             = space
+indent_size              = 4
+end_of_line              = crlf
+
+# Naming rules — enforced by Roslyn analyzers + CSharpier
+dotnet_naming_rule.private_fields_should_be_camel_case.severity        = warning
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols         = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style           = camel_case_underscore_prefix
+
+dotnet_naming_symbols.private_fields.applicable_kinds                  = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities        = private
+
+dotnet_naming_style.camel_case_underscore_prefix.required_prefix       = _
+dotnet_naming_style.camel_case_underscore_prefix.capitalization        = camel_case
+
+# Async methods must end with Async
+dotnet_naming_rule.async_methods_should_end_with_async.severity        = warning
+dotnet_naming_rule.async_methods_should_end_with_async.symbols         = async_methods
+dotnet_naming_rule.async_methods_should_end_with_async.style           = end_with_async
+
+dotnet_naming_symbols.async_methods.applicable_kinds                   = method
+dotnet_naming_symbols.async_methods.required_modifiers                 = async
+
+dotnet_naming_style.end_with_async.required_suffix                     = Async
+dotnet_naming_style.end_with_async.capitalization                      = pascal_case
+
+# Code style
+dotnet_sort_system_directives_first                                    = true
+dotnet_separate_import_directive_groups                                = true
+csharp_using_directive_placement                                       = outside_namespace:warning
+csharp_prefer_simple_using_statement                                   = true:suggestion
+csharp_prefer_braces                                                   = true:warning
+csharp_style_namespace_declarations                                    = file_scoped:warning
+csharp_style_expression_bodied_methods                                 = false:silent
+csharp_style_expression_bodied_properties                              = true:suggestion
+csharp_style_var_for_built_in_types                                    = false:suggestion
+csharp_style_var_when_type_is_apparent                                 = true:suggestion
+csharp_style_var_elsewhere                                             = true:suggestion
+csharp_new_line_before_open_brace                                      = all
+csharp_new_line_before_else                                            = true
+csharp_new_line_before_catch                                           = true
+csharp_new_line_before_finally                                         = true
+
+# Nullable
+dotnet_diagnostic.CS8600.severity                                      = error
+dotnet_diagnostic.CS8601.severity                                      = error
+dotnet_diagnostic.CS8602.severity                                      = error
+dotnet_diagnostic.CS8603.severity                                      = error
+dotnet_diagnostic.CS8604.severity                                      = error
+
+# ─── SQL ──────────────────────────────────────────────────────────────────────
+[*.sql]
+indent_style             = space
+indent_size              = 4
+end_of_line              = crlf
+trim_trailing_whitespace = true
+
+# ─── TypeScript / JavaScript ──────────────────────────────────────────────────
+[*.{ts,tsx,js,jsx}]
+indent_style             = space
+indent_size              = 2
+end_of_line              = lf
+trim_trailing_whitespace = true
+
+# ─── JSON ─────────────────────────────────────────────────────────────────────
+[*.json]
+indent_style             = space
+indent_size              = 2
+end_of_line              = lf
+trim_trailing_whitespace = true
+
+# ─── YAML ─────────────────────────────────────────────────────────────────────
+[*.{yml,yaml}]
+indent_style             = space
+indent_size              = 2
+end_of_line              = lf
+trim_trailing_whitespace = true
+
+# ─── Markdown ─────────────────────────────────────────────────────────────────
+[*.md]
+trim_trailing_whitespace = false
+insert_final_newline     = true
+
+# ─── XML / csproj ─────────────────────────────────────────────────────────────
+[*.{xml,csproj,props,targets}]
+indent_style             = space
+indent_size              = 2
+end_of_line              = crlf
+
+# ─── Shell scripts ────────────────────────────────────────────────────────────
+[*.sh]
+end_of_line              = lf
+indent_style             = space
+indent_size              = 2

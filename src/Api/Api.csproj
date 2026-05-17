@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>3f95128f-9ff3-4e5c-ae03-ae99597d1742</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" />
+    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" />
+    <PackageReference Include="AspNetCore.HealthChecks.Uris" />
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.SqlServer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Seq" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Serilog.Enrichers.Thread" />
+    <!-- Override high-vulnerability transitive dep from Hangfire -->
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Finance\Finance.Api\Finance.Api.csproj" />
+    <ProjectReference Include="..\Modules\Finance\Finance.Infrastructure\Finance.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\HR\HR.Api\HR.Api.csproj" />
+    <ProjectReference Include="..\Modules\HR\HR.Infrastructure\HR.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Inventory\Inventory.Api\Inventory.Api.csproj" />
+    <ProjectReference Include="..\Modules\Inventory\Inventory.Infrastructure\Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Purchasing\Purchasing.Api\Purchasing.Api.csproj" />
+    <ProjectReference Include="..\Modules\Purchasing\Purchasing.Infrastructure\Purchasing.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Sales\Sales.Api\Sales.Api.csproj" />
+    <ProjectReference Include="..\Modules\Sales\Sales.Infrastructure\Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Administration\Administration.Api\Administration.Api.csproj" />
+    <ProjectReference Include="..\Modules\Administration\Administration.Infrastructure\Administration.Infrastructure.csproj" />
+    <ProjectReference Include="..\Shared\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

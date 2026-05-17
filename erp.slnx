@@ -1,0 +1,58 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Api/">
+    <Project Path="src/Api/Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Administration/">
+    <Project Path="src/Modules/Administration/Administration.Api/Administration.Api.csproj" />
+    <Project Path="src/Modules/Administration/Administration.Application/Administration.Application.csproj" />
+    <Project Path="src/Modules/Administration/Administration.Domain/Administration.Domain.csproj" />
+    <Project Path="src/Modules/Administration/Administration.Infrastructure/Administration.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/Finance.Api/Finance.Api.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Application/Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Domain/Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Infrastructure/Finance.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/HR/">
+    <Project Path="src/Modules/HR/HR.Api/HR.Api.csproj" />
+    <Project Path="src/Modules/HR/HR.Application/HR.Application.csproj" />
+    <Project Path="src/Modules/HR/HR.Domain/HR.Domain.csproj" />
+    <Project Path="src/Modules/HR/HR.Infrastructure/HR.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/Inventory.Api/Inventory.Api.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Application/Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Domain/Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Infrastructure/Inventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Purchasing/">
+    <Project Path="src/Modules/Purchasing/Purchasing.Api/Purchasing.Api.csproj" />
+    <Project Path="src/Modules/Purchasing/Purchasing.Application/Purchasing.Application.csproj" />
+    <Project Path="src/Modules/Purchasing/Purchasing.Domain/Purchasing.Domain.csproj" />
+    <Project Path="src/Modules/Purchasing/Purchasing.Infrastructure/Purchasing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Sales/">
+    <Project Path="src/Modules/Sales/Sales.Api/Sales.Api.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Application/Sales.Application.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Domain/Sales.Domain.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Infrastructure/Sales.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Shared.Contracts/Shared.Contracts.csproj" />
+    <Project Path="src/Shared/Shared.Infrastructure/Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/Shared.Kernel/Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Integration/">
+    <Project Path="tests/Integration/Administration.Integration.Tests/Administration.Integration.Tests.csproj" />
+    <Project Path="tests/Integration/Finance.Integration.Tests/Finance.Integration.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Unit/">
+    <Project Path="tests/Unit/Finance.Application.Tests/Finance.Application.Tests.csproj" />
+    <Project Path="tests/Unit/Finance.Domain.Tests/Finance.Domain.Tests.csproj" />
+    <Project Path="tests/Unit/Shared.Kernel.Tests/Shared.Kernel.Tests.csproj" />
+  </Folder>
+</Solution>
