@@ -18,4 +18,13 @@ public static class AdministrationErrors
 
     public static Error AnafVerificationFailed(string message) =>
         new("Administration.AnafVerificationFailed", $"Verificarea ANAF a eșuat: {message}");
+
+    public static Error LocalitatiServiceUnavailable() =>
+        new("Administration.LocalitatiServiceUnavailable", "Serviciul de localități este momentan indisponibil. Încercați din nou.");
+
+    public static Error LocalityValidationFailed(string locality, string? county) =>
+        new("Administration.LocalityValidationFailed", $"Localitatea '{locality}'{(string.IsNullOrWhiteSpace(county) ? "" : $", județul {county}")} nu a fost găsită în registrul localitati.dev.");
+
+    public static Error NominatimServiceUnavailable() =>
+        new("Administration.NominatimServiceUnavailable", "Serviciul de căutare străzi este momentan indisponibil. Încercați din nou.");
 }

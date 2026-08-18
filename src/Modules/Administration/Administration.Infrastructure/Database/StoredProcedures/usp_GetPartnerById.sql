@@ -32,14 +32,20 @@ BEGIN
         AND p.tenant_id = @TenantId;
 
     SELECT
-        pa.id           AS Id,
-        pa.address_type AS AddressType,
-        pa.street       AS Street,
-        pa.city         AS City,
-        pa.county       AS County,
-        pa.postal_code  AS PostalCode,
-        pa.country      AS Country,
-        pa.is_primary   AS IsPrimary
+        pa.id            AS Id,
+        pa.address_type  AS AddressType,
+        pa.street        AS Street,
+        pa.street_number AS StreetNumber,
+        pa.block         AS Block,
+        pa.staircase     AS Staircase,
+        pa.floor         AS Floor,
+        pa.apartment     AS Apartment,
+        pa.building      AS Building,
+        pa.city          AS City,
+        pa.county        AS County,
+        pa.postal_code   AS PostalCode,
+        pa.country       AS Country,
+        pa.is_primary    AS IsPrimary
     FROM administration.partner_addresses pa
     WHERE pa.partner_id = @Id
         AND pa.tenant_id  = @TenantId

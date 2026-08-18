@@ -16,17 +16,34 @@ public sealed class PartnerSubEntityRepository : IPartnerSubEntityRepository
 
     public async Task UpsertAddressAsync(
         long? id, Guid partnerId, Guid tenantId,
-        string addressType, string street, string city,
-        string? county, string? postalCode, string country,
+        string addressType, string street,
+        string? streetNumber, string? block, string? staircase,
+        string? floor, string? apartment, string? building,
+        string city, string? county, string? postalCode, string country,
         bool isPrimary, CancellationToken ct = default)
     {
         using var conn = _connectionFactory.Create();
         await conn.ExecuteAsync(new CommandDefinition(
             "administration.usp_UpsertPartnerAddress",
-            new { Id = id, PartnerId = partnerId, TenantId = tenantId,
-                  AddressType = addressType, Street = street, City = city,
-                  County = county, PostalCode = postalCode, Country = country,
-                  IsPrimary = isPrimary },
+            new
+            {
+                Id = id,
+                PartnerId = partnerId,
+                TenantId = tenantId,
+                AddressType = addressType,
+                Street = street,
+                StreetNumber = streetNumber,
+                Block = block,
+                Staircase = staircase,
+                Floor = floor,
+                Apartment = apartment,
+                Building = building,
+                City = city,
+                County = county,
+                PostalCode = postalCode,
+                Country = country,
+                IsPrimary = isPrimary,
+            },
             commandType: CommandType.StoredProcedure,
             cancellationToken: ct));
     }

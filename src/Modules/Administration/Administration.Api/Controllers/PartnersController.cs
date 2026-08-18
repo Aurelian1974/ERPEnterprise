@@ -4,6 +4,7 @@ using Administration.Application.Features.Partners.Create;
 using Administration.Application.Features.Partners.GetById;
 using Administration.Application.Features.Partners.GetNextCode;
 using Administration.Application.Features.Partners.List;
+using Administration.Application.Features.Partners.Localities;
 using Administration.Application.Features.Partners.SubEntities;
 using Administration.Application.Features.Partners.Update;
 using Administration.Application.Features.Partners.VerifyAnaf;
@@ -29,6 +30,87 @@ public sealed class PartnersController(ISender sender) : ControllerBase
             return BadRequest("CUI-ul este obligatoriu.");
 
         var result = await sender.Send(new AnafLookupQuery(cui), ct);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    // ─── Localities (localitati.dev proxy) ────────────────────────────────────
+
+    [HttpGet("localities/search")]
+    [ProducesResponseType(typeof(List<LocalityDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SearchLocalities(
+        [FromQuery] string q,
+        [FromQuery] string? county = null,
+        [FromQuery] string? countryCode = null,
+        [FromQuery] int limit = 10,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return BadRequest("Termenul de căutare este obligatoriu.");
+
+        var result = await sender.Send(new SearchLocalitiesQuery(q, county, countryCode, limit), ct);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    [HttpGet("localities/countries")]
+    [ProducesResponseType(typeof(List<CountryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCountries(CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetCountriesQuery(), ct);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    [HttpGet("localities/counties")]
+    [ProducesResponseType(typeof(List<CountyDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetCounties(
+        [FromQuery] string? countryCode = null,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetCountiesQuery(countryCode), ct);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    [HttpGet("localities/validate")]
+    [ProducesResponseType(typeof(LocalityValidationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateLocality(
+        [FromQuery] string name,
+        [FromQuery] string? county = null,
+        [FromQuery] string? countryCode = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest("Numele localității este obligatoriu.");
+
+        var result = await sender.Send(new ValidateLocalityQuery(name, county, countryCode), ct);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    [HttpGet("localities/streets")]
+    [ProducesResponseType(typeof(List<NominatimStreetDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SearchNominatimStreets(
+        [FromQuery] string country,
+        [FromQuery] string city,
+        [FromQuery] string street,
+        [FromQuery] int limit = 10,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(street))
+            return BadRequest("Termenul de căutare este obligatoriu.");
+
+        var result = await sender.Send(new SearchNominatimStreetsQuery(country, city, street, limit), ct);
         return result.IsSuccess
             ? Ok(result.Value)
             : Problem(result.Error.Description, statusCode: StatusCodes.Status400BadRequest);

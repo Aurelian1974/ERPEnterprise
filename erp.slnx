@@ -51,6 +51,7 @@
     <Project Path="tests/Integration/Finance.Integration.Tests/Finance.Integration.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Unit/">
+    <Project Path="tests/Unit/Administration.Application.Tests/Administration.Application.Tests.csproj" />
     <Project Path="tests/Unit/Finance.Application.Tests/Finance.Application.Tests.csproj" />
     <Project Path="tests/Unit/Finance.Domain.Tests/Finance.Domain.Tests.csproj" />
     <Project Path="tests/Unit/Shared.Kernel.Tests/Shared.Kernel.Tests.csproj" />

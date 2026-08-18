@@ -5,8 +5,10 @@ public interface IPartnerSubEntityRepository
     // Addresses
     Task UpsertAddressAsync(
         long? id, Guid partnerId, Guid tenantId,
-        string addressType, string street, string city,
-        string? county, string? postalCode, string country,
+        string addressType, string street,
+        string? streetNumber, string? block, string? staircase,
+        string? floor, string? apartment, string? building,
+        string city, string? county, string? postalCode, string country,
         bool isPrimary, CancellationToken ct = default);
 
     Task DeleteAddressAsync(long id, Guid partnerId, Guid tenantId, CancellationToken ct = default);

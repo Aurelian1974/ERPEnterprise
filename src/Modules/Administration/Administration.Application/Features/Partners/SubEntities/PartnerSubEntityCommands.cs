@@ -12,6 +12,12 @@ public sealed record UpsertPartnerAddressCommand(
     long? Id,
     string AddressType,
     string Street,
+    string? StreetNumber,
+    string? Block,
+    string? Staircase,
+    string? Floor,
+    string? Apartment,
+    string? Building,
     string City,
     string? County,
     string? PostalCode,
@@ -35,8 +41,10 @@ public sealed class UpsertPartnerAddressCommandHandler(
 
         await subRepo.UpsertAddressAsync(
             command.Id, command.PartnerId, tenant.TenantId,
-            command.AddressType, command.Street, command.City,
-            command.County, command.PostalCode, command.Country,
+            command.AddressType, command.Street,
+            command.StreetNumber, command.Block, command.Staircase,
+            command.Floor, command.Apartment, command.Building,
+            command.City, command.County, command.PostalCode, command.Country,
             command.IsPrimary, cancellationToken);
 
         return Result.Success();
