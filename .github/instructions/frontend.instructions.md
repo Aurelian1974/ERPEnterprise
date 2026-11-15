@@ -7,6 +7,7 @@ applyTo: '**/*.ts,**/*.tsx,**/*.css,**/*.html,**/*.cshtml,**/*.razor'
 Surse: [Bune practici](../../Docs/arhitectura/bune-practici/BUNE_PRACTICI.md), sectiunea 5 (`UI-01`-`UI-10`); [Nucleu](../../Docs/arhitectura/02-module-principale/01-nucleu/NUCLEU.md), sectiunea 11; [Stack tehnologic](../../Docs/arhitectura/07-stack-tehnologic/STACK_TEHNOLOGIC.md).
 
 - Interfata numai React + TypeScript in `src/Web/erp-web` (Vite, Node.js din `.nvmrc`); fara Blazor. Singura exceptie: paginile Razor `/account/*`.
+- Componentele UI din Syncfusion pentru React (`@syncfusion/ej2-react-*`), folosite prin componente comune proprii. Cheia de licenta numai din `SYNCFUSION_LICENSE` (`npx syncfusion-license activate`); niciodata in cod, configurare sau Git.
 - Pentru aplicatia React: TypeScript strict, fara `any`; TanStack Query, React Hook Form + Zod; client API si tipuri generate din OpenAPI.
 - Organizare pe module/functionalitati, componente comune reutilizate; module nelicentiate neincarcate si absente din meniu. Nu duplica datele serverului in stare globala.
 - Sume/preturi/cantitati in JSON ca string. Fara calcule monetare cu `number`; previzualizare de pe server sau biblioteca zecimala cu aceleasi reguli; valoarea salvata este calculata pe server.

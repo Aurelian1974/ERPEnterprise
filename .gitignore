@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Cheia de licenta Syncfusion: doar in variabila SYNCFUSION_LICENSE / secretul CI (07 Stack tehnologic, ST4)
+syncfusion-license.txt

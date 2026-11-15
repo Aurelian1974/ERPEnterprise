@@ -1,8 +1,8 @@
 # ERP · 07 Stack tehnologic
 
-15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST3; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md)
+15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST4; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md)
 
-Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu introduce alegeri noi în afara deciziilor ST1–ST3: fiecare rând trimite la documentul care l-a decis. La o contradicție, prevalează documentele validate (01, 08, Bune practici) față de schiță; o alegere doar „propusă” se validează înainte de folosire.
+Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu introduce alegeri noi în afara deciziilor ST1–ST4: fiecare rând trimite la documentul care l-a decis. La o contradicție, prevalează documentele validate (01, 08, Bune practici) față de schiță; o alegere doar „propusă” se validează înainte de folosire.
 
 ---
 
@@ -13,6 +13,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | ST1 | **Interfața aplicației se face numai în React + TypeScript. Fără Blazor** (Server, WebAssembly, Hybrid sau United) | Ecranele ERP sunt componente React; serverul expune doar API. Excepție deja validată, compatibilă cu ST1: paginile de autentificare `/account/*` rămân **Razor Pages** (HTML generat pe server, fără Blazor), conform deciziei D10 din 08 și 02.01 secțiunea 11 |
 | ST2 | **Aplicația React stă în `src/Web/erp-web`** | Construcția ei produce fișiere statice copiate în `wwwroot` al `Erp.Host` la construirea kitului (08, secțiunea 1) |
 | ST3 | **Node.js: ultima versiune stabilă** (nu alpha, beta sau RC) | La 15.11.2026: **Node.js 26** (v26.13.1, linia LTS „Lithium”, publicată 10.11.2026, sursa: [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json)). Versiunea se fixează în depozit (`.nvmrc` și `engines` în `package.json`) și se actualizează la verificarea lunară a dependențelor (`SEC-04`) |
+| ST4 | **Componentele de interfață se iau din Syncfusion Essential JS 2 pentru React** (pachetele `@syncfusion/ej2-react-*`; licență comercială deținută de Aurelian) | Numai pachetele React, niciodată cele Blazor (ST1). Componentele Syncfusion se folosesc prin componente comune proprii (de exemplu o listă standard peste DataGrid), ca ecranele să păstreze același tipar și regulile `UI-*`. Cheia de licență nu stă în Git (secțiunea 4) |
 
 **De reverificat la ST3:** în aprilie 2027 va apărea Node.js 27, versiune „Current”, fără suport pe termen lung (doar liniile pare devin LTS). Atunci „ultima stabilă” și „ultima LTS” nu vor mai coincide; Aurelian confirmă care se urmează.
 
@@ -36,7 +37,8 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Frontend | React + TypeScript (strict), Vite, TanStack Query, React Hook Form + Zod | 01 (stack fix); schița; `UI-03` | Validat (React + TS); aprobat în schiță (restul) |
 | Client API | Generat din OpenAPI, nu scris de mână | `UI-03` | Validat |
 | Calcule zecimale în UI | Totaluri de la server sau `decimal.js` cu aceleași reguli; valorile circulă ca string | `UI-05` | Validat |
-| Tabele mari | AG Grid sau TanStack Table | Schița | **De decis** |
+| Componente UI | Syncfusion Essential JS 2 pentru React (grile, formulare, calendare, grafice etc.) | ST4 | Validat |
+| Tabele mari | Syncfusion DataGrid (paginare și filtrare pe server, `UI-*`) | ST4; schița propunea AG Grid sau TanStack Table | Propus (decurge din ST4), de confirmat |
 | Livrarea UI | Fișiere statice în `wwwroot` al `Erp.Host`, același origin cu API-ul (cookie `SameSite=Strict`) | 08, secțiunile 1 și 8.7 | Validat |
 | Rapoarte și documente | QuestPDF pentru facturi și state; ClosedXML pentru Excel; BI: Power BI Report Server sau Metabase, on-premise | Schița | Aprobat în schiță |
 | Jurnale | Serilog, jurnale structurate fără date personale | `NET-18` | Validat |
@@ -69,6 +71,11 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 - **.NET:** SDK fixat în `global.json`; pachetele NuGet cu versiuni centrale în `Directory.Packages.props`.
 - **Node.js și npm:** versiunea din ST3, fixată în `.nvmrc` și `engines`; dependențele npm cu `package-lock.json` în depozit.
 - **Actualizare:** dependențele NuGet și npm se verifică lunar; o vulnerabilitate critică cunoscută blochează livrarea (`SEC-04`).
+- **Licența Syncfusion (ST4):** cheia **nu se scrie niciodată** în depozit, în cod (`registerLicense('...')`) sau în fișiere de configurare urmărite de Git; `syncfusion-license.txt` e în `.gitignore`. Se activează la build cu `npx syncfusion-license activate` (scriptul `postinstall` al aplicației), care citește variabila de mediu `SYNCFUSION_LICENSE`:
+  - pe mașina de dezvoltare: variabilă de mediu a utilizatorului Windows (setată pentru Aurelian pe 15.11.2026);
+  - în GitHub Actions și la construirea kitului: secretul de depozit `SYNCFUSION_LICENSE` (setat pe 15.11.2026).
+
+  Validarea e offline, deci serverul clientului nu are nevoie de internet pentru ea. Cheia depinde de versiunea majoră Syncfusion: la trecerea la o versiune majoră nouă se generează o cheie nouă din contul Syncfusion și se înlocuiește în ambele locuri. Fără cheie validă, componentele afișează mesajul de versiune de evaluare. `THIRD-PARTY-NOTICES.txt` din kit (T16) menționează Syncfusion.
 
 ---
 
@@ -76,7 +83,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 
 | Subiect | Opțiuni din documentație | Observație |
 | --- | --- | --- |
-| Tabele mari în UI | AG Grid sau TanStack Table | Schița |
+| Tabele mari în UI | Syncfusion DataGrid (din ST4), în locul AG Grid sau TanStack Table din schiță | De confirmat de Aurelian |
 | Teste de componente UI | — | Nicio sursă nu le numește |
 | Interfața POS | React în Electron sau WPF | Schița lasă ambele variante. ST1 se referă la interfața aplicației ERP; dacă se aplică și la POS, rămâne varianta React în Electron. Se decide în 02.10 |
 | Node.js 27 (aprilie 2027) | Ultima stabilă sau ultima LTS | ST3, secțiunea 1 |
