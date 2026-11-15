@@ -59,6 +59,7 @@ export const ro = {
   'common.none': '—',
   'common.select': 'Alegeți…',
   'common.saved': 'Modificările au fost salvate.',
+  'common.notSaved': 'Modificările nu au fost salvate. Corectați câmpurile marcate.',
   'common.required': 'Câmpul este obligatoriu.',
   'common.search': 'Caută',
   'common.lastChanged': 'Modificat ultima dată de {name}, {date}',
@@ -164,6 +165,7 @@ export const ro = {
   'series.lockedWarning':
     'Seria are {count} documente validate. Prefixul, anul și următorul număr nu se mai pot schimba. Pentru o serie nouă, închide-o pe aceasta și deschide alta; închiderea se trece în audit.',
   'series.close': 'Închide seria',
+  'series.closedNotice': 'Seria a fost închisă.',
   'series.closeConfirm': 'Închideți seria {name}? Din ea nu se mai alocă numere.',
   'series.lastUsed': 'Ultima folosire: {date}',
   'series.noCompany': 'Alegeți firma curentă din antet pentru a vedea seriile ei.',

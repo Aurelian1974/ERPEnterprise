@@ -6,6 +6,7 @@ import { ColumnDirective, ColumnsDirective, GridComponent } from '@syncfusion/ej
 import { Link } from 'react-router';
 import { z } from 'zod';
 import { ErrorBanner, SwitchField, TextField } from '../components/Field';
+import { useNotifier } from '../components/Notifier';
 import { applyServerErrors, required } from '../components/forms';
 import { t } from '../i18n';
 import { orgApi, orgKeys, useNumberSeries, type BankAccount, type CompanyDetail } from './orgApi';
@@ -24,6 +25,7 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
   const [selected, setSelected] = useState<BankAccount | 'new' | undefined>();
   const account = selected === 'new' ? undefined : selected;
   const queryClient = useQueryClient();
+  const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
   const defaults: BankValues = account === undefined
     ? { iban: '', bankName: '', currency: 'RON', isDefault: company.bankAccounts.length === 0, isActive: true }
@@ -36,11 +38,14 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
     try {
       await orgApi.saveBankAccount({ ...values, id: account?.id ?? null, companyId: company.id, rowVersion: account?.rowVersion ?? null });
       await queryClient.invalidateQueries({ queryKey: orgKeys.company(company.id) });
+      notify(t('common.saved'));
       setSelected(undefined);
     } catch (e) {
-      setError(applyServerErrors(e, form.setError, Object.keys(defaults)));
+      const message = applyServerErrors(e, form.setError, Object.keys(defaults));
+      setError(message);
+      notify(message ?? t('common.notSaved'), 'error');
     }
-  });
+  }, () => notify(t('common.notSaved'), 'error'));
 
   return (
     <div className="tab-body">

@@ -43,6 +43,7 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await page.getByLabel('Denumire', { exact: true }).fill(`Grup E2E ${suffix}`);
   await page.getByRole('button', { name: 'Salvează' }).click();
   await expect(page).toHaveURL(/nod=g-\d+/);
+  await expect(page.locator('.e-toast .e-toast-content').last()).toContainText('Modificările au fost salvate.');
   await expect(page.locator('.tree-card')).toContainText(`Grup E2E ${suffix}`);
 
   // Firma noua, cu validarea CUI-ului pe server
@@ -58,6 +59,7 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await page.locator('#f-city').fill('Sector 1');
   await page.getByRole('button', { name: 'Salvează' }).click();
   await expect(page.locator('#f-fiscalCode-error')).toContainText('CUI');
+  await expect(page.locator('.e-toast.e-toast-danger').last()).toBeVisible();
 
   await page.locator('#f-fiscalCode').fill(`RO${newFiscalCode()}`);
   await page.getByRole('button', { name: 'Salvează' }).click();

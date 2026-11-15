@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ErrorBanner, SelectField, SwitchField, TextField, type Option } from '../components/Field';
+import { useNotifier } from '../components/Notifier';
 import { applyServerErrors, code, money, moneyForInput, optionalText, required } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
@@ -19,9 +20,12 @@ const countyOptions = (lookups: Lookups, country: string | null): Option[] =>
 /** Salvarea comuna: erorile pe camp merg la campuri, restul in banner; dupa salvare se reincarca arborele si fisa. */
 function useSave<T extends FieldValues>(fields: readonly string[], save: (values: T) => Promise<Saved>, onSaved: (saved: Saved) => void, companyId?: number) {
   const queryClient = useQueryClient();
+  const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
   return {
     error,
+    /** Validarea din browser a esuat: campurile sunt marcate, iar mesajul confirma ca nu s-a salvat nimic. */
+    invalid: () => notify(t('common.notSaved'), 'error'),
     async submit(values: T, setFieldError: Parameters<typeof applyServerErrors<T>>[1]) {
       setError(undefined);
       try {
@@ -31,9 +35,12 @@ function useSave<T extends FieldValues>(fields: readonly string[], save: (values
         if (companyId !== undefined) {
           await queryClient.invalidateQueries({ queryKey: orgKeys.company(companyId) });
         }
+        notify(t('common.saved'));
         onSaved(saved);
       } catch (e) {
-        setError(applyServerErrors(e, setFieldError, fields));
+        const message = applyServerErrors(e, setFieldError, fields);
+        setError(message);
+        notify(message ?? t('common.notSaved'), 'error');
       }
     },
   };
@@ -112,7 +119,7 @@ export function GroupForm({ tree, groupId, parentGroupId, onSaved, onCancel }: {
     <FormShell
       title={<h2 className="form-title">{group?.name ?? t('org.newGroup')}</h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v, form.setError))}
+      onSubmit={form.handleSubmit((v) => save.submit(v, form.setError), save.invalid)}
       footer={<Footer onCancel={() => (group === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">
@@ -190,7 +197,7 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
   return (
     <FormShell
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as CompanyInput, form.setError))}
+      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as CompanyInput, form.setError), save.invalid)}
       footer={<Footer info={info} onCancel={() => (company === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       {company === undefined && <h2 className="form-title">{t('org.newCompany')}</h2>}
@@ -272,7 +279,7 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
     <FormShell
       title={<h2 className="form-title">{branch?.name ?? t('org.newBranch')} <span className="muted">· {company?.name}</span></h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as BranchInput, form.setError))}
+      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as BranchInput, form.setError), save.invalid)}
       footer={<Footer onCancel={() => (branch === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">
@@ -339,7 +346,7 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
     <FormShell
       title={<h2 className="form-title">{location?.name ?? t('org.newLocation')}</h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as LocationInput, form.setError))}
+      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as LocationInput, form.setError), save.invalid)}
       footer={<Footer onCancel={() => (location === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">

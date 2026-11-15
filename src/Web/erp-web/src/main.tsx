@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router';
 import { createRouter } from './app/routes';
+import { NotifierProvider } from './components/Notifier';
 import '@syncfusion/ej2-tailwind3-theme/styles/base/base.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/button/button.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/input/input.css';
@@ -18,6 +19,7 @@ import '@syncfusion/ej2-tailwind3-theme/styles/check-box/check-box.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/treeview/treeview.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/grid/grid.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/pager/pager.css';
+import '@syncfusion/ej2-tailwind3-theme/styles/toast/toast.css';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -32,7 +34,9 @@ if (root === null) {
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={createRouter()} />
+      <NotifierProvider>
+        <RouterProvider router={createRouter()} />
+      </NotifierProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

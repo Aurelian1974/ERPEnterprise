@@ -7,6 +7,7 @@ import { ColumnDirective, ColumnsDirective, GridComponent, Inject, Sort } from '
 import { z } from 'zod';
 import type { CurrentUser } from '../api/session';
 import { ErrorBanner, NumberField, SelectField, SwitchField, TextField } from '../components/Field';
+import { useNotifier } from '../components/Notifier';
 import { applyServerErrors, required } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
@@ -147,6 +148,7 @@ function SeriesForm({ companyId, series, documentTypes, branches, onDone }: {
   readonly onDone: (next: NumberSeries | undefined) => void;
 }) {
   const queryClient = useQueryClient();
+  const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
   const defaults: SeriesValues = series === undefined
     ? { documentTypeCode: '', branchId: null, prefix: '', year: new Date().getFullYear(), nextNumber: 1, padding: 6, isFiscal: true, isDefault: true, autoRollover: false }
@@ -168,11 +170,14 @@ function SeriesForm({ companyId, series, documentTypes, branches, onDone }: {
     try {
       await orgApi.saveSeries({ ...values, id: series?.id ?? null, companyId, rowVersion: series?.rowVersion ?? null });
       await refresh();
+      notify(t('common.saved'));
       onDone(undefined);
     } catch (e) {
-      setError(applyServerErrors(e, form.setError, Object.keys(defaults)));
+      const message = applyServerErrors(e, form.setError, Object.keys(defaults));
+      setError(message);
+      notify(message ?? t('common.notSaved'), 'error');
     }
-  });
+  }, () => notify(t('common.notSaved'), 'error'));
 
   async function close() {
     if (series === undefined || !window.confirm(t('series.closeConfirm', { name: `${series.prefix} ${series.year}` }))) {
@@ -182,9 +187,12 @@ function SeriesForm({ companyId, series, documentTypes, branches, onDone }: {
     try {
       await orgApi.closeSeries(companyId, series.id, series.rowVersion);
       await refresh();
+      notify(t('series.closedNotice'));
       onDone(undefined);
     } catch (e) {
-      setError(applyServerErrors(e, form.setError, []));
+      const message = applyServerErrors(e, form.setError, []);
+      setError(message);
+      notify(message ?? t('common.notSaved'), 'error');
     }
   }
 
