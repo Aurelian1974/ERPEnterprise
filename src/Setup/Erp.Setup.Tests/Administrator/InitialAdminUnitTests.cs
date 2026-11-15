@@ -56,8 +56,8 @@ public sealed class InitialAdminUnitTests
     {
         var stamp = AccountStamps.NewSecurityStamp();
 
-        Assert.Equal(52, stamp.Length);
-        Assert.Matches("^[A-Z2-7]{52}$", stamp);
+        Assert.Equal(32, stamp.Length);
+        Assert.Matches("^[A-Z2-7]{32}$", stamp);
         Assert.NotEqual(stamp, AccountStamps.NewSecurityStamp());
         Assert.True(Guid.TryParse(AccountStamps.NewConcurrencyStamp(), out _));
     }

@@ -64,7 +64,7 @@ Pentru installer se folosesc [instrucțiunile dedicate](../../../.github/instruc
 
 **Schemele bazei** (`SQL-01`): `core`, `ids`, `fin`, `sales`, `purch`, `inv`, `intg`, `wms`, `tms`, `mfg`, `hr`, `pos`, `cons`, `crm`, `rpt`, plus schema tehnică `hangfire`. Nimic în `dbo`.
 
-**Cine rulează installer-ul:** echipa noastră de la distanță (VPN, TeamViewer) sau IT-ul clientului, după ghid. Persoana trebuie să fie administrator local pe serverul de aplicație și să aibă pe SQL Server drepturi de `sysadmin` (sau cel puțin `dbcreator` + `securityadmin`) **doar pe durata instalării sau actualizării**.
+**Cine rulează installer-ul:** echipa noastră de la distanță (VPN, TeamViewer) sau IT-ul clientului, după ghid. Persoana trebuie să fie administrator local pe serverul de aplicație și să aibă pe SQL Server drepturi de `sysadmin` **doar pe durata instalării sau actualizării**.
 
 ---
 
@@ -123,7 +123,7 @@ Binarele stau în foldere pe versiune (`versions\2027.1.0\`), nu se suprascriu. 
 
 | Cont | Tip | Drepturi | Folosit de |
 | --- | --- | --- | --- |
-| Operatorul care rulează installer-ul | Windows (administrator local) + SQL `sysadmin` sau `dbcreator`+`securityadmin` | Doar pe durata rulării; parola SQL (dacă e autentificare SQL) se cere interactiv și nu se salvează | Pașii de creare bază, loginuri, joburi |
+| Operatorul care rulează installer-ul | Windows (administrator local) + SQL `sysadmin` | Doar pe durata rulării; parola SQL (dacă e autentificare SQL) se cere interactiv și nu se salvează | Pașii de creare bază, loginuri, joburi |
 | `erp_<instanță>_mig` (de ex. `erp_prod_mig`) | Login SQL, parolă nouă de 32 de caractere la fiecare rulare, nesalvată | `db_owner` doar pe baza ERP; fără drepturi pe server; **dezactivat** între rulările installer-ului (8.4) | Migrațiile DbUp la instalare și actualizare (`SP-19`) |
 | `erp_<instanță>_app` | Login SQL, parolă generată de 32 de caractere | Membru în rolurile de bază `role_core`, `role_ids`, `role_fin`, …, `role_hangfire`; **fără** `db_owner` (`SP-19`) | Host, Identity, Worker |
 | Pool-ul IIS | `IIS AppPool\ERP-<Instanță>-Host` | Drepturile NTFS din 3.2 | IIS |
@@ -467,7 +467,7 @@ Comanda `check` rulează doar aceste verificări; `install` și `upgrade` le rul
 | C-09 | Conexiune SQL | Deschide conexiune la `master` cu credențialele operatorului, timeout 15 s, cu `Encrypt` din configurare | Blocant |
 | C-10 | Versiune SQL Server | `SERVERPROPERTY('ProductMajorVersion')` ≥ `minSqlServerMajorVersion` (16) | Blocant |
 | C-11 | Ediție SQL Server | `SERVERPROPERTY('EngineEdition')`: 2 (Standard) sau 3 (Enterprise / Developer) acceptate; 4 (Express) refuzat (fără SQL Agent); Developer (`SERVERPROPERTY('Edition')` conține „Developer”) → avertisment „doar pentru test” | Blocant |
-| C-12 | Drepturile operatorului | `IS_SRVROLEMEMBER('sysadmin') = 1` sau (`dbcreator` și `securityadmin`) | Blocant |
+| C-12 | Drepturile operatorului | `IS_SRVROLEMEMBER('sysadmin') = 1` (joburile SQL Agent cu proprietarul `sa` și `xp_create_subdir` o cer) | Blocant |
 | C-13 | SQL Server Agent pornit | `SELECT status_desc FROM sys.dm_server_services WHERE servicename LIKE N'SQL Server Agent%'` = `Running`; altfel blocant cu mesaj „Porniți SQL Server Agent și setați-l pe Automatic.” | Blocant |
 | C-14 | Collation-ul serverului | `SERVERPROPERTY('Collation')`. Dacă nu e case sensitive (nu conține `_CS_`), avertisment informativ: baza va fi totuși `Latin1_General_100_CS_AS_SC_UTF8`; regula `SQL-23` (tabele temporare) devine critică | Avertisment |
 | C-15 | Baza nu există (doar la `install`) | `DB_ID(@DatabaseName) IS NULL`. Dacă există și e goală (fără tabele utilizator), avertisment și se folosește după verificarea collation-ului (C-16); dacă are tabele → cod 31 | Blocant |
@@ -885,7 +885,7 @@ Plaja de coduri de eroare SQL pentru schema `ids`: **64000–64999** (adăugată
 1. Dacă există variabila `ERP_ADMIN_INITIAL_PASSWORD` (sau operatorul introduce una interactiv, cu confirmare), se validează: minimum 12 caractere, cel puțin o literă mare, una mică, o cifră și un simbol, nu conține numele de utilizator (comparație fără diferență de majuscule). Respinsă → se cere din nou (interactiv) sau cod 11 (`--unattended`).
 2. Altfel se generează: 20 de caractere cu `RandomNumberGenerator`, din alfabetul fără caractere ușor de confundat (`ABCDEFGHJKLMNPQRSTUVWXYZ abcdefghijkmnpqrstuvwxyz 23456789 !#$%&*+-=?@_`), cel puțin 2 din fiecare categorie.
 3. Hash-ul se calculează cu `PasswordHasher<TUser>` din pachetul `Microsoft.Extensions.Identity.Core` (formatul V3, același pe care îl verifică `Erp.Auth`), prin `Erp.Security.Passwords`. Parola în clar nu ajunge în SQL.
-4. Se generează: `SubjectId = Guid.NewGuid()`, `SecurityStamp` (32 de octeți aleatori în Base32, ca în ASP.NET Core Identity), `ConcurrencyStamp = Guid.NewGuid().ToString()`.
+4. Se generează: `SubjectId = Guid.NewGuid()`, `SecurityStamp` (20 de octeți aleatori în Base32, 32 de caractere, ca `UserManager` din ASP.NET Core Identity), `ConcurrencyStamp = Guid.NewGuid().ToString()`.
 
 **Scrierea în bază.** Installer-ul deschide o tranzacție pe conexiunea loginului de migrare și apelează, în ordine, două proceduri livrate în `Programmability/`:
 
@@ -1000,7 +1000,7 @@ Parola nu se scrie în jurnal. În modul `--unattended`, dacă parola a fost **g
 
 - Tabelele Nucleului de care depinde I-13 (`core.[User]`, `core.Role`, `core.UserRoleAssignment`, `core.AuditEntry` cu trigger-ul `SP-21`) sunt create de migrațiile `core/2026.11.002`–`003`, cu câmpurile din 02.01 (3.4, 3.5, 7). Cheile străine spre `core.Company`, `core.Employee`, `core.Partner` se adaugă de migrațiile care creează acele tabele. Rolurile de sistem vin din `seed/core/01_Roles.sql`.
 - Utilizatorul `system` are `SubjectId = 00000000-0000-0000-0000-000000000001` (fix; nu are cont în `ids`).
-- `SecurityStamp` = 32 de octeți aleatori în Base32 (RFC 4648, fără completare, 52 de caractere); hash-ul parolei se calculează cu `PasswordHasher<TUser>` cu opțiunile implicite (V3) din `Erp.Security.Passwords`.
+- `SecurityStamp` = 20 de octeți aleatori în Base32 (RFC 4648, 32 de caractere), același format ca ștampilele regenerate ulterior de `UserManager` (decizie 15.11.2026); hash-ul parolei se calculează cu `PasswordHasher<TUser>` cu opțiunile implicite (V3) din `Erp.Security.Passwords`.
 - `initial-admin.txt` se creează direct cu ACL-ul restrâns (fără moștenire; `Administrators`, `SYSTEM`), ca fișierul să nu existe niciun moment cu drepturile moștenite; dreptul **Delete** pentru pool se adaugă după crearea pool-ului (I-18).
 - Parola temporară există doar în memorie între I-13 și I-24. Dacă instalarea se întrerupe după I-13 (și, în modul interactiv, înainte de I-24), la reluare I-13 e sărit și parola nu mai poate fi afișată; accesul se reface cu `reset-admin` (11.2). Mesajul final indică acest lucru.
 
@@ -1210,7 +1210,7 @@ Toate textele SQL ale joburilor se generează de installer cu numele bazei și c
 - La rulare repetată, versiunea definiției se citește din descriere (`ERP-JOB v<N>`): versiune mai veche sau lipsă → jobul se șterge (cu programarea) și se recreează; altfel se actualizează doar programarea. Jobul își păstrează identitatea și istoricul.
 - Rezultatul unui job se citește din rândul de istoric al rulării pornite de installer (sesiunea curentă a Agent-ului, `start_execution_date` după pornire); la eșec mesajul vine din pasul eșuat. Aceeași rutină servește la R-06.
 - `core.usp_Maintenance_IndexesAndStatistics` folosește `ONLINE = ON` când `EngineEdition = 3` (Enterprise, Developer, Evaluation) și prelucrează indecșii unul câte unul (excepție `SP-08`, documentată în 02.01, secțiunea 7).
-- **De clarificat (Aurelian):** C-12 acceptă un operator cu `dbcreator` + `securityadmin`, dar joburile cu proprietarul `SUSER_SNAME(0x01)` și `xp_create_subdir` cer `sysadmin`. Până la decizie, I-21 verifică `sysadmin` și oprește cu cod 12 și un mesaj clar.
+- **Decis (15.11.2026):** operatorul trebuie să fie `sysadmin` (C-12), pentru că joburile cu proprietarul `SUSER_SNAME(0x01)` și `xp_create_subdir` o cer; I-21 păstrează verificarea ca protecție (cod 12).
 
 ### 8.14 Pornire și health-check (I-23)
 

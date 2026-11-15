@@ -392,14 +392,11 @@ public sealed class RequirementsChecker(
         {
             run.Add("C-12", title, CheckStatus.Passed, "Operatorul are rolul sysadmin.");
         }
-        else if (info.IsDbCreator && info.IsSecurityAdmin)
-        {
-            run.Add("C-12", title, CheckStatus.Passed, "Operatorul are rolurile dbcreator și securityadmin.");
-        }
         else
         {
+            // Joburile SQL Agent cu proprietarul sa si xp_create_subdir cer sysadmin (8.13); dbcreator + securityadmin nu ajung.
             run.Add("C-12", title, CheckStatus.Failed,
-                "Operatorul trebuie să aibă pe SQL Server rolul sysadmin sau rolurile dbcreator și securityadmin, pe durata instalării.");
+                "Operatorul trebuie să aibă pe SQL Server rolul sysadmin, pe durata instalării sau a actualizării.");
         }
     }
 

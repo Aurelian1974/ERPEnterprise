@@ -30,8 +30,8 @@ public static class AccountStamps
 {
     private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
-    /// <summary>SecurityStamp: 32 de octeti aleatori in Base32 (RFC 4648, fara completare), 52 de caractere.</summary>
-    public static string NewSecurityStamp() => ToBase32(RandomNumberGenerator.GetBytes(32));
+    /// <summary>SecurityStamp: 20 de octeti aleatori in Base32 (RFC 4648), 32 de caractere, ca UserManager din ASP.NET Core Identity.</summary>
+    public static string NewSecurityStamp() => ToBase32(RandomNumberGenerator.GetBytes(20));
 
     public static string NewConcurrencyStamp() => Guid.NewGuid().ToString();
 

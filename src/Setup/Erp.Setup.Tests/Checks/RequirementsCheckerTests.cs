@@ -285,7 +285,8 @@ public sealed class RequirementsCheckerTests : IDisposable
     }
 
     [Theory]
-    [InlineData(false, true, true, CheckStatus.Passed)]
+    [InlineData(true, false, false, CheckStatus.Passed)]
+    [InlineData(false, true, true, CheckStatus.Failed)]
     [InlineData(false, true, false, CheckStatus.Failed)]
     [InlineData(false, false, true, CheckStatus.Failed)]
     [InlineData(false, false, false, CheckStatus.Failed)]
