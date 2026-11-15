@@ -984,6 +984,14 @@ Parola nu se scrie în jurnal. În modul `--unattended`, dacă parola a fost **g
 
 **Prima autentificare.** Pagina de login `/account/login` → „Parolă nouă” (ecranul 09 din 02.01) → „Activare 2FA” (ecranul 09b) → aplicația, care e în modul de configurare (`Installation.SetupCompleted = false`) și deschide asistentul (ecranul 10). Pasul „Administrator” din asistent completează profilul administratorului (nume, email, limbă) și recomandă crearea unui al doilea cont de administrator nominal, ca acesta să rămână cont de urgență.
 
+**Detalii de implementare (T9, 15.11.2026):**
+
+- Tabelele Nucleului de care depinde I-13 (`core.[User]`, `core.Role`, `core.UserRoleAssignment`, `core.AuditEntry` cu trigger-ul `SP-21`) sunt create de migrațiile `core/2026.11.002`–`003`, cu câmpurile din 02.01 (3.4, 3.5, 7). Cheile străine spre `core.Company`, `core.Employee`, `core.Partner` se adaugă de migrațiile care creează acele tabele. Rolurile de sistem vin din `seed/core/01_Roles.sql`.
+- Utilizatorul `system` are `SubjectId = 00000000-0000-0000-0000-000000000001` (fix; nu are cont în `ids`).
+- `SecurityStamp` = 32 de octeți aleatori în Base32 (RFC 4648, fără completare, 52 de caractere); hash-ul parolei se calculează cu `PasswordHasher<TUser>` cu opțiunile implicite (V3) din `Erp.Security.Passwords`.
+- `initial-admin.txt` se creează direct cu ACL-ul restrâns (fără moștenire; `Administrators`, `SYSTEM`), ca fișierul să nu existe niciun moment cu drepturile moștenite; dreptul **Delete** pentru pool se adaugă după crearea pool-ului (I-18).
+- Parola temporară există doar în memorie între I-13 și I-24. Dacă instalarea se întrerupe după I-13 (și, în modul interactiv, înainte de I-24), la reluare I-13 e sărit și parola nu mai poate fi afișată; accesul se reface cu `reset-admin` (11.2). Mesajul final indică acest lucru.
+
 ### 8.9 Licența (I-12)
 
 Formatul fișierului `.lic` (definit în `Erp.Licensing`, folosit identic de installer și de `Erp.Host`):

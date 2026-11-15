@@ -12,6 +12,7 @@
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Erp.Licensing/Erp.Licensing.csproj" />
+    <Project Path="src/Shared/Erp.Security.Passwords/Erp.Security.Passwords.csproj" />
   </Folder>
   <Folder Name="/src/Worker/">
     <Project Path="src/Worker/Erp.Worker/Erp.Worker.csproj" />

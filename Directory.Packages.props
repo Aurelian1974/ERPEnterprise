@@ -14,6 +14,9 @@
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
   </ItemGroup>
+  <ItemGroup Label="Securitate (Erp.Security.Passwords, Erp.Auth)">
+    <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="10.0.15" />
+  </ItemGroup>
   <ItemGroup Label="Host si Worker">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
     <!-- Versiunea Hangfire = scriptul din src/Worker/Erp.Worker/Database/Migrations (test HangfireMigrationMatchesPinnedPackage). -->

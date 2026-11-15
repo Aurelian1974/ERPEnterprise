@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Security.Passwords\Erp.Security.Passwords.csproj" />
   </ItemGroup>
 
   <ItemGroup>
