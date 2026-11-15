@@ -135,14 +135,14 @@ public sealed class InstallResumeIntegrationTests(SqlServerFixture sql) : IDispo
     [Trait("Criteriu", "08-IA-08")]
     public async Task Interrupted_install_resumes_with_the_same_install_id_and_one_administrator()
     {
-        var answers = Answers("ITRES", "ERP_IT_RESUME");
-        var migrator = SqlPrincipals.For("ITRES", SqlAuthentication.Sql, null).MigratorLogin;
+        var answers = Answers("ITINSR", "ERP_IT_INSTRESUME");
+        var migrator = SqlPrincipals.For("ITINSR", SqlAuthentication.Sql, null).MigratorLogin;
 
         var interrupted = await Install(Session(answers), failAfterProgrammability: true);
 
         Assert.Equal(ExitCodes.SqlInstallError, interrupted.ExitCode);
         Assert.Equal("I-11", interrupted.FailedStep);
-        var state = InstanceStateStore.Read(InstanceStateStore.PathFor(dataRoot, "ITRES"))!;
+        var state = InstanceStateStore.Read(InstanceStateStore.PathFor(dataRoot, "ITINSR"))!;
         Assert.Equal(InstanceLifecycle.Installing, state.State);
         Assert.Equal(["I-05", "I-06", "I-07", "I-08", "I-09", "I-10"], state.CompletedSteps);
         Assert.Equal(1, await Scalar<int>("master", $"SELECT CAST(is_disabled AS int) FROM sys.server_principals WHERE name = N'{migrator}';"));
@@ -153,7 +153,7 @@ public sealed class InstallResumeIntegrationTests(SqlServerFixture sql) : IDispo
         Assert.Equal(ExitCodes.Success, completed.ExitCode);
         Assert.True(resumed.Resuming);
         Assert.Equal(state.InstallId, resumed.InstallId);
-        Assert.Equal(state.InstallId.ToString(), await Scalar<string>("ERP_IT_RESUME",
+        Assert.Equal(state.InstallId.ToString(), await Scalar<string>("ERP_IT_INSTRESUME",
             "SELECT CAST(value AS nvarchar(100)) FROM sys.extended_properties WHERE class = 0 AND name = N'ErpInstallId';"), ignoreCase: true);
         Assert.True(resumed.Administrator!.Created);
         Assert.NotNull(resumed.Administrator.TemporaryPassword);
@@ -165,12 +165,12 @@ public sealed class InstallResumeIntegrationTests(SqlServerFixture sql) : IDispo
         var again = Session(answers);
         Assert.Equal(ExitCodes.Success, (await Install(again)).ExitCode);
         Assert.False(again.Administrator!.Created);
-        Assert.Equal(1, await Scalar<int>("ERP_IT_RESUME", "SELECT COUNT(*) FROM ids.UserAccount;"));
-        Assert.Equal(2, await Scalar<int>("ERP_IT_RESUME", "SELECT COUNT(*) FROM core.[User];"));
-        Assert.Equal(4, await Scalar<int>("ERP_IT_RESUME", "SELECT COUNT(*) FROM core.Role WHERE IsSystem = 1;"));
-        Assert.Equal(1, await Scalar<int>("ERP_IT_RESUME", "SELECT COUNT(*) FROM core.InstallationLicense;"));
-        Assert.Equal(1, await Scalar<int>("ERP_IT_RESUME", "SELECT COUNT(*) FROM core.AuditEntry;"));
-        Assert.True(File.Exists(Path.Combine(dataRoot, "ITRES", "license", "erp.lic")));
+        Assert.Equal(1, await Scalar<int>("ERP_IT_INSTRESUME", "SELECT COUNT(*) FROM ids.UserAccount;"));
+        Assert.Equal(2, await Scalar<int>("ERP_IT_INSTRESUME", "SELECT COUNT(*) FROM core.[User];"));
+        Assert.Equal(4, await Scalar<int>("ERP_IT_INSTRESUME", "SELECT COUNT(*) FROM core.Role WHERE IsSystem = 1;"));
+        Assert.Equal(1, await Scalar<int>("ERP_IT_INSTRESUME", "SELECT COUNT(*) FROM core.InstallationLicense;"));
+        Assert.Equal(1, await Scalar<int>("ERP_IT_INSTRESUME", "SELECT COUNT(*) FROM core.AuditEntry;"));
+        Assert.True(File.Exists(Path.Combine(dataRoot, "ITINSR", "license", "erp.lic")));
     }
 
     private sealed class NullReporter : IStepReporter
