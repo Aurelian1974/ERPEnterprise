@@ -28,31 +28,41 @@ public static class TestPaths
 /// <summary>
 /// SQL Server 2022 real in container, cu collation-ul implicit al serverului SQL_Latin1_General_CP1_CI_AS (TST-09).
 /// Fiecare proiect de teste il foloseste printr-un fixture de colectie propriu (xUnit cere fixture-ul in assembly-ul testelor).
+/// Optional, pentru masinile fara Docker si numai pentru testele de modul (nu Erp.Setup.Tests, care creeaza login-uri si joburi):
+/// ERP_TEST_SQL_SERVER = un SQL Server existent, cu autentificare Windows; bazele de test (doar ERP_IT_*) se recreeaza la fiecare rulare.
 /// </summary>
 public class SqlServerTestServer
 {
     public const string Image = "mcr.microsoft.com/mssql/server:2022-latest";
+    public const string ExternalServerVariable = "ERP_TEST_SQL_SERVER";
 
-    private readonly MsSqlContainer container = new MsSqlBuilder(Image)
-        .WithEnvironment("MSSQL_AGENT_ENABLED", "true")
-        .Build();
+    private readonly string? externalServer = Environment.GetEnvironmentVariable(ExternalServerVariable) is { Length: > 0 } server ? server : null;
+    private MsSqlContainer? container;
 
     public string Server { get; private set; } = string.Empty;
 
-    public string SaPassword { get; private set; } = string.Empty;
+    public string? SaPassword { get; private set; }
 
     public async Task StartAsync()
     {
+        if (externalServer is not null)
+        {
+            Server = externalServer;
+            return;
+        }
+
+        container = new MsSqlBuilder(Image).WithEnvironment("MSSQL_AGENT_ENABLED", "true").Build();
         await container.StartAsync();
         var builder = new SqlConnectionStringBuilder(container.GetConnectionString());
         Server = builder.DataSource;
         SaPassword = builder.Password;
     }
 
-    public ValueTask StopAsync() => container.DisposeAsync();
+    public ValueTask StopAsync() => container?.DisposeAsync() ?? ValueTask.CompletedTask;
 
-    public SqlTarget Target(string database, string login = "sa") =>
-        new(Server, database, SqlAuthentication.Sql, login, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT");
+    public SqlTarget Target(string database, string login = "sa") => externalServer is not null
+        ? new(Server, database, SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT")
+        : new(Server, database, SqlAuthentication.Sql, login, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT");
 
     /// <summary>Sirul de conexiune ca sa la o baza anume.</summary>
     public string ConnectionString(string database)
@@ -76,6 +86,11 @@ public class SqlServerTestServer
     /// </summary>
     public async Task<string> CreateErpDatabaseAsync(string database, CancellationToken ct)
     {
+        if (externalServer is not null)
+        {
+            await DropTestDatabaseAsync(database);
+        }
+
         var sql = new SqlOperator(Target("master"), SaPassword, new LoggerConfiguration().CreateLogger());
         await new DatabaseCreator(sql).CreateAsync(new DatabaseCreateOptions(database, "IT", Guid.NewGuid(), null, null, 256, 256), ct);
         await new BootstrapRunner(sql).RunAsync(database, TestPaths.BootstrapDirectory(), ct);
@@ -87,5 +102,22 @@ public class SqlServerTestServer
         runner.RunProgrammability(connectionString, scripts);
         runner.RunSeed(connectionString, scripts);
         return connectionString;
+    }
+
+    /// <summary>Pe un server existent (ERP_TEST_SQL_SERVER) se sterg doar bazele de test ERP_IT_*.</summary>
+    public async Task DropTestDatabaseAsync(string database)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(database, "^ERP_IT_[A-Z0-9_]+$"))
+        {
+            throw new InvalidOperationException($"Se pot șterge doar bazele de test ERP_IT_*, nu {database}.");
+        }
+
+        await ExecuteAsync($"""
+            IF DB_ID(N'{database}') IS NOT NULL
+            BEGIN
+                ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                DROP DATABASE [{database}];
+            END;
+            """);
     }
 }

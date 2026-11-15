@@ -55,6 +55,9 @@ public interface ILicenseInfo
 
     DateOnly ValidUntil { get; }
 
+    /// <summary>Numele clientului din licenta (afisat pe paginile de autentificare); null fara licenta valida.</summary>
+    string? CustomerName { get; }
+
     LicenseState State { get; }
 }
 

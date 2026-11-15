@@ -612,6 +612,8 @@ Coduri API ale pipeline-ului, fără cod SQL (etapa 1, 15.11.2026): `CORE_UNAUTH
 
 Tabelele adăugate în etapa 1 (migrarea `2026.11.004`): `core.Permission` (`Code`, `ModuleCode`, `Description`; `CHECK` că codul începe cu modulul), `core.RolePermission`, `core.Outbox` (`EventId`, `EventType`, `EventVersion`, `CompanyId`, `CorrelationId`, `Payload` JSON, `OccurredAt`, `Status` 0 = în așteptare / 1 = procesat / 2 = eșuat, `Attempts`, `NextAttemptAt`, `ProcessedAt`, `LastError`), `core.InboxProcessed`, `core.IdempotencyKey` (`UserId`, `Key`, `RequestType`, `ResultJson`). Procedurile noi: `core.usp_User_GetPermissions`, `core.usp_Outbox_Enqueue`, `core.usp_AuditEntry_Insert`, `core.usp_IdempotencyKey_Claim`, `core.usp_IdempotencyKey_Complete`. Datele livrate `02_Permissions.sql` și `03_RolePermissions.sql` conțin catalogul din secțiunea 8 și permisiunile rolurilor de sistem; rolul NOMENCLATOARE primește în plus `Core.Partner.View` și `Core.Item.View`, fără de care nu ar vedea listele pe care le gestionează.
 
+Etapa 2 (migrarea `2026.11.005`): `core.LoginEvent` (`UserName` tastat, `UserId` dacă e cunoscut, `Success`, `FailureReason`, `IpAddress`, `UserAgent`), procedura `core.usp_LoginEvent_Insert` (actualizează `User.LastLoginAt`; la blocare pune `Erp.Auth.UtilizatorBlocat` în outbox) și view-ul `core.v_UserLoginStatus`, prin care `Erp.Auth` citește doar dacă utilizatorul poate intra (activ, în perioada de valabilitate).
+
 Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu trei abateri:
 
 - Abatere de la `SQL-13` pentru `core.Currency`, `core.Country`, `core.County`, `core.City`: cheia primară e codul standard (ISO 4217, ISO 3166, cod județ, SIRUTA), nu `int IDENTITY`. Motiv: liste standard, mici și stabile, referite peste tot prin cod. Permanentă.
@@ -778,6 +780,8 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 ![Activare 2FA](ecrane/09b-activare-2fa.png)
 
 ![Asistent de configurare · pasul Firme](ecrane/10-asistent-configurare.png)
+
+**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, 8.7). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4).
 
 ## 12. Criterii de acceptare și teste cheie
 

@@ -129,6 +129,8 @@ public sealed class FakeLicense : ILicenseInfo
 
     public DateOnly ValidUntil { get; set; } = new(2099, 12, 31);
 
+    public string? CustomerName { get; set; } = "Grupul Exemplu";
+
     public LicenseState State { get; set; } = LicenseState.Valid;
 
     public bool IsModuleActive(string moduleCode) => Modules.Contains(moduleCode);

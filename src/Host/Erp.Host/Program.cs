@@ -1,3 +1,4 @@
+using Erp.Auth;
 using Erp.Configuration;
 using Erp.Core.Api;
 using Erp.Core.Application;
@@ -5,9 +6,10 @@ using Erp.Core.Infrastructure;
 using Erp.Core.Infrastructure.Licensing;
 using Erp.Hosting;
 using Erp.Licensing;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.SqlClient;
 
-// Erp.Host (8.10, 8.14, 10.4, 10.5). Configurarea vine din ERP_INSTANCE_DIR (web.config); interfata React si Erp.Auth se adauga ulterior.
+// Erp.Host (8.7, 8.10, 8.14, 10.4, 10.5). Configurarea vine din ERP_INSTANCE_DIR (web.config); interfata React se adauga ulterior.
 // In mediul Development, fara ERP_INSTANCE_DIR, aceleasi chei (Erp:*, Database:*) vin din appsettings.Development.json / user-secrets.
 var builder = WebApplication.CreateBuilder(args);
 var development = builder.Environment.IsDevelopment();
@@ -43,6 +45,16 @@ builder.Services.AddErpMediator();
 builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(licensePath, development));
 builder.Services.AddErpApi();
 
+// Autentificarea (08, 8.7): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile TOTP)
+// stau in DataRoot\<Instanta>\keys, criptate DPAPI (8.10); in Development, in profilul utilizatorului.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName($"ERP-{builder.Configuration["Erp:Instance"]}");
+if (builder.Configuration["Erp:DataProtectionKeysPath"] is { Length: > 0 } keysPath && OperatingSystem.IsWindows())
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath)).ProtectKeysWithDpapi(protectToLocalMachine: true);
+}
+
+builder.Services.AddErpAuth(builder.Configuration);
+
 var app = builder.Build();
 
 // Mentenanta e primul middleware din pipeline (10.4).
@@ -50,7 +62,9 @@ app.UseMiddleware<MaintenanceMiddleware>();
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseMiddleware<SchemaGuardMiddleware>();
+app.UseAuthentication();
 app.UseErpApi();
+app.UseErpAccountGate();
 
 app.MapErpHealth(build, () =>
 [
@@ -60,10 +74,11 @@ app.MapErpHealth(build, () =>
     new WorkerCheck(Connect),
 ]);
 
-// Pagini provizorii pana la interfata React si Erp.Auth; health-check-ul installer-ului cere 200 HTML pe / si /account/login (8.14).
 app.MapCoreApi();
+app.MapErpAuth();
+
+// Pagina provizorie pana la interfata React; health-check-ul installer-ului cere 200 HTML pe / si /account/login (8.14).
 app.MapGet("/", () => Results.Content(PlaceholderPage.Render("ERP"), "text/html; charset=utf-8"));
-app.MapGet("/account/login", () => Results.Content(PlaceholderPage.Render("Autentificare"), "text/html; charset=utf-8"));
 
 app.Run();
 

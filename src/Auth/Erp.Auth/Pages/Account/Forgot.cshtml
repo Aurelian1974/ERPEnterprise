@@ -1,0 +1,8 @@
+@page "/account/forgot"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@{
+    ViewData["Title"] = T["Forgot.PageTitle"];
+}
+<h1>@T["Forgot.Title"]</h1>
+<p class="sub">@T["Forgot.Text"]</p>
+<a class="btn secondary" href="/account/login">@T["Common.BackToLogin"]</a>

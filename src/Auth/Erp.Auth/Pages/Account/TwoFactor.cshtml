@@ -1,0 +1,79 @@
+@page "/account/2fa"
+@model TwoFactorModel
+@{
+    ViewData["Title"] = T["Setup2fa.PageTitle"];
+}
+@section Left {
+    <div class="flow">
+        <div class="fs done"><span class="b">✓</span><div><h2>@T["Flow2fa.Step1.Title"]</h2><p>@T["Flow2fa.Step1.Text"]</p></div></div>
+        <div class="fs cur"><span class="b">2</span><div><h2>@T["Flow2fa.Step2.Title"]</h2><p>@T["Flow2fa.Step2.Text"]</p></div></div>
+        <div class="fs"><span class="b">↺</span><div><h2>@T["Flow2fa.Step3.Title"]</h2><p>@T["Flow2fa.Step3.Text"]</p></div></div>
+    </div>
+    <div class="lm"><p class="lm-title">@T["Left2fa.Title"]</p><p>@T["Left2fa.Text"]</p></div>
+}
+<h1>@T["Setup2fa.Title"]</h1>
+
+@if (Model.RecoveryCodes.Count > 0)
+{
+    <div class="alert info" role="status">@T["Setup2fa.Done"]</div>
+    <div class="stp">@T["Setup2fa.Step3"]</div>
+    <p class="small" style="margin-bottom:12px">@T["Setup2fa.CodesHelp"]</p>
+    <div class="bk" id="recovery-codes" data-header="@T["Setup2fa.CodesFileHeader", Model.AccountUserName]">
+        @foreach (var code in Model.RecoveryCodes)
+        {
+            <span>@code</span>
+        }
+    </div>
+    <div class="actions">
+        <button type="button" class="btn secondary" id="download-codes">@T["Setup2fa.Download"]</button>
+        <button type="button" class="btn secondary" onclick="window.print()">@T["Setup2fa.Print"]</button>
+    </div>
+    <a class="btn primary" href="@Model.ContinueUrl">@T["Setup2fa.Continue"]</a>
+}
+else if (Model.AlreadyEnabled)
+{
+    <p class="sub">@T["Setup2fa.AlreadyEnabled"]</p>
+    <a class="btn primary" href="@Model.ContinueUrl">@T["Setup2fa.Continue"]</a>
+}
+else
+{
+    <p class="sub" style="margin-bottom:6px">@(Model.Required ? T["Setup2fa.SubtitleRequired"] : T["Setup2fa.Subtitle"])</p>
+    @if (Model.Error is not null)
+    {
+        <div class="alert error" role="alert">@Model.Error</div>
+    }
+    <div class="stp">@T["Setup2fa.Step1"]</div>
+    <div class="qrrow">
+        <div class="qr" role="img" aria-label="@T["Setup2fa.Step1"]">@Html.Raw(Model.QrSvg)</div>
+        <div class="small">@T["Setup2fa.ScanHelp"]<div class="key">@Model.SharedKey</div></div>
+    </div>
+    <form method="post" novalidate>
+        <div class="stp"><label for="Code" style="margin:0">@T["Setup2fa.Step2"]</label></div>
+        <div class="field">
+            <div class="input"><input asp-for="Code" id="Code" value="" class="code-input" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required></div>
+        </div>
+        <div class="stp">@T["Setup2fa.Step3"]</div>
+        <p class="small">@T["Setup2fa.CodesLater"]</p>
+        <button type="submit" class="btn primary" style="margin-top:18px">@T["Setup2fa.Submit"]</button>
+    </form>
+    <form method="post" asp-page="/Account/Logout"><p class="help"><button type="submit" class="link-btn">@T["Common.SignOut"]</button></p></form>
+}
+
+@section Scripts {
+<script>
+    (function () {
+        var button = document.getElementById('download-codes');
+        if (!button) { return; }
+        button.addEventListener('click', function () {
+            var list = document.getElementById('recovery-codes');
+            var codes = Array.prototype.map.call(list.querySelectorAll('span'), function (s) { return s.textContent; });
+            var blob = new Blob([list.getAttribute('data-header') + '\r\n\r\n' + codes.join('\r\n') + '\r\n'], { type: 'text/plain;charset=utf-8' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'erp-coduri-rezerva.txt';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+    })();
+</script>
+}

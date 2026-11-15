@@ -1,0 +1,37 @@
+@page "/account/login"
+@model LoginModel
+@{
+    ViewData["Title"] = T["Login.PageTitle"];
+}
+<h1>@T["Login.Title"]</h1>
+<p class="sub">@T["Login.Subtitle"]</p>
+
+@if (Model.Error is not null)
+{
+    <div class="alert error" role="alert">@Model.Error</div>
+}
+else if (Model.Info is not null)
+{
+    <div class="alert info" role="status">@Model.Info</div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="ReturnUrl">
+    <div class="field">
+        <label for="UserName">@T["Field.UserName"]</label>
+        <div class="input"><input asp-for="UserName" id="UserName" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required></div>
+    </div>
+    <div class="field">
+        <label for="Password">@T["Field.Password"]</label>
+        <div class="input">
+            <input asp-for="Password" id="Password" type="password" value="" autocomplete="current-password" required>
+            <button type="button" class="eye" data-toggle-password="Password" data-show="@T["Common.Show"]" data-hide="@T["Common.Hide"]">@T["Common.Show"]</button>
+        </div>
+    </div>
+    <div class="between">
+        <label class="check"><input asp-for="RememberMe" type="checkbox">@T["Login.RememberMe"]</label>
+        <a href="/account/forgot">@T["Login.Forgot"]</a>
+    </div>
+    <button type="submit" class="btn primary">@T["Login.Submit"]</button>
+</form>
+<p class="help">@T["Login.Help"]</p>

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Erp.Hosting\Erp.Hosting.csproj" />
+    <ProjectReference Include="..\..\Auth\Erp.Auth\Erp.Auth.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Api\Erp.Core.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
   </ItemGroup>

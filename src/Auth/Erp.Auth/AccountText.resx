@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Brand" xml:space="preserve"><value>ERP</value></data>
+  <data name="Language" xml:space="preserve"><value>Română</value></data>
+  <data name="Footer.Version" xml:space="preserve"><value>© {0} ERP · versiunea {1}</value></data>
+  <data name="Common.Show" xml:space="preserve"><value>Arată</value></data>
+  <data name="Common.Hide" xml:space="preserve"><value>Ascunde</value></data>
+  <data name="Common.BackToLogin" xml:space="preserve"><value>Înapoi la autentificare</value></data>
+  <data name="Common.SignOut" xml:space="preserve"><value>Ieșire</value></data>
+  <data name="Field.UserName" xml:space="preserve"><value>Utilizator</value></data>
+  <data name="Field.Password" xml:space="preserve"><value>Parolă</value></data>
+  <data name="Field.CurrentPassword" xml:space="preserve"><value>Parola curentă</value></data>
+  <data name="Field.NewPassword" xml:space="preserve"><value>Parola nouă</value></data>
+  <data name="Field.ConfirmPassword" xml:space="preserve"><value>Confirmă parola</value></data>
+  <data name="Field.Code" xml:space="preserve"><value>Cod din aplicație</value></data>
+  <data name="Field.RecoveryCode" xml:space="preserve"><value>Cod de rezervă</value></data>
+  <data name="Left.Headline1" xml:space="preserve"><value>Toată activitatea firmei,</value></data>
+  <data name="Left.Headline2" xml:space="preserve"><value>într-un singur loc.</value></data>
+  <data name="Left.Text" xml:space="preserve"><value>Contabilitate, vânzări, stocuri, producție și salarizare, conectate între ele și conforme cu legislația din România.</value></data>
+  <data name="Left.Badge1" xml:space="preserve"><value>e-Factura și SAF-T</value></data>
+  <data name="Left.Badge2" xml:space="preserve"><value>Date în timp real</value></data>
+  <data name="Left.Badge3" xml:space="preserve"><value>Instalat la tine</value></data>
+  <data name="Login.PageTitle" xml:space="preserve"><value>Autentificare · ERP</value></data>
+  <data name="Login.Title" xml:space="preserve"><value>Autentificare</value></data>
+  <data name="Login.Subtitle" xml:space="preserve"><value>Introdu datele contului pentru a continua.</value></data>
+  <data name="Login.RememberMe" xml:space="preserve"><value>Ține-mă minte</value></data>
+  <data name="Login.Forgot" xml:space="preserve"><value>Am uitat parola</value></data>
+  <data name="Login.Submit" xml:space="preserve"><value>Autentificare</value></data>
+  <data name="Login.Help" xml:space="preserve"><value>Probleme la autentificare? Contactează administratorul sistemului.</value></data>
+  <data name="Login.Required" xml:space="preserve"><value>Completați utilizatorul și parola.</value></data>
+  <data name="Login.Invalid" xml:space="preserve"><value>Utilizatorul sau parola nu sunt corecte.</value></data>
+  <data name="Login.LockedOut" xml:space="preserve"><value>Contul este blocat temporar după prea multe încercări greșite. Reîncercați după {0} de minute sau contactați administratorul.</value></data>
+  <data name="Login.NotAllowed" xml:space="preserve"><value>Contul nu este activ. Contactați administratorul.</value></data>
+  <data name="Login.PasswordChanged" xml:space="preserve"><value>Parola a fost schimbată. Autentificați-vă cu parola nouă.</value></data>
+  <data name="Login.SignedOut" xml:space="preserve"><value>Ați ieșit din aplicație.</value></data>
+  <data name="TwoFactor.PageTitle" xml:space="preserve"><value>Verificare în doi pași · ERP</value></data>
+  <data name="TwoFactor.Title" xml:space="preserve"><value>Verificare în doi pași</value></data>
+  <data name="TwoFactor.Subtitle" xml:space="preserve"><value>Introdu codul de 6 cifre din aplicația de autentificare de pe telefon.</value></data>
+  <data name="TwoFactor.RecoverySubtitle" xml:space="preserve"><value>Introdu unul dintre codurile de rezervă. Fiecare cod se folosește o singură dată.</value></data>
+  <data name="TwoFactor.UseRecovery" xml:space="preserve"><value>Nu am telefonul la mine: folosesc un cod de rezervă</value></data>
+  <data name="TwoFactor.UseAuthenticator" xml:space="preserve"><value>Folosesc codul din aplicație</value></data>
+  <data name="TwoFactor.Submit" xml:space="preserve"><value>Verifică</value></data>
+  <data name="TwoFactor.Invalid" xml:space="preserve"><value>Codul nu este corect.</value></data>
+  <data name="Flow2fa.Step1.Title" xml:space="preserve"><value>Parolă</value></data>
+  <data name="Flow2fa.Step1.Text" xml:space="preserve"><value>primul pas, cel pe care îl ai deja</value></data>
+  <data name="Flow2fa.Step2.Title" xml:space="preserve"><value>Cod din aplicația de pe telefon</value></data>
+  <data name="Flow2fa.Step2.Text" xml:space="preserve"><value>Microsoft Authenticator, Google Authenticator sau orice aplicație TOTP. Codul se schimbă la 30 de secunde.</value></data>
+  <data name="Flow2fa.Step3.Title" xml:space="preserve"><value>Fără telefon?</value></data>
+  <data name="Flow2fa.Step3.Text" xml:space="preserve"><value>Folosești unul dintre cele 10 coduri de rezervă, o singură dată fiecare, sau ceri administratorului resetarea 2FA.</value></data>
+  <data name="Left2fa.Title" xml:space="preserve"><value>Autentificare în doi pași</value></data>
+  <data name="Left2fa.Text" xml:space="preserve"><value>Obligatorie pentru Administrator și pentru utilizatorii externi; pentru ceilalți o activează administratorul sau utilizatorul, din Profilul meu.</value></data>
+  <data name="Password.PageTitle" xml:space="preserve"><value>Parolă nouă · ERP</value></data>
+  <data name="Password.Title" xml:space="preserve"><value>Setează o parolă nouă</value></data>
+  <data name="Password.Subtitle" xml:space="preserve"><value>Alege o parolă pe care n-ai mai folosit-o aici.</value></data>
+  <data name="Password.SubtitleForced" xml:space="preserve"><value>Parola primită trebuie schimbată înainte de a intra în aplicație.</value></data>
+  <data name="Password.Submit" xml:space="preserve"><value>Salvează parola</value></data>
+  <data name="Password.Mismatch" xml:space="preserve"><value>Parolele nu coincid.</value></data>
+  <data name="Password.Required" xml:space="preserve"><value>Completați parola nouă și confirmarea.</value></data>
+  <data name="Password.Help" xml:space="preserve"><value>Conturile Windows (Active Directory) își schimbă parola din Windows.</value></data>
+  <data name="Rule.Length" xml:space="preserve"><value>cel puțin 12 caractere</value></data>
+  <data name="Rule.Case" xml:space="preserve"><value>o literă mare și una mică</value></data>
+  <data name="Rule.Digit" xml:space="preserve"><value>cel puțin o cifră</value></data>
+  <data name="Rule.UserName" xml:space="preserve"><value>nu conține numele de utilizator</value></data>
+  <data name="Rule.History" xml:space="preserve"><value>diferită de ultimele 5 parole</value></data>
+  <data name="Strength.Weak" xml:space="preserve"><value>Slabă</value></data>
+  <data name="Strength.Medium" xml:space="preserve"><value>Medie</value></data>
+  <data name="Strength.Strong" xml:space="preserve"><value>Puternică</value></data>
+  <data name="FlowPwd.Step1.Title" xml:space="preserve"><value>Te-ai autentificat cu parola primită</value></data>
+  <data name="FlowPwd.Step1.Text" xml:space="preserve"><value>Parola temporară, de la instalare sau de la administrator, se folosește o singură dată.</value></data>
+  <data name="FlowPwd.Step2.Title" xml:space="preserve"><value>Alegi parola nouă</value></data>
+  <data name="FlowPwd.Step2.Text" xml:space="preserve"><value>După salvare, toate sesiunile deschise se închid.</value></data>
+  <data name="FlowPwd.Step3.Title" xml:space="preserve"><value>Te autentifici din nou</value></data>
+  <data name="FlowPwd.Step3.Text" xml:space="preserve"><value>Cu parola nouă; dacă rolul tău o cere, activezi apoi autentificarea în doi pași.</value></data>
+  <data name="LeftPwd.Title" xml:space="preserve"><value>Parolă nouă</value></data>
+  <data name="LeftPwd.Text" xml:space="preserve"><value>Același ecran apare la prima autentificare și după ce administratorul îți resetează parola: în ambele cazuri parola trebuie schimbată înainte de a intra în aplicație.</value></data>
+  <data name="Setup2fa.PageTitle" xml:space="preserve"><value>Activare 2FA · ERP</value></data>
+  <data name="Setup2fa.Title" xml:space="preserve"><value>Activează 2FA</value></data>
+  <data name="Setup2fa.SubtitleRequired" xml:space="preserve"><value>Contul tău cere al doilea pas la autentificare.</value></data>
+  <data name="Setup2fa.Subtitle" xml:space="preserve"><value>Protejează contul cu un al doilea pas la autentificare.</value></data>
+  <data name="Setup2fa.Step1" xml:space="preserve"><value>1 · Scanează codul</value></data>
+  <data name="Setup2fa.ScanHelp" xml:space="preserve"><value>Deschide aplicația de autentificare și scanează codul. Nu poți scana? Introdu cheia manual:</value></data>
+  <data name="Setup2fa.Step2" xml:space="preserve"><value>2 · Introdu codul de 6 cifre</value></data>
+  <data name="Setup2fa.Step3" xml:space="preserve"><value>3 · Păstrează codurile de rezervă</value></data>
+  <data name="Setup2fa.CodesLater" xml:space="preserve"><value>Apar după verificarea codului, cu butoane Descarcă și Tipărește. Se afișează o singură dată.</value></data>
+  <data name="Setup2fa.Submit" xml:space="preserve"><value>Verifică și activează</value></data>
+  <data name="Setup2fa.Invalid" xml:space="preserve"><value>Codul nu este corect. Verifică ora telefonului și reîncearcă.</value></data>
+  <data name="Setup2fa.Done" xml:space="preserve"><value>Autentificarea în doi pași este activă.</value></data>
+  <data name="Setup2fa.CodesHelp" xml:space="preserve"><value>Păstrează codurile de rezervă într-un loc sigur. Fiecare cod se folosește o singură dată și nu se mai afișează.</value></data>
+  <data name="Setup2fa.Download" xml:space="preserve"><value>Descarcă</value></data>
+  <data name="Setup2fa.Print" xml:space="preserve"><value>Tipărește</value></data>
+  <data name="Setup2fa.Continue" xml:space="preserve"><value>Continuă în aplicație</value></data>
+  <data name="Setup2fa.AlreadyEnabled" xml:space="preserve"><value>Autentificarea în doi pași este deja activă pentru acest cont.</value></data>
+  <data name="Setup2fa.CodesFileHeader" xml:space="preserve"><value>Coduri de rezervă ERP pentru {0}. Fiecare cod se folosește o singură dată.</value></data>
+  <data name="Forgot.PageTitle" xml:space="preserve"><value>Am uitat parola · ERP</value></data>
+  <data name="Forgot.Title" xml:space="preserve"><value>Am uitat parola</value></data>
+  <data name="Forgot.Text" xml:space="preserve"><value>Recuperarea parolei prin email devine disponibilă după configurarea serverului de email (Configurare › Setări). Până atunci, cereți administratorului resetarea parolei.</value></data>
+  <data name="Api.PasswordChangeRequired" xml:space="preserve"><value>Schimbați parola înainte de a continua.</value></data>
+  <data name="Api.TwoFactorSetupRequired" xml:space="preserve"><value>Activați autentificarea în doi pași înainte de a continua.</value></data>
+  <data name="Api.AntiforgeryInvalid" xml:space="preserve"><value>Cererea nu a putut fi verificată; reîncărcați pagina și reîncercați.</value></data>
+  <data name="Error.PasswordTooShort" xml:space="preserve"><value>Parola trebuie să aibă cel puțin {0} caractere.</value></data>
+  <data name="Error.PasswordRequiresDigit" xml:space="preserve"><value>Parola trebuie să conțină cel puțin o cifră.</value></data>
+  <data name="Error.PasswordRequiresLower" xml:space="preserve"><value>Parola trebuie să conțină cel puțin o literă mică.</value></data>
+  <data name="Error.PasswordRequiresUpper" xml:space="preserve"><value>Parola trebuie să conțină cel puțin o literă mare.</value></data>
+  <data name="Error.PasswordRequiresNonAlphanumeric" xml:space="preserve"><value>Parola trebuie să conțină cel puțin un simbol.</value></data>
+  <data name="Error.PasswordRequiresUniqueChars" xml:space="preserve"><value>Parola trebuie să conțină cel puțin {0} caractere diferite.</value></data>
+  <data name="Error.PasswordMismatch" xml:space="preserve"><value>Parola curentă nu este corectă.</value></data>
+  <data name="Error.InvalidToken" xml:space="preserve"><value>Codul nu mai este valabil. Reluați operațiunea.</value></data>
+  <data name="Error.ConcurrencyFailure" xml:space="preserve"><value>Contul a fost modificat între timp; reîncercați.</value></data>
+  <data name="Error.DefaultError" xml:space="preserve"><value>Operațiunea nu a reușit. Reîncercați.</value></data>
+  <data name="Error.PasswordContainsUserName" xml:space="preserve"><value>Parola nu poate conține numele de utilizator.</value></data>
+  <data name="Error.PasswordReused" xml:space="preserve"><value>Parola trebuie să fie diferită de ultimele {0} parole.</value></data>
+</root>

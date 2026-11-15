@@ -1,0 +1,51 @@
+@page "/account/login-2fa"
+@model LoginWith2faModel
+@{
+    ViewData["Title"] = T["TwoFactor.PageTitle"];
+}
+@section Left {
+    <div class="flow">
+        <div class="fs done"><span class="b">✓</span><div><h2>@T["Flow2fa.Step1.Title"]</h2><p>@T["Flow2fa.Step1.Text"]</p></div></div>
+        <div class="fs @(Model.UseRecoveryCode ? "" : "cur")"><span class="b">2</span><div><h2>@T["Flow2fa.Step2.Title"]</h2><p>@T["Flow2fa.Step2.Text"]</p></div></div>
+        <div class="fs @(Model.UseRecoveryCode ? "cur" : "")"><span class="b">↺</span><div><h2>@T["Flow2fa.Step3.Title"]</h2><p>@T["Flow2fa.Step3.Text"]</p></div></div>
+    </div>
+    <div class="lm"><p class="lm-title">@T["Left2fa.Title"]</p><p>@T["Left2fa.Text"]</p></div>
+}
+<h1>@T["TwoFactor.Title"]</h1>
+<p class="sub">@(Model.UseRecoveryCode ? T["TwoFactor.RecoverySubtitle"] : T["TwoFactor.Subtitle"])</p>
+
+@if (Model.Error is not null)
+{
+    <div class="alert error" role="alert">@Model.Error</div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="ReturnUrl">
+    <input type="hidden" asp-for="RememberMe">
+    <input type="hidden" asp-for="UseRecoveryCode">
+    <div class="field">
+        <label for="Code">@(Model.UseRecoveryCode ? T["Field.RecoveryCode"] : T["Field.Code"])</label>
+        <div class="input">
+            @if (Model.UseRecoveryCode)
+            {
+                <input asp-for="Code" id="Code" value="" autocomplete="off" autocapitalize="characters" spellcheck="false" autofocus required>
+            }
+            else
+            {
+                <input asp-for="Code" id="Code" value="" class="code-input" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" autofocus required>
+            }
+        </div>
+    </div>
+    <button type="submit" class="btn primary">@T["TwoFactor.Submit"]</button>
+</form>
+<p class="help">
+    @if (Model.UseRecoveryCode)
+    {
+        <a asp-page="/Account/LoginWith2fa" asp-route-ReturnUrl="@Model.ReturnUrl" asp-route-RememberMe="@Model.RememberMe" asp-route-UseRecoveryCode="false">@T["TwoFactor.UseAuthenticator"]</a>
+    }
+    else
+    {
+        <a asp-page="/Account/LoginWith2fa" asp-route-ReturnUrl="@Model.ReturnUrl" asp-route-RememberMe="@Model.RememberMe" asp-route-UseRecoveryCode="true">@T["TwoFactor.UseRecovery"]</a>
+    }
+    <br><a href="/account/login">@T["Common.BackToLogin"]</a>
+</p>

@@ -1,0 +1,131 @@
+@using Erp.Core.Contracts
+@inject ILicenseInfo License
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>@ViewData["Title"]</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy-900: #0b1f3a; --navy-800: #102a4c; --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd;
+            --ink: #1a2433; --muted: #5b6676; --line: #d9dee6; --green: #1f9d63; --red: #d14343;
+        }
+        html, body { min-height: 100%; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #fff; }
+        .screen { display: flex; min-height: 100vh; }
+        .left { flex: 0 0 60%; position: relative; overflow: hidden; color: #fff; padding: 56px 64px; display: flex; flex-direction: column;
+            background: radial-gradient(1200px 700px at 20% 10%, #1d4a80 0%, var(--navy-800) 45%, var(--navy-900) 100%); }
+        .grid-bg { position: absolute; inset: 0; z-index: 0; background-size: 48px 48px;
+            background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; z-index: 2; }
+        .brand .mark { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 15px; }
+        .message { margin-top: auto; z-index: 2; max-width: 640px; }
+        .message .headline { font-size: 40px; margin-top: 0; color: #fff; line-height: 1.15; font-weight: 700; letter-spacing: -.5px; }
+        .message p { margin-top: 14px; font-size: 17px; line-height: 1.55; color: #c8d6ee; }
+        .badges { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 22px; font-size: 14px; color: #c8d6ee; }
+        .badges span::before { content: "✓"; color: #6fd3a3; font-weight: 700; margin-right: 7px; }
+        .flow { z-index: 2; margin-top: 90px; display: flex; flex-direction: column; gap: 14px; max-width: 520px; }
+        .fs { display: flex; gap: 16px; align-items: flex-start; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 16px 18px; }
+        .fs .b { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: rgba(255,255,255,.12); flex: none; }
+        .fs.done .b { background: var(--green); }
+        .fs.cur { background: rgba(255,255,255,.95); color: var(--ink); }
+        .fs.cur .b { background: var(--blue-500); color: #fff; }
+        .fs h2 { font-size: 15px; }
+        .fs p { font-size: 13px; color: #b8c6dd; margin-top: 3px; line-height: 1.45; }
+        .fs.cur p { color: var(--muted); }
+        .lm { margin-top: auto; z-index: 2; max-width: 600px; }
+        .lm .lm-title { font-size: 36px; margin-top: 0; color: #fff; line-height: 1.18; font-weight: 700; letter-spacing: -.5px; }
+        .lm p { margin-top: 14px; font-size: 16px; line-height: 1.55; color: #c8d6ee; }
+        .right { flex: 1 1 40%; display: flex; flex-direction: column; padding: 40px 64px; min-width: 0; }
+        .lang { align-self: flex-end; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+        .form-wrap { margin: auto 0; width: 100%; max-width: 460px; padding: 24px 0; }
+        .client-name { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+        .form-wrap h1 { font-size: 28px; font-weight: 700; letter-spacing: -.3px; }
+        .sub { font-size: 15px; color: var(--muted); margin-top: 6px; margin-bottom: 26px; line-height: 1.45; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+        .field { margin-bottom: 18px; }
+        .input { position: relative; }
+        .input input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 64px 0 14px; font: inherit; font-size: 15px; color: var(--ink); }
+        .input input:focus { outline: none; border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(47,111,237,.15); }
+        .input .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+        .between { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 4px 0 24px; gap: 12px; }
+        .check { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 14px; margin: 0; cursor: pointer; }
+        .check input { width: 18px; height: 18px; accent-color: var(--blue-500); }
+        a { color: var(--blue-600); text-decoration: none; font-weight: 600; }
+        a:hover, a:focus { text-decoration: underline; }
+        .btn { width: 100%; height: 48px; border-radius: 10px; display: grid; place-items: center; font: inherit; font-size: 15px; font-weight: 600; border: 0; cursor: pointer; }
+        .btn:focus-visible, .eye:focus-visible, .link-btn:focus-visible { outline: 3px solid rgba(47,111,237,.45); outline-offset: 2px; }
+        .primary { background: var(--blue-500); color: #fff; }
+        .primary:hover { background: var(--blue-600); }
+        .secondary { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+        .link-btn { background: none; border: 0; color: var(--blue-600); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+        .help { font-size: 13px; color: var(--muted); margin-top: 26px; text-align: center; line-height: 1.5; }
+        .alert { border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-bottom: 20px; line-height: 1.45; }
+        .alert.error { background: #fdecec; color: #8f2020; border: 1px solid #f5c2c2; }
+        .alert.info { background: var(--blue-50); color: var(--blue-600); border: 1px solid #cfdcfb; }
+        .alert ul { margin-left: 18px; }
+        .rules { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; margin: 2px 0 20px; list-style: none; }
+        .rules li::before { content: "○ "; color: var(--muted); }
+        .rules li.y { color: var(--green); } .rules li.y::before { content: "✓ "; color: var(--green); }
+        .rules li.n { color: var(--red); } .rules li.n::before { content: "✗ "; color: var(--red); }
+        .meter { display: flex; gap: 5px; margin-top: 8px; } .meter i { flex: 1; height: 5px; border-radius: 3px; background: #e6eaf0; } .meter i.on { background: var(--green); }
+        .mt { font-size: 12px; color: var(--green); margin-top: 5px; font-weight: 600; min-height: 15px; }
+        .stp { font-size: 12px; font-weight: 700; color: var(--blue-600); text-transform: uppercase; letter-spacing: .6px; margin: 18px 0 8px; }
+        .qrrow { display: flex; gap: 20px; align-items: flex-start; }
+        .qr { width: 150px; height: 150px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; flex: none; }
+        .qr svg { width: 100%; height: 100%; }
+        .key { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: #f3f5f8; border-radius: 8px; padding: 8px 10px; letter-spacing: 1px; margin-top: 6px; word-break: break-all; }
+        .code-input { letter-spacing: 6px; font-size: 20px !important; font-weight: 700; }
+        .bk { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; margin-bottom: 14px; }
+        .bk span { background: #f3f5f8; border-radius: 6px; padding: 8px 0; text-align: center; }
+        .actions { display: flex; gap: 10px; margin-bottom: 14px; }
+        .actions .btn { height: 42px; }
+        .small { font-size: 13px; color: var(--muted); line-height: 1.5; }
+        .footer { display: flex; justify-content: space-between; font-size: 12px; color: #8a94a3; gap: 12px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        @@media (max-width: 960px) { .left { display: none; } .right { padding: 28px 24px; } .form-wrap { margin: 24px auto; } }
+        @@media print { .left, .lang, .footer, .actions, form { display: none !important; } .bk span { border: 1px solid #999; } }
+    </style>
+</head>
+<body>
+<div class="screen">
+    <section class="left" aria-hidden="true">
+        <div class="grid-bg"></div>
+        <div class="brand"><div class="mark">E</div>@T["Brand"]</div>
+        @RenderSection("Left", required: false)
+        @if (!IsSectionDefined("Left"))
+        {
+            <div class="message">
+                <p class="headline">@T["Left.Headline1"]<br>@T["Left.Headline2"]</p>
+                <p>@T["Left.Text"]</p>
+                <div class="badges"><span>@T["Left.Badge1"]</span><span>@T["Left.Badge2"]</span><span>@T["Left.Badge3"]</span></div>
+            </div>
+        }
+    </section>
+    <main class="right">
+        <div class="lang">🌐 @T["Language"]</div>
+        <div class="form-wrap">
+            @if (!string.IsNullOrEmpty(License.CustomerName) || ViewData["UserName"] is string)
+            {
+                <div class="client-name">@License.CustomerName@(ViewData["UserName"] is string user ? (string.IsNullOrEmpty(License.CustomerName) ? user : " · " + user) : "")</div>
+            }
+            @RenderBody()
+        </div>
+        <div class="footer"><span>@T["Footer.Version", DateTime.UtcNow.Year, ProductInfo.Version]</span></div>
+    </main>
+</div>
+<script>
+    document.querySelectorAll('[data-toggle-password]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var input = document.getElementById(button.getAttribute('data-toggle-password'));
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            button.textContent = show ? button.getAttribute('data-hide') : button.getAttribute('data-show');
+        });
+    });
+</script>
+@RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -44,6 +44,7 @@ public sealed class LicenseInfo : ILicenseInfo
             modules = new HashSet<string>(payload.Modules, StringComparer.Ordinal);
             limits = payload.Limits;
             ValidUntil = payload.ValidUntil;
+            CustomerName = payload.CustomerName;
             log.LogInformation("Licența {LicenseId}: module {Modules}, valabilă până la {ValidUntil}", payload.LicenseId, payload.Modules, payload.ValidUntil);
             return;
         }
@@ -62,6 +63,8 @@ public sealed class LicenseInfo : ILicenseInfo
     }
 
     public DateOnly ValidUntil { get; }
+
+    public string? CustomerName { get; }
 
     public LicenseState State => development ? LicenseState.Valid
         : ValidUntil == DateOnly.MinValue ? LicenseState.ReadOnly
