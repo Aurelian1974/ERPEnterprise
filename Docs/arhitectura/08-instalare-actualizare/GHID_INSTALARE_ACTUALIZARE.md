@@ -134,7 +134,7 @@ Lista completă este verificarea C-01…C-23 (specificația 7); comanda `check` 
 
 1. **Copiați și verificați kitul.** Dezarhivați `ERP-<Versiune>-kit.zip` într-un folder local (de exemplu `C:\Kit\ERP-2027.1.0-kit\`), după verificarea amprentei (secțiunea 4).
 2. **Pregătiți fișierul de răspunsuri.** Copiați `templates\answers.example.json` **în afara kitului** (de exemplu `C:\Kit\answers-PROD.json`) și completați-l. Obligatorii: `site.hostName`, `site.certificateThumbprint` (sau `allowSelfSignedCertificate`), `sql.server`, `backup.backupRoot`, `license.filePath`; restul au valori implicite (specificația 6.2). Fișierul **nu conține parole**.
-3. **Deschideți PowerShell ca administrator** (clic dreapta pe PowerShell → „Executare ca administrator”) și treceți în folderul kitului: `cd C:\Kit\ERP-2027.1.0-kit`. `ErpSetup.exe` este o aplicație de consolă și primește comanda pe linia de comandă; nu se pornește cu dublu-clic. Pornit așa, afișează doar ajutorul și așteaptă Enter pentru a închide fereastra.
+3. **Deschideți PowerShell ca administrator** (clic dreapta pe PowerShell → „Executare ca administrator”) și treceți în folderul kitului: `cd C:\Kit\ERP-2027.1.0-kit`. `ErpSetup.exe` este o aplicație de consolă și primește comanda pe linia de comandă; nu se pornește cu dublu-clic. Pornit așa, afișează doar ajutorul și așteaptă Enter pentru a închide fereastra. În PowerShell, comanda se scrie cu `.\` în față (`.\ErpSetup.exe ...`); fără el, PowerShell răspunde „The term 'ErpSetup.exe' is not recognized”.
 4. **Verificați cerințele** (nu modifică nimic):
 
    ```powershell
