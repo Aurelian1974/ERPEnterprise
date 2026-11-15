@@ -16,6 +16,9 @@
     <Project Path="src/Shared/Erp.Licensing/Erp.Licensing.csproj" />
     <Project Path="src/Shared/Erp.Security.Passwords/Erp.Security.Passwords.csproj" />
   </Folder>
+  <Folder Name="/src/Tools/">
+    <Project Path="src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj" />
+  </Folder>
   <Folder Name="/src/Worker/">
     <Project Path="src/Worker/Erp.Worker/Erp.Worker.csproj" />
   </Folder>

@@ -189,6 +189,16 @@ public sealed class HostingTests : IDisposable
         Assert.Equal(result, SchemaVersionGuard.Evaluate(expected, actual));
     }
 
+    [Theory]
+    [InlineData(null, "core/2026.11.003_X.sql", SchemaCompatibility.Compatible)]
+    [InlineData(null, null, SchemaCompatibility.Incompatible)]
+    [InlineData("core/2026.11.003_X.sql", "core/2026.11.002_X.sql", SchemaCompatibility.Incompatible)]
+    public void Development_build_without_embedded_migration_accepts_a_migrated_database_only(
+        string? expected, string? actual, SchemaCompatibility result)
+    {
+        Assert.Equal(result, SchemaVersionGuard.Evaluate(expected, actual, allowUnversionedBuild: true));
+    }
+
     [Fact]
     [Trait("Criteriu", "08-IA-18")]
     public async Task Worker_processing_runs_only_with_a_compatible_database_and_without_maintenance()

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Erp.Host": {
+      "commandName": "Project",
+      "applicationUrl": "https://localhost:7180",
+      "launchBrowser": false,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

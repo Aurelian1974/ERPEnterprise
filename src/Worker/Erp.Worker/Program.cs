@@ -4,10 +4,19 @@ using Hangfire.SqlServer;
 using Microsoft.Data.SqlClient;
 
 // Erp.Worker (8.12): serviciu Windows, procesarea Hangfire pornita doar cu baza compatibila si fara mentenanta (10.4, 10.5).
+// In mediul Development, fara --instance-dir, configurarea vine din appsettings.Development.json / user-secrets.
 var builder = Host.CreateApplicationBuilder(args);
-var instanceDirectory = builder.Configuration["instance-dir"]
-    ?? throw new InvalidOperationException("Argumentul --instance-dir lipsește (8.12).");
-builder.Configuration.AddErpInstallation(instanceDirectory);
+var development = builder.Environment.IsDevelopment();
+var instanceDirectory = builder.Configuration["instance-dir"];
+if (instanceDirectory is not null)
+{
+    builder.Configuration.AddErpInstallation(instanceDirectory);
+}
+else if (!development)
+{
+    throw new InvalidOperationException("Argumentul --instance-dir lipsește (8.12).");
+}
+
 var instance = builder.Configuration["Erp:Instance"] ?? throw new InvalidOperationException("Erp:Instance lipsește din configurare.");
 
 builder.Services.AddWindowsService(options => options.ServiceName = $"ErpWorker-{instance}");
@@ -18,7 +27,8 @@ var connectionString = InstallationConfiguration.ConnectionString(builder.Config
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(build);
 builder.Services.AddSingleton<ISchemaVersionSource>(new SchemaVersionReader(() => new SqlConnection(connectionString)));
-builder.Services.AddSingleton<SchemaVersionGuard>();
+builder.Services.AddSingleton(sp => new SchemaVersionGuard(sp.GetRequiredService<ISchemaVersionSource>(), build,
+    sp.GetRequiredService<ILogger<SchemaVersionGuard>>(), TimeProvider.System, allowUnversionedBuild: development));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SchemaVersionGuard>());
 builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:MaintenanceFlagPath"], TimeProvider.System));
 

@@ -35,7 +35,11 @@ public sealed class SchemaVersionReader(Func<SqlConnection> connectionFactory) :
 /// Protectia binare ↔ baza (10.5): la pornire, Erp.Host si Erp.Worker compara ultima migrare din baza cu cea incorporata.
 /// Daca difera, partea de business nu porneste si se jurnalizeaza eroarea critica. Daca baza nu raspunde, se reincearca la 30 s.
 /// </summary>
-public sealed class SchemaVersionGuard(ISchemaVersionSource reader, ErpBuildInfo build, ILogger<SchemaVersionGuard> log, TimeProvider time)
+/// <param name="allowUnversionedBuild">
+/// Doar in mediul Development: un build local, fara ErpLastMigration incorporata (kiturile o au mereu), accepta orice baza migrata.
+/// </param>
+public sealed class SchemaVersionGuard(
+    ISchemaVersionSource reader, ErpBuildInfo build, ILogger<SchemaVersionGuard> log, TimeProvider time, bool allowUnversionedBuild = false)
     : BackgroundService
 {
     public static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(30);
@@ -52,11 +56,15 @@ public sealed class SchemaVersionGuard(ISchemaVersionSource reader, ErpBuildInfo
     public async Task<SchemaCompatibility> CheckAsync(CancellationToken ct)
     {
         var actual = await reader.ReadAsync(ct).ConfigureAwait(false);
-        State = Evaluate(build.LastMigration, actual);
+        State = Evaluate(build.LastMigration, actual, allowUnversionedBuild);
         if (State == SchemaCompatibility.Incompatible)
         {
             log.LogCritical("Versiunea bazei de date nu corespunde aplicației: baza are {Actual}, aplicația așteaptă {Expected}. Partea de business nu pornește.",
                 actual ?? "(nicio migrare)", build.LastMigration ?? "(nedefinit)");
+        }
+        else if (string.IsNullOrEmpty(build.LastMigration))
+        {
+            log.LogWarning("Build de dezvoltare fără ultima migrare încorporată: baza ({LastMigration}) se acceptă fără comparare.", actual);
         }
         else
         {
@@ -67,10 +75,15 @@ public sealed class SchemaVersionGuard(ISchemaVersionSource reader, ErpBuildInfo
         return State;
     }
 
-    public static SchemaCompatibility Evaluate(string? expected, string? actual) =>
-        !string.IsNullOrEmpty(expected) && string.Equals(expected, actual, StringComparison.Ordinal)
-            ? SchemaCompatibility.Compatible
-            : SchemaCompatibility.Incompatible;
+    public static SchemaCompatibility Evaluate(string? expected, string? actual, bool allowUnversionedBuild = false)
+    {
+        if (string.IsNullOrEmpty(expected))
+        {
+            return allowUnversionedBuild && !string.IsNullOrEmpty(actual) ? SchemaCompatibility.Compatible : SchemaCompatibility.Incompatible;
+        }
+
+        return string.Equals(expected, actual, StringComparison.Ordinal) ? SchemaCompatibility.Compatible : SchemaCompatibility.Incompatible;
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

@@ -245,6 +245,7 @@ src/
 build/
 ├── package-kit.ps1                     compilează, publică, copiază scripturile, generează și semnează manifestul
 ├── KitBuilder.psm1                     verificările scripturilor, ordinea migrațiilor, manifestul (folosit de package-kit.ps1)
+├── dev-database.ps1                    doar dezvoltare: baza locală fără installer, cu src/Tools/Erp.DevDatabase
 ├── tests/                              teste Pester pentru KitBuilder.psm1
 └── kit-signing/README.md               unde stă cheia de semnare (nu în Git)
 ```
@@ -1358,6 +1359,7 @@ La build se încorporează în fiecare componentă (`AssemblyMetadata("ErpLastMi
 - `maintenance.html` este `templates/maintenance.html` din kit, încorporat în `Erp.Hosting`.
 - Până la interfața React și `Erp.Auth`, `GET /` și `GET /account/login` întorc pagini HTML provizorii, ca health-check-ul installer-ului (8.14, pasul 4) să poată fi verificat cap-coadă.
 - Health-check-ul installer-ului (`InstallerHealthCheck`, I-23 și U-14) se conectează la `127.0.0.1` cu SNI și `Host` = `hostName`; un certificat autosemnat permis se acceptă doar după amprentă. Este testat contra unui server HTTPS real pe loopback.
+- **Dezvoltare fără installer (15.11.2026):** în mediul `Development`, fără `ERP_INSTANCE_DIR` / `--instance-dir`, `Erp.Host` și `Erp.Worker` citesc aceleași chei (`Erp:*`, `Database:*`) din `appsettings.Development.json` și user-secrets (`UserSecretsId = erp-development`). Fișierul nu se publică, deci nu ajunge în kit. Un build local nu are `ErpLastMigration`; numai în `Development`, protecția de versiune și verificarea `schema` acceptă atunci orice bază cu cel puțin o migrare și jurnalizează un avertisment. În afara mediului `Development` comportamentul de mai sus rămâne neschimbat. Baza locală se creează cu `build/dev-database.ps1` ([ghidul](GHID_INSTALARE_ACTUALIZARE.md), secțiunea 11).
 
 ### 10.6 Procedura manuală după cod 71
 

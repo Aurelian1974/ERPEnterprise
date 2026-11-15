@@ -238,3 +238,32 @@ Lista completă: specificația 6.4.
 - Nu se creează și nu se modifică manual baza, loginurile, joburile sau site-ul IIS; pentru refacere se folosește `repair`.
 - Nu se lasă `sysadmin` operatorului după terminarea comenzii.
 - Nu se șterge `C:\ProgramData\Erp\<Instanță>\` (starea instalării, configurarea criptată, cheile, licența).
+
+---
+
+## 11. Dezvoltare locală, fără installer
+
+Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul nu e necesar. Configurarea de dezvoltare nu se publică și nu ajunge în kit.
+
+1. **Baza**, pe serverul SQL de dezvoltare (implicit `Valeria`, baza `ERP_DEV`, cu contul Windows curent, care trebuie să fie `sysadmin` pe acea instanță):
+
+   ```powershell
+   ./build/dev-database.ps1 -CreateAdmin            # prima dată; afișează o singură dată parola temporară a lui administrator
+   ./build/dev-database.ps1                         # după migrații noi: aplică doar ce lipsește
+   ./build/dev-database.ps1 -Server <server> -Database <bază>
+   ```
+
+   Rulează aceiași pași SQL ca installer-ul: baza case sensitive (`Latin1_General_100_CS_AS_SC_UTF8`), bootstrap, migrații DbUp, obiecte programabile, date livrate și, cu `-CreateAdmin`, administratorul inițial. **Nu** creează loginurile `_app` și `_mig`, joburile SQL Agent sau licența.
+
+2. **Aplicația:** `dotnet run --project src/Host/Erp.Host` (`https://localhost:7180`) și `dotnet run --project src/Worker/Erp.Worker`. În mediul `Development` (din `Properties/launchSettings.json`) citesc `appsettings.Development.json`: serverul `Valeria`, baza `ERP_DEV`, autentificare Windows. Pentru alt server sau altă bază, fără să modificați fișierul din Git:
+
+   ```powershell
+   dotnet user-secrets set "Database:Server" "<server>" --project src/Host/Erp.Host
+   dotnet user-secrets set "Database:Name" "<bază>" --project src/Host/Erp.Host
+   ```
+
+   Host și Worker folosesc același `UserSecretsId`, deci setarea se aplică amândurora. Dacă browserul nu acceptă certificatul local: `dotnet dev-certs https --trust`.
+
+3. **Ce e normal în dezvoltare:** `/health/ready` raportează `license: Unhealthy` cât timp nu există o cheie publică de licență în `src/Shared/Erp.Licensing/Keys/` și `Erp:LicensePath` nu indică un fișier `.lic` valid. Protecția de versiune acceptă orice bază migrată, cu un avertisment în jurnal (specificația 10.5).
+
+Bazele `ERP_DEV` nu se folosesc pentru teste de instalare: o instalare reală se face cu `ErpSetup.exe`, pe Windows Server.

@@ -62,7 +62,8 @@ public sealed class DatabaseCheck(Func<SqlConnection> connectionFactory) : IRead
 }
 
 /// <summary>schema: ultima migrare din core.SchemaVersion = lastMigration incorporat (10.5). Citita la fiecare cerere.</summary>
-public sealed class SchemaCheck(ISchemaVersionSource reader, ErpBuildInfo build) : IReadinessCheck
+/// <param name="allowUnversionedBuild">Aceeasi regula ca SchemaVersionGuard, doar in mediul Development.</param>
+public sealed class SchemaCheck(ISchemaVersionSource reader, ErpBuildInfo build, bool allowUnversionedBuild = false) : IReadinessCheck
 {
     public string Name => "schema";
 
@@ -80,7 +81,7 @@ public sealed class SchemaCheck(ISchemaVersionSource reader, ErpBuildInfo build)
             return HealthStatus.Unhealthy;
         }
 
-        return SchemaVersionGuard.Evaluate(build.LastMigration, LastActual) == SchemaCompatibility.Compatible
+        return SchemaVersionGuard.Evaluate(build.LastMigration, LastActual, allowUnversionedBuild) == SchemaCompatibility.Compatible
             ? HealthStatus.Healthy
             : HealthStatus.Unhealthy;
     }
