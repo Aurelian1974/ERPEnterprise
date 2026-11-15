@@ -1,6 +1,6 @@
 # ERP · 08 Instalare și actualizare (installer)
 
-14 noiembrie 2026 · Aurelian · **Validat (14.11.2026)** · Documente legate: [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md)
+14 noiembrie 2026 · Aurelian · **Validat (14.11.2026)** · Documente legate: [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md), [ghidul operațional de instalare și actualizare](GHID_INSTALARE_ACTUALIZARE.md)
 
 Acest document descrie complet installer-ul ERP-ului: ce instalează, în ce ordine, cu ce comenzi SQL și Windows, cum actualizează o instalare existentă și cum revine automat la versiunea anterioară când ceva nu merge. E scris ca specificație de implementare: un agent de cod (GitHub Copilot, Claude Code) trebuie să poată construi installer-ul doar din acest document, fără alt context. Unde un document existent conține deja o regulă, regula e rezumată aici și referită prin identificator.
 
@@ -385,7 +385,7 @@ Fișierul nu conține **niciodată** parole. Parolele se cer interactiv (cu ecou
 | `ERP_SQL_OPERATOR_PASSWORD` | `operatorAuthentication = Sql` |
 | `ERP_ADMIN_INITIAL_PASSWORD` | Opțional; dacă lipsește, parola se generează (secțiunea 8.8) |
 
-Installer-ul citește variabila, o folosește și nu o scrie nicăieri. Recomandarea din `CITESTE-MA.txt`: variabila se setează doar în sesiunea curentă (`$env:ERP_SQL_OPERATOR_PASSWORD = Read-Host -AsSecureString ...`), nu la nivel de sistem.
+Installer-ul citește variabila, o folosește și nu o scrie nicăieri. Recomandarea din `CITESTE-MA.txt`: variabila se setează doar în sesiunea curentă (`$env:ERP_SQL_OPERATOR_PASSWORD = [Net.NetworkCredential]::new('', (Read-Host -AsSecureString 'Parola')).Password`, valabil și în Windows PowerShell 5.1; un `SecureString` atribuit direct ar scrie textul „System.Security.SecureString”), nu la nivel de sistem.
 
 ### 6.4 Coduri de ieșire
 

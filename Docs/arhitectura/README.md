@@ -44,6 +44,7 @@ arhitectura/
 ├── 07-stack-tehnologic/
 ├── 08-instalare-actualizare/          ✓ validat · specificația installer-ului
 │   ├── INSTALARE_ACTUALIZARE.md
+│   ├── GHID_INSTALARE_ACTUALIZARE.md  ghid operațional (propus, de revizuit)
 │   └── flux-actualizare.png
 └── 09-roadmap/
 ```
@@ -61,4 +62,5 @@ arhitectura/
 | 06 | Securitate și permisiuni | De făcut | — | — |
 | 07 | Stack tehnologic | De făcut | — | — |
 | 08 | Instalare și actualizare (installer) | Validat (14.11.2026) | [INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/INSTALARE_ACTUALIZARE.md) | — |
+| 08 | Ghid operațional: construirea și livrarea kitului, instalarea, actualizarea | Propus (15.11.2026), de revizuit de Aurelian; canalul de livrare nedecis | [GHID_INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md) | — |
 | 09 | Roadmap pe faze | De făcut | — | — |
