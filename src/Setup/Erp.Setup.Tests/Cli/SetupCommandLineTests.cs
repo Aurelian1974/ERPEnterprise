@@ -101,4 +101,16 @@ public sealed class SetupCommandLineTests
         Assert.Equal(ExitCodes.InvalidCommandLine, exitCode);
         Assert.Contains("Specificați o comandă.", error.ToString());
     }
+
+    [Theory]
+    [InlineData(true, false, new string[0], true)]
+    [InlineData(true, false, new[] { "check", "--answers", "a.json" }, true)]
+    [InlineData(true, false, new[] { "install", "--answers", "a.json", "--unattended" }, false)]
+    [InlineData(true, true, new[] { "check", "--answers", "a.json" }, false)]
+    [InlineData(false, false, new string[0], false)]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    public void Own_console_window_waits_for_enter_except_unattended_or_redirected(bool ownWindow, bool redirected, string[] args, bool expected)
+    {
+        Assert.Equal(expected, ConsoleWindow.ShouldPause(ownWindow, redirected, args));
+    }
 }
