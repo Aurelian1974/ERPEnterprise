@@ -288,6 +288,8 @@ app.MapPost("/api/sales/invoices/{id:int}/validate",
 | `UI-08` | O | Ecranele urmează același tipar (P10): listă cu filtre → fișă cu tab-uri → istoric. Documentele validate se deschid doar în citire; acțiunile disponibile depind de stare. |
 | `UI-09` | R | Utilizabil complet din tastatură pe ecranele de introducere masivă (facturi, recepții, note contabile): Enter/Tab între câmpuri, scurtături pentru salvare și linie nouă. Contrast și etichete conforme WCAG 2.1 AA. |
 | `UI-10` | R | Grilele mari folosesc paginare pe server sau virtualizare; nicio listă nu încarcă toate înregistrările în browser. |
+| `UI-11` | O | Fiecare salvare, în orice ecran, dă feedback vizibil: notificare de succes după reușită (componenta comună `Notifier`, Toast Syncfusion, anunțată și prin `role="status"`); la eșec, notificare de eroare plus erorile pe câmp (`UI-04`). Nicio salvare nu se termină „în tăcere” (decizia lui Aurelian, 15.11.2026). |
+| `UI-12` | O | Fără flicker la reîncărcarea datelor (interzis, decizia lui Aurelian, 15.11.2026): după o salvare sau o reîncărcare, ecranul nu se golește, nu trece prin „Se încarcă…” și nu redesenează componentele ale căror date nu s-au schimbat. Componentele Syncfusion primesc proprietăți stabile (date memorate, șabloane și handler-e create o singură dată); selecția, nodurile strânse și poziția rămân după reîncărcare. |
 
 ## 6. Teste
 
