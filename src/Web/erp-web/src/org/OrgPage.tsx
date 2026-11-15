@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
-import { TreeViewComponent, type NodeSelectEventArgs } from '@syncfusion/ej2-react-navigations';
 import { TextBoxComponent } from '@syncfusion/ej2-react-inputs';
 import type { CurrentUser } from '../api/session';
 import { t } from '../i18n';
@@ -8,8 +7,7 @@ import { BankAccountsTab, CompanySeriesTab } from './CompanyTabs';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
 import { useCompany, useOrgLookups, useOrgTree, type OrgLookups, type Saved } from './orgApi';
 import { buildTree, countNodes, nodeId, type NodeKind, type OrgTree, type TreeNode } from './orgTree';
-
-const kindLetter: Record<NodeKind, string> = { group: 'G', company: 'F', branch: 'P', location: 'L' };
+import { OrgTreeView, type OrgTreeHandle } from './OrgTreeView';
 
 /** Selectia din URL (?nod=c-5 sau ?nou=company, ?nou=branch&firma=5), ca ecranul sa poata fi deschis dintr-un link. */
 function useSelection() {
@@ -33,13 +31,23 @@ export function OrgPage() {
   const [search, setSearch] = useState('');
   const [onlyCompanies, setOnlyCompanies] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const treeRef = useRef<TreeViewComponent | null>(null);
+  const treeHandle = useRef<OrgTreeHandle | null>(null);
+  // Nodurile stranse de utilizator raman stranse si dupa reincarcarea datelor (de exemplu dupa o salvare).
+  const [collapsed] = useState(() => new Set<string>());
   const canManage = user.permissions.includes('Core.Company.Manage');
 
-  const nodes = useMemo(
+  const built = useMemo(
     () => (tree.data === undefined ? [] : buildTree(tree.data, { search, onlyCompanies, showInactive }, (type) => t(`locationType.${type as 1}`))),
     [tree.data, search, onlyCompanies, showInactive],
   );
+  // Aceeasi referinta cat timp arborele afisat e identic: o salvare care nu schimba arborele nu-l redeseneaza.
+  const key = JSON.stringify(built);
+  const searching = search.trim().length > 0;
+  const nodes = useMemo(
+    () => (JSON.parse(key) as TreeNode[]).map((n) => ({ ...n, expanded: searching ? n.expanded : !collapsed.has(n.id) })),
+    [key, searching, collapsed],
+  );
+  const onSelect = selection.select;
 
   if (tree.data === undefined || lookups.data === undefined) {
     return <div className="page" role="status">{tree.isError || lookups.isError ? t('app.loadError') : t('app.loading')}</div>;
@@ -85,32 +93,14 @@ export function OrgPage() {
             <button type="button" className={showInactive ? 'chip on' : 'chip'} aria-pressed={showInactive} onClick={() => setShowInactive(!showInactive)}>
               {t('org.showInactive')}
             </button>
-            <button type="button" className="chip" onClick={() => treeRef.current?.expandAll()}>
+            <button type="button" className="chip" onClick={() => treeHandle.current?.expandAll()}>
               {t('org.expandAll')}
             </button>
           </div>
           {nodes.length === 0 ? (
             <p className="muted">{t('org.empty')}</p>
           ) : (
-            <TreeViewComponent
-              ref={treeRef}
-              fields={{ dataSource: nodes as unknown as { [key: string]: object }[], id: 'id', parentID: 'parentId', text: 'name', hasChildren: 'hasChildren', expanded: 'expanded' }}
-              selectedNodes={selection.node === undefined ? [] : [selection.node]}
-              nodeSelected={(args: NodeSelectEventArgs) => {
-                const id = (args.nodeData as { id?: unknown }).id;
-                if (typeof id === 'string' && id !== selection.node) {
-                  selection.select(id);
-                }
-              }}
-              nodeTemplate={(data: TreeNode) => (
-                <span className={data.isActive ? 'tree-node' : 'tree-node inactive'}>
-                  <span className={`kind kind-${data.kind}`} aria-hidden="true">{kindLetter[data.kind]}</span>
-                  <span className="tree-name">{data.name}</span>
-                  {data.isGroupParent && <span className="tag">{t('org.parentBadge')}</span>}
-                  <span className="tree-detail">{data.detail}</span>
-                </span>
-              )}
-            />
+            <OrgTreeView nodes={nodes} selectedId={selection.node} onSelect={onSelect} collapsed={collapsed} handle={treeHandle} />
           )}
           <div className="legend" aria-hidden="true">
             {(['group', 'company', 'branch', 'location'] as const).map((kind) => (

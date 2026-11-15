@@ -65,6 +65,7 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await page.getByRole('button', { name: 'Salvează' }).click();
   await expect(page).toHaveURL(/nod=c-\d+/);
   await expect(page.getByRole('heading', { level: 2, name: new RegExp(`Firma E2E ${suffix} SRL`) })).toBeVisible();
+  await expect(page.locator('.e-treeview li.e-list-item.e-active > .e-text-content .tree-name')).toHaveText(`Firma E2E ${suffix} SRL`);
   await expect(page.locator('#f-shareCapital')).toHaveValue('200,00');
 
   // Cont bancar implicit

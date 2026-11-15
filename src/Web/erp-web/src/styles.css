@@ -748,3 +748,20 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Nodul selectat din arbore (macheta 03): fundal albastru deschis, contur, denumirea in albastru. */
+.tree-card .e-treeview .e-list-item.e-active > .e-fullrow,
+.tree-card .e-treeview .e-list-item.e-active.e-hover > .e-fullrow {
+  background-color: var(--blue-50);
+  border: 1px solid #c9d8fb;
+  border-radius: 8px;
+}
+
+.tree-card .e-treeview .e-list-item.e-active > .e-text-content .tree-name {
+  color: var(--blue-600);
+}
+
+.tree-card .e-treeview .e-list-item.e-hover:not(.e-active) > .e-fullrow {
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
