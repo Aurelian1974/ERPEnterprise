@@ -1,4 +1,5 @@
 using Erp.Auth;
+using Erp.Auth.Identity;
 using Erp.Configuration;
 using Erp.Core.Api;
 using Erp.Core.Application;
@@ -77,18 +78,46 @@ app.MapErpHealth(build, () =>
 app.MapCoreApi();
 app.MapErpAuth();
 
-// Pagina provizorie pana la interfata React; health-check-ul installer-ului cere 200 HTML pe / si /account/login (8.14).
-app.MapGet("/", () => Results.Content(PlaceholderPage.Render("ERP"), "text/html; charset=utf-8"));
+// Pagina provizorie pana la interfata React. Health-check-ul installer-ului cere 200 HTML pe / si /account/login, fara
+// redirectari (8.14), deci / raspunde 200 si trimite browserul fara sesiune la /account/login, ca viitoarea aplicatie React.
+app.MapGet("/", (HttpContext http, Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery) =>
+    Results.Content(http.User.Identity?.IsAuthenticated == true
+        ? PlaceholderPage.Home(http.User.FindFirst(ErpClaims.DisplayName)?.Value ?? http.User.Identity.Name ?? string.Empty,
+            antiforgery.GetAndStoreTokens(http).RequestToken!)
+        : PlaceholderPage.RedirectToLogin(), "text/html; charset=utf-8"));
 
 app.Run();
 
 internal static class PlaceholderPage
 {
-    public static string Render(string title) => $"""
+    public static string RedirectToLogin() => """
         <!DOCTYPE html>
         <html lang="ro">
-        <head><meta charset="utf-8"><title>{title} · ERP</title></head>
-        <body><main><h1>{title}</h1><p>Aplicația ERP rulează. Interfața va fi disponibilă într-o versiune următoare.</p></main></body>
+        <head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/account/login"><title>ERP</title></head>
+        <body><main><h1>ERP</h1><p><a href="/account/login">Autentificare</a></p></main></body>
         </html>
         """;
+
+    public static string Home(string displayName, string antiforgeryToken)
+    {
+        var name = System.Net.WebUtility.HtmlEncode(displayName);
+        var token = System.Net.WebUtility.HtmlEncode(antiforgeryToken);
+        return $$"""
+            <!DOCTYPE html>
+            <html lang="ro">
+            <head><meta charset="utf-8"><title>ERP</title>
+            <style>body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#f4f6f9;color:#1f2937}main{max-width:640px;margin:10vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px}a,button{font:inherit}nav{display:flex;gap:16px;align-items:center;margin-top:24px}button{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px 16px;cursor:pointer}</style>
+            </head>
+            <body><main>
+            <h1>Bun venit, {{name}}</h1>
+            <p>Sunteți autentificat. Interfața aplicației ERP va fi disponibilă într-o versiune următoare.</p>
+            <nav>
+            <a href="/account/password">Schimbă parola</a>
+            <a href="/account/2fa">Autentificare în doi pași</a>
+            <form method="post" action="/account/logout"><input type="hidden" name="__RequestVerificationToken" value="{{token}}"><button type="submit">Ieșire</button></form>
+            </nav>
+            </main></body>
+            </html>
+            """;
+    }
 }

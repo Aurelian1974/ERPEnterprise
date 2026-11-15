@@ -262,7 +262,9 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
    dotnet user-secrets set "Database:Name" "<bază>" --project src/Host/Erp.Host
    ```
 
-   Host și Worker folosesc același `UserSecretsId`, deci setarea se aplică amândurora. Dacă browserul nu acceptă certificatul local: `dotnet dev-certs https --trust`.
+   Host și Worker folosesc același `UserSecretsId`, deci setarea se aplică amândurora. Dacă browserul nu acceptă certificatul local: `dotnet dev-certs https --trust` (o singură dată pe mașină; confirmați fereastra Windows).
+
+   Deschideți `https://localhost:7180/`: fără sesiune, pagina trimite browserul la `/account/login`. La prima autentificare a administratorului se cer parola nouă și apoi activarea 2FA (aplicație TOTP, de exemplu Microsoft Authenticator); după aceea `/` arată pagina provizorie de start (numele, schimbarea parolei, 2FA, „Ieșire”), până la interfața React.
 
 3. **Ce e normal în dezvoltare:** `/health/ready` raportează `license: Unhealthy` cât timp nu există o cheie publică de licență în `src/Shared/Erp.Licensing/Keys/` și `Erp:LicensePath` nu indică un fișier `.lic` valid. Protecția de versiune acceptă orice bază migrată, cu un avertisment în jurnal (specificația 10.5).
 
