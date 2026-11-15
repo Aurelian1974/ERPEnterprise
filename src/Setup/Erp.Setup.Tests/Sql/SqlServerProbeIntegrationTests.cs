@@ -48,9 +48,17 @@ public sealed class SqlServerFixture : IAsyncLifetime
     }
 }
 
+/// <summary>Un singur container SQL pentru toate clasele de integrare.</summary>
+[CollectionDefinition(Name)]
+public sealed class SqlServerCollection : ICollectionFixture<SqlServerFixture>
+{
+    public const string Name = "SqlServer";
+}
+
+[Collection(SqlServerCollection.Name)]
 [Trait("Category", "Integration")]
 [Trait("Criteriu", "08-IA-20")]
-public sealed class SqlServerProbeIntegrationTests(SqlServerFixture sql) : IClassFixture<SqlServerFixture>
+public sealed class SqlServerProbeIntegrationTests(SqlServerFixture sql)
 {
     private const string CaseSensitive = RequirementsChecker.RequiredCollation;
 

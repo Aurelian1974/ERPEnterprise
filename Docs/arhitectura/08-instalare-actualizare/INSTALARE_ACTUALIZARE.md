@@ -684,6 +684,13 @@ GRANT SELECT ON dbo.backupset TO [erp_prod_app];
 
 Varianta `appAuthentication = Windows`: în loc de `erp_prod_app` se creează `CREATE LOGIN [CONTOSO\svc-erp$] FROM WINDOWS WITH DEFAULT_DATABASE = [ERP_PROD];`, utilizatorul `erp_app` se leagă de acest login, iar `secrets.app.bin` nu mai conține parolă SQL.
 
+**Detalii de implementare (T6, 15.11.2026):**
+
+- Loginurile se termină cu `ALTER LOGIN ... ENABLE`: o instanță reinstalată după `uninstall` (care dezactivează loginul aplicației) redevine funcțională. Utilizatorii existenți se releagă de login (`ALTER USER ... WITH LOGIN`), de exemplu după restaurarea bazei pe alt server.
+- Textul comenzilor SQL nu se jurnalizează niciodată, doar descrierea și durata („Creare login erp_prod_app: OK (12 ms)”).
+- Loginul de migrare e folosit numai prin `LoginManager.RunAsMigratorAsync`, care îl activează cu o parolă nouă și îl dezactivează în `finally`. Dacă dezactivarea eșuează după un eșec al lucrului, se raportează eroarea inițială, iar jurnalul primește eroarea dezactivării și comanda manuală.
+- I-06 (8.2) e idempotent: o bază cu `ErpInstallId` egal cu cel al instalării se reia (setările se reaplică), o bază goală cu collation-ul corect și fără `ErpInstallId` se preia (C-15 avertisment), iar orice altă bază existentă e refuzată (31 sau 32), fără modificări. Căile implicite vin din `SERVERPROPERTY('InstanceDefaultDataPath' / 'InstanceDefaultLogPath')`; fișierele `.mdf`/`.ldf` existente se detectează cu `sys.dm_os_file_exists`.
+
 ### 8.5 Migrații și obiecte programabile cu DbUp (I-09, I-10)
 
 **Sursa scripturilor.** Scripturile sunt fișiere în kit (`database/migrations/<modul>/`, `database/programmability/<modul>/`, `database/seed/<modul>/`), verificate prin manifest (4.3). Build-ul (`package-kit.ps1`) le copiază din folderele `Database/` din secțiunea 5 (modulele, `Erp.Auth`, `Erp.Worker`), după maparea modul → schemă de acolo; `database/bootstrap/` vine din `src/Setup/Erp.Setup.Sql/Database/Bootstrap/`. Fișierele sunt UTF-8 fără BOM; textele românești din scripturi sunt literali `N'...'`. Loturile se despart cu `GO` pe rând separat.

@@ -286,21 +286,10 @@ public sealed class AnswersValidatorTests
     [Fact]
     public void Example_answers_file_from_the_kit_is_valid()
     {
-        var path = Path.Combine(RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "answers.example.json");
+        var path = Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "answers.example.json");
 
         var result = AnswersValidator.Parse(File.ReadAllText(path), _ => true);
 
         Assert.True(result.IsValid, string.Join("; ", result.Errors));
-    }
-
-    private static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Erp.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("Rădăcina depozitului nu a fost găsită.");
     }
 }
