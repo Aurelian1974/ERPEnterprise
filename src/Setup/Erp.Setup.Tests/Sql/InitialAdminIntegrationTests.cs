@@ -24,10 +24,13 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
     private static InitialAdminRequest Request(string? password = null, string userName = "administrator") =>
         new(userName, "Administrator ERP", "it@grupulexemplu.ro", password, "2027.1.0", "SRV-ERP01");
 
+    // Acelasi installId la fiecare rulare din test: a doua rulare reia aceeasi instalare (8.1).
+    private readonly Guid installId = Guid.NewGuid();
+
     private async Task Deploy(string database, string instance, bool seed = true)
     {
         var op = Operator();
-        await new DatabaseCreator(op).CreateAsync(new DatabaseCreateOptions(database, "IT", Guid.NewGuid(), null, null, 256, 256), Ct);
+        await new DatabaseCreator(op).CreateAsync(new DatabaseCreateOptions(database, "IT", installId, null, null, 256, 256), Ct);
         await new BootstrapRunner(op).RunAsync(database, Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup.Sql", "Database", "Bootstrap"), Ct);
         using var kit = TempKitDatabase.FromRepository();
         var scripts = KitScripts.Load(kit.Root);
@@ -117,7 +120,7 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
         Assert.Equal(password, result.TemporaryPassword);
         Assert.DoesNotContain(password, result.ToString());
         Assert.DoesNotContain(password, logSink.Text);
-        Assert.Contains("administratorul administrator a fost creat", logSink.Text);
+        Assert.Contains("administratorul \"administrator\" a fost creat", logSink.Text);
         Assert.Equal(0, await Scalar<int>("ERP_IT_ADMINLOG", $"SELECT COUNT(*) FROM core.AuditEntry WHERE Changes LIKE N'%{password}%';"));
         Assert.Equal(0, await Scalar<int>("ERP_IT_ADMINLOG", $"SELECT COUNT(*) FROM ids.UserAccount WHERE PasswordHash LIKE N'%{password}%';"));
     }
