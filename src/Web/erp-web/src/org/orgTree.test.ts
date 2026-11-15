@@ -22,19 +22,20 @@ const tree: OrgTree = {
 
 const typeName = (type: number) => (type === 2 ? 'depozit' : 'șantier');
 const ids = (filter: Partial<Parameters<typeof buildTree>[1]>) =>
-  buildTree(tree, { search: '', onlyCompanies: false, showInactive: false, ...filter }, typeName).map((n) => n.id);
+  buildTree(tree, { search: '', onlyCompanies: false, showInactive: false, ...filter }, typeName).map((n) => n.id).sort();
 
 describe('arborele structurii', () => {
   it('leagă nodurile de părinți, marchează firma-mamă și ascunde implicit nodurile inactive', () => {
     const nodes = buildTree(tree, { search: '', onlyCompanies: false, showInactive: false }, typeName);
 
+    // Ordinea din macheta 03: firma-mama, firmele, punctele de lucru, locatiile, apoi subgrupurile.
     expect(nodes.map((n) => [n.id, n.parentId])).toEqual([
-      ['g-1', undefined],
-      ['g-2', 'g-1'],
       ['c-10', 'g-1'],
       ['c-11', 'g-2'],
       ['b-20', 'c-10'],
       ['l-30', 'b-20'],
+      ['g-1', undefined],
+      ['g-2', 'g-1'],
     ]);
     expect(nodes.find((n) => n.id === 'c-10')?.isGroupParent).toBe(true);
     expect(nodes.find((n) => n.id === 'c-10')?.detail).toBe('RO10000001');
@@ -43,12 +44,12 @@ describe('arborele structurii', () => {
 
   it('arată inactivele la cerere și doar firmele cu filtrul „Doar firme”', () => {
     expect(ids({ showInactive: true })).toContain('l-31');
-    expect(ids({ onlyCompanies: true })).toEqual(['g-1', 'g-2', 'c-10', 'c-11']);
+    expect(ids({ onlyCompanies: true })).toEqual(['c-10', 'c-11', 'g-1', 'g-2']);
   });
 
   it('caută fără diacritice și păstrează strămoșii rezultatului', () => {
-    expect(ids({ search: 'brasov' })).toEqual(['g-1', 'c-10', 'b-20', 'l-30']);
-    expect(ids({ search: '34567890' })).toEqual(['g-1', 'g-2', 'c-11']);
+    expect(ids({ search: 'brasov' })).toEqual(['b-20', 'c-10', 'g-1', 'l-30']);
+    expect(ids({ search: '34567890' })).toEqual(['c-11', 'g-1', 'g-2']);
   });
 
   it('un nod al cărui părinte nu e vizibil devine rădăcină', () => {

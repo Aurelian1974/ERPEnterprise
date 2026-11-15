@@ -15,7 +15,7 @@ Console.OutputEncoding = Encoding.UTF8;
 var options = DevOptions.Parse(args);
 if (options is null)
 {
-    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --scripts <folder database> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier> [--e2e-role STANDARD|ADMIN]]");
+    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --scripts <folder database> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier> [--e2e-role STANDARD|ADMIN]] [--sample-data <script>]");
     return 3;
 }
 
@@ -65,6 +65,19 @@ try
         // Parola temporara ajunge doar in fisierul cerut de testele E2E (Playwright), nu in jurnal.
         await File.WriteAllTextAsync(options.PasswordFile!, password, ct);
         log.Information("Utilizatorul E2E {User} are o parolă temporară nouă (schimbare obligatorie).", e2eUser);
+    }
+
+    if (options.SampleData is { } sampleData)
+    {
+        await using var database = new SqlConnection(connection.ConnectionString);
+        await database.OpenAsync(ct);
+        await using var command = new SqlCommand(await File.ReadAllTextAsync(sampleData, ct), database) { CommandTimeout = 120 };
+        await using var counts = await command.ExecuteReaderAsync(ct);
+        if (await counts.ReadAsync(ct))
+        {
+            log.Information("Date demonstrative: {Groups} grupuri, {Companies} firme, {Branches} puncte de lucru, {Locations} locații, {Accounts} conturi bancare, {Series} serii",
+                counts.GetInt32(0), counts.GetInt32(1), counts.GetInt32(2), counts.GetInt32(3), counts.GetInt32(4), counts.GetInt32(5));
+        }
     }
 
     log.Information("Baza de dezvoltare {Database} pe {Server} este gata.", options.Database, options.Server);
@@ -133,7 +146,7 @@ static async Task ResetE2EUserAsync(SqlConnection database, string userName, str
 }
 
 internal sealed record DevOptions(string Server, string Database, string Scripts, string Instance, bool CreateAdmin, string? E2EUser, string? PasswordFile,
-    string E2ERole)
+    string E2ERole, string? SampleData)
 {
     public static DevOptions? Parse(string[] args)
     {
@@ -157,6 +170,6 @@ internal sealed record DevOptions(string Server, string Database, string Scripts
 
         return server is null || database is null || scripts is null
             ? null
-            : new DevOptions(server, database, scripts, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile, e2eRole);
+            : new DevOptions(server, database, scripts, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile, e2eRole, Value("--sample-data"));
     }
 }

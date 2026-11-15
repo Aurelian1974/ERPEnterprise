@@ -11,6 +11,9 @@
 
 .EXAMPLE
     ./build/dev-database.ps1 -Server Valeria -Database ERP_DEV -CreateAdmin
+
+.EXAMPLE
+    ./build/dev-database.ps1 -SampleData     # sterge firmele si incarca Grupul Exemplu (macheta 03)
 #>
 [CmdletBinding()]
 param(
@@ -20,7 +23,9 @@ param(
     [switch]$CreateAdmin,
     [ValidatePattern('^e2e\.[a-z0-9.]+$')][string]$E2EUser,
     [string]$PasswordFile,
-    [ValidateSet('STANDARD', 'ADMIN')][string]$E2ERole = 'STANDARD'
+    [ValidateSet('STANDARD', 'ADMIN')][string]$E2ERole = 'STANDARD',
+    # Sterge structura organizatorica si incarca datele demonstrative din build/dev-sample-data.sql (macheta 03).
+    [switch]$SampleData
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,6 +38,7 @@ try {
     Copy-KitDatabaseScripts -RepoRoot $repoRoot -KitRoot $staging
     $arguments = @('--server', $Server, '--database', $Database, '--instance', $Instance, '--scripts', (Join-Path $staging 'database'))
     if ($CreateAdmin) { $arguments += '--create-admin' }
+    if ($SampleData) { $arguments += @('--sample-data', (Join-Path $PSScriptRoot 'dev-sample-data.sql')) }
     if ($E2EUser) {
         if (-not $PasswordFile) { throw 'Pentru -E2EUser este obligatoriu -PasswordFile.' }
         $arguments += @('--e2e-user', $E2EUser, '--password-file', $PasswordFile, '--e2e-role', $E2ERole)

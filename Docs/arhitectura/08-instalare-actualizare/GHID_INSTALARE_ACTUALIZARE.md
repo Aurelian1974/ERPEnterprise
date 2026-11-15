@@ -255,6 +255,8 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
 
    Rulează aceiași pași SQL ca installer-ul: baza case sensitive (`Latin1_General_100_CS_AS_SC_UTF8`), bootstrap, migrații DbUp, obiecte programabile, date livrate și, cu `-CreateAdmin`, administratorul inițial. **Nu** creează loginurile `_app` și `_mig`, joburile SQL Agent sau licența.
 
+   `./build/dev-database.ps1 -SampleData` șterge toată structura organizatorică din `ERP_DEV` (firme, grupuri, puncte de lucru, locații, conturi bancare, serii, rolurile pe firme și intrările lor de audit) și încarcă Grupul Exemplu din macheta 03: 2 grupuri, 4 firme, 5 puncte de lucru, 12 locații, conturi bancare și seriile 2026 (scriptul `build/dev-sample-data.sql`, prin procedurile aplicației; refuză orice bază care nu se numește `ERP_DEV*`). Util și după testele E2E, care adaugă date.
+
 2. **Aplicația:** `dotnet run --project src/Host/Erp.Host` (`https://localhost:7180`) și `dotnet run --project src/Worker/Erp.Worker`. În mediul `Development` (din `Properties/launchSettings.json`) citesc `appsettings.Development.json`: serverul `Valeria`, baza `ERP_DEV`, autentificare Windows. Pentru alt server sau altă bază, fără să modificați fișierul din Git:
 
    ```powershell

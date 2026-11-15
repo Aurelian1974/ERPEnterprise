@@ -82,8 +82,12 @@ export function buildTree(tree: OrgTree, filter: TreeFilter, locationTypeName: (
       n.parentId = undefined;
     }
   }
-  return visible;
+  // Ordinea din macheta 03: firma-mama, apoi firmele, punctele de lucru, locatiile si la final subgrupurile; alfabetic in rest.
+  return visible.sort((a, b) => sortKey(a) - sortKey(b) || a.name.localeCompare(b.name, 'ro'));
 }
+
+const kindRank: Record<NodeKind, number> = { company: 1, branch: 2, location: 3, group: 4 };
+const sortKey = (n: TreeNode) => (n.isGroupParent ? 0 : kindRank[n.kind]);
 
 function node(kind: NodeKind, id: number, parentId: string | undefined, companyId: number | undefined, code: string, name: string, detail: string, isActive: boolean): TreeNode {
   return { id: nodeId(kind, id), parentId, kind, entityId: id, companyId, code, name, detail, isActive, isGroupParent: false, hasChildren: false, expanded: true };
