@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Teste de arhitectura (TST-04): granitele modulelor, Application fara SQL, permisiuni declarate. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="NetArchTest.eNhancedEdition" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Toate assembly-urile modulelor si gazdele care le compun; modulele noi se adauga aici. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Host\Erp.Host\Erp.Host.csproj" />
+    <ProjectReference Include="..\..\Modules\Core\Erp.Core.Api\Erp.Core.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

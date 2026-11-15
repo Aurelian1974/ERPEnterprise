@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cazurile de utilizare si pipeline-ul comun (02.01, 4.1). Fara SQL si Dapper (NET-06). -->
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Core.Contracts\Erp.Core.Contracts.csproj" />
+    <ProjectReference Include="..\Erp.Core.Domain\Erp.Core.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Core.Tests" />
+  </ItemGroup>
+
+</Project>

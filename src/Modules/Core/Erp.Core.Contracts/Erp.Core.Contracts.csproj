@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contractele publice ale Nucleului (02.01, 6): singurul proiect al Nucleului pe care il vad celelalte module (P1). -->
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+  </ItemGroup>
+
+</Project>

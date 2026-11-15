@@ -3,6 +3,15 @@
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Erp.Host/Erp.Host.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Core/">
+    <Project Path="src/Modules/Core/Erp.Core.Api/Erp.Core.Api.csproj" />
+    <Project Path="src/Modules/Core/Erp.Core.Application/Erp.Core.Application.csproj" />
+    <Project Path="src/Modules/Core/Erp.Core.Contracts/Erp.Core.Contracts.csproj" />
+    <Project Path="src/Modules/Core/Erp.Core.Domain/Erp.Core.Domain.csproj" />
+    <Project Path="src/Modules/Core/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
+    <Project Path="src/Modules/Core/Erp.Core.Tests/Erp.Core.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Setup/">
     <Project Path="src/Setup/Erp.Setup.Core/Erp.Setup.Core.csproj" />
     <Project Path="src/Setup/Erp.Setup.Sql/Erp.Setup.Sql.csproj" />
@@ -15,6 +24,10 @@
     <Project Path="src/Shared/Erp.Hosting/Erp.Hosting.csproj" />
     <Project Path="src/Shared/Erp.Licensing/Erp.Licensing.csproj" />
     <Project Path="src/Shared/Erp.Security.Passwords/Erp.Security.Passwords.csproj" />
+  </Folder>
+  <Folder Name="/src/Tests/">
+    <Project Path="src/Tests/Erp.Architecture.Tests/Erp.Architecture.Tests.csproj" />
+    <Project Path="src/Tests/Erp.Testing.Sql/Erp.Testing.Sql.csproj" />
   </Folder>
   <Folder Name="/src/Tools/">
     <Project Path="src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj" />

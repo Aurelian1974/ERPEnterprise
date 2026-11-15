@@ -27,6 +27,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Runtime | .NET 10 (LTS), ASP.NET Core Hosting Bundle 10.x; SDK fixat în `global.json` (10.0.401) | 08, secțiunea 1; `global.json` | Validat |
 | Stil | Monolit modular, un host `Erp.Host`; module în același proces, comunicare prin `.Contracts` și evenimente | 01 (P1); `AGENTS.md` | Validat |
 | Aplicație | MediatR (pipeline validare → autorizare → tranzacție → audit); FluentValidation pentru validarea de formă | 01 (stack fix); `NET-11` | Validat |
+| Versiunea MediatR | **12.5.0**, ultima versiune cu licență Apache 2.0. Versiunile 13 și următoare au licență comercială Lucky Penny Software (gratuită doar sub 5 mil. USD venit anual, cu înregistrare) | Verificat pe nuget.org și mediatr.io, 15.11.2026 | **De confirmat** de Aurelian: rămânem pe 12.5.0 sau cumpărăm licența |
 | Mapare | Mapster, doar unde maparea e mecanică | `NET-20` | Recomandat |
 | Acces date | Dapper + proceduri stocate, **fără ORM** | 01 (stack fix) | Validat |
 | Migrații | DbUp, scripturi SQL versionate, rulate de installer | 08, secțiunea 8.5 | Validat |
@@ -46,7 +47,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Integrări România | Adaptoare ANAF (e-Factura, e-Transport, SPV), BNR, REVISAL, în modulul `Integrations` | Schița | Aprobat în schiță |
 | POS | Client local cu SQLite și driver pentru casa de marcat; interfața: React în Electron sau WPF | Schița; 08, secțiunea 13 | **De decis** în 02.10 (vezi secțiunea 5) |
 | Installer | Aplicație consolă .NET self-contained (`ErpSetup.exe`), fără MSI | 08, decizia D2 | Validat |
-| Teste .NET | xUnit v3 pe Microsoft.Testing.Platform; Testcontainers cu SQL Server real; NetArchTest | `TST-02`–`TST-04`; `global.json` | Validat |
+| Teste .NET | xUnit v3 pe Microsoft.Testing.Platform; Testcontainers cu SQL Server real; NetArchTest (fork-ul întreținut `NetArchTest.eNhancedEdition`, același API; originalul nu mai e actualizat din 2021) | `TST-02`–`TST-04`; `global.json` | Validat |
 | Teste end-to-end | Playwright, doar pentru fluxurile critice ale fiecărui modul | `TST-08` | Recomandat |
 | Teste de componente UI | — | — | **De decis** |
 | Construire și CI | GitHub Actions; kit construit cu `build/package-kit.ps1`; teste Pester pentru scripturile de build | 08, secțiunile 4 și 5 | Validat |
@@ -86,4 +87,5 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Tabele mari în UI | Syncfusion DataGrid (din ST4), în locul AG Grid sau TanStack Table din schiță | De confirmat de Aurelian |
 | Teste de componente UI | — | Nicio sursă nu le numește |
 | Interfața POS | React în Electron sau WPF | Schița lasă ambele variante. ST1 se referă la interfața aplicației ERP; dacă se aplică și la POS, rămâne varianta React în Electron. Se decide în 02.10 |
+| Licența MediatR | 12.5.0 (Apache 2.0) sau 13+ cu licență comercială | Secțiunea 2 |
 | Node.js 27 (aprilie 2027) | Ultima stabilă sau ultima LTS | ST3, secțiunea 1 |

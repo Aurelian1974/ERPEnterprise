@@ -27,9 +27,18 @@
     <!-- Hangfire.Core cere Newtonsoft.Json >= 11.0.1, versiune cu vulnerabilitate cunoscuta (GHSA-5crp-9r3c-p9vr); se fixeaza una corectata. -->
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
+  <ItemGroup Label="Module (Nucleu 4.1, 07 Stack tehnologic)">
+    <!-- MediatR 12.5.0 = ultima versiune Apache-2.0; 13+ are licenta comerciala Lucky Penny (07, decizie de confirmat). -->
+    <PackageVersion Include="MediatR" Version="12.5.0" />
+    <PackageVersion Include="FluentValidation" Version="12.2.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
+  </ItemGroup>
   <ItemGroup Label="Teste">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.16.0" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
+    <!-- NetArchTest.Rules nu mai e intretinut din 2021; fork-ul intretinut, acelasi API (TST-04). -->
+    <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
   </ItemGroup>
 </Project>

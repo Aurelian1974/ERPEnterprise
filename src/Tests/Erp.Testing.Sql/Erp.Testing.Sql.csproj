@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Suport comun pentru testele de integrare SQL (TST-03, TST-09): SQL Server real in container, baza ERP creata cu
+       aceiasi pasi ca installer-ul, din scripturile depozitului asezate ca in kit. Nu contine teste. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Setup\Erp.Setup.Sql\Erp.Setup.Sql.csproj" />
+  </ItemGroup>
+
+</Project>

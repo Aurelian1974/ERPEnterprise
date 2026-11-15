@@ -3,20 +3,6 @@ using Serilog.Events;
 
 namespace Erp.Setup.Tests;
 
-internal static class TestPaths
-{
-    public static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Erp.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("Rădăcina depozitului nu a fost găsită.");
-    }
-}
-
 /// <summary>Colecteaza jurnalul ca text complet (mesaje, proprietati, exceptii) pentru verificari de tip „fara secrete”.</summary>
 internal sealed class CapturingSink : ILogEventSink
 {

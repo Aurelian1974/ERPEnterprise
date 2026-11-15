@@ -11,41 +11,12 @@ using Testcontainers.MsSql;
 
 namespace Erp.Setup.Tests.Sql;
 
-/// <summary>SQL Server 2022 real in container, cu collation-ul implicit al serverului SQL_Latin1_General_CP1_CI_AS (TST-09).</summary>
-public sealed class SqlServerFixture : IAsyncLifetime
+/// <summary>Containerul SQL comun (Erp.Testing.Sql), ca fixture de colectie al acestui assembly.</summary>
+public sealed class SqlServerFixture : SqlServerTestServer, IAsyncLifetime
 {
-    public const string Image = "mcr.microsoft.com/mssql/server:2022-latest";
+    public ValueTask InitializeAsync() => new(StartAsync());
 
-    private readonly MsSqlContainer container = new MsSqlBuilder(Image)
-        .WithEnvironment("MSSQL_AGENT_ENABLED", "true")
-        .Build();
-
-    public string Server { get; private set; } = string.Empty;
-
-    public string SaPassword { get; private set; } = string.Empty;
-
-    public async ValueTask InitializeAsync()
-    {
-        await container.StartAsync();
-        var builder = new SqlConnectionStringBuilder(container.GetConnectionString());
-        Server = builder.DataSource;
-        SaPassword = builder.Password;
-    }
-
-    public ValueTask DisposeAsync() => container.DisposeAsync();
-
-    public SqlTarget Target(string database, string login = "sa") =>
-        new(Server, database, SqlAuthentication.Sql, login, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT");
-
-    public async Task ExecuteAsync(string sql, string database = "master")
-    {
-        var builder = SqlServerConnector.BuildOperatorConnectionString(Target(database), SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
-        await connection.OpenAsync();
-        await using var command = new SqlCommand(sql, connection);
-        await command.ExecuteNonQueryAsync();
-    }
+    public ValueTask DisposeAsync() => StopAsync();
 }
 
 /// <summary>Un singur container SQL pentru toate clasele de integrare.</summary>

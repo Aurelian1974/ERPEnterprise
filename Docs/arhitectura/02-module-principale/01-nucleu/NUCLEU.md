@@ -253,6 +253,15 @@ Interogările (`IQuery`) trec doar prin pașii 1–3 și nu deschid tranzacție 
 
 Protecție la dublă trimitere: comenzile de creare acceptă antetul `Idempotency-Key`, generat de interfață la deschiderea formularului. `TransactionBehavior` salvează cheia și rezultatul în `core.IdempotencyKey`, în aceeași tranzacție; o a doua cerere cu aceeași cheie (dublu-clic, reîncercare după o întrerupere de rețea) primește rezultatul primei, fără să creeze încă un document.
 
+**Detalii de implementare (etapa 1, 15.11.2026):**
+
+- Proiectele `Erp.Core.Contracts`, `.Domain`, `.Application`, `.Infrastructure`, `.Api` (`NET-01`). Pipeline-ul se înregistrează cu `AddErpMediator(assembly-urile modulelor)`; ordinea behaviors e cea din tabel, iar `AuditBehavior` rulează în interiorul tranzacției, după handler.
+- Contextul cererii vine din antete: `X-Correlation-Id` (întors și în răspuns; generat dacă lipsește), `X-Company-Id` (firma curentă; fără antet, ultima firmă a utilizatorului, `0` = nicio firmă), `Idempotency-Key` (maximum 100 de caractere). Utilizatorul se identifică prin claim-ul `NameIdentifier` = `SubjectId` și se încarcă o dată per cerere cu `core.usp_User_GetPermissions`; un cont inactiv sau extern expirat rămâne neautentificat (4.6).
+- Pe lângă cele din secțiunea 6, contractele au: `ICurrentContext.IsAuthenticated`, `IdempotencyKey`, `IpAddress`; `IAuditScope` (handler-ul descrie entitatea modificată; fără descriere, intrarea de audit are doar acțiunea și tipul derivat din ea); `IPeriodLock` (implementat de Finanțe; până atunci nicio perioadă nu e închisă); `IAccountingDated` (comenzile cu dată contabilă); `ErpException` / `ErpValidationException` cu codul stabil.
+- Autorizarea e „fail closed”: o cerere fără `[RequiresPermission]` e refuzată, cu excepția interogărilor marcate `[AuthenticatedUser]` (de exemplu `GET /api/core/me`). Testul de arhitectură verifică `[Module]` și permisiunea pe fiecare comandă și interogare (`NET-04`).
+- Idempotența: `core.usp_IdempotencyKey_Claim` rezervă cheia cu `UPDLOCK, HOLDLOCK`, deci cererile simultane cu aceeași cheie se serializează; aceeași cheie folosită pentru altă operațiune dă 409 `CORE_IDEMPOTENCY_KEY_REUSED`. Deadlock-ul (1205) și expirarea blocării (1222) se reîncearcă de 3 ori, apoi 409 `CORE_RESOURCE_BUSY` (`SP-17`). Erorile `THROW 50xxx` se traduc în pipeline prin tabelul modulului (`NET-09`).
+- Licența (4.4): starea se calculează din `ValidUntil` (avertizare cu 30 de zile înainte, 15 zile de grație, apoi doar citire). Fără licență validă, instalarea rămâne doar pentru consultare cu modulul `Core` activ; în mediul `Development` toate modulele sunt active (jurnalizat). Reverificarea zilnică și refuzul la pornire (A7) vin în etapa licenței.
+
 ### 4.2 Alocarea numărului la validare
 
 1. Handler-ul de validare cere `INumberSeriesService.NextAsync(companyId, documentType, documentDate)`.
@@ -598,6 +607,10 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50015 | `CORE_LAST_ADMINISTRATOR` | 409 | Dezactivarea sau scoaterea rolului `ADMIN` ar lăsa instalarea fără administrator activ |
 | 50016 | `CORE_SYSTEM_ROLE_MISSING` | 500 | Rolul de sistem `ADMIN` lipsește (datele livrate nu au rulat) |
 | 50017 | `CORE_LICENSE_INVALID_DATES` | 400 | Licența salvată are `ValidUntil` înaintea `IssuedDate` (`core.usp_InstallationLicense_Save`) |
+
+Coduri API ale pipeline-ului, fără cod SQL (etapa 1, 15.11.2026): `CORE_UNAUTHENTICATED` (401), `CORE_FORBIDDEN`, `CORE_MODULE_NOT_LICENSED`, `CORE_LICENSE_READ_ONLY` (403), `CORE_VALIDATION` (400, cu `errors` pe câmp), `CORE_PERIOD_CLOSED`, `CORE_RESOURCE_BUSY`, `CORE_IDEMPOTENCY_KEY_REUSED` (409), `CORE_UNEXPECTED_ERROR` (500, fără detalii tehnice). Răspunsurile de eroare sunt ProblemDetails cu extensiile `code` și `correlationId`. Codurile 50009 și 50016 rămân erori neprevăzute (500).
+
+Tabelele adăugate în etapa 1 (migrarea `2026.11.004`): `core.Permission` (`Code`, `ModuleCode`, `Description`; `CHECK` că codul începe cu modulul), `core.RolePermission`, `core.Outbox` (`EventId`, `EventType`, `EventVersion`, `CompanyId`, `CorrelationId`, `Payload` JSON, `OccurredAt`, `Status` 0 = în așteptare / 1 = procesat / 2 = eșuat, `Attempts`, `NextAttemptAt`, `ProcessedAt`, `LastError`), `core.InboxProcessed`, `core.IdempotencyKey` (`UserId`, `Key`, `RequestType`, `ResultJson`). Procedurile noi: `core.usp_User_GetPermissions`, `core.usp_Outbox_Enqueue`, `core.usp_AuditEntry_Insert`, `core.usp_IdempotencyKey_Claim`, `core.usp_IdempotencyKey_Complete`. Datele livrate `02_Permissions.sql` și `03_RolePermissions.sql` conțin catalogul din secțiunea 8 și permisiunile rolurilor de sistem; rolul NOMENCLATOARE primește în plus `Core.Partner.View` și `Core.Item.View`, fără de care nu ar vedea listele pe care le gestionează.
 
 Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu trei abateri:
 

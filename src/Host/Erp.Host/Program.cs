@@ -1,4 +1,8 @@
 using Erp.Configuration;
+using Erp.Core.Api;
+using Erp.Core.Application;
+using Erp.Core.Infrastructure;
+using Erp.Core.Infrastructure.Licensing;
 using Erp.Hosting;
 using Erp.Licensing;
 using Microsoft.Data.SqlClient;
@@ -34,6 +38,11 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<SchemaVersionGuard
 builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:MaintenanceFlagPath"], TimeProvider.System));
 builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 
+// Nucleul (02.01): pipeline-ul comun al comenzilor, contextul cererii, ProblemDetails. Modulele se adauga aici, dupa licenta.
+builder.Services.AddErpMediator();
+builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(licensePath, development));
+builder.Services.AddErpApi();
+
 var app = builder.Build();
 
 // Mentenanta e primul middleware din pipeline (10.4).
@@ -41,6 +50,7 @@ app.UseMiddleware<MaintenanceMiddleware>();
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseMiddleware<SchemaGuardMiddleware>();
+app.UseErpApi();
 
 app.MapErpHealth(build, () =>
 [
@@ -51,6 +61,7 @@ app.MapErpHealth(build, () =>
 ]);
 
 // Pagini provizorii pana la interfata React si Erp.Auth; health-check-ul installer-ului cere 200 HTML pe / si /account/login (8.14).
+app.MapCoreApi();
 app.MapGet("/", () => Results.Content(PlaceholderPage.Render("ERP"), "text/html; charset=utf-8"));
 app.MapGet("/account/login", () => Results.Content(PlaceholderPage.Render("Autentificare"), "text/html; charset=utf-8"));
 

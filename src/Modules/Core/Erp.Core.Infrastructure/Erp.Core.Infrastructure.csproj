@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Accesul la date al Nucleului (Dapper + proceduri stocate, NET-06/07), licenta, outbox si audit. Database\ = scripturile din kit. -->
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Core.Application\Erp.Core.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Core.Tests" />
+  </ItemGroup>
+
+</Project>

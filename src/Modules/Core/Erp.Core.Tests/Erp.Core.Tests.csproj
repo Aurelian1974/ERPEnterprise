@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Erp.Testing.Sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Core.Api\Erp.Core.Api.csproj" />
+    <ProjectReference Include="..\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
+  </ItemGroup>
+
+</Project>

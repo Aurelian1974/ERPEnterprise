@@ -61,4 +61,6 @@ jobs:
           global-json-file: global.json
 
       - name: Teste de integrare SQL
-        run: dotnet test --project src/Setup/Erp.Setup.Tests/Erp.Setup.Tests.csproj -c Release --filter-trait "Category=Integration"
+        run: |
+          dotnet test --project src/Setup/Erp.Setup.Tests/Erp.Setup.Tests.csproj -c Release --filter-trait "Category=Integration"
+          dotnet test --project src/Modules/Core/Erp.Core.Tests/Erp.Core.Tests.csproj -c Release --filter-trait "Category=Integration"

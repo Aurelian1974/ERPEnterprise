@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Endpoint-urile Nucleului si infrastructura HTTP comuna: contextul cererii, ProblemDetails (NET-03, NET-10). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Core.Application\Erp.Core.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Core.Tests" />
+  </ItemGroup>
+
+</Project>

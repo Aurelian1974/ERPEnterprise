@@ -242,6 +242,9 @@ src/
     ├── Migrations/<AAAA.MM.NNN>_<Descriere>.sql
     ├── Programmability/{Functions,Views,Procedures}/<obiect>.sql
     └── Seed/<NN>_<Descriere>.sql
+src/Tests/
+├── Erp.Testing.Sql/                    suport comun pentru testele de integrare: containerul SQL, baza creată ca la installer
+└── Erp.Architecture.Tests/             teste de arhitectură (TST-04) pe toate modulele
 build/
 ├── package-kit.ps1                     compilează, publică, copiază scripturile, generează și semnează manifestul
 ├── KitBuilder.psm1                     verificările scripturilor, ordinea migrațiilor, manifestul (folosit de package-kit.ps1)
