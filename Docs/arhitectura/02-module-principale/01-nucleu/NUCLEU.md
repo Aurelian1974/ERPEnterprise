@@ -522,7 +522,7 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.IdempotencyKey` | `Id bigint` | UQ `(UserId, Key)` | `CreatedAt` (curățare) |
 | `core.LoginEvent` | `Id bigint` | — | `(UserName, OccurredAt)` |
 | `core.ImportJob` | `Id int` | — | `(EntityType, CreatedAt)` |
-| `core.InstallationLicense` | `Id int` | — | — |
+| `core.InstallationLicense` | `Id int` | Index unic filtrat `UX_InstallationLicense_IsCurrent` (`WHERE IsCurrent = 1`); `CHECK` JSON pe `FiscalCodes`, `Modules`; `ValidUntil >= IssuedDate` | — |
 | `core.Setting` | `Id int` | UQ `(Scope, ScopeId, Key)` | — |
 | `core.SchemaVersion` | gestionat de DbUp | — | — |
 | `core.CompanyGroup` | `Id int` | UQ `Code`; FK `ParentGroupId` (arbore), `ParentCompanyId` | `ParentGroupId` |
@@ -596,6 +596,7 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50014 | `CORE_INITIAL_ADMIN_EXISTS` | 409 | Installer-ul încearcă să creeze administratorul inițial, dar există deja un administrator activ |
 | 50015 | `CORE_LAST_ADMINISTRATOR` | 409 | Dezactivarea sau scoaterea rolului `ADMIN` ar lăsa instalarea fără administrator activ |
 | 50016 | `CORE_SYSTEM_ROLE_MISSING` | 500 | Rolul de sistem `ADMIN` lipsește (datele livrate nu au rulat) |
+| 50017 | `CORE_LICENSE_INVALID_DATES` | 400 | Licența salvată are `ValidUntil` înaintea `IssuedDate` (`core.usp_InstallationLicense_Save`) |
 
 Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu două abateri:
 

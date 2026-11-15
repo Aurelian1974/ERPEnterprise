@@ -28,7 +28,10 @@ internal sealed class TempKitDatabase : IDisposable
     {
         var kit = new TempKitDatabase();
         var repo = TestPaths.RepositoryRoot();
-        foreach (var (source, schema) in new[] { ("src/Auth/Erp.Auth/Database", "ids"), ("src/Worker/Erp.Worker/Database", "hangfire") })
+        var sources = Modules.Select(m => ($"src/Modules/{m.Module}/Erp.{m.Module}.Infrastructure/Database", m.Schema))
+            .Append(("src/Auth/Erp.Auth/Database", "ids"))
+            .Append(("src/Worker/Erp.Worker/Database", "hangfire"));
+        foreach (var (source, schema) in sources)
         {
             foreach (var kind in new[] { "Migrations", "Programmability", "Seed" })
             {
@@ -50,6 +53,13 @@ internal sealed class TempKitDatabase : IDisposable
     }
 
     public void Dispose() => Directory.Delete(Root, recursive: true);
+
+    // Aceeasi mapare ca $script:ModuleSchemas din build/KitBuilder.psm1 (verificata de Module_map_matches_the_kit_builder).
+    public static readonly (string Module, string Schema)[] Modules =
+    [
+        ("Core", "core"), ("Finance", "fin"), ("Sales", "sales"), ("Purchasing", "purch"), ("Inventory", "inv"), ("Integrations", "intg"),
+        ("Wms", "wms"), ("Tms", "tms"), ("Manufacturing", "mfg"), ("Hr", "hr"), ("Pos", "pos"), ("Construction", "cons"), ("Crm", "crm"), ("Reporting", "rpt"),
+    ];
 }
 
 public sealed class KitScriptsTests
@@ -146,8 +156,20 @@ public sealed class KitScriptsTests
 
         var names = KitScripts.Load(kit.Root).Migrations.Select(s => s.Name).ToList();
 
-        Assert.Equal("ids/2026.11.001_Create_UserAccount.sql", names[0]);
-        Assert.Contains(names, n => n.StartsWith("hangfire/", StringComparison.Ordinal));
+        Assert.Equal(
+            ["core/2026.11.001_Create_InstallationLicense.sql", "ids/2026.11.001_Create_UserAccount.sql", "hangfire/2026.11.001_Hangfire_1_8_25_Install.sql"],
+            names.Take(3));
+    }
+
+    [Fact]
+    public void Module_map_matches_the_kit_builder()
+    {
+        var builder = File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot(), "build", "KitBuilder.psm1"));
+        var block = Regex.Match(builder, @"\$script:ModuleSchemas = \[ordered\]@\{(?<map>[^}]*)\}").Groups["map"].Value;
+        var map = Regex.Matches(block, @"(?<module>[A-Z][A-Za-z]+) = '(?<schema>[a-z]+)'")
+            .Select(m => (m.Groups["module"].Value, m.Groups["schema"].Value));
+
+        Assert.Equal(TempKitDatabase.Modules, map);
     }
 
     [Fact]

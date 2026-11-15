@@ -1017,6 +1017,8 @@ Semnătura e în format IEEE P1363 (`r||s`, 64 de octeți), ca la kit. Cheile pu
 
 Pasul I-12: copiază fișierul în `license\erp.lic` (fișierul e sursa de adevăr la pornire) și apelează `core.usp_InstallationLicense_Save` cu câmpurile din payload și semnătura, pentru afișare și istoric (02.01, `InstallationLicense`).
 
+Implementare (T8, 15.11.2026): `core.InstallationLicense` are coloanele `LicenseId`, `KeyId`, `CustomerName`, `FiscalCodes` și `Modules` (JSON, `SQL-12`), `LimitCompanies`, `LimitUsers`, `LimitPayrollEmployees`, `LimitPosTerminals`, `IssuedDate`, `ValidUntil`, `Signature`, `IsCurrent`, plus coloanele de audit. Licența curentă are `IsCurrent = 1` (index unic filtrat); salvarea aceleiași licențe nu are efect, iar o licență nouă devine curentă, iar cea veche rămâne pentru istoric. I-12 verifică din nou fișierul înainte de copiere (cod 40) și îl copiază atomic. Procedura rulează cu loginul de migrare, într-o tranzacție deschisă de installer, cu `CreatedBy = 1` (utilizatorul `system`).
+
 ### 8.10 Binare, configurare și secrete (I-15, I-16)
 
 **Binarele.** `app\host`, `app\worker` se copiază în `<InstallRoot>\<Instanță>\versions\<Versiune>\{host,worker}`. După copiere se recalculează SHA-256 pentru fiecare fișier și se compară cu manifestul.

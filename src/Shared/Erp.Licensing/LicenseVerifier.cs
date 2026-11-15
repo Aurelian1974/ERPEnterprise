@@ -40,7 +40,8 @@ public sealed record LicenseVerificationResult(
     LicenseStatus Status,
     LicensePayload? Payload,
     IReadOnlyList<string> UnknownModules,
-    string? KeyId)
+    string? KeyId,
+    string? Signature = null)
 {
     public bool IsValid => Status == LicenseStatus.Valid;
 
@@ -136,7 +137,7 @@ public sealed class LicenseVerifier(IReadOnlyDictionary<string, string> publicKe
         }
 
         var unknown = payload.Modules.Where(m => !LicenseModules.Known.Contains(m)).ToList();
-        return new LicenseVerificationResult(LicenseStatus.Valid, payload, unknown, envelope.KeyId);
+        return new LicenseVerificationResult(LicenseStatus.Valid, payload, unknown, envelope.KeyId, envelope.Signature);
     }
 
     private static LicenseVerificationResult Fail(LicenseStatus status, LicensePayload? payload = null, string? keyId = null) =>
