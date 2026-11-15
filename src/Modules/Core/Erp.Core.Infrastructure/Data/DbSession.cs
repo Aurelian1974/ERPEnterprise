@@ -10,7 +10,7 @@ namespace Erp.Core.Infrastructure.Data;
 /// O singura conexiune SQL per cerere (NET-07), deschisa la prima folosire. TransactionBehavior porneste tranzactia
 /// ReadCommitted (baza are READ_COMMITTED_SNAPSHOT ON, SP-14); toate store-urile folosesc Connection si Transaction de aici.
 /// </summary>
-public sealed class DbSession(string connectionString) : IDbSession, IUnitOfWork, IAsyncDisposable
+public sealed class DbSession(string connectionString) : IDbSession, IUnitOfWork, IAsyncDisposable, IDisposable
 {
     private SqlConnection? connection;
     private SqlTransaction? transaction;
@@ -82,6 +82,13 @@ public sealed class DbSession(string connectionString) : IDbSession, IUnitOfWork
         {
             await connection.DisposeAsync().ConfigureAwait(false);
         }
+    }
+
+    // Scope-urile DI eliberate sincron (Worker, teste) cer IDisposable.
+    public void Dispose()
+    {
+        transaction?.Dispose();
+        connection?.Dispose();
     }
 }
 
