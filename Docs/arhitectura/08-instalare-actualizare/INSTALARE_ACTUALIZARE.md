@@ -206,7 +206,7 @@ ERP-2027.1.0-kit/
 ### 4.3 Semnare și verificare
 
 1. La build, toate `.exe` și `.dll` proprii se semnează Authenticode cu certificatul de semnare a codului al produsului (cu marcaj de timp RFC 3161).
-2. `manifest.sig` = semnătura **ECDSA P-256 cu SHA-256** peste octeții exacți ai `manifest.json`, cu cheia privată de semnare a kitului (ținută în afara depozitului, `SEC-02`). Cheia de semnare a kitului e **diferită** de cheia de semnare a licențelor.
+2. `manifest.sig` = semnătura **ECDSA P-256 cu SHA-256** peste octeții exacți ai `manifest.json`, cu cheia privată de semnare a kitului (ținută în afara depozitului, `SEC-02`). Cheia de semnare a kitului e **diferită** de cheia de semnare a licențelor. Fișierul conține Base64 al semnăturii în format IEEE P1363 (`r||s`, 64 de octeți).
 3. `ErpSetup.exe` conține cheia publică a kitului (resursă încorporată). Înainte de orice altă acțiune:
    - verifică semnătura `manifest.sig`; la eșec → cod de ieșire 20, mesaj „Kitul nu este semnat de producător sau a fost modificat.”;
    - verifică SHA-256 pentru fiecare fișier din `files`; un fișier lipsă, în plus (în afara listei, cu excepția `ErpSetup.exe` care e verificat prin Authenticode) sau cu hash diferit → cod 21;
@@ -222,9 +222,11 @@ Totul stă în monorepo (`GIT-01`):
 src/
 ├── Setup/
 │   ├── Erp.Setup/                      Program.cs, comenzile CLI (System.CommandLine), interacțiunea cu operatorul
+│   │   └── Kit/                        fișierele din rădăcina kitului: templates/, CITESTE-MA.txt, THIRD-PARTY-NOTICES.txt
 │   ├── Erp.Setup.Core/                 pașii (IInstallStep), orchestratorul, verificările, starea
 │   ├── Erp.Setup.Windows/              IIS (Microsoft.Web.Administration), servicii, firewall, ACL, DPAPI, certificate
 │   ├── Erp.Setup.Sql/                  conexiuni, scripturile de bază/loginuri/joburi, runner-ul DbUp
+│   │   └── Database/Bootstrap/         sursa pentru database/bootstrap/ din kit (8.3)
 │   └── Erp.Setup.Tests/                teste unitare și de integrare (Testcontainers SQL Server)
 ├── Shared/
 │   ├── Erp.Licensing/                  citirea și verificarea licenței (folosit de installer și de Erp.Host)
@@ -232,15 +234,23 @@ src/
 │   └── Erp.Security.Passwords/         PasswordHasher compatibil ASP.NET Core Identity V3 (folosit de installer și Erp.Auth)
 ├── Host/Erp.Host/
 ├── Auth/Erp.Auth/                      bibliotecă: store-uri Dapper Identity, paginile /account, chei API (folosită de Erp.Host)
+│   └── Database/                       scripturile schemei ids (aceeași structură ca la module)
 ├── Worker/Erp.Worker/
+│   └── Database/                       scripturile schemei hangfire (aceeași structură ca la module)
 └── Modules/<Modul>/Erp.<Modul>.Infrastructure/Database/
     ├── Migrations/<AAAA.MM.NNN>_<Descriere>.sql
     ├── Programmability/{Functions,Views,Procedures}/<obiect>.sql
     └── Seed/<NN>_<Descriere>.sql
 build/
 ├── package-kit.ps1                     compilează, publică, copiază scripturile, generează și semnează manifestul
+├── KitBuilder.psm1                     verificările scripturilor, ordinea migrațiilor, manifestul (folosit de package-kit.ps1)
+├── tests/                              teste Pester pentru KitBuilder.psm1
 └── kit-signing/README.md               unde stă cheia de semnare (nu în Git)
 ```
+
+Maparea folderului de modul spre folderul din kit (= schema, numele din jurnalul DbUp): `Core`→`core`, `Finance`→`fin`, `Sales`→`sales`, `Purchasing`→`purch`, `Inventory`→`inv`, `Integrations`→`intg`, `Wms`→`wms`, `Tms`→`tms`, `Manufacturing`→`mfg`, `Hr`→`hr`, `Pos`→`pos`, `Construction`→`cons`, `Crm`→`crm`, `Reporting`→`rpt`; `src/Auth/Erp.Auth/Database`→`ids`; `src/Worker/Erp.Worker/Database`→`hangfire`. Un folder `src/Modules/<Modul>` cu `Database/` fără mapare oprește build-ul kitului (decizie Aurelian, 15.11.2026).
+
+Testele .NET rulează cu Microsoft.Testing.Platform (`global.json`, `dotnet test --solution Erp.slnx`); CI-ul (`.github/workflows/ci.yml`) compilează, rulează testele Pester, generează un kit de test (`package-kit.ps1 -TestKit`) și îl verifică cu verificatorul installer-ului.
 
 Pachete NuGet folosite de installer (versiuni fixate în `Directory.Packages.props`): `System.CommandLine`, `dbup-sqlserver`, `Microsoft.Data.SqlClient`, `Dapper`, `Microsoft.Web.Administration`, `Serilog` (+ `Serilog.Sinks.File`, `Serilog.Sinks.Console`), `System.Security.Cryptography.ProtectedData`. Interzis: `Microsoft.EntityFrameworkCore*`, `OpenIddict.EntityFrameworkCore*`, `Microsoft.AspNetCore.Identity.EntityFrameworkCore`, `Duende.*` (licență plătită), `OpenIddict.*` (nu e necesar, decizia din 14.11.2026).
 
@@ -383,6 +393,7 @@ Installer-ul citește variabila, o folosește și nu o scrie nicăieri. Recomand
 | 0 | Reușit |
 | 1 | Reușit cu avertismente (detaliate în jurnal și pe ecran) |
 | 2 | Anulat de operator |
+| 3 | Linie de comandă invalidă: comandă sau opțiune necunoscută, opțiune obligatorie lipsă, valoare invalidă (decizie Aurelian, 15.11.2026) |
 | 10 | Sistem de operare nesuportat sau installer rulat fără drepturi de administrator |
 | 11 | Fișier de răspunsuri invalid (lista erorilor pe câmp) |
 | 12 | Cerințe neîndeplinite (lista din secțiunea 7) |
@@ -667,7 +678,7 @@ Varianta `appAuthentication = Windows`: în loc de `erp_prod_app` se creează `C
 
 ### 8.5 Migrații și obiecte programabile cu DbUp (I-09, I-10)
 
-**Sursa scripturilor.** Scripturile sunt fișiere în kit (`database/migrations/<modul>/`, `database/programmability/<modul>/`, `database/seed/<modul>/`), verificate prin manifest (4.3). Build-ul (`package-kit.ps1`) le copiază din `src/Modules/<Modul>/Erp.<Modul>.Infrastructure/Database/`. Fișierele sunt UTF-8 fără BOM; textele românești din scripturi sunt literali `N'...'`. Loturile se despart cu `GO` pe rând separat.
+**Sursa scripturilor.** Scripturile sunt fișiere în kit (`database/migrations/<modul>/`, `database/programmability/<modul>/`, `database/seed/<modul>/`), verificate prin manifest (4.3). Build-ul (`package-kit.ps1`) le copiază din folderele `Database/` din secțiunea 5 (modulele, `Erp.Auth`, `Erp.Worker`), după maparea modul → schemă de acolo; `database/bootstrap/` vine din `src/Setup/Erp.Setup.Sql/Database/Bootstrap/`. Fișierele sunt UTF-8 fără BOM; textele românești din scripturi sunt literali `N'...'`. Loturile se despart cu `GO` pe rând separat.
 
 **Toate modulele se instalează în bază, indiferent de licență.** Licența decide doar ce module pornesc în aplicație (02.01, fluxul 4.4). Așa, o licență extinsă mai târziu nu cere migrații, iar baza are aceeași structură la toți clienții.
 
