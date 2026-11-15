@@ -84,9 +84,13 @@ public sealed class MigrationRunnerIntegrationTests(SqlServerFixture sql)
             """;
         await sql.ExecuteAsync(string.Format(System.Globalization.CultureInfo.InvariantCulture, insert, "administrator"), database);
 
-        var ex = await Assert.ThrowsAsync<SqlException>(() =>
+        var duplicate = await Assert.ThrowsAsync<SqlException>(() =>
             sql.ExecuteAsync(string.Format(System.Globalization.CultureInfo.InvariantCulture, insert, "Administrator"), database));
-        Assert.Equal(547, ex.Number);
+        Assert.Equal(2627, duplicate.Number); // NormalizedUserName unic: Administrator = administrator (9.3)
+
+        var ex = await Assert.ThrowsAsync<SqlException>(() =>
+            sql.ExecuteAsync(string.Format(System.Globalization.CultureInfo.InvariantCulture, insert, "Ion.Pop"), database));
+        Assert.Equal(547, ex.Number); // CK_UserAccount_UserNameLower pe baza case sensitive (SQL-24)
     }
 
     [Fact]
