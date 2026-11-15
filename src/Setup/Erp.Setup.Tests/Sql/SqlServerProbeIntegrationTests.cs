@@ -205,7 +205,8 @@ public sealed class SqlServerProbeIntegrationTests(SqlServerFixture sql) : IClas
 
         Assert.Equal(SqlDirectoryState.Exists, await probe.GetDirectoryStateAsync("/var/opt/mssql/data", Ct));
         Assert.Equal(SqlDirectoryState.WillBeCreated, await probe.GetDirectoryStateAsync(created + "/FULL", Ct));
-        Assert.Equal(SqlDirectoryState.Unreachable, await probe.GetDirectoryStateAsync(@"Q:\nu\exista", Ct));
+        // SQL Server pe Linux mapeaza orice cale X:\ pe sistemul lui de fisiere, deci o cale inaccesibila nu se poate
+        // reproduce in container; cazul Unreachable e acoperit de RequirementsCheckerTests.Unreachable_sql_folder_fails_C17.
 
         await probe.CreateDirectoryAsync(created + "/FULL", Ct);
 
