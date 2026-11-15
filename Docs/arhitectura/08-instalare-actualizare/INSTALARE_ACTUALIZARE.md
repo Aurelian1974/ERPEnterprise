@@ -752,6 +752,12 @@ Dacă `PerformUpgrade()` întoarce `Successful = false`, pasul eșuează; mesaju
 - nicio referință la `dbo.` în afara `msdb.dbo.` și `master.dbo.` (`SQL-01`);
 - niciun script deja livrat nu s-a modificat față de tag-ul versiunii anterioare (`MIG-02`; comparație `git diff --name-status <tag-anterior> -- '**/Migrations/*.sql'` fără `M` sau `D`).
 
+**Detalii de implementare (T7, 15.11.2026):**
+
+- `KitScripts` (în `Erp.Setup.Sql`) încarcă `database/` din kit și dă ordinea; DbUp sortează altfel scripturile după nume, deci ordinea se transmite prin `SqlScriptOptions.RunGroupOrder`. Kitul e refuzat (cod 30) dacă are un modul necunoscut, un nume de migrare care nu respectă `MIG-01`, un prefix dublat în același modul, obiecte programabile în afara `Functions/`, `Views/`, `Procedures/` sau date livrate în subfoldere.
+- Migrațiile inițiale: `ids/2026.11.001_Create_UserAccount.sql` (doar `ids.UserAccount`, exact ca în 8.7; celelalte tabele `ids` vin împreună cu store-urile din `Erp.Auth`) și `hangfire/2026.11.001_Hangfire_1_8_25_Install.sql`.
+- Scriptul `hangfire` este resursa `Install.sql` din pachetul `Hangfire.SqlServer` cu versiunea fixată în `Directory.Packages.props`, cu variabila de schemă înlocuită prin `hangfire`, fără alte modificări. Tranzacția lui se încuibează în tranzacția DbUp. La o versiune nouă de Hangfire se adaugă o migrare nouă cu scriptul noii versiuni (scriptul e incremental, după `hangfire.[Schema]`); un test verifică potrivirea dintre versiunea pachetului și ultima migrare `hangfire`. Hangfire are licența LGPL-3.0 și trebuie menționat în `THIRD-PARTY-NOTICES.txt` (T16).
+
 ### 8.6 Date livrate (I-11)
 
 Scripturile din `database/seed/<modul>/` rulează cu `RunAlways` (`NullJournal`), în ordinea modulelor și apoi alfabetic (`01_Currencies.sql`, `02_VatRates.sql` ...). Fiecare script folosește `MERGE` pe cheia naturală (`MIG-06`) și nu șterge rânduri create de client.

@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Dapper" />
+    <PackageReference Include="dbup-sqlserver" />
   </ItemGroup>
 
   <ItemGroup>

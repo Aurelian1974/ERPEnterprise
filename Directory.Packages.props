@@ -16,6 +16,9 @@
   </ItemGroup>
   <ItemGroup Label="Host si Worker">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
+    <!-- Versiunea Hangfire = scriptul din src/Worker/Erp.Worker/Database/Migrations (test HangfireMigrationMatchesPinnedPackage). -->
+    <PackageVersion Include="Hangfire.Core" Version="1.8.25" />
+    <PackageVersion Include="Hangfire.SqlServer" Version="1.8.25" />
   </ItemGroup>
   <ItemGroup Label="Teste">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
