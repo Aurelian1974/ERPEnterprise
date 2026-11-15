@@ -4,15 +4,22 @@ import { newFiscalCode, signInFirstTime } from './helpers';
 
 /** Alege o valoare dintr-un DropDownList Syncfusion ca utilizatorul de la tastatura: deschide lista, scrie, Enter. */
 async function choose(page: Page, fieldId: string, text: string, typed = text.slice(0, 4)) {
+  // Reincarcarile in curs (de exemplu dupa schimbarea firmei) pot re-randa lista si inchide popup-ul.
+  await page.waitForLoadState('networkidle');
   await page.locator(`#${fieldId}`).locator('xpath=ancestor::span[contains(@class,"e-ddl")]').click();
   await expect(page.locator(`#${fieldId}_popup`)).toBeVisible();
   const filter = page.locator(`#${fieldId}_popup input.e-input-filter`);
-  if ((await filter.count()) > 0) {
-    await expect(filter).toBeFocused();
-    await page.keyboard.type(typed, { delay: 30 });
-  } else {
-    await page.keyboard.type(typed);
+  if ((await filter.count()) === 0) {
+    // Lista scurta, fara filtrare: un singur clic pe element trebuie sa schimbe valoarea (fara reincercari care ar ascunde erori).
+    const option = page.locator(`#${fieldId}_popup li[role="option"]`, { hasText: text }).first();
+    await expect(option).toBeVisible();
+    await page.waitForTimeout(300);
+    await option.click();
+    await expect(page.locator(`#${fieldId}`)).toHaveValue(text);
+    return;
   }
+  await expect(filter).toBeFocused();
+  await page.keyboard.type(typed, { delay: 30 });
   await expect(page.locator(`#${fieldId}_popup li[role="option"]`).first()).toContainText(text);
   await page.keyboard.press('Enter');
   await expect(page.locator(`#${fieldId}`)).toHaveValue(text);
@@ -87,4 +94,12 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await expect(page.locator('.example')).toContainText(`E${suffix}-${new Date().getFullYear()}-000001`);
   await page.getByRole('button', { name: 'Salvează' }).click();
   await expect(page.locator('.e-grid')).toContainText(`E${suffix}`);
+
+  // Schimbarea firmei curente din antet reincarca imediat ecranul, de fiecare data (fara reincarcare manuala).
+  await page.goto('/admin/config/serii');
+  const before = await page.locator('#company').inputValue();
+  await choose(page, 'company', `Firma E2E ${suffix} SRL`, 'Firma');
+  await expect(page.locator('#series-title')).toContainText(`Firma E2E ${suffix} SRL`);
+  await choose(page, 'company', before, before.slice(0, 4));
+  await expect(page.locator('#series-title')).toContainText(before);
 });

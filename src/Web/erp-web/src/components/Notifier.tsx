@@ -33,7 +33,8 @@ export function NotifierProvider({ children }: { readonly children: ReactNode })
   return (
     <NotifierContext.Provider value={value}>
       {children}
-      <ToastComponent ref={toast} position={{ X: 'Right', Y: 'Top' }} showCloseButton newestOnTop width="340px" />
+      {/* Dreapta-jos: in dreapta-sus ar acoperi selectorul de firma si meniul utilizatorului din antet. */}
+      <ToastComponent ref={toast} position={{ X: 'Right', Y: 'Bottom' }} showCloseButton newestOnTop width="340px" />
       <div className="sr-only" role="status" aria-live="polite">
         {announcement}
       </div>
