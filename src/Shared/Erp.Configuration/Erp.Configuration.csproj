@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Configurarea instalarii, comuna pentru installer, Erp.Host si Erp.Worker (8.10): secretele DPAPI si caile instantei. -->
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+</Project>

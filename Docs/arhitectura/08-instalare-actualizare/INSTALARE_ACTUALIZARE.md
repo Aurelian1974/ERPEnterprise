@@ -1138,6 +1138,16 @@ sc.exe failureflag ErpWorker-PROD 1
 
 Comenzile se lansează cu `Process.Start` și `ArgumentList` (fără concatenare de text, fără shell). Codul de ieșire ≠ 0 → pasul eșuează. La reluare sau `repair`, dacă serviciul există, se folosește `sc.exe config` cu aceleași valori. `Erp.Worker` folosește `UseWindowsService()`; Hangfire rulează cu `PrepareSchemaIfNecessary = false` și `SchemaName = "hangfire"` (tabelele lui vin din migrațiile `hangfire/`, scriptul oficial Hangfire fixat la versiunea pachetului).
 
+**Detalii de implementare (T10, 15.11.2026, pentru 3.2, 3.4 și 8.10–8.12):**
+
+- **Identități (I-17 înainte de I-18/I-19):** SID-urile conturilor virtuale se calculează din nume, ca drepturile NTFS să poată fi date înainte de crearea pool-ului și a serviciului: `NT SERVICE\<nume>` = `S-1-5-80-` + SHA-1 peste numele cu majuscule; `IIS AppPool\<nume>` = `S-1-5-82-` + SHA-1 peste numele cu litere mici (UTF-16LE, 5 × uint32 little-endian). Ambele sunt verificate în teste cu SID-uri reale de Windows. Varianta gMSA/cont de domeniu folosește SID-ul contului.
+- **NTFS:** `DataRoot\<Instanță>` e protejat (fără moștenire), cu `Administrators` și `SYSTEM` control total. Pool-ul și serviciul primesc citire pe `config\`, `license\`, `maintenance\` și pe `instance.json`; pool-ul primește modificare pe `keys\` și `logs\host\`, serviciul pe `logs\worker\`. `logs\setup\`, `upgrade\` și `install\` rămân doar pentru `Administrators` și `SYSTEM`. Folderele de versiune moștenesc drepturile din `Program Files` și primesc citire pentru componenta lor. Reaplicarea nu dublează regulile.
+- **I-15:** se copiază doar fișierele `app/host/` și `app/worker/` din manifest și se verifică SHA-256 după copiere; la reluare se recopiază doar fișierele care nu corespund; la U-09 folderul versiunii se șterge și se recopiază.
+- **I-16:** `appsettings.Installation.json` = șablonul kitului, peste care se pun valorile existente (upgrade), apoi valorile installer-ului (căile, versiunea, baza). `web.config` se scrie în folderul `host` al versiunii. Scrierile sunt atomice.
+- **IIS:** legăturile adăugate de client pe site se păstrează; installer-ul gestionează doar `*:<port>:<hostName>` (HTTPS, SNI) și `*:80:<hostName>`. Certificatul autosemnat (doar test): RSA 2048, SHA-256, CN și SAN = `hostName`, EKU Server Authentication, valabil 1 an, cheie persistentă în `LocalMachine\My`.
+- **Firewall:** regula cu același nume se șterge și se recreează (`netsh advfirewall firewall`); fără `httpRedirect`, regula HTTP se șterge.
+- Erorile de IIS, serviciu și fișiere au codul 50. Aplicarea efectivă în IIS, `sc.exe` și `netsh` se verifică numai pe VM-ul Windows dedicat (E2E).
+
 ### 8.13 Joburile SQL Agent și primul backup (I-21, I-22)
 
 Joburile se creează cu procedurile din `msdb` (`sp_add_job`, `sp_add_jobstep`, `sp_add_schedule`, `sp_attach_schedule`, `sp_add_jobserver`), în categoria `ERP`, cu proprietarul `SUSER_SNAME(0x01)`, `@notify_level_eventlog = 2` (eșecurile ajung în Event Log). Descrierea fiecărui job conține `ERP-JOB v1` (versiunea definiției): la `repair` și `upgrade` jobul se recreează doar dacă versiunea definiției din kit e mai nouă; altfel se actualizează doar programarea din fișierul de răspunsuri.

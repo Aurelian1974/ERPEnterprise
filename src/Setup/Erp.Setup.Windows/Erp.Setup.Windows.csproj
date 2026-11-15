@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Configuration\Erp.Configuration.csproj" />
   </ItemGroup>
 
 </Project>
