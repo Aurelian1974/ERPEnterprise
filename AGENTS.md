@@ -10,7 +10,7 @@
 ## Invariante
 
 - Monolit modular on-premise, Windows Server, o baza SQL Server per client/grup; izolare pe firma prin `CompanyId`, nu SaaS multi-tenant.
-- .NET 10, MediatR, Dapper + proceduri stocate, DbUp, SQL Server 2022+, React + TypeScript. Fara EF Core/ORM, microservicii sau broker extern adaugat implicit.
+- .NET 10, MediatR, Dapper + proceduri stocate, DbUp, SQL Server 2022+, React + TypeScript ([Stack tehnologic](Docs/arhitectura/07-stack-tehnologic/STACK_TEHNOLOGIC.md)). Fara EF Core/ORM, Blazor, microservicii sau broker extern adaugat implicit.
 - Modulele detin schemele SQL; acces intre module numai prin `.Contracts`/evenimente. Exceptie: raportare read-only prin view-uri dedicate `rpt`. Numai Finante genereaza note contabile.
 - Document validat = imutabil; corectie prin storno. Respecta perioadele inchise, permisiunile si licenta pe server. Documentul, numerotarea fiscala, outbox-ul si auditul participa la aceeasi tranzactie; consumatorii sunt idempotenti.
 - Bani/cantitati/cursuri: `decimal`, precizie prin `IPrecisionService`, nu `float`/`double`. Fiscalul este configurabil si versionat, nu hardcodat.
