@@ -18,15 +18,22 @@
     "api": "node scripts/fetch-openapi.mjs && openapi-typescript openapi/erp-api.json -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "7.0.6",
     "@syncfusion/ej2-base": "35.1.37",
+    "@syncfusion/ej2-react-buttons": "35.1.41",
     "@syncfusion/ej2-react-dropdowns": "35.1.46",
+    "@syncfusion/ej2-react-grids": "35.1.42",
+    "@syncfusion/ej2-react-inputs": "35.1.43",
+    "@syncfusion/ej2-react-navigations": "35.1.46",
     "@syncfusion/ej2-react-splitbuttons": "35.1.37",
     "@syncfusion/ej2-tailwind3-theme": "35.1.46",
     "@tanstack/react-query": "5.107.1",
     "openapi-fetch": "0.17.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "8.5.1"
+    "react-hook-form": "7.92.0",
+    "react-router": "8.5.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

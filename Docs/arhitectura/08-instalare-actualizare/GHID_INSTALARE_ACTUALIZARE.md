@@ -278,7 +278,7 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
    npm run api           # după schimbarea API-ului: regenerează clientul din OpenAPI (Host pornit în Development)
    ```
 
-   `npm run e2e` resetează înainte utilizatorul de test `e2e.operator` (`./build/dev-database.ps1 -E2EUser e2e.operator -PasswordFile <fișier>`: parolă temporară nouă, rol STANDARD, fără 2FA obligatoriu). Prima dată: `npx playwright install chromium`.
+   `npm run e2e` resetează înainte utilizatorii de test `e2e.operator` (rol STANDARD) și `e2e.admin` (rol ADMIN la nivelul instalării, pentru firme și serii): `./build/dev-database.ps1 -E2EUser <nume> -E2ERole STANDARD|ADMIN -PasswordFile <fișier>` (parolă temporară nouă, fără 2FA obligatoriu, numai în baza de dezvoltare). Fiecare rulare adaugă în `ERP_DEV` un grup, o firmă, un cont bancar și o serie cu coduri unice. Prima dată: `npx playwright install chromium`.
 
 4. **Ce e normal în dezvoltare:** `/health/ready` raportează `license: Unhealthy` cât timp nu există o cheie publică de licență în `src/Shared/Erp.Licensing/Keys/` și `Erp:LicensePath` nu indică un fișier `.lic` valid; fără licență, în `Development` toate modulele sunt active. Protecția de versiune acceptă orice bază migrată, cu un avertisment în jurnal (specificația 10.5).
 

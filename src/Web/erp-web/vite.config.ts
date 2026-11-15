@@ -24,6 +24,7 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
+            { name: 'syncfusion-grids', test: /node_modules[\\/]@syncfusion[\\/]ej2-(react-)?grids/ },
             { name: 'syncfusion', test: /node_modules[\\/]@syncfusion/ },
             { name: 'vendor', test: /node_modules/ },
           ],

@@ -1,4 +1,6 @@
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
+import { useQueryClient } from '@tanstack/react-query';
+import { companyStore } from '../app/company';
 import { DropDownButtonComponent, type MenuEventArgs } from '@syncfusion/ej2-react-splitbuttons';
 import type { CurrentUser } from '../api/session';
 import { t } from '../i18n';
@@ -35,6 +37,7 @@ function onUserAction(args: MenuEventArgs): void {
 
 /** Antetul (macheta 02): firma curenta, notificari, utilizatorul. Firmele vin in etapa 4, notificarile in etapa 10. */
 export function Header({ user }: { readonly user: CurrentUser }) {
+  const queryClient = useQueryClient();
   return (
     <header className="top">
       <a className="brand" href="/">
@@ -47,10 +50,19 @@ export function Header({ user }: { readonly user: CurrentUser }) {
           <DropDownListComponent
             id="company"
             htmlAttributes={{ 'aria-label': t('header.company') }}
-            dataSource={[]}
+            dataSource={user.companies.map((c) => ({ value: c.id, text: c.name }))}
+            fields={{ text: 'text', value: 'value' }}
+            value={user.companyId > 0 ? user.companyId : null}
             placeholder={t('header.noCompany')}
-            enabled={false}
-            width="220px"
+            enabled={user.companies.length > 1 || (user.companies.length === 1 && user.companyId !== user.companies[0]?.id)}
+            change={(args: { value: number | null }) => {
+              if (args.value !== null && args.value !== user.companyId) {
+                companyStore.set(args.value);
+                // Datele tuturor ecranelor depind de firma curenta (antetul X-Company-Id).
+                void queryClient.resetQueries();
+              }
+            }}
+            width="240px"
           />
         </div>
         <button type="button" className="icon-btn" aria-label={t('header.notifications')} title={t('header.notificationsPending')} disabled>

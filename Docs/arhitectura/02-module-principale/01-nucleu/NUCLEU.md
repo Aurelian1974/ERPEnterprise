@@ -90,6 +90,15 @@ Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; u
 
 ![Ecranul Firme și structură](ecrane/03-firme.png)
 
+**Detalii de implementare (etapa 4, 15.11.2026):**
+
+- Tabelele `core.CompanyGroup`, `Company`, `Branch`, `Location`, `CompanyBankAccount` (migrarea `2026.11.006`). CUI-ul se salvează fără prefixul RO (prefixul rezultă din `VatPayer`), validat cu cifra de control ANAF. Numărul de registrul comerțului se validează doar ca formă (clasic și formatul unic ONRC, Legea 265/2022); cifra de control a formatului nou nu se recalculează, pentru că nu am găsit o descriere oficială sigură a algoritmului. IBAN-ul se validează mod 97 (ISO 13616).
+- `IsGroupParent` nu e o coloană: firma-mamă e `CompanyGroup.ParentCompanyId` și trebuie să fie în grup sau într-un subgrup. Din machetă s-a adăugat `IncludeInConsolidation`. `FunctionalCurrency` e fixă `RON` (`CHECK`).
+- Firma folosește țările și județele livrate acum (`core.Country`: România, statele UE și câteva frecvente; `core.County`: cele 41 de județe și București, cod ISO 3166-2:RO) și politica de zecimale STANDARD. Localitatea rămâne text până la SIRUTA (etapa 5). Moneda contului bancar primește cheie străină odată cu nomenclatorul de valute (etapa 5). `LogoAttachmentId` așteaptă atașamentele (etapa 10).
+- O firmă activă trebuie să aibă CUI-ul în licență (4.4): altfel 409 `CORE_COMPANY_NOT_LICENSED`; în `Development`, fără licență, orice CUI e acceptat. Salvarea firmei publică `FirmaModificata`.
+- Acces: arborele arată firmele cu `Core.Company.View` (pe firmă sau la nivelul instalării) și grupurile care le conțin. Firma curentă vine din antetul `X-Company-Id`, acceptat numai dacă utilizatorul are un rol pe acea firmă (altfel firma efectivă devine 0). `X-Company-Id: 0` înseamnă nivelul instalării: numai rolurile fără firmă (ADMIN). Grupurile și firmele noi se creează doar la acest nivel; punctele de lucru, locațiile, conturile bancare și seriile, numai pe firma lor.
+- Ecranul: arbore (Syncfusion TreeView) cu căutare fără diacritice, filtrele „Toate”, „Doar firme”, „Arată inactive”, „Extinde tot”; fișa cu tab-urile Date generale, Conturi bancare și Serii (doar citire, cu legătură spre Configurare › Serii). Tab-urile Structură, Setări, Certificat ANAF și Istoric, precum și Export/Import, vin cu etapele care le dețin (Istoric cu auditul, etapa 10; certificatul cu Integrări). Fără `Core.Company.Manage`, fișele sunt doar pentru citire.
+
 ### 3.2 Partener (`Partner`)
 
 Un singur nomenclator pentru clienți și furnizori, la nivel de instalare; rolul de bază (client, furnizor sau ambele) e pe partener și e obligatoriu (cel puțin unul bifat, CHECK în bază), iar condițiile comerciale se țin per firmă în Vânzări și Achiziții. Un partener marcat doar client nu apare la căutare pe documentele de achiziție, și invers.
@@ -271,6 +280,8 @@ Protecție la dublă trimitere: comenzile de creare acceptă antetul `Idempotenc
 
 Caz limită: două validări simultane pe aceeași serie se serializează pe rândul seriei; durata blocajului e cât tranzacția de validare (țintă sub 2 s, din 01). Pentru serii nefiscale (oferte, comenzi) se poate folosi `SEQUENCE` SQL, fără blocaj.
 
+**Detalii de implementare (etapa 4, 15.11.2026):** `core.usp_NumberSeries_Next(@CompanyId, @BranchId, @DocumentTypeCode, @DocumentDate)` refuză apelul în afara unei tranzacții (50028, eroare de programare) și alege seria implicită deschisă a punctului de lucru, apoi pe cea a firmei. Seria anului nou se creează automat doar dacă seria anului anterior are `AutoRollover` (comutatorul din macheta 07c); altfel 50001. Tipurile de documente sunt în catalogul `core.DocumentType` (`Modul.Tip`, de exemplu `Sales.Invoice`), completat de fiecare modul. Formatul: `{Prefix}-{An}-{Număr}`, cu `Padding` cifre. O serie fiscală folosită nu-și mai schimbă tipul, punctul de lucru, prefixul, anul sau următorul număr (50024); o serie nefiscală folosită poate doar sări înainte; o serie închisă e înghețată (50025). Testele A2 (2 × 500 de validări simultane dau numerele 1…1000) și A3 rulează pe SQL Server real.
+
 ### 4.3 Cursul valutar
 
 1. Jobul zilnic din Integrări preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`.
@@ -379,7 +390,7 @@ public interface ICurrentContext
 public interface INumberSeriesService
 {
     Task<DocumentNumber> NextAsync(int companyId, string documentType,
-        DateOnly documentDate, CancellationToken ct);
+        DateOnly documentDate, CancellationToken ct, int? branchId = null);   // branchId adăugat în etapa 4
 }
 public sealed record DocumentNumber(string Prefix, int Year, long Number, string Formatted);
 
@@ -431,6 +442,7 @@ public interface ILicenseInfo
 {
     bool IsModuleActive(string moduleCode);
     IReadOnlyCollection<string> ActiveModules { get; }      // meniul interfeței (adăugat în etapa 3)
+    bool IsFiscalCodeLicensed(string fiscalCode);           // CUI-ul firmei e în licență (4.4; adăugat în etapa 4)
     int? GetLimit(string limitCode);
     DateOnly ValidUntil { get; }
     LicenseState State { get; }                             // Valid, ExpiringSoon, Grace, ReadOnly
@@ -608,12 +620,27 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50015 | `CORE_LAST_ADMINISTRATOR` | 409 | Dezactivarea sau scoaterea rolului `ADMIN` ar lăsa instalarea fără administrator activ |
 | 50016 | `CORE_SYSTEM_ROLE_MISSING` | 500 | Rolul de sistem `ADMIN` lipsește (datele livrate nu au rulat) |
 | 50017 | `CORE_LICENSE_INVALID_DATES` | 400 | Licența salvată are `ValidUntil` înaintea `IssuedDate` (`core.usp_InstallationLicense_Save`) |
+| 50018 | `CORE_DUPLICATE_CODE` | 409 | Codul există deja, fără diferență de majuscule (grup sau firmă în instalare, punct de lucru sau locație în firmă) |
+| 50019 | `CORE_COMPANY_DUPLICATE_FISCAL_CODE` | 409 | Există deja o firmă cu acest CUI |
+| 50020 | `CORE_NODE_HAS_ACTIVE_CHILDREN` | 409 | Dezactivarea unui grup, a unei firme sau a unui punct de lucru care are copii activi |
+| 50021 | `CORE_INVALID_REFERENCE` | 400 | Părinte sau legătură invalidă: grup inexistent sau ciclu, firmă-mamă din afara grupului, punct de lucru al altei firme, tip de document sau politică inexistente |
+| 50022 | `CORE_INVALID_ADDRESS` | 400 | Țara sau județul nu există în nomenclator (pentru România județul e obligatoriu) |
+| 50023 | `CORE_BANK_ACCOUNT_DUPLICATE_IBAN` | 409 | IBAN-ul este deja înregistrat |
+| 50024 | `CORE_NUMBER_SERIES_LOCKED` | 409 | Schimbarea numerotării unei serii fiscale deja folosite, sau coborârea următorului număr al unei serii folosite |
+| 50025 | `CORE_NUMBER_SERIES_CLOSED` | 409 | Modificarea sau închiderea unei serii închise |
+| 50026 | `CORE_NUMBER_SERIES_DUPLICATE` | 409 | Există deja o serie cu același prefix pentru firmă, punct de lucru, tip de document și an |
+| 50027 | `CORE_ENTITY_NOT_FOUND` | 404 | Înregistrarea modificată nu există (sau nu aparține firmei) |
+| 50028 | — | 500 | `core.usp_NumberSeries_Next` apelată în afara tranzacției documentului (eroare de programare) |
+
+Cod API fără cod SQL (etapa 4): `CORE_COMPANY_NOT_LICENSED` (409), CUI-ul unei firme active nu este în licență (4.4).
 
 Coduri API ale pipeline-ului, fără cod SQL (etapa 1, 15.11.2026): `CORE_UNAUTHENTICATED` (401), `CORE_FORBIDDEN`, `CORE_MODULE_NOT_LICENSED`, `CORE_LICENSE_READ_ONLY` (403), `CORE_VALIDATION` (400, cu `errors` pe câmp), `CORE_PERIOD_CLOSED`, `CORE_RESOURCE_BUSY`, `CORE_IDEMPOTENCY_KEY_REUSED` (409), `CORE_UNEXPECTED_ERROR` (500, fără detalii tehnice). Răspunsurile de eroare sunt ProblemDetails cu extensiile `code` și `correlationId`. Codurile 50009 și 50016 rămân erori neprevăzute (500).
 
 Tabelele adăugate în etapa 1 (migrarea `2026.11.004`): `core.Permission` (`Code`, `ModuleCode`, `Description`; `CHECK` că codul începe cu modulul), `core.RolePermission`, `core.Outbox` (`EventId`, `EventType`, `EventVersion`, `CompanyId`, `CorrelationId`, `Payload` JSON, `OccurredAt`, `Status` 0 = în așteptare / 1 = procesat / 2 = eșuat, `Attempts`, `NextAttemptAt`, `ProcessedAt`, `LastError`), `core.InboxProcessed`, `core.IdempotencyKey` (`UserId`, `Key`, `RequestType`, `ResultJson`). Procedurile noi: `core.usp_User_GetPermissions`, `core.usp_Outbox_Enqueue`, `core.usp_AuditEntry_Insert`, `core.usp_IdempotencyKey_Claim`, `core.usp_IdempotencyKey_Complete`. Datele livrate `02_Permissions.sql` și `03_RolePermissions.sql` conțin catalogul din secțiunea 8 și permisiunile rolurilor de sistem; rolul NOMENCLATOARE primește în plus `Core.Partner.View` și `Core.Item.View`, fără de care nu ar vedea listele pe care le gestionează.
 
 Etapa 2 (migrarea `2026.11.005`): `core.LoginEvent` (`UserName` tastat, `UserId` dacă e cunoscut, `Success`, `FailureReason`, `IpAddress`, `UserAgent`), procedura `core.usp_LoginEvent_Insert` (actualizează `User.LastLoginAt`; la blocare pune `Erp.Auth.UtilizatorBlocat` în outbox) și view-ul `core.v_UserLoginStatus`, prin care `Erp.Auth` citește doar dacă utilizatorul poate intra (activ, în perioada de valabilitate).
+
+Etapa 4 (migrarea `2026.11.006`): `core.Country`, `core.County`, `core.PrecisionPolicy`, `core.CompanyGroup`, `core.Company`, `core.Branch`, `core.Location`, `core.CompanyBankAccount`, `core.DocumentType`, `core.NumberSeries` (cu `FirstNumber` și `LastUsedAt`; cheile compuse `(BranchId, CompanyId)` țin locația și seria în firma punctului de lucru) și cheile străine spre `core.Company` amânate în etapa 1 (`User.LastCompanyId`, `UserRoleAssignment.CompanyId`, `AuditEntry.CompanyId`). Funcția `core.fn_UserCompanies` (firmele unui utilizator, opțional cu o permisiune) și procedurile `core.usp_OrgTree_Get`, `usp_OrgLookups_Get`, `usp_Company_Get`, `usp_User_GetCompanies`, `usp_CompanyGroup_Save`, `usp_Company_Save`, `usp_Branch_Save`, `usp_Location_Save`, `usp_CompanyBankAccount_Save`, `usp_NumberSeries_Save`, `usp_NumberSeries_Close`, `usp_NumberSeries_List`, `usp_NumberSeries_Next`. Datele livrate `04_Countries` … `07_DocumentTypes`. `core.usp_User_GetPermissions` validează acum firma cerută (vezi 3.1).
 
 Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu trei abateri:
 
@@ -745,6 +772,8 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 ![Configurare · Cursuri valutare](ecrane/07b-configurare-cursuri.png)
 
 ![Configurare · Serii de numerotare](ecrane/07c-configurare-serii.png)
+
+**Detalii de implementare (etapa 4, 15.11.2026):** ecranul Configurare are deocamdată doar tab-ul Serii (`/admin/config/serii`, permisiunea `Core.NumberSeries.Manage`; nu există o permisiune separată de vizualizare a seriilor), pe firma curentă din antet sau pe cea din `?firma=`. Celelalte tab-uri apar odată cu etapele lor. Selectorul de firmă din antet arată firmele active la care utilizatorul are un rol; alegerea se memorează în browser (`LastCompanyId` din profil se folosește când browserul nu are o alegere; actualizarea lui vine cu Profilul meu, etapa 10).
 
 ![Configurare · Precizie](ecrane/07d-configurare-precizie.png)
 

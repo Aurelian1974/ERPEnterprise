@@ -18,10 +18,10 @@ export function Sidebar({ user, groups = menuGroups }: { readonly user: CurrentU
 
       {visible.length > 0 && <div className="sec">{t('menu.modules')}</div>}
       {visible.map((group) => (
-        <div key={group.module} className="group" role="group" aria-label={moduleName(group.module)}>
+        <div key={group.module} className="group" role="group" aria-label={group.label === undefined ? moduleName(group.module) : t(group.label)}>
           <div className="item open">
             <span className="ic" aria-hidden="true">{group.icon}</span>
-            <span className="text">{moduleName(group.module)}</span>
+            <span className="text">{group.label === undefined ? moduleName(group.module) : t(group.label)}</span>
           </div>
           {group.items.map((item) => (
             <NavLink key={item.id} to={item.path} className="item sub">

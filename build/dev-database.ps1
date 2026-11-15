@@ -19,7 +19,8 @@ param(
     [ValidatePattern('^[A-Z][A-Z0-9]{1,9}$')][string]$Instance = 'DEV',
     [switch]$CreateAdmin,
     [ValidatePattern('^e2e\.[a-z0-9.]+$')][string]$E2EUser,
-    [string]$PasswordFile
+    [string]$PasswordFile,
+    [ValidateSet('STANDARD', 'ADMIN')][string]$E2ERole = 'STANDARD'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,7 +35,7 @@ try {
     if ($CreateAdmin) { $arguments += '--create-admin' }
     if ($E2EUser) {
         if (-not $PasswordFile) { throw 'Pentru -E2EUser este obligatoriu -PasswordFile.' }
-        $arguments += @('--e2e-user', $E2EUser, '--password-file', $PasswordFile)
+        $arguments += @('--e2e-user', $E2EUser, '--password-file', $PasswordFile, '--e2e-role', $E2ERole)
     }
     & dotnet run --project (Join-Path $repoRoot 'src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj') -- @arguments
     if ($LASTEXITCODE -ne 0) { throw "Pregătirea bazei de dezvoltare a eșuat (cod $LASTEXITCODE)." }

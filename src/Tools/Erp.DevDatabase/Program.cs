@@ -15,7 +15,7 @@ Console.OutputEncoding = Encoding.UTF8;
 var options = DevOptions.Parse(args);
 if (options is null)
 {
-    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --scripts <folder database> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier>]");
+    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --scripts <folder database> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier> [--e2e-role STANDARD|ADMIN]]");
     return 3;
 }
 
@@ -61,7 +61,7 @@ try
         await using var database = new SqlConnection(connection.ConnectionString);
         await database.OpenAsync(ct);
         var password = Erp.Setup.Core.Secrets.InitialPasswordGenerator.Generate();
-        await ResetE2EUserAsync(database, e2eUser, password, ct);
+        await ResetE2EUserAsync(database, e2eUser, password, options.E2ERole, ct);
         // Parola temporara ajunge doar in fisierul cerut de testele E2E (Playwright), nu in jurnal.
         await File.WriteAllTextAsync(options.PasswordFile!, password, ct);
         log.Information("Utilizatorul E2E {User} are o parolă temporară nouă (schimbare obligatorie).", e2eUser);
@@ -94,8 +94,10 @@ static async Task<Guid?> ReadInstallIdAsync(SqlTarget target, string database, C
     return await read.ExecuteScalarAsync(ct) is string value && Guid.TryParse(value, out var id) ? id : null;
 }
 
-// Utilizatorul testelor E2E: cont de sistem (angajatii si externii vin in etapele 6 si 8, CK_User_Kind), rol STANDARD, parola temporara noua, schimbare obligatorie, fara 2FA, deblocat, sesiuni inchise.
-static async Task ResetE2EUserAsync(SqlConnection database, string userName, string password, CancellationToken ct)
+// Utilizatorul testelor E2E: cont de sistem (angajatii si externii vin in etapele 6 si 8, CK_User_Kind), rolul cerut (STANDARD sau
+// ADMIN, la nivel de instalare), parola temporara noua, schimbare obligatorie, fara 2FA (exceptie doar pentru baza de dezvoltare),
+// deblocat, sesiuni inchise.
+static async Task ResetE2EUserAsync(SqlConnection database, string userName, string password, string role, CancellationToken ct)
 {
     await using var command = new SqlCommand("""
         SET XACT_ABORT ON;
@@ -106,11 +108,13 @@ static async Task ResetE2EUserAsync(SqlConnection database, string userName, str
             SET @SubjectId = NEWID();
             INSERT INTO core.[User] (SubjectId, UserName, DisplayName, IsActive, IsSystem, CreatedBy)
             VALUES (@SubjectId, @UserName, N'Utilizator E2E', 1, 1, 1);
-            INSERT INTO core.UserRoleAssignment (UserId, RoleId, CompanyId, CreatedBy)
-            SELECT SCOPE_IDENTITY(), Id, NULL, 1 FROM core.Role WHERE Code = N'STANDARD';
             INSERT INTO ids.UserAccount (SubjectId, UserName, NormalizedUserName, PasswordHash, PasswordChangedAt, SecurityStamp, ConcurrencyStamp, CreatedBy)
             VALUES (@SubjectId, @UserName, UPPER(@UserName), @PasswordHash, SYSUTCDATETIME(), @SecurityStamp, @ConcurrencyStamp, 1);
         END;
+        DECLARE @UserId int = (SELECT Id FROM core.[User] WHERE SubjectId = @SubjectId);
+        DELETE FROM core.UserRoleAssignment WHERE UserId = @UserId;
+        INSERT INTO core.UserRoleAssignment (UserId, RoleId, CompanyId, CreatedBy)
+        SELECT @UserId, Id, NULL, 1 FROM core.Role WHERE Code = @Role;
         UPDATE ids.UserAccount
         SET PasswordHash = @PasswordHash, PasswordChangedAt = SYSUTCDATETIME(), MustChangePassword = 1, TwoFactorRequired = 0,
             TwoFactorEnabled = 0, AuthenticatorKeyEncrypted = NULL, AccessFailedCount = 0, LockoutEndAt = NULL, IsActive = 1,
@@ -121,13 +125,15 @@ static async Task ResetE2EUserAsync(SqlConnection database, string userName, str
         COMMIT;
         """, database);
     command.Parameters.AddWithValue("@UserName", userName);
+    command.Parameters.AddWithValue("@Role", role);
     command.Parameters.AddWithValue("@PasswordHash", Erp.Security.Passwords.IdentityPasswordHasher.Hash(password));
     command.Parameters.AddWithValue("@SecurityStamp", Erp.Security.Passwords.AccountStamps.NewSecurityStamp());
     command.Parameters.AddWithValue("@ConcurrencyStamp", Erp.Security.Passwords.AccountStamps.NewConcurrencyStamp());
     await command.ExecuteNonQueryAsync(ct);
 }
 
-internal sealed record DevOptions(string Server, string Database, string Scripts, string Instance, bool CreateAdmin, string? E2EUser, string? PasswordFile)
+internal sealed record DevOptions(string Server, string Database, string Scripts, string Instance, bool CreateAdmin, string? E2EUser, string? PasswordFile,
+    string E2ERole)
 {
     public static DevOptions? Parse(string[] args)
     {
@@ -142,13 +148,15 @@ internal sealed record DevOptions(string Server, string Database, string Scripts
         var scripts = Value("--scripts");
         var e2eUser = Value("--e2e-user");
         var passwordFile = Value("--password-file");
-        if (e2eUser is not null && (passwordFile is null || !System.Text.RegularExpressions.Regex.IsMatch(e2eUser, "^e2e\\.[a-z0-9.]+$")))
+        var e2eRole = Value("--e2e-role") ?? "STANDARD";
+        if (e2eUser is not null && (passwordFile is null || !System.Text.RegularExpressions.Regex.IsMatch(e2eUser, "^e2e\\.[a-z0-9.]+$")
+            || e2eRole is not ("STANDARD" or "ADMIN")))
         {
             return null;
         }
 
         return server is null || database is null || scripts is null
             ? null
-            : new DevOptions(server, database, scripts, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile);
+            : new DevOptions(server, database, scripts, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile, e2eRole);
     }
 }

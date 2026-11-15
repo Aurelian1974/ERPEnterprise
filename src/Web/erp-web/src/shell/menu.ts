@@ -15,6 +15,8 @@ export interface MenuItem {
 /** Un grup de meniu pe modul; apare numai daca are cel putin o intrare vizibila. */
 export interface MenuGroup {
   readonly module: string;
+  /** Eticheta grupului; implicit numele modulului. */
+  readonly label?: TextKey;
   readonly icon: string;
   readonly items: readonly MenuItem[];
 }
@@ -27,7 +29,17 @@ export interface MenuAccess {
 export const homeItem: MenuItem = { id: 'home', label: 'menu.home', path: '/', icon: '⌂' };
 
 /** Ecranele modulelor se adauga aici pe masura ce sunt implementate (etapele 4-10 ale Nucleului, apoi celelalte module). */
-export const menuGroups: readonly MenuGroup[] = [];
+export const menuGroups: readonly MenuGroup[] = [
+  {
+    module: 'Core',
+    label: 'menu.admin',
+    icon: '⛭',
+    items: [
+      { id: 'companies', label: 'menu.companies', path: '/admin/firme', icon: '', module: 'Core', permission: 'Core.Company.View' },
+      { id: 'config', label: 'menu.config', path: '/admin/config/serii', icon: '', module: 'Core', permission: 'Core.NumberSeries.Manage' },
+    ],
+  },
+];
 
 export function canSee(item: MenuItem, access: MenuAccess): boolean {
   return (

@@ -13,6 +13,7 @@ const user: CurrentUser = {
   permissions: ['Core.Partner.View', 'Core.Item.View'],
   modules: ['Core', 'Finance'],
   licenseState: 'Valid',
+  companies: [],
 };
 
 function renderHome(current: CurrentUser) {

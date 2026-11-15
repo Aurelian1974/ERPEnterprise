@@ -1,6 +1,8 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths } from './schema';
 import { browser } from '../app/browser';
+import { companyStore } from '../app/company';
+import { companyHeader } from './problem';
 
 // Clientul API generat din OpenAPI (UI-03), pe aceeasi origine, cu cookie-ul de sesiune (08, 8.7).
 export const antiforgeryHeader = 'X-XSRF-TOKEN';
@@ -44,6 +46,12 @@ export function loginUrl(): string {
 /** Fara sesiune sau cu pasi de cont in asteptare, browserul merge la paginile Razor /account/*. */
 export const authMiddleware: Middleware = {
   async onRequest({ request }) {
+    if (!request.headers.has(companyHeader)) {
+      const companyId = companyStore.get();
+      if (companyId !== undefined) {
+        request.headers.set(companyHeader, String(companyId));
+      }
+    }
     if (unsafeMethods.has(request.method)) {
       request.headers.set(antiforgeryHeader, await antiforgeryToken());
     }
