@@ -1192,6 +1192,14 @@ Toate textele SQL ale joburilor se generează de installer cu numele bazei și c
 
 **Primul backup (I-22).** `EXEC msdb.dbo.sp_start_job @job_name = N'ERP ERP_PROD - Backup complet';`, apoi installer-ul urmărește `msdb.dbo.sysjobactivity` și `msdb.dbo.sysjobhistory` (la 5 s, maximum 30 de minute) până la terminare. Eșecul (de exemplu calea de backup fără drept de scriere pentru contul SQL Server) oprește instalarea cu mesajul din istoricul jobului. Acest backup pornește și lanțul de backup-uri de log.
 
+**Detalii de implementare (T11, 15.11.2026):**
+
+- I-21 creează întâi folderele `FULL\`, `LOG\` și `UPGRADE\` cu `xp_create_subdir` și categoria `ERP`. Fiecare job se creează într-o tranzacție (job, pas, programare, atașare, server). Programările: complet și curățare zilnic (`freq_type = 4`), log la N minute toată ziua (`freq_subday_type = 4`), integritate și indecși săptămânal (`freq_type = 8`, ziua ca mască: duminică = 1 … sâmbătă = 64).
+- La rulare repetată, versiunea definiției se citește din descriere (`ERP-JOB v<N>`): versiune mai veche sau lipsă → jobul se șterge (cu programarea) și se recreează; altfel se actualizează doar programarea. Jobul își păstrează identitatea și istoricul.
+- Rezultatul unui job se citește din rândul de istoric al rulării pornite de installer (sesiunea curentă a Agent-ului, `start_execution_date` după pornire); la eșec mesajul vine din pasul eșuat. Aceeași rutină servește la R-06.
+- `core.usp_Maintenance_IndexesAndStatistics` folosește `ONLINE = ON` când `EngineEdition = 3` (Enterprise, Developer, Evaluation) și prelucrează indecșii unul câte unul (excepție `SP-08`, documentată în 02.01, secțiunea 7).
+- **De clarificat (Aurelian):** C-12 acceptă un operator cu `dbcreator` + `securityadmin`, dar joburile cu proprietarul `SUSER_SNAME(0x01)` și `xp_create_subdir` cer `sysadmin`. Până la decizie, I-21 verifică `sysadmin` și oprește cu cod 12 și un mesaj clar.
+
 ### 8.14 Pornire și health-check (I-23)
 
 1. Pornește serviciul (`ServiceController.Start`, așteaptă `Running` maximum 60 s) și pool-ul.
