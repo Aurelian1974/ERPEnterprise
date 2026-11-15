@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ErpSetup</AssemblyName>
+    <RootNamespace>Erp.Setup</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <!-- R1: publicat self-contained, single-file, win-x64 (numai la dotnet publish, ca proiectul sa poata fi referit din teste). -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <!-- Cheia publica a kitului (4.3). Se da la build: -p:KitPublicKeyFile=<cale PEM>. -->
+  <ItemGroup Condition="'$(KitPublicKeyFile)' != ''">
+    <EmbeddedResource Include="$(KitPublicKeyFile)" LogicalName="Erp.Setup.KitPublicKey.pem" />
+  </ItemGroup>
+
+  <Target Name="RequireKitPublicKeyForRelease" BeforeTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(_IsPublishing)' == 'true' and '$(KitPublicKeyFile)' == ''">
+    <Error Text="Publicarea Release a ErpSetup cere -p:KitPublicKeyFile=&lt;cheia publica a kitului, PEM&gt;." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
+    <ProjectReference Include="..\Erp.Setup.Windows\Erp.Setup.Windows.csproj" />
+    <ProjectReference Include="..\Erp.Setup.Sql\Erp.Setup.Sql.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Setup.Tests" />
+  </ItemGroup>
+
+</Project>

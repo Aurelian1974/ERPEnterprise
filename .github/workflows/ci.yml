@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tagurile pentru MIG-02 si minUpgradeFrom
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Compilare (avertismente = erori)
+        run: dotnet build Erp.slnx -c Release
+
+      - name: Teste build kit (Pester)
+        shell: pwsh
+        run: |
+          Install-Module Pester -MinimumVersion 5.5.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          $config = New-PesterConfiguration
+          $config.Run.Path = 'build/tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Kit de test
+        shell: pwsh
+        run: ./build/package-kit.ps1 -Version 2026.0.${{ github.run_number }} -TestKit
+
+      - name: Teste unitare (inclusiv verificarea kitului generat)
+        shell: pwsh
+        run: |
+          $env:ERP_TEST_KIT_DIR = Resolve-Path "artifacts/ERP-2026.0.${{ github.run_number }}-kit"
+          $env:ERP_TEST_KIT_PUBLIC_KEY = Resolve-Path 'artifacts/kit-signing-test/kit-test-public.pem'
+          dotnet test --solution Erp.slnx -c Release --no-build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kit-de-test
+          path: artifacts/ERP-*-kit.zip
+          retention-days: 7

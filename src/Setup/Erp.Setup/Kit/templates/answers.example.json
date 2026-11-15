@@ -1,0 +1,46 @@
+{
+  "instance": "PROD",
+  "installRoot": "C:\\Program Files\\Erp",
+  "dataRoot": "C:\\ProgramData\\Erp",
+  "site": {
+    "hostName": "erp.grupulexemplu.local",
+    "httpsPort": 443,
+    "httpRedirect": true,
+    "certificateThumbprint": "3F2A9C0011223344556677889900AABBCCDDEEE1",
+    "allowSelfSignedCertificate": false
+  },
+  "sql": {
+    "server": "SQL01\\ERP",
+    "databaseName": "ERP_PROD",
+    "operatorAuthentication": "Windows",
+    "operatorSqlLogin": null,
+    "appAuthentication": "Sql",
+    "appWindowsAccount": null,
+    "dataFilePath": "D:\\SQLData",
+    "logFilePath": "L:\\SQLLog",
+    "initialDataSizeMb": 1024,
+    "initialLogSizeMb": 512,
+    "encrypt": "Mandatory",
+    "trustServerCertificate": false
+  },
+  "backup": {
+    "backupRoot": "B:\\SQLBackup",
+    "fullBackupTime": "01:00",
+    "logBackupEveryMinutes": 15,
+    "retentionDays": 14,
+    "integrityCheckDay": "Sunday",
+    "integrityCheckTime": "03:00"
+  },
+  "license": {
+    "filePath": "C:\\Kit\\grupul-exemplu.lic"
+  },
+  "administrator": {
+    "userName": "administrator",
+    "displayName": "Administrator ERP",
+    "email": "it@grupulexemplu.ro"
+  },
+  "prerequisites": {
+    "installIisFeatures": true,
+    "installHostingBundle": true
+  }
+}
