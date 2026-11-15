@@ -71,7 +71,8 @@ public sealed class HostingIntegrationTests(SqlServerFixture sql)
 
         Assert.Equal(HealthStatus.Healthy, await new DatabaseCheck(Connect).CheckAsync(Ct));
         Assert.Equal(HealthStatus.Unhealthy, await new WorkerCheck(Connect).CheckAsync(Ct));
-        Assert.Equal(HealthStatus.Unhealthy, await new DatabaseCheck(() => new SqlConnection(connectionString.Replace("Password=", "Password=x", StringComparison.Ordinal))).CheckAsync(Ct));
+        var wrongPassword = new SqlConnectionStringBuilder(connectionString) { Password = "Parola#Gresita_123" }.ConnectionString;
+        Assert.Equal(HealthStatus.Unhealthy, await new DatabaseCheck(() => new SqlConnection(wrongPassword)).CheckAsync(Ct));
 
         await sql.ExecuteAsync("""
             INSERT INTO hangfire.[Server] (Id, Data, LastHeartbeat) VALUES (N'old-server', N'{}', DATEADD(MINUTE, -5, SYSUTCDATETIME()));
