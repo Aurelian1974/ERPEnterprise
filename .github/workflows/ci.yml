@@ -42,10 +42,23 @@ jobs:
         run: |
           $env:ERP_TEST_KIT_DIR = Resolve-Path "artifacts/ERP-2026.0.${{ github.run_number }}-kit"
           $env:ERP_TEST_KIT_PUBLIC_KEY = Resolve-Path 'artifacts/kit-signing-test/kit-test-public.pem'
-          dotnet test --solution Erp.slnx -c Release --no-build
+          dotnet test --solution Erp.slnx -c Release --no-build --filter-not-trait "Category=Integration"
 
       - uses: actions/upload-artifact@v4
         with:
           name: kit-de-test
           path: artifacts/ERP-*-kit.zip
           retention-days: 7
+
+  # Integrare SQL (14.2): SQL Server 2022 in Testcontainers, collation server SQL_Latin1_General_CP1_CI_AS (TST-09).
+  sql-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Teste de integrare SQL
+        run: dotnet test --project src/Setup/Erp.Setup.Tests/Erp.Setup.Tests.csproj -c Release --filter-trait "Category=Integration"

@@ -9,6 +9,9 @@ public sealed class OperatorConsole(TextWriter output, TextWriter error, bool us
 
     public void Error(string message) => Write(error, ConsoleColor.Red, message);
 
+    /// <summary>Rand rosu in iesirea standard (de exemplu un rand de tabel), ca ordinea afisarii sa se pastreze.</summary>
+    public void Failure(string message) => Write(output, ConsoleColor.Red, message);
+
     private void Write(TextWriter writer, ConsoleColor color, string message)
     {
         if (!useColor)

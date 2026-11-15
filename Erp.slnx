@@ -10,6 +10,9 @@
     <Project Path="src/Setup/Erp.Setup.Windows/Erp.Setup.Windows.csproj" />
     <Project Path="src/Setup/Erp.Setup/Erp.Setup.csproj" />
   </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Erp.Licensing/Erp.Licensing.csproj" />
+  </Folder>
   <Folder Name="/src/Worker/">
     <Project Path="src/Worker/Erp.Worker/Erp.Worker.csproj" />
   </Folder>

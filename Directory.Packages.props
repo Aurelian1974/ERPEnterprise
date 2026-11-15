@@ -19,5 +19,6 @@
   </ItemGroup>
   <ItemGroup Label="Teste">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.16.0" />
   </ItemGroup>
 </Project>

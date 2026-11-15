@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cheile publice de verificare a licentelor: Keys/<keyId>.pem (8.9); cheia privata nu sta in depozit. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Keys\*.pem" LogicalName="Erp.Licensing.Keys.%(Filename).pem" />
+  </ItemGroup>
+
+</Project>

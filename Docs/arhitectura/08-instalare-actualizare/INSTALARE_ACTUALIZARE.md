@@ -250,7 +250,7 @@ build/
 
 Maparea folderului de modul spre folderul din kit (= schema, numele din jurnalul DbUp): `Core`→`core`, `Finance`→`fin`, `Sales`→`sales`, `Purchasing`→`purch`, `Inventory`→`inv`, `Integrations`→`intg`, `Wms`→`wms`, `Tms`→`tms`, `Manufacturing`→`mfg`, `Hr`→`hr`, `Pos`→`pos`, `Construction`→`cons`, `Crm`→`crm`, `Reporting`→`rpt`; `src/Auth/Erp.Auth/Database`→`ids`; `src/Worker/Erp.Worker/Database`→`hangfire`. Un folder `src/Modules/<Modul>` cu `Database/` fără mapare oprește build-ul kitului (decizie Aurelian, 15.11.2026).
 
-Testele .NET rulează cu Microsoft.Testing.Platform (`global.json`, `dotnet test --solution Erp.slnx`); CI-ul (`.github/workflows/ci.yml`) compilează, rulează testele Pester, generează un kit de test (`package-kit.ps1 -TestKit`) și îl verifică cu verificatorul installer-ului.
+Testele .NET rulează cu Microsoft.Testing.Platform (`global.json`): `dotnet test --solution Erp.slnx --filter-not-trait "Category=Integration"` pentru testele unitare; testele de integrare SQL (`[Trait("Category", "Integration")]`, Testcontainers, necesită Docker) cu `--filter-trait "Category=Integration"`. CI-ul (`.github/workflows/ci.yml`) compilează, rulează testele Pester, generează un kit de test (`package-kit.ps1 -TestKit`) și îl verifică cu verificatorul installer-ului pe Windows, iar testele de integrare SQL pe Ubuntu.
 
 Pachete NuGet folosite de installer (versiuni fixate în `Directory.Packages.props`): `System.CommandLine`, `dbup-sqlserver`, `Microsoft.Data.SqlClient`, `Dapper`, `Microsoft.Web.Administration`, `Serilog` (+ `Serilog.Sinks.File`, `Serilog.Sinks.Console`), `System.Security.Cryptography.ProtectedData`. Interzis: `Microsoft.EntityFrameworkCore*`, `OpenIddict.EntityFrameworkCore*`, `Microsoft.AspNetCore.Identity.EntityFrameworkCore`, `Duende.*` (licență plătită), `OpenIddict.*` (nu e necesar, decizia din 14.11.2026).
 
@@ -479,7 +479,15 @@ Comanda `check` rulează doar aceste verificări; `install` și `upgrade` le rul
 | C-22 | Licența | Semnătura, produsul, data de expirare (secțiunea 8.9) | Blocant |
 | C-23 | Nu există altă instanță cu același nume (doar `install`) | `C:\ProgramData\Erp\<Instanță>\instance.json` nu există; site-ul și serviciul cu acele nume nu există | Blocant |
 
-Rezultatul se afișează ca tabel și se salvează în `logs\setup\check-<dată>.json`.
+Rezultatul se afișează ca tabel și se salvează în `logs\setup\check-<dată>.json` (dacă folderul instanței nu există încă, lângă jurnalul din `%TEMP%\ErpSetup\`).
+
+**Detalii de implementare (T5, 15.11.2026):**
+
+- Toate verificările rulează, ca operatorul să vadă lista completă; dacă C-09 eșuează, C-10…C-19 apar „nu s-a verificat”.
+- Codul de ieșire îl decide primul eșec în ordinea ID-urilor: C-01 și C-02 → 10, C-15 (bază cu date) → 31, C-16 → 32, C-22 → 40, orice altă verificare → 12. Fără eșecuri: 1 dacă există avertismente, altfel 0.
+- Comanda `check` nu modifică nimic: la C-05 și C-06, o lipsă care va fi instalată la I-04 (`installIisFeatures`/`installHostingBundle = true`) e avertisment; la C-17 se verifică existența folderelor cu `sys.dm_os_file_exists` (lipsă cu un părinte existent = avertisment „va fi creat”), iar `xp_create_subdir` se folosește doar la `install` și `upgrade`.
+- C-08: conflict înseamnă alt site IIS cu aceeași pereche nume de gazdă + port (443 și, cu `httpRedirect`, 80) sau o legare SNI în http.sys pe `hostName:port` cu alt certificat, care nu aparține site-ului acestei instanțe. Site-uri cu alt nume de gazdă pe același port (de exemplu instanța `TEST`, IA-17) nu sunt conflict.
+- C-05 interoghează `Get-WindowsFeature` (comandă fixă, lansată cu `ArgumentList`); C-23 la o instalare întreruptă (`state = Installing`) a aceleiași instanțe trece, pentru reluare (8.1), iar C-15 acceptă atunci baza cu `ErpInstallId` egal cu `installId`.
 
 ---
 
@@ -991,6 +999,8 @@ JSON-ul din `payload`:
 ```
 
 Verificările installer-ului (C-22 și I-12): semnătura validă cu una din cheile publice încorporate (după `keyId`); `product = "ERP"` (comparație exactă); `validUntil` ≥ azi (o licență expirată nu se instalează, chiar dacă aplicația are perioadă de grație); fiecare cod din `modules` e cunoscut de versiunea kitului (un modul necunoscut → avertisment). CUI-urile se verifică abia când se creează firmele, în asistent (02.01, 4.4).
+
+Semnătura e în format IEEE P1363 (`r||s`, 64 de octeți), ca la kit. Cheile publice se încorporează în `Erp.Licensing` din `src/Shared/Erp.Licensing/Keys/<keyId>.pem`; cheile private rămân la instrumentul de emitere a licențelor. Codurile de modul cunoscute: `Core`, `Finance`, `Sales`, `Purchasing`, `Inventory`, `Integrations`, `Wms`, `Tms`, `Manufacturing`, `Hr`, `Pos`, `Construction`, `Crm`, `Reporting`.
 
 Pasul I-12: copiază fișierul în `license\erp.lic` (fișierul e sursa de adevăr la pornire) și apelează `core.usp_InstallationLicense_Save` cu câmpurile din payload și semnătura, pentru afișare și istoric (02.01, `InstallationLicense`).
 

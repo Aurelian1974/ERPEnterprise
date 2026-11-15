@@ -52,6 +52,16 @@ internal sealed class CommandRunner(TimeProvider time)
         log.Information("Kit verificat: {Product} {Version}", kit.Manifest!.Product, kit.Manifest.Version);
         console.Info($"Kit verificat: {kit.Manifest.Product} {kit.Manifest.Version}.");
 
+        // La check, drepturile de administrator sunt verificarea C-01, raportata impreuna cu celelalte.
+        if (invocation.Command == "check")
+        {
+            var exitCode = new CheckCommand(time)
+                .RunAsync(invocation, kit.Manifest, log, console, Path.GetDirectoryName(logFiles.TextPath)!)
+                .GetAwaiter().GetResult();
+            console.Info($"Jurnal: {logFiles.TextPath}");
+            return exitCode;
+        }
+
         if (!IsAdministrator())
         {
             log.Error("Installer-ul nu rulează ca administrator");
