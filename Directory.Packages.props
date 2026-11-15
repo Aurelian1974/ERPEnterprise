@@ -28,7 +28,7 @@
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   <ItemGroup Label="Module (Nucleu 4.1, 07 Stack tehnologic)">
-    <!-- MediatR 12.5.0 = ultima versiune Apache-2.0; 13+ are licenta comerciala Lucky Penny (07, decizie de confirmat). -->
+    <!-- MediatR 12.5.0 = ultima versiune Apache-2.0; 13+ are licenta comerciala Lucky Penny si nu se foloseste (07, decizie 15.11.2026). -->
     <PackageVersion Include="MediatR" Version="12.5.0" />
     <PackageVersion Include="FluentValidation" Version="12.2.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />

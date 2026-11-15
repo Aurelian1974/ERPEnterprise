@@ -23,6 +23,20 @@ BEGIN
     FROM core.[User] AS u
     WHERE u.Id = @UserId;
 
+    -- Rolul de sistem ADMIN are drepturi depline (decizie 15.11.2026): toate permisiunile din catalog, inclusiv cele
+    -- adaugate ulterior de alte module, fara sa depinda de core.RolePermission.
+    IF EXISTS (
+        SELECT 1
+        FROM core.UserRoleAssignment AS a
+        JOIN core.Role AS r ON r.Id = a.RoleId
+        WHERE a.UserId = @UserId
+          AND r.Code = N'ADMIN' AND r.IsSystem = 1
+          AND (a.CompanyId IS NULL OR a.CompanyId = @EffectiveCompanyId))
+    BEGIN
+        SELECT p.Code FROM core.Permission AS p;
+        RETURN;
+    END;
+
     SELECT DISTINCT p.Code
     FROM core.UserRoleAssignment AS a
     JOIN core.RolePermission AS rp ON rp.RoleId = a.RoleId

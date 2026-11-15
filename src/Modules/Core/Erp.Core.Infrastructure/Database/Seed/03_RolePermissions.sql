@@ -1,11 +1,12 @@
 -- Permisiunile Nucleului ale rolurilor de sistem (02.01, 8). Se adaugă doar legăturile lipsă: clientul poate extinde
--- rolurile, iar o rerulare nu șterge nimic (MIG-06). ADMIN primește toate permisiunile Core.*.
+-- rolurile, iar o rerulare nu șterge nimic (MIG-06). ADMIN are drepturi depline prin core.usp_User_GetPermissions
+-- (toate permisiunile din catalog); legăturile de mai jos îl arată complet și în matricea rolurilor.
 -- Completare (15.11.2026): rolul NOMENCLATOARE primește și Partner.View / Item.View, fără de care nu ar vedea listele pe care le gestionează.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
 WITH RoleMap (RoleCode, PermissionCode) AS (
-    SELECT N'ADMIN', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Core'
+    SELECT N'ADMIN', p.Code FROM core.Permission AS p
     UNION ALL
     SELECT RoleCode, PermissionCode FROM (VALUES
         (N'NOMENCLATOARE', N'Core.Partner.View'),

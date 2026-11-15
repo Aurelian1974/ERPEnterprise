@@ -60,6 +60,12 @@ public sealed class CoreDatabase(SqlServerFixture sql) : IAsyncLifetime
             JOIN core.Role AS r ON r.Code = a.RoleCode;
             SELECT Id FROM @Ids WHERE UserName = N'admin.it';
             """, new { Admin, Standard, Inactive, Expired });
+
+        // Permisiunea unui modul livrat dupa Nucleu, fara legatura in core.RolePermission (ca dupa un upgrade).
+        await connection.ExecuteAsync("""
+            INSERT INTO core.Permission (Code, ModuleCode, Description, CreatedBy)
+            VALUES (N'Sales.Invoice.View', N'Sales', N'Vizualizare facturi (test)', 1);
+            """);
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -157,14 +163,17 @@ public sealed class CorePlatformIntegrationTests(CoreDatabase database) : IClass
     {
         await using var session = new Infrastructure.Data.DbSession(database.ConnectionString);
         var loader = new UserContextLoader(session);
+        var catalog = await Scalar<int>("SELECT COUNT(*) FROM core.Permission;", new { });
 
         var adminAnyCompany = await loader.LoadAsync(database.Admin, 99, Ct);
         var adminNoCompany = await loader.LoadAsync(database.Admin, null, Ct);
         var standardOwn = await loader.LoadAsync(database.Standard, 5, Ct);
         var standardOther = await loader.LoadAsync(database.Standard, 6, Ct);
 
-        Assert.Equal(21, adminAnyCompany!.Permissions.Count);
-        Assert.Equal((99, 21), (adminAnyCompany.CompanyId, adminNoCompany!.Permissions.Count));
+        // ADMIN are drepturi depline: tot catalogul, inclusiv permisiunile modulelor adaugate ulterior.
+        Assert.Equal(catalog, adminAnyCompany!.Permissions.Count);
+        Assert.Contains("Sales.Invoice.View", adminAnyCompany.Permissions);
+        Assert.Equal((99, catalog), (adminAnyCompany.CompanyId, adminNoCompany!.Permissions.Count));
         Assert.Equal(0, adminNoCompany.CompanyId);
         Assert.Equal(["Core.Company.View", "Core.Item.View", "Core.Partner.View"], standardOwn!.Permissions.Order(StringComparer.Ordinal));
         Assert.Empty(standardOther!.Permissions);

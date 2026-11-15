@@ -647,7 +647,7 @@ Roluri de sistem livrate implicit (clientul le poate copia și adapta):
 
 | Rol | Permisiuni Nucleu |
 | --- | --- |
-| Administrator | Toate permisiunile `Core.*` |
+| Administrator | Drepturi depline: toate permisiunile din catalog, ale tuturor modulelor, inclusiv cele adăugate ulterior (decizie Aurelian, 15.11.2026; aplicată de `core.usp_User_GetPermissions`, independent de `core.RolePermission`) |
 | Responsabil nomenclatoare | `Partner.Manage`, `Item.Manage`, `Nomenclature.Manage`, `Dimension.Manage`, `Import.Run` |
 | Auditor | Toate permisiunile `*.View` + `Core.Audit.View`, fără modificări |
 | Utilizator standard | `Partner.View`, `Item.View`, `Company.View` |
