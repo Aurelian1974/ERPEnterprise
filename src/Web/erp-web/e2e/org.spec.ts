@@ -102,4 +102,13 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await expect(page.locator('#series-title')).toContainText(`Firma E2E ${suffix} SRL`);
   await choose(page, 'company', before, before.slice(0, 4));
   await expect(page.locator('#series-title')).toContainText(before);
+
+  // Pe ecranul Firme, firma aleasa din antet devine nodul selectat si fisa ei se afiseaza.
+  await page.goto('/admin/firme?nod=g-1');
+  await choose(page, 'company', `Firma E2E ${suffix} SRL`, 'Firma');
+  await expect(page).toHaveURL(/nod=c-\d+/);
+  await expect(page.getByRole('heading', { level: 2, name: new RegExp(`Firma E2E ${suffix} SRL`) })).toBeVisible();
+  await expect(page.locator('.e-treeview li.e-list-item.e-active > .e-text-content .tree-name')).toHaveText(`Firma E2E ${suffix} SRL`);
+  await choose(page, 'company', before, before.slice(0, 4));
+  await expect(page.getByRole('heading', { level: 2, name: new RegExp(before) })).toBeVisible();
 });

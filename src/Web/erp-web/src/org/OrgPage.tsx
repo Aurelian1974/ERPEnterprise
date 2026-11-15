@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
 import { TextBoxComponent } from '@syncfusion/ej2-react-inputs';
 import type { CurrentUser } from '../api/session';
+import { companyStore } from '../app/company';
 import { t } from '../i18n';
 import { BankAccountsTab, CompanySeriesTab } from './CompanyTabs';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
@@ -12,6 +13,17 @@ import { OrgTreeView, type OrgTreeHandle } from './OrgTreeView';
 /** Selectia din URL (?nod=c-5 sau ?nou=company, ?nou=branch&firma=5), ca ecranul sa poata fi deschis dintr-un link. */
 function useSelection() {
   const [params, setParams] = useSearchParams();
+  // Firma aleasa din antet devine nodul selectat: ecranul arata firma curenta, nu ramane pe firma anterioara.
+  useEffect(
+    () =>
+      companyStore.subscribe(() => {
+        const companyId = companyStore.get();
+        if (companyId !== undefined) {
+          setParams({ nod: nodeId('company', companyId) });
+        }
+      }),
+    [setParams],
+  );
   return {
     node: params.get('nod') ?? undefined,
     create: params.get('nou') ?? undefined,
