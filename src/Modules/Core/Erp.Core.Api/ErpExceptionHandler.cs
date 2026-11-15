@@ -21,6 +21,14 @@ public sealed class ErpExceptionHandler(
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        // Clientul a renuntat (navigare, reincarcare): nu e o eroare a aplicatiei si nu mai are cine primi raspunsul.
+        if (httpContext.RequestAborted.IsCancellationRequested)
+        {
+            log.LogInformation("Cerere anulată de client: {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+            httpContext.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+            return true;
+        }
+
         // Handler-ul e singleton (ASP.NET Core); contextul cererii e scoped.
         var context = httpContext.RequestServices.GetRequiredService<ICurrentContext>();
         var error = exception as ErpException ?? sqlErrors.Translate(exception);

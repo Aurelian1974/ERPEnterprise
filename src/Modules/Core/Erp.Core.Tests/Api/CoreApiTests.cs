@@ -102,6 +102,38 @@ public sealed class CoreApiTests
     }
 
     [Fact]
+    public async Task Request_aborted_by_the_client_is_not_reported_as_an_unexpected_error()
+    {
+        using var aborted = new CancellationTokenSource();
+        await aborted.CancelAsync();
+        var http = new Microsoft.AspNetCore.Http.DefaultHttpContext { RequestAborted = aborted.Token };
+        var problems = new RecordingProblems();
+        var handler = new ErpExceptionHandler(problems, new NoTranslation(), Microsoft.Extensions.Logging.Abstractions.NullLogger<ErpExceptionHandler>.Instance);
+
+        var handled = await handler.TryHandleAsync(http, new OperationCanceledException(), Ct);
+
+        Assert.True(handled);
+        Assert.Equal(499, http.Response.StatusCode);
+        Assert.False(problems.Written);
+    }
+
+    private sealed class NoTranslation : ISqlErrorTranslator
+    {
+        public ErpException? Translate(Exception exception) => null;
+    }
+
+    private sealed class RecordingProblems : Microsoft.AspNetCore.Http.IProblemDetailsService
+    {
+        public bool Written { get; private set; }
+
+        public ValueTask WriteAsync(Microsoft.AspNetCore.Http.ProblemDetailsContext context)
+        {
+            Written = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    [Fact]
     public async Task Validation_errors_are_returned_as_400_with_errors_per_field()
     {
         var (client, _) = await StartAsync();
