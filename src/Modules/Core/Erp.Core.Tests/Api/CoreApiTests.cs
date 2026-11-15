@@ -83,6 +83,8 @@ public sealed class CoreApiTests
         Assert.Equal((Subject, (int?)7), users.LastCall);
         Assert.Equal(("administrator", 7), (me!.UserName, me.CompanyId));
         Assert.Equal(["Core.Partner.View", "Core.Settings.Manage"], me.Permissions);
+        Assert.Equal(["Core"], me.Modules);
+        Assert.Equal("Valid", me.LicenseState);
     }
 
     [Fact]

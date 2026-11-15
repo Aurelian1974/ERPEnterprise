@@ -55,6 +55,13 @@ if (builder.Configuration["Erp:DataProtectionKeysPath"] is { Length: > 0 } keysP
 }
 
 builder.Services.AddErpAuth(builder.Configuration);
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
+{
+    document.Info.Title = "ERP API";
+    document.Info.Version = build.Version;
+    return Task.CompletedTask;
+}));
 
 var app = builder.Build();
 
@@ -63,6 +70,13 @@ app.UseMiddleware<MaintenanceMiddleware>();
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseMiddleware<SchemaGuardMiddleware>();
+// Fisierele interfetei (assets/ cu hash in nume) nu cer autentificare; se comprima doar ele (fara date ale utilizatorului).
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/assets"), assets => assets.UseResponseCompression());
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context => context.Context.Response.Headers.CacheControl =
+        context.Context.Request.Path.StartsWithSegments("/assets") ? "public, max-age=31536000, immutable" : "no-cache",
+});
 app.UseAuthentication();
 app.UseErpApi();
 app.UseErpAccountGate();
@@ -77,16 +91,35 @@ app.MapErpHealth(build, () =>
 
 app.MapCoreApi();
 app.MapErpAuth();
+if (development)
+{
+    // Documentul OpenAPI din care se genereaza clientul interfetei (src/Web/erp-web, npm run api); nu se expune in productie.
+    app.MapOpenApi();
+}
 
-// Pagina provizorie pana la interfata React. Health-check-ul installer-ului cere 200 HTML pe / si /account/login, fara
-// redirectari (8.14), deci / raspunde 200 si trimite browserul fara sesiune la /account/login, ca viitoarea aplicatie React.
-app.MapGet("/", (HttpContext http, Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery) =>
-    Results.Content(http.User.Identity?.IsAuthenticated == true
-        ? PlaceholderPage.Home(http.User.FindFirst(ErpClaims.DisplayName)?.Value ?? http.User.Identity.Name ?? string.Empty,
-            antiforgery.GetAndStoreTokens(http).RequestToken!)
-        : PlaceholderPage.RedirectToLogin(), "text/html; charset=utf-8"));
+// Interfata React (src/Web/erp-web) publicata in wwwroot. Health-check-ul installer-ului cere 200 HTML pe / si /account/login,
+// fara redirectari (8.14): index.html raspunde 200, iar aplicatia trimite browserul fara sesiune la /account/login.
+app.MapFallback("/api/{**path}", () => Results.Problem(statusCode: StatusCodes.Status404NotFound));
+var indexFile = app.Environment.WebRootFileProvider.GetFileInfo("index.html");
+if (indexFile.Exists)
+{
+    app.MapFallbackToFile("index.html", new StaticFileOptions { OnPrepareResponse = NoCache });
+}
+else
+{
+    // Fara build-ul interfetei (dezvoltare inainte de npm run build): pagina provizorie.
+    app.MapGet("/", (HttpContext http, Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery) =>
+        Results.Content(http.User.Identity?.IsAuthenticated == true
+            ? PlaceholderPage.Home(http.User.FindFirst(ErpClaims.DisplayName)?.Value ?? http.User.Identity.Name ?? string.Empty,
+                antiforgery.GetAndStoreTokens(http).RequestToken!)
+            : PlaceholderPage.RedirectToLogin(), "text/html; charset=utf-8"));
+}
 
 app.Run();
+
+// index.html se reincarca la fiecare deschidere (versiunea noua dupa upgrade); fisierele din assets/ au hash in nume.
+static void NoCache(Microsoft.AspNetCore.StaticFiles.StaticFileResponseContext context) =>
+    context.Context.Response.Headers.CacheControl = "no-cache, no-store";
 
 internal static class PlaceholderPage
 {

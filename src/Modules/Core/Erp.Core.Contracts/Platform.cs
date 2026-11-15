@@ -51,6 +51,9 @@ public interface ILicenseInfo
 {
     bool IsModuleActive(string moduleCode);
 
+    /// <summary>Codurile modulelor active (meniul interfetei, UI-07); serverul ramane autoritatea prin IsModuleActive.</summary>
+    IReadOnlyCollection<string> ActiveModules { get; }
+
     int? GetLimit(string limitCode);
 
     DateOnly ValidUntil { get; }

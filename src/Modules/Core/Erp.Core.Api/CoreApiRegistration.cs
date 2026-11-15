@@ -18,6 +18,8 @@ public static class CoreApiRegistration
         services.AddScoped<ICurrentUserProfile>(sp => sp.GetRequiredService<HttpCurrentContext>());
         services.AddProblemDetails();
         services.AddExceptionHandler<ErpExceptionHandler>();
+        // Numerele JSON stricte: contractul OpenAPI are tipuri exacte; sumele si cantitatile circula ca siruri (UI, bani).
+        services.ConfigureHttpJsonOptions(json => json.SerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.Strict);
         return services;
     }
 

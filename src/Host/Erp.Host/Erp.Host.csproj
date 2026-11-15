@@ -18,4 +18,17 @@
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <!-- wwwroot e produs de interfata React (src/Web/erp-web, npm run build); nu se pastreaza in Git. Comprimarea se face la
+       servire (/assets), deci fara copiile .br/.gz generate la publicare. -->
+  <PropertyGroup>
+    <CompressionEnabled>false</CompressionEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Update="wwwroot\**" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

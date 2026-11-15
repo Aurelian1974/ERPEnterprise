@@ -430,6 +430,7 @@ public interface IAttachmentStore
 public interface ILicenseInfo
 {
     bool IsModuleActive(string moduleCode);
+    IReadOnlyCollection<string> ActiveModules { get; }      // meniul interfeței (adăugat în etapa 3)
     int? GetLimit(string limitCode);
     DateOnly ValidUntil { get; }
     LicenseState State { get; }                             // Valid, ExpiringSoon, Grace, ReadOnly
@@ -723,6 +724,8 @@ Machetele pentru autentificare și pagina de start (aprobată pe 14.11.2026):
 
 ![Acasă · rolul Contabil șef](ecrane/02-acasa.png)
 
+**Detalii de implementare (etapa 3, 15.11.2026):** interfața React din `src/Web/erp-web` (07, ST1–ST4) are antetul (firma curentă — dezactivată până la firme, etapa 4; notificările — dezactivate până la etapa 10; meniul utilizatorului cu Schimbă parola, Autentificare în doi pași, Ieșire), meniul lateral și pagina Acasă. Meniul arată un ecran numai dacă modulul e activ în licență și rolul are permisiunea; `GET /api/core/me` întoarce pentru asta și `modules` (modulele active) și `licenseState`. Pagina Acasă arată salutul, data (Europe/Bucharest), avertismentul de licență (expiră curând, grație, doar consultare) și modulele active; indicatorii, sarcinile „De rezolvat”, graficele și documentele recente din machetă vin cu modulele care dețin datele (Finanțe, Vânzări, Integrări). Fără sesiune, orice răspuns 401 trimite la `/account/login?returnUrl=…`, iar `IDS_PASSWORD_CHANGE_REQUIRED`/`IDS_TWO_FACTOR_SETUP_REQUIRED` la paginile de cont. `Erp.Host` servește `index.html` pe `/` și pe rutele aplicației (200 HTML, cerința 8.14); `/api/*` necunoscut răspunde 404 ProblemDetails.
+
 **Date de exemplu comune tuturor machetelor** (verificate pe 14.11.2026): instalarea „Grupul Exemplu” are 4 firme (Exemplu Holding SA, Exemplu Distribuție SRL, Exemplu Producție SRL, Exemplu Construct SRL), licență pentru 11 din 14 module (fără WMS, TMS, CRM), 100 de utilizatori din care 86 activi. Meniul Administrare are trei intrări: Utilizatori, Firme și structură, Configurare. Politica de precizie STANDARD are preț 4, cantitate 3, valoare 2 zecimale.
 
 ### 11.1 Ecranul comun „Configurare” (adăugat pe 14.11.2026)
@@ -781,7 +784,7 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 
 ![Asistent de configurare · pasul Firme](ecrane/10-asistent-configurare.png)
 
-**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, 8.7). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4). Până la interfața React, `/` răspunde 200 HTML (cerința health-check-ului installer-ului, 8.14, fără redirectări) și trimite browserul fără sesiune la `/account/login`; cu sesiune arată o pagină provizorie de start.
+**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, 8.7). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4).
 
 ## 12. Criterii de acceptare și teste cheie
 

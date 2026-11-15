@@ -135,6 +135,8 @@ public sealed class FakeLicense : ILicenseInfo
 
     public bool IsModuleActive(string moduleCode) => Modules.Contains(moduleCode);
 
+    public IReadOnlyCollection<string> ActiveModules => Modules;
+
     public int? GetLimit(string limitCode) => null;
 }
 

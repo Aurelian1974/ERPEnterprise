@@ -72,6 +72,8 @@ public sealed class LicenseInfo : ILicenseInfo
 
     public bool IsModuleActive(string moduleCode) => development || modules.Contains(moduleCode);
 
+    public IReadOnlyCollection<string> ActiveModules => development ? [.. LicenseModules.Known] : modules;
+
     public int? GetLimit(string limitCode) => limits is null ? null : limitCode switch
     {
         "companies" => limits.Companies,

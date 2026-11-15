@@ -264,8 +264,22 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
 
    Host și Worker folosesc același `UserSecretsId`, deci setarea se aplică amândurora. Dacă browserul nu acceptă certificatul local: `dotnet dev-certs https --trust` (o singură dată pe mașină; confirmați fereastra Windows).
 
-   Deschideți `https://localhost:7180/`: fără sesiune, pagina trimite browserul la `/account/login`. La prima autentificare a administratorului se cer parola nouă și apoi activarea 2FA (aplicație TOTP, de exemplu Microsoft Authenticator); după aceea `/` arată pagina provizorie de start (numele, schimbarea parolei, 2FA, „Ieșire”), până la interfața React.
+   Deschideți `https://localhost:7180/`: fără sesiune, aplicația trimite browserul la `/account/login`. La prima autentificare a administratorului se cer parola nouă și apoi activarea 2FA (aplicație TOTP, de exemplu Microsoft Authenticator); după aceea `/` arată interfața React (dacă a fost construită, pasul 3), altfel o pagină provizorie.
 
-3. **Ce e normal în dezvoltare:** `/health/ready` raportează `license: Unhealthy` cât timp nu există o cheie publică de licență în `src/Shared/Erp.Licensing/Keys/` și `Erp:LicensePath` nu indică un fișier `.lic` valid. Protecția de versiune acceptă orice bază migrată, cu un avertisment în jurnal (specificația 10.5).
+3. **Interfața React** (`src/Web/erp-web`, Node.js din `.nvmrc`; cheia Syncfusion din variabila `SYNCFUSION_LICENSE` a utilizatorului, activată la `npm install`):
+
+   ```powershell
+   cd src/Web/erp-web
+   npm install           # o dată și după schimbarea package.json
+   npm run dev           # http://localhost:5173, cu reîncărcare la salvare; API-ul și /account/* merg la Erp.Host
+   npm run build         # construiește în src/Host/Erp.Host/wwwroot, servită de Erp.Host pe https://localhost:7180
+   npm test              # teste Vitest; npm run lint și npm run typecheck pentru verificări
+   npm run e2e           # Playwright pe https://localhost:7180 (Host pornit, interfața construită)
+   npm run api           # după schimbarea API-ului: regenerează clientul din OpenAPI (Host pornit în Development)
+   ```
+
+   `npm run e2e` resetează înainte utilizatorul de test `e2e.operator` (`./build/dev-database.ps1 -E2EUser e2e.operator -PasswordFile <fișier>`: parolă temporară nouă, rol STANDARD, fără 2FA obligatoriu). Prima dată: `npx playwright install chromium`.
+
+4. **Ce e normal în dezvoltare:** `/health/ready` raportează `license: Unhealthy` cât timp nu există o cheie publică de licență în `src/Shared/Erp.Licensing/Keys/` și `Erp:LicensePath` nu indică un fișier `.lic` valid; fără licență, în `Development` toate modulele sunt active. Protecția de versiune acceptă orice bază migrată, cu un avertisment în jurnal (specificația 10.5).
 
 Bazele `ERP_DEV` nu se folosesc pentru teste de instalare: o instalare reală se face cu `ErpSetup.exe`, pe Windows Server.

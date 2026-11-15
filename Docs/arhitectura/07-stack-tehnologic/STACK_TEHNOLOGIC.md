@@ -35,12 +35,12 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Mesagerie internă | Outbox în SQL + procesator în fundal; fără broker extern | 01 (P8); schița | Validat |
 | Joburi | Hangfire 1.8, stocare în SQL Server (schema `hangfire`), în serviciul `Erp.Worker` | 08, secțiunile 1 și 8.5 | Validat |
 | Identitate | ASP.NET Core Identity cu cookie, store-uri Dapper în schema `ids`, pagini Razor `/account/*`, 2FA, chei API pentru conturi tehnice și POS, autentificare Windows opțională | 08, secțiunea 8.7 (D10) | Validat |
-| Frontend | React + TypeScript (strict), Vite, TanStack Query, React Hook Form + Zod | 01 (stack fix); schița; `UI-03` | Validat (React + TS); aprobat în schiță (restul) |
-| Client API | Generat din OpenAPI, nu scris de mână | `UI-03` | Validat |
+| Frontend | React + TypeScript (strict), Vite, TanStack Query, React Hook Form + Zod | 01 (stack fix); schița; `UI-03` | Validat (React + TS); aprobat în schiță (restul). Implementat în etapa 3 a Nucleului (15.11.2026): React 19, React Router 8, Vite 8, TanStack Query 5; React Hook Form + Zod se adaugă cu primele formulare (etapa 4). **TypeScript 5.9**, nu 7.0: `openapi-typescript` și `typescript-eslint` nu acceptă încă TypeScript 7 (de reverificat la actualizările lunare) |
+| Client API | Generat din OpenAPI, nu scris de mână | `UI-03` | Validat. Implementat: documentul `Microsoft.AspNetCore.OpenApi` (`/openapi/v1.json`, numai în `Development`), salvat în `src/Web/erp-web/openapi/erp-api.json`; tipurile cu `openapi-typescript`, apelurile cu `openapi-fetch` (`npm run api`) |
 | Calcule zecimale în UI | Totaluri de la server sau `decimal.js` cu aceleași reguli; valorile circulă ca string | `UI-05` | Validat |
 | Componente UI | Syncfusion Essential JS 2 pentru React (grile, formulare, calendare, grafice etc.) | ST4 | Validat |
 | Tabele mari | Syncfusion DataGrid (paginare și filtrare pe server, `UI-*`) | ST4; schița propunea AG Grid sau TanStack Table | Propus (decurge din ST4), de confirmat |
-| Livrarea UI | Fișiere statice în `wwwroot` al `Erp.Host`, același origin cu API-ul (cookie `SameSite=Strict`) | 08, secțiunile 1 și 8.7 | Validat |
+| Livrarea UI | Fișiere statice în `wwwroot` al `Erp.Host`, același origin cu API-ul (cookie `SameSite=Strict`) | 08, secțiunile 1 și 8.7 | Validat. Implementat: `package-kit.ps1` rulează `npm ci` și `npm run build` înainte de publicare; `index.html` fără cache, `assets/` (nume cu hash) în cache un an și comprimate Brotli/gzip la servire |
 | Rapoarte și documente | QuestPDF pentru facturi și state; ClosedXML pentru Excel; BI: Power BI Report Server sau Metabase, on-premise | Schița | Aprobat în schiță |
 | Jurnale | Serilog, jurnale structurate fără date personale | `NET-18` | Validat |
 | Observabilitate | OpenTelemetry, Seq local | Schița | Aprobat în schiță |
@@ -48,8 +48,8 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | POS | Client local cu SQLite și driver pentru casa de marcat; interfața: React în Electron sau WPF | Schița; 08, secțiunea 13 | **De decis** în 02.10 (vezi secțiunea 5) |
 | Installer | Aplicație consolă .NET self-contained (`ErpSetup.exe`), fără MSI | 08, decizia D2 | Validat |
 | Teste .NET | xUnit v3 pe Microsoft.Testing.Platform; Testcontainers cu SQL Server real; NetArchTest (fork-ul întreținut `NetArchTest.eNhancedEdition`, același API; originalul nu mai e actualizat din 2021) | `TST-02`–`TST-04`; `global.json` | Validat |
-| Teste end-to-end | Playwright, doar pentru fluxurile critice ale fiecărui modul | `TST-08` | Recomandat |
-| Teste de componente UI | — | — | **De decis** |
+| Teste end-to-end | Playwright, doar pentru fluxurile critice ale fiecărui modul | `TST-08` | Recomandat. Implementat (etapa 3): rulează local pe Host și baza de dezvoltare (`npm run e2e`), nu în CI (CI-ul nu are încă Host + SQL Server pe Windows) |
+| Teste de componente UI | Vitest + Testing Library (jsdom), în CI (jobul `web`) | Planul Nucleului, aprobat 15.11.2026 | Validat |
 | Construire și CI | GitHub Actions; kit construit cu `build/package-kit.ps1`; teste Pester pentru scripturile de build | 08, secțiunile 4 și 5 | Validat |
 
 ---
@@ -84,7 +84,6 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 
 | Subiect | Opțiuni din documentație | Observație |
 | --- | --- | --- |
-| Tabele mari în UI | Syncfusion DataGrid (din ST4), în locul AG Grid sau TanStack Table din schiță | De confirmat de Aurelian |
-| Teste de componente UI | — | Nicio sursă nu le numește |
+| Tabele mari în UI | Syncfusion DataGrid (din ST4), în locul AG Grid sau TanStack Table din schiță | Implicit în planul Nucleului aprobat de Aurelian pe 15.11.2026; se aplică la primele liste (etapa 4) |
 | Interfața POS | React în Electron sau WPF | Schița lasă ambele variante. ST1 se referă la interfața aplicației ERP; dacă se aplică și la POS, rămâne varianta React în Electron. Se decide în 02.10 |
 | Node.js 27 (aprilie 2027) | Ultima stabilă sau ultima LTS | ST3, secțiunea 1 |

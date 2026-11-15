@@ -20,6 +20,13 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Interfata React se construieste in kit (07, ST2/ST3); licenta Syncfusion din secretul depozitului (ST4).
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/Web/erp-web/package-lock.json
+
       - name: Compilare (avertismente = erori)
         run: dotnet build Erp.slnx -c Release
 
@@ -35,6 +42,8 @@ jobs:
 
       - name: Kit de test
         shell: pwsh
+        env:
+          SYNCFUSION_LICENSE: ${{ secrets.SYNCFUSION_LICENSE }}
         run: ./build/package-kit.ps1 -Version 2026.0.${{ github.run_number }} -TestKit
 
       - name: Teste unitare (inclusiv verificarea kitului generat)
@@ -49,6 +58,35 @@ jobs:
           name: kit-de-test
           path: artifacts/ERP-*-kit.zip
           retention-days: 7
+
+  # Interfata React (src/Web/erp-web): lint, tipuri strict, teste Vitest. E2E Playwright ruleaza local (Host + baza de dezvoltare).
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Web/erp-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/Web/erp-web/package-lock.json
+
+      - name: Dependențe
+        env:
+          SYNCFUSION_LICENSE: ${{ secrets.SYNCFUSION_LICENSE }}
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tipuri
+        run: npm run typecheck
+
+      - name: Teste
+        run: npm test
 
   # Integrare SQL (14.2): SQL Server 2022 in Testcontainers, collation server SQL_Latin1_General_CP1_CI_AS (TST-09).
   sql-integration:

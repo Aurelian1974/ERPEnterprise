@@ -5,7 +5,8 @@
 
 .DESCRIPTION
     1. Verifica scripturile SQL (nume MIG-01, prefixe unice, CREATE OR ALTER, fara dbo., UTF-8 fara BOM, MIG-02).
-    2. Publica Erp.Host, Erp.Worker (framework-dependent, win-x64) si ErpSetup.exe (self-contained, single-file),
+    2. Construieste interfata React (src/Web/erp-web: npm ci, npm run build -> wwwroot al Erp.Host), apoi publica Erp.Host,
+       Erp.Worker (framework-dependent, win-x64) si ErpSetup.exe (self-contained, single-file),
        cu cheia publica a kitului incorporata.
     3. Copiaza scripturile, sabloanele si Hosting Bundle-ul; semneaza Authenticode binarele proprii (release).
     4. Genereaza manifest.json (SHA-256 pentru fiecare fisier) si manifest.sig (ECDSA P-256 / SHA-256), apoi arhiveaza.
@@ -117,11 +118,28 @@ if ($signingKey.ExportSubjectPublicKeyInfoPem() -ne $publicKey.ExportSubjectPubl
 
 try {
     # --- 2. Publicare ---
-    Write-Host "2. Public aplicațiile ($configuration, versiunea $Version)"
+    # Interfata React (07, ST2): construita in wwwroot al Erp.Host, inainte de publicare. Fara cheia Syncfusion,
+    # componentele afiseaza mesajul de evaluare; un kit livrabil o cere (ST4).
+    Write-Host '2. Construiesc interfața React (src/Web/erp-web)'
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js lipsește (versiunea din .nvmrc).' }
+    if (-not $env:SYNCFUSION_LICENSE) {
+        if (-not $TestKit) { throw 'Variabila SYNCFUSION_LICENSE lipsește; un kit livrabil cere licența Syncfusion activată.' }
+        Write-Host '  SYNCFUSION_LICENSE lipsește: kitul de test va afișa mesajul de evaluare Syncfusion.'
+    }
+    $web = Join-Path $repoRoot 'src/Web/erp-web'
+    Push-Location $web
+    try {
+        Invoke-Native 'npm ci' { npm ci --no-audit --no-fund }
+        Invoke-Native 'npm run build' { npm run build }
+    }
+    finally { Pop-Location }
+
+    Write-Host "   Public aplicațiile ($configuration, versiunea $Version)"
     $common = @('-c', $configuration, "-p:Version=$Version", '-p:DebugType=None', '-p:DebugSymbols=false', '--nologo')
     # 10.5: ultima migrare se incorporeaza in Erp.Host si Erp.Worker (AssemblyMetadata ErpLastMigration).
     if ($lastMigration) { $common += "-p:ErpLastMigration=$lastMigration" }
     Invoke-Native 'Erp.Host' { dotnet publish (Join-Path $repoRoot 'src/Host/Erp.Host/Erp.Host.csproj') @common -o (Join-Path $kitRoot 'app/host') }
+    if (-not (Test-Path (Join-Path $kitRoot 'app/host/wwwroot/index.html'))) { throw 'Interfața React lipsește din kit (app/host/wwwroot/index.html).' }
     Invoke-Native 'Erp.Worker' { dotnet publish (Join-Path $repoRoot 'src/Worker/Erp.Worker/Erp.Worker.csproj') @common -o (Join-Path $kitRoot 'app/worker') }
     $setupOut = Join-Path $work 'setup'
     Invoke-Native 'ErpSetup' { dotnet publish (Join-Path $repoRoot 'src/Setup/Erp.Setup/Erp.Setup.csproj') @common -o $setupOut "-p:KitPublicKeyFile=$PublicKeyPath" }
