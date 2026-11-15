@@ -67,6 +67,33 @@ public sealed class PackagedKitTests : IDisposable
         Assert.Equal(ExitCodes.InvalidKitSignature, Verifier().Verify(copy).ExitCode);
     }
 
+    [Fact]
+    [Trait("Criteriu", "08-IA-18")]
+    public void Packaged_binaries_embed_the_manifest_version_and_last_migration()
+    {
+        SkipWithoutKit();
+        var manifest = Verifier().Verify(KitDirectory!).Manifest!;
+
+        foreach (var path in new[] { "app/host/Erp.Host.dll", "app/worker/Erp.Worker.dll" })
+        {
+            var context = new System.Runtime.Loader.AssemblyLoadContext(path, isCollectible: true);
+            try
+            {
+                var assembly = context.LoadFromAssemblyPath(Path.GetFullPath(Path.Combine(KitDirectory!, path)));
+                var metadata = assembly.GetCustomAttributesData()
+                    .Where(a => a.AttributeType.FullName == "System.Reflection.AssemblyMetadataAttribute")
+                    .ToDictionary(a => (string)a.ConstructorArguments[0].Value!, a => (string?)a.ConstructorArguments[1].Value);
+
+                Assert.Equal(manifest.Version, metadata["ErpVersion"]);
+                Assert.Equal(manifest.LastMigration, metadata["ErpLastMigration"]);
+            }
+            finally
+            {
+                context.Unload();
+            }
+        }
+    }
+
     private void CopyKit()
     {
         foreach (var file in Directory.EnumerateFiles(KitDirectory!, "*", SearchOption.AllDirectories))

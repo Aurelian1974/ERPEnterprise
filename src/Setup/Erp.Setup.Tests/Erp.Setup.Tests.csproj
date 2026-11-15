@@ -8,6 +8,10 @@
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="Hangfire.SqlServer" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Erp.Setup\Erp.Setup.csproj" />
     <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Hosting\Erp.Hosting.csproj" />
   </ItemGroup>
 
 </Project>

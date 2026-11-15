@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Comun pentru Erp.Host si Erp.Worker: configurarea instalarii, health-check (8.14), mentenanta (10.4), protectia de versiune (10.5). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Configuration\Erp.Configuration.csproj" />
+    <ProjectReference Include="..\Erp.Licensing\Erp.Licensing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\Setup\Erp.Setup\Kit\templates\maintenance.html" LogicalName="Erp.Hosting.maintenance.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Setup.Tests" />
+  </ItemGroup>
+
+</Project>

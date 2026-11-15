@@ -231,7 +231,8 @@ src/
 ├── Shared/
 │   ├── Erp.Licensing/                  citirea și verificarea licenței (folosit de installer și de Erp.Host)
 │   ├── Erp.Configuration/              citirea appsettings.Installation.json și a secretelor DPAPI (folosit de toate)
-│   └── Erp.Security.Passwords/         PasswordHasher compatibil ASP.NET Core Identity V3 (folosit de installer și Erp.Auth)
+│   ├── Erp.Security.Passwords/         PasswordHasher compatibil ASP.NET Core Identity V3 (folosit de installer și Erp.Auth)
+│   └── Erp.Hosting/                    health-check, mentenanță, protecția de versiune (folosit de Erp.Host și Erp.Worker)
 ├── Host/Erp.Host/
 ├── Auth/Erp.Auth/                      bibliotecă: store-uri Dapper Identity, paginile /account, chei API (folosită de Erp.Host)
 │   └── Database/                       scripturile schemei ids (aceeași structură ca la module)
@@ -1335,6 +1336,16 @@ Folderul versiunii noi rămâne pe disc pentru analiză și se șterge la următ
 ### 10.5 Protecția versiune binare ↔ versiune bază
 
 La build se încorporează în fiecare componentă (`AssemblyMetadata("ErpLastMigration", "...")`) numele ultimei migrări. La pornire, `Erp.Host` și `Erp.Worker` citesc `SELECT TOP (1) ScriptName FROM core.SchemaVersion ORDER BY Id DESC;`. Dacă valoarea diferă de cea încorporată, componenta nu pornește partea de business: jurnalizează eroarea critică „Versiunea bazei de date nu corespunde aplicației”, iar `/health/ready` raportează `schema: Unhealthy`. Așa nu poate rula niciodată cod nou pe o bază veche sau invers.
+
+**Detalii de implementare (T12, 15.11.2026, pentru 8.14, 10.4 și 10.5):**
+
+- Logica comună stă în `src/Shared/Erp.Hosting` (configurarea instalării, health-check, mentenanță, protecția de versiune); `Erp.Host` și `Erp.Worker` doar o leagă. `package-kit.ps1` dă `-p:Version` și `-p:ErpLastMigration` (ultima migrare din kit) la publicare; un test verifică pe kitul generat că binarele au aceleași valori ca `manifest.json`.
+- `/health/ready` răspunde 200 când toate verificările sunt `Healthy`, altfel 503; `schemaVersion` este valoarea citită din bază. Verificările rulează la fiecare cerere: `database` (deschidere + `SELECT 1` sub 2 s), `schema`, `license` (fișierul `LicensePath` verificat cu `Erp.Licensing`), `worker` (`hangfire.[Server].LastHeartbeat` în ultimele 60 s, UTC).
+- „Partea de business” a `Erp.Host` = `/api/*`: cât timp versiunea nu corespunde, răspunde 503 ProblemDetails cu codul `CORE_SCHEMA_VERSION_MISMATCH`; health-check-ul și paginile rămân disponibile. Dacă baza nu răspunde la pornire, verificarea se reia la 30 s.
+- `Erp.Worker` pornește serverul Hangfire doar cu baza compatibilă și fără `maintenance.flag` (starea se reevaluează la 5 s); cât timp fișierul există, serverul e oprit, deci nu pornesc joburi noi. `Hangfire.Core` cere `Newtonsoft.Json` ≥ 11.0.1 (vulnerabilitate cunoscută), deci versiunea e fixată la una corectată.
+- `maintenance.html` este `templates/maintenance.html` din kit, încorporat în `Erp.Hosting`.
+- Până la interfața React și `Erp.Auth`, `GET /` și `GET /account/login` întorc pagini HTML provizorii, ca health-check-ul installer-ului (8.14, pasul 4) să poată fi verificat cap-coadă.
+- Health-check-ul installer-ului (`InstallerHealthCheck`, I-23 și U-14) se conectează la `127.0.0.1` cu SNI și `Host` = `hostName`; un certificat autosemnat permis se acceptă doar după amprentă. Este testat contra unui server HTTPS real pe loopback.
 
 ### 10.6 Procedura manuală după cod 71
 

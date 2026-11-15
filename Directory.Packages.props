@@ -19,12 +19,16 @@
   </ItemGroup>
   <ItemGroup Label="Host si Worker">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.15" />
     <!-- Versiunea Hangfire = scriptul din src/Worker/Erp.Worker/Database/Migrations (test HangfireMigrationMatchesPinnedPackage). -->
     <PackageVersion Include="Hangfire.Core" Version="1.8.25" />
     <PackageVersion Include="Hangfire.SqlServer" Version="1.8.25" />
+    <!-- Hangfire.Core cere Newtonsoft.Json >= 11.0.1, versiune cu vulnerabilitate cunoscuta (GHSA-5crp-9r3c-p9vr); se fixeaza una corectata. -->
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   <ItemGroup Label="Teste">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.16.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
   </ItemGroup>
 </Project>

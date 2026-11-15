@@ -119,6 +119,8 @@ try {
     # --- 2. Publicare ---
     Write-Host "2. Public aplicațiile ($configuration, versiunea $Version)"
     $common = @('-c', $configuration, "-p:Version=$Version", '-p:DebugType=None', '-p:DebugSymbols=false', '--nologo')
+    # 10.5: ultima migrare se incorporeaza in Erp.Host si Erp.Worker (AssemblyMetadata ErpLastMigration).
+    if ($lastMigration) { $common += "-p:ErpLastMigration=$lastMigration" }
     Invoke-Native 'Erp.Host' { dotnet publish (Join-Path $repoRoot 'src/Host/Erp.Host/Erp.Host.csproj') @common -o (Join-Path $kitRoot 'app/host') }
     Invoke-Native 'Erp.Worker' { dotnet publish (Join-Path $repoRoot 'src/Worker/Erp.Worker/Erp.Worker.csproj') @common -o (Join-Path $kitRoot 'app/worker') }
     $setupOut = Join-Path $work 'setup'

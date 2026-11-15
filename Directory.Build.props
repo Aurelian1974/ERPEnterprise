@@ -8,4 +8,10 @@
     <Company>ERP</Company>
     <Product>ERP</Product>
   </PropertyGroup>
+
+  <!-- 10.5: versiunea produsului si ultima migrare, incorporate la build (package-kit.ps1 le da cu -p:Version si -p:ErpLastMigration). -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ErpVersion" Value="$(Version)" />
+    <AssemblyMetadata Include="ErpLastMigration" Value="$(ErpLastMigration)" Condition="'$(ErpLastMigration)' != ''" />
+  </ItemGroup>
 </Project>

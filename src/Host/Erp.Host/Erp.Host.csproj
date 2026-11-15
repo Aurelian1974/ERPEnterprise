@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- Proiect minimal: health-check, mentenanta si protectia de versiune se adauga in T12. -->
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Erp.Hosting\Erp.Hosting.csproj" />
+  </ItemGroup>
 
 </Project>
