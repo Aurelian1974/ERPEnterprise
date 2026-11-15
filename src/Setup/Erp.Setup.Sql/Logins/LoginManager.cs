@@ -158,6 +158,14 @@ public sealed class LoginManager(SqlOperator sql, SqlPrincipals principals)
         await sql.ExecuteAsync(master, $"Dezactivare login {Principals.MigratorLogin}", LoginScripts.DisableLogin(Principals.MigratorLogin), ct).ConfigureAwait(false);
     }
 
+    /// <summary>I-08: activeaza loginul de migrare cu o parola noua, nesalvata; intoarce conexiunea cu care ruleaza I-09…I-13.</summary>
+    public async Task<SqlConnectionStringBuilder> EnableMigratorAsync(string database, CancellationToken ct)
+    {
+        var password = SqlPasswordGenerator.Generate();
+        await EnableMigratorAsync(database, password, ct).ConfigureAwait(false);
+        return sql.ConnectionStringFor(database, Principals.MigratorLogin, password);
+    }
+
     private async Task EnableMigratorAsync(string database, string password, CancellationToken ct)
     {
         var login = Principals.MigratorLogin;

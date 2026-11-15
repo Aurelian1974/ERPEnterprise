@@ -52,7 +52,7 @@ public static class IisConfigurator
             manager.CommitChanges();
         }
 
-        VerifyStarted(spec);
+        EnsureStarted(spec);
     }
 
     /// <summary>U-12 / R-03: comutarea caii fizice a site-ului pe folderul altei versiuni.</summary>
@@ -120,7 +120,8 @@ public static class IisConfigurator
         }
     }
 
-    private static void VerifyStarted(IisSiteSpec spec)
+    /// <summary>Porneste pool-ul si site-ul daca sunt oprite si verifica starea Started (8.11, I-23).</summary>
+    public static void EnsureStarted(IisSiteSpec spec)
     {
         using var manager = new ServerManager();
         var pool = manager.ApplicationPools[spec.PoolName];

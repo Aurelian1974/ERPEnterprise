@@ -527,6 +527,17 @@ Rezultatul se afișează ca tabel și se salvează în `logs\setup\check-<dată>
 
 **Instalarea nu are rollback automat.** O instalare eșuată se reia (paragraful de mai sus) sau se curăță cu `uninstall`; baza creată rămâne (R7) și poate fi ștearsă manual de administratorul SQL dacă se dorește o reluare de la zero.
 
+**Detalii de implementare (T13, 15.11.2026):**
+
+- Orchestratorul (`StepOrchestrator`) rulează pașii în ordine, scrie începutul și sfârșitul fiecăruia în jurnal și se oprește la primul eșec; `instance.json` (`completedSteps`) primește fiecare pas terminat, inclusiv I-01…I-04, scrise la crearea fișierului de I-05. Un eșec lasă `state = Installing`, deci comanda repetată reia instalarea.
+- La reluare, pașii din `completedSteps` se **rerulează** (sunt idempotenți și verifică starea, R8), cu excepția I-22 (primul backup), care se sare dacă s-a terminat. Rerularea este verificarea rapidă cerută mai sus: de exemplu I-06 doar verifică baza, I-13 sare crearea administratorului dacă există deja.
+- Codul de ieșire la eșec: codul specific al erorii, dacă există (de exemplu 31, 32, 40, 11), altfel codul pasului: I-02 → 11; I-03, I-04 → 12; I-05, I-15…I-20, I-24 → 50; I-06…I-11, I-13, I-14, I-21, I-22 → 30; I-12 → 40; I-23 → 60. Ctrl+C → 2. Avertismentele (de exemplu certificatul autosemnat la I-18) dau cod 1 la final.
+- Confirmarea operatorului (6.1) se cere o singură dată, la sfârșitul I-03, după raportul verificărilor (inclusiv avertismentele) și rezumatul instalării; `--unattended` sau `--yes` o sar, refuzul dă cod 2. Excepție: I-03 în modul `install` creează deja folderele SQL lipsă (C-17), conform 7.
+- Loginul de migrare se dezactivează la I-14 și, dacă instalarea se oprește între I-08 și I-14, și în blocul `finally` al comenzii (R4).
+- I-23 eșuat afișează ultimele rânduri din jurnalele `logs\host` și `logs\worker` (cod 60). I-24 afișează rezumatul administratorului numai pe ecran; în `--unattended` cu parolă generată scrie și `initial-admin.txt` (8.8).
+- Jurnalul installer-ului se scrie în `%TEMP%\ErpSetup\` și se mută în `DataRoot\<INSTANȚĂ>\logs\setup\` la final, dacă I-05 a creat folderul.
+- **Limitare cunoscută:** dacă instalarea se întrerupe după I-13 și înainte de I-24, parola temporară a administratorului se pierde (nu se scrie nicăieri, R6); la reluare I-13 nu recreează contul, iar parola se resetează cu `reset-admin` (T15).
+
 ### 8.2 Crearea bazei de date (I-06)
 
 Comenzile DDL nu acceptă parametri, deci textul se construiește în C# cu reguli stricte (abatere scrisă de la `SP-06`, secțiunea 17):

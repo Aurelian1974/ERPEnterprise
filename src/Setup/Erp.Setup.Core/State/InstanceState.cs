@@ -59,6 +59,9 @@ public sealed record InstanceState
 
     public string? BackupRoot { get; init; }
 
+    /// <summary>Amprenta certificatului HTTPS folosit de site (inclusiv cel autosemnat generat la I-18).</summary>
+    public string? CertificateThumbprint { get; init; }
+
     public IReadOnlyList<string> CompletedSteps { get; init; } = [];
 }
 

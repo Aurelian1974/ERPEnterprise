@@ -4,6 +4,7 @@ using Erp.Setup.Cli;
 using Erp.Setup.Core;
 using Erp.Setup.Core.Kit;
 using Erp.Setup.Core.Logging;
+using Erp.Setup.Install;
 using Erp.Setup.Windows.Security;
 
 namespace Erp.Setup;
@@ -14,10 +15,35 @@ internal sealed class CommandRunner(TimeProvider time)
 {
     public int Run(SetupInvocation invocation)
     {
-        var console = new OperatorConsole(Console.Out, Console.Error, !invocation.NoColor && !Console.IsOutputRedirected);
-
         var logFiles = SetupLog.CreateFiles(SetupLog.DefaultTempDirectory, time.GetUtcNow());
-        using var log = SetupLog.Create(logFiles, SetupLog.ParseLevel(invocation.LogLevel));
+        var console = new OperatorConsole(Console.Out, Console.Error, !invocation.NoColor && !Console.IsOutputRedirected);
+        string? moveLogsTo = null;
+        int exitCode;
+        using (var log = SetupLog.Create(logFiles, SetupLog.ParseLevel(invocation.LogLevel)))
+        {
+            exitCode = Run(invocation, log, logFiles, console, folder => moveLogsTo = folder);
+        }
+
+        // 6.6: dupa crearea instantei, jurnalul installer-ului ajunge in DataRoot\<I>\logs\setup.
+        var finalPath = logFiles.TextPath;
+        if (moveLogsTo is not null && Directory.Exists(moveLogsTo))
+        {
+            try
+            {
+                finalPath = SetupLog.MoveFiles(logFiles, moveLogsTo).TextPath;
+            }
+            catch (IOException ex)
+            {
+                console.Warning($"Jurnalul nu a putut fi mutat în {moveLogsTo}: {ex.Message}");
+            }
+        }
+
+        console.Info($"Jurnal: {finalPath}");
+        return exitCode;
+    }
+
+    private int Run(SetupInvocation invocation, Serilog.ILogger log, SetupLogFiles logFiles, OperatorConsole console, Action<string> moveLogsTo)
+    {
         log.Information("ErpSetup {Version}, comanda {Command}, instanța {Instance}, unattended {Unattended}",
             typeof(CommandRunner).Assembly.GetName().Version, invocation.Command, invocation.Instance, invocation.Unattended);
 
@@ -55,11 +81,9 @@ internal sealed class CommandRunner(TimeProvider time)
         // La check, drepturile de administrator sunt verificarea C-01, raportata impreuna cu celelalte.
         if (invocation.Command == "check")
         {
-            var exitCode = new CheckCommand(time)
+            return new CheckCommand(time)
                 .RunAsync(invocation, kit.Manifest, log, console, Path.GetDirectoryName(logFiles.TextPath)!)
                 .GetAwaiter().GetResult();
-            console.Info($"Jurnal: {logFiles.TextPath}");
-            return exitCode;
         }
 
         if (!IsAdministrator())
@@ -69,8 +93,19 @@ internal sealed class CommandRunner(TimeProvider time)
             return ExitCodes.UnsupportedOsOrNotAdministrator;
         }
 
+        if (invocation.Command == "install")
+        {
+            var install = new InstallCommand(time);
+            var exitCode = install.RunAsync(invocation, kitRoot, kit.Manifest, log, console).GetAwaiter().GetResult();
+            if (install.SetupLogDirectory is not null)
+            {
+                moveLogsTo(install.SetupLogDirectory);
+            }
+
+            return exitCode;
+        }
+
         console.Error($"Comanda „{invocation.Command}” nu este încă implementată în această versiune a installer-ului.");
-        console.Info($"Jurnal: {logFiles.TextPath}");
         return ExitCodes.CommandNotImplemented;
     }
 

@@ -41,6 +41,19 @@ public static class SetupLog
         _ => LogEventLevel.Information,
     };
 
+    /// <summary>Muta jurnalul (deja inchis) in folderul instantei; fisierele existente nu se suprascriu.</summary>
+    public static SetupLogFiles MoveFiles(SetupLogFiles files, string directory)
+    {
+        var moved = new SetupLogFiles(Path.Combine(directory, Path.GetFileName(files.TextPath)), Path.Combine(directory, Path.GetFileName(files.ClefPath)));
+        File.Move(files.TextPath, moved.TextPath);
+        if (File.Exists(files.ClefPath))
+        {
+            File.Move(files.ClefPath, moved.ClefPath);
+        }
+
+        return moved;
+    }
+
     private sealed class UtcTimestampEnricher : ILogEventEnricher
     {
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory) =>
