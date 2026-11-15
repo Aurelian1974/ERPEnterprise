@@ -30,6 +30,16 @@ public sealed class CoreSqlErrors : ISqlErrorMap
         [50014] = (ErpErrorKind.Conflict, "CORE_INITIAL_ADMIN_EXISTS"),
         [50015] = (ErpErrorKind.Conflict, "CORE_LAST_ADMINISTRATOR"),
         [50017] = (ErpErrorKind.Validation, "CORE_LICENSE_INVALID_DATES"),
+        [50018] = (ErpErrorKind.Conflict, "CORE_DUPLICATE_CODE"),
+        [50019] = (ErpErrorKind.Conflict, "CORE_COMPANY_DUPLICATE_FISCAL_CODE"),
+        [50020] = (ErpErrorKind.Conflict, "CORE_NODE_HAS_ACTIVE_CHILDREN"),
+        [50021] = (ErpErrorKind.Validation, "CORE_INVALID_REFERENCE"),
+        [50022] = (ErpErrorKind.Validation, "CORE_INVALID_ADDRESS"),
+        [50023] = (ErpErrorKind.Conflict, "CORE_BANK_ACCOUNT_DUPLICATE_IBAN"),
+        [50024] = (ErpErrorKind.Conflict, "CORE_NUMBER_SERIES_LOCKED"),
+        [50025] = (ErpErrorKind.Conflict, "CORE_NUMBER_SERIES_CLOSED"),
+        [50026] = (ErpErrorKind.Conflict, "CORE_NUMBER_SERIES_DUPLICATE"),
+        [50027] = (ErpErrorKind.NotFound, "CORE_ENTITY_NOT_FOUND"),
     };
 }
 

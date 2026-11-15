@@ -29,6 +29,7 @@ public sealed record LicenseOptions(string? LicensePath, bool Development);
 public sealed class LicenseInfo : ILicenseInfo
 {
     private readonly HashSet<string> modules;
+    private readonly HashSet<string> fiscalCodes = new(StringComparer.Ordinal);
     private readonly LicenseLimits? limits;
     private readonly TimeProvider time;
     private readonly bool development;
@@ -42,6 +43,7 @@ public sealed class LicenseInfo : ILicenseInfo
         if (payload is not null)
         {
             modules = new HashSet<string>(payload.Modules, StringComparer.Ordinal);
+            fiscalCodes = new HashSet<string>(payload.FiscalCodes.Select(Domain.RomanianFiscalCode.Normalize).OfType<string>(), StringComparer.Ordinal);
             limits = payload.Limits;
             ValidUntil = payload.ValidUntil;
             CustomerName = payload.CustomerName;
@@ -73,6 +75,9 @@ public sealed class LicenseInfo : ILicenseInfo
     public bool IsModuleActive(string moduleCode) => development || modules.Contains(moduleCode);
 
     public IReadOnlyCollection<string> ActiveModules => development ? [.. LicenseModules.Known] : modules;
+
+    public bool IsFiscalCodeLicensed(string fiscalCode) =>
+        development || (Domain.RomanianFiscalCode.Normalize(fiscalCode) is { } digits && fiscalCodes.Contains(digits));
 
     public int? GetLimit(string limitCode) => limits is null ? null : limitCode switch
     {

@@ -137,6 +137,10 @@ public sealed class FakeLicense : ILicenseInfo
 
     public IReadOnlyCollection<string> ActiveModules => Modules;
 
+    public HashSet<string> FiscalCodes { get; } = new(StringComparer.Ordinal);
+
+    public bool IsFiscalCodeLicensed(string fiscalCode) => FiscalCodes.Count == 0 || FiscalCodes.Contains(fiscalCode);
+
     public int? GetLimit(string limitCode) => null;
 }
 
@@ -146,4 +150,35 @@ public sealed class FakePeriods : IPeriodLock
 
     public Task<bool> IsClosedAsync(int companyId, DateOnly date, CancellationToken ct) =>
         Task.FromResult(ClosedMonths.Contains(new DateOnly(date.Year, date.Month, 1)));
+}
+
+/// <summary>Store-ul structurii pentru testele fara baza: doar firmele utilizatorului (antetul /me).</summary>
+public sealed class FakeOrganizationStore : Erp.Core.Application.Organization.IOrganizationStore
+{
+    public List<Erp.Core.Application.Organization.CompanySummaryDto> Companies { get; } = [];
+
+    public Task<IReadOnlyList<Erp.Core.Application.Organization.CompanySummaryDto>> GetUserCompaniesAsync(int userId, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<Erp.Core.Application.Organization.CompanySummaryDto>>(Companies);
+
+    public Task<Erp.Core.Application.Organization.OrgTreeDto> GetTreeAsync(int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.CompanyDetailDto?> GetCompanyAsync(int companyId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.OrgLookupsDto> GetLookupsAsync(CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveGroupAsync(Erp.Core.Application.Organization.SaveCompanyGroup command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveCompanyAsync(Erp.Core.Application.Organization.SaveCompany command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveBranchAsync(Erp.Core.Application.Organization.SaveBranch command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveLocationAsync(Erp.Core.Application.Organization.SaveLocation command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveBankAccountAsync(Erp.Core.Application.Organization.SaveCompanyBankAccount command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<Erp.Core.Application.Organization.NumberSeriesDto>> ListNumberSeriesAsync(int companyId, short? year, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveNumberSeriesAsync(Erp.Core.Application.NumberSeries.SaveNumberSeries command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> CloseNumberSeriesAsync(Erp.Core.Application.NumberSeries.CloseNumberSeries command, int userId, CancellationToken ct) => throw new NotSupportedException();
 }

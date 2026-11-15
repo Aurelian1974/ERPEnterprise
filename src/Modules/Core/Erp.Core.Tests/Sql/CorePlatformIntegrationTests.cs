@@ -43,6 +43,17 @@ public sealed class CoreDatabase(SqlServerFixture sql) : IAsyncLifetime
     {
         ConnectionString = await sql.CreateErpDatabaseAsync("ERP_IT_CORE", CancellationToken.None);
         await using var connection = new SqlConnection(ConnectionString);
+        // Firmele 5 si 6 (Id-uri fixe): rolurile pe firma au cheie straina spre core.Company.
+        await connection.ExecuteAsync("""
+            SET IDENTITY_INSERT core.Company ON;
+            INSERT INTO core.Company (Id, Code, Name, FiscalCode, VatPayer, TradeRegisterNo, ShareCapital, Address, City, CountyCode,
+                CountryCode, DefaultPrecisionPolicyId, CreatedBy)
+            SELECT v.Id, v.Code, v.Name, v.FiscalCode, 1, N'J40/1/2020', 200, N'Str. Test 1', N'București', N'B', 'RO', p.Id, 1
+            FROM (VALUES (5, N'IT5', N'Firma IT 5', N'5000005'), (6, N'IT6', N'Firma IT 6', N'6000006')) AS v (Id, Code, Name, FiscalCode)
+            CROSS JOIN core.PrecisionPolicy AS p
+            WHERE p.Code = N'STANDARD';
+            SET IDENTITY_INSERT core.Company OFF;
+            """);
         AdminId = await connection.ExecuteScalarAsync<int>("""
             DECLARE @Ids TABLE (Id int, UserName nvarchar(50));
             INSERT INTO core.[User] (SubjectId, UserName, DisplayName, IsActive, IsSystem, CreatedBy)
@@ -165,18 +176,25 @@ public sealed class CorePlatformIntegrationTests(CoreDatabase database) : IClass
         var loader = new UserContextLoader(session);
         var catalog = await Scalar<int>("SELECT COUNT(*) FROM core.Permission;", new { });
 
-        var adminAnyCompany = await loader.LoadAsync(database.Admin, 99, Ct);
+        var adminAnyCompany = await loader.LoadAsync(database.Admin, 6, Ct);
         var adminNoCompany = await loader.LoadAsync(database.Admin, null, Ct);
+        var adminInstallation = await loader.LoadAsync(database.Admin, 0, Ct);
+        var adminMissingCompany = await loader.LoadAsync(database.Admin, 99, Ct);
         var standardOwn = await loader.LoadAsync(database.Standard, 5, Ct);
         var standardOther = await loader.LoadAsync(database.Standard, 6, Ct);
 
         // ADMIN are drepturi depline: tot catalogul, inclusiv permisiunile modulelor adaugate ulterior.
         Assert.Equal(catalog, adminAnyCompany!.Permissions.Count);
         Assert.Contains("Sales.Invoice.View", adminAnyCompany.Permissions);
-        Assert.Equal((99, catalog), (adminAnyCompany.CompanyId, adminNoCompany!.Permissions.Count));
-        Assert.Equal(0, adminNoCompany.CompanyId);
+        Assert.Equal((6, catalog), (adminAnyCompany.CompanyId, adminNoCompany!.Permissions.Count));
+        // Fara firma ceruta: prima firma activa la care are acces; 0 = instalarea; o firma inexistenta nu se accepta.
+        Assert.Equal(5, adminNoCompany.CompanyId);
+        Assert.Equal((0, catalog), (adminInstallation!.CompanyId, adminInstallation.Permissions.Count));
+        Assert.Equal(0, adminMissingCompany!.CompanyId);
         Assert.Equal(["Core.Company.View", "Core.Item.View", "Core.Partner.View"], standardOwn!.Permissions.Order(StringComparer.Ordinal));
-        Assert.Empty(standardOther!.Permissions);
+        // Firma la care utilizatorul nu are niciun rol nu devine firma curenta.
+        Assert.Equal(0, standardOther!.CompanyId);
+        Assert.Empty(standardOther.Permissions);
         Assert.Null(await loader.LoadAsync(database.Inactive, null, Ct));
         Assert.Null(await loader.LoadAsync(database.Expired, 5, Ct));
         Assert.Null(await loader.LoadAsync(Guid.NewGuid(), null, Ct));

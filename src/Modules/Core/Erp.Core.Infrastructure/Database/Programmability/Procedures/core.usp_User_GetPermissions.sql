@@ -4,20 +4,36 @@ CREATE OR ALTER PROCEDURE core.usp_User_GetPermissions
 AS
 BEGIN
     -- Utilizatorul activ cu SubjectId-ul din cookie si permisiunile lui efective pe firma ceruta (02.01, 3.4 si 8).
-    -- Fara firma ceruta se foloseste ultima firma a utilizatorului (11, selectorul de firma); 0 = nicio firma.
+    -- @CompanyId: firma din antetul X-Company-Id; 0 = nivelul instalarii (doar atribuirile cu CompanyId NULL);
+    -- NULL = ultima firma a utilizatorului, altfel prima firma activa la care are acces.
+    -- O firma ceruta la care utilizatorul nu are niciun rol (sau inactiva) nu se accepta: firma efectiva devine 0.
     -- Atribuirile cu CompanyId NULL (rolul ADMIN la nivel de instalare) se aplica oricarei firme.
     -- Utilizatorii externi sunt valabili doar pana la ValidUntil (inclusiv).
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
     DECLARE @Today date = CAST(SYSUTCDATETIME() AS date);
-    DECLARE @UserId int, @EffectiveCompanyId int;
+    DECLARE @UserId int, @LastCompanyId int, @EffectiveCompanyId int;
 
-    SELECT @UserId = u.Id, @EffectiveCompanyId = COALESCE(@CompanyId, u.LastCompanyId, 0)
+    SELECT @UserId = u.Id, @LastCompanyId = u.LastCompanyId
     FROM core.[User] AS u
     WHERE u.SubjectId = @SubjectId
       AND u.IsActive = 1
       AND (u.ValidUntil IS NULL OR u.ValidUntil >= @Today);
+
+    IF @CompanyId = 0
+        SET @EffectiveCompanyId = 0;
+    ELSE
+    BEGIN
+        SELECT TOP (1) @EffectiveCompanyId = c.Id
+        FROM core.fn_UserCompanies(@UserId, NULL) AS f
+        JOIN core.Company AS c ON c.Id = f.CompanyId
+        WHERE c.IsActive = 1
+          AND (c.Id = COALESCE(@CompanyId, @LastCompanyId) OR @CompanyId IS NULL)
+        ORDER BY CASE WHEN c.Id = COALESCE(@CompanyId, @LastCompanyId) THEN 0 ELSE 1 END, c.Name, c.Id;
+
+        SET @EffectiveCompanyId = COALESCE(@EffectiveCompanyId, 0);
+    END;
 
     SELECT u.Id, u.UserName, u.DisplayName, u.Email, u.Language, @EffectiveCompanyId AS CompanyId, u.IsSystem, u.IsEmployee
     FROM core.[User] AS u

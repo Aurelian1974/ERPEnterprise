@@ -20,6 +20,8 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<IOutbox, OutboxWriter>();
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddScoped<IUserContextLoader, UserContextLoader>();
+        services.AddScoped<Application.Organization.IOrganizationStore, Organization.OrganizationStore>();
+        services.AddScoped<INumberSeriesService, Organization.NumberSeriesService>();
         services.AddSingleton<ITransientFailureDetector, SqlServerTransientFailures>();
         services.AddSingleton<ISqlErrorMap, CoreSqlErrors>();
         services.AddSingleton<ISqlErrorTranslator, SqlErrorTranslator>();

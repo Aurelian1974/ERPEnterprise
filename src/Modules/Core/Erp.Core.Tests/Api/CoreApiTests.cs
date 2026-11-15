@@ -40,6 +40,7 @@ public sealed class CoreApiTests
         builder.Services.AddCoreInfrastructure("Server=nefolosit;Database=nefolosit", new LicenseOptions(null, Development: true));
         builder.Services.AddSingleton<IUserContextLoader>(users);
         builder.Services.AddSingleton<ILicenseInfo>(new FakeLicense());
+        builder.Services.AddSingleton<Erp.Core.Application.Organization.IOrganizationStore>(new FakeOrganizationStore());
         builder.Services.AddScoped<HandlerCalls>();
         var app = builder.Build();
         app.UseAuthentication();

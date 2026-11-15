@@ -27,6 +27,7 @@ public sealed class PipelineTests
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddSingleton<ILicenseInfo>(license);
+        services.AddSingleton<Erp.Core.Application.Organization.IOrganizationStore>(new FakeOrganizationStore());
         services.AddSingleton<IPeriodLock>(periods);
         services.AddSingleton<IUnitOfWork>(unitOfWork);
         services.AddSingleton<IIdempotencyStore>(unitOfWork);

@@ -54,6 +54,9 @@ public interface ILicenseInfo
     /// <summary>Codurile modulelor active (meniul interfetei, UI-07); serverul ramane autoritatea prin IsModuleActive.</summary>
     IReadOnlyCollection<string> ActiveModules { get; }
 
+    /// <summary>CUI-ul firmei e in licenta (4.4 pasul 2); comparatie pe cifre, fara prefixul RO.</summary>
+    bool IsFiscalCodeLicensed(string fiscalCode);
+
     int? GetLimit(string limitCode);
 
     DateOnly ValidUntil { get; }

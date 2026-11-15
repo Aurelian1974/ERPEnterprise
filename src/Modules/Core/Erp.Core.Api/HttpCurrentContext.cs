@@ -80,7 +80,8 @@ public sealed class CurrentContextMiddleware(RequestDelegate next)
         if (http.User.Identity?.IsAuthenticated == true
             && Guid.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var subjectId))
         {
-            int? companyId = int.TryParse(http.Request.Headers[CompanyHeader], out var requested) && requested > 0 ? requested : null;
+            // 0 = nivelul instalarii (doar rolurile fara firma); lipsa = ultima firma a utilizatorului (usp_User_GetPermissions).
+            int? companyId = int.TryParse(http.Request.Headers[CompanyHeader], out var requested) && requested >= 0 ? requested : null;
             var user = await users.LoadAsync(subjectId, companyId, http.RequestAborted).ConfigureAwait(false);
             if (user is not null)
             {
