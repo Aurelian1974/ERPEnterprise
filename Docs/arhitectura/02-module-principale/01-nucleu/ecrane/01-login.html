@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Ecran login</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c; --navy-700: #16375f;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd;
+    --ink: #1a2433; --muted: #5b6676; --line: #d9dee6; --bg: #ffffff;
+    --green: #1f9d63; --amber: #e0a21b;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  .screen { display: flex; width: 1440px; height: 900px; }
+
+  /* STÂNGA 60% */
+  .left { width: 60%; height: 100%; position: relative; overflow: hidden;
+    background: radial-gradient(1200px 700px at 20% 10%, #1d4a80 0%, var(--navy-800) 45%, var(--navy-900) 100%);
+    color: #fff; padding: 56px 64px; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; letter-spacing: .2px; z-index: 2; }
+  .brand .mark { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 15px; }
+  .grid-bg { position: absolute; inset: 0; background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px; z-index: 0; }
+  .illustration { position: absolute; left: 64px; right: 64px; top: 130px; height: 430px; z-index: 1; }
+  .card { position: absolute; background: rgba(255,255,255,.96); color: var(--ink); border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.28); padding: 18px 20px; }
+  .card h4 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+  .kpi { font-size: 26px; font-weight: 700; }
+  .kpi small { font-size: 13px; color: var(--green); font-weight: 600; margin-left: 6px; }
+
+  .c-sales { left: 0; top: 20px; width: 380px; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 120px; margin-top: 14px; }
+  .bars div { flex: 1; border-radius: 5px 5px 0 0; background: #c9d8fb; }
+  .bars div.hi { background: var(--blue-500); }
+  .months { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--muted); }
+  .months span { flex: 1; text-align: center; }
+
+  .c-invoice { left: 340px; top: 285px; width: 380px; }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #edf0f4; }
+  .row:last-child { border-bottom: 0; }
+  .pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+  .ok { background: #e3f5ec; color: var(--green); }
+  .wait { background: #fbf1dc; color: #a77300; }
+
+  .c-stock { left: 450px; top: 20px; width: 240px; }
+  .ring { width: 110px; height: 110px; border-radius: 50%; margin: 6px auto 8px;
+    background: conic-gradient(var(--blue-500) 0 68%, #f0b429 68% 86%, #e6ebf2 86% 100%); display: grid; place-items: center; }
+  .ring div { width: 74px; height: 74px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+  .legend { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+
+  .c-modules { left: 0; top: 300px; width: 300px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 5px 10px; border-radius: 8px; background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+
+  .message { margin-top: auto; z-index: 2; max-width: 640px; }
+  .message h1 { font-size: 40px; line-height: 1.15; font-weight: 700; letter-spacing: -.5px; }
+  .message p { margin-top: 14px; font-size: 17px; line-height: 1.55; color: #c8d6ee; }
+  .badges { display: flex; gap: 22px; margin-top: 22px; font-size: 14px; color: #c8d6ee; }
+  .badges span::before { content: "✓"; color: #6fd3a3; font-weight: 700; margin-right: 7px; }
+
+  /* DREAPTA 40% */
+  .right { width: 40%; height: 100%; display: flex; flex-direction: column; padding: 48px 72px; background: #fff; }
+  .lang { align-self: flex-end; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  .form-wrap { margin: auto 0; width: 100%; }
+  .client-logo { width: 64px; height: 64px; border-radius: 14px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 10px; color: var(--muted); text-align: center; line-height: 1.2; margin-bottom: 18px; }
+  .client-name { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .form-wrap h2 { font-size: 28px; font-weight: 700; letter-spacing: -.3px; }
+  .sub { font-size: 15px; color: var(--muted); margin-top: 6px; margin-bottom: 30px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+  .field { margin-bottom: 18px; }
+  .input { height: 46px; border: 1px solid var(--line); border-radius: 10px; display: flex; align-items: center; padding: 0 14px; font-size: 15px; color: var(--ink); gap: 10px; }
+  .input.focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(47,111,237,.15); }
+  .input .ph { color: #9aa4b2; }
+  .input .eye { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .between { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 4px 0 24px; }
+  .check { display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #9aa4b2; }
+  a { color: var(--blue-600); text-decoration: none; font-weight: 600; }
+  .btn { height: 48px; border-radius: 10px; display: grid; place-items: center; font-size: 15px; font-weight: 600; }
+  .primary { background: var(--blue-500); color: #fff; }
+  .or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 22px 0; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .secondary { border: 1px solid var(--line); color: var(--ink); display: flex; justify-content: center; align-items: center; gap: 10px; }
+  .win { display: grid; grid-template-columns: 8px 8px; gap: 2px; }
+  .win i { width: 8px; height: 8px; background: #2f6fed; display: block; }
+  .help { font-size: 13px; color: var(--muted); margin-top: 26px; text-align: center; }
+  .footer { display: flex; justify-content: space-between; font-size: 12px; color: #8a94a3; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <section class="left">
+    <div class="grid-bg"></div>
+    <div class="brand"><div class="mark">E</div>ERP</div>
+
+    <div class="illustration" aria-hidden="true">
+      <div class="card c-sales">
+        <h4>Vânzări 2026</h4>
+        <div class="kpi">4,82 mil. RON <small>▲ 12,4%</small></div>
+        <div class="bars">
+          <div style="height:38%"></div><div style="height:52%"></div><div style="height:45%"></div>
+          <div style="height:63%"></div><div style="height:58%"></div><div style="height:74%"></div>
+          <div style="height:69%"></div><div class="hi" style="height:92%"></div>
+        </div>
+        <div class="months"><span>Mar</span><span>Apr</span><span>Mai</span><span>Iun</span><span>Iul</span><span>Aug</span><span>Sep</span><span>Oct</span></div>
+      </div>
+
+      <div class="card c-stock">
+        <h4>Ocupare depozit</h4>
+        <div class="ring"><div>86%</div></div>
+        <div class="legend"><span>● Ocupat</span><span>● Rezervat</span></div>
+      </div>
+
+      <div class="card c-invoice">
+        <h4>e-Factura · astăzi</h4>
+        <div class="row"><span>FCT-2026-01245</span><span class="pill ok">Validată ANAF</span></div>
+        <div class="row"><span>FCT-2026-01246</span><span class="pill ok">Validată ANAF</span></div>
+        <div class="row"><span>FCT-2026-01247</span><span class="pill wait">În procesare</span></div>
+      </div>
+
+      <div class="card c-modules">
+        <h4>Module active</h4>
+        <div class="chips">
+          <span class="chip">Contabilitate</span><span class="chip">Vânzări</span><span class="chip">Stocuri</span>
+          <span class="chip">Producție</span><span class="chip">Salarizare</span><span class="chip">WMS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="message">
+      <h1>Toată activitatea firmei,<br>într-un singur loc.</h1>
+      <p>Contabilitate, vânzări, stocuri, producție și salarizare, conectate între ele și conforme cu legislația din România.</p>
+      <div class="badges"><span>e-Factura și SAF-T</span><span>Date în timp real</span><span>Instalat la tine</span></div>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="lang">🌐 Română ▾</div>
+
+    <div class="form-wrap">
+      <div class="client-logo">Sigla<br>clientului</div>
+      <div class="client-name">Grupul Exemplu</div>
+      <h2>Autentificare</h2>
+      <div class="sub">Introdu datele contului pentru a continua.</div>
+
+      <div class="field">
+        <label>Utilizator</label>
+        <div class="input focus"><span>ion.popescu</span></div>
+      </div>
+      <div class="field">
+        <label>Parolă</label>
+        <div class="input"><span class="ph">••••••••••</span><span class="eye">Arată</span></div>
+      </div>
+
+      <div class="between">
+        <span class="check"><span class="box"></span>Ține-mă minte</span>
+        <a>Am uitat parola</a>
+      </div>
+
+      <div class="btn primary">Autentificare</div>
+
+      <div class="or">sau</div>
+
+      <div class="btn secondary"><span class="win"><i></i><i></i><i></i><i></i></span>Autentificare cu contul Windows</div>
+
+      <div class="help">Probleme la autentificare? Contactează administratorul sistemului.</div>
+    </div>
+
+    <div class="footer"><span>© 2026 ERP · versiunea 2027.1.0</span><span>Confidențialitate</span></div>
+  </section>
+</div>
+</body>
+</html>

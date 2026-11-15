@@ -1,0 +1,9 @@
+{
+  "chat.useAgentsMdFile": true,
+  "chat.useClaudeMdFile": true,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "chat.includeApplyingInstructions": true,
+  "chat.includeReferencedInstructions": false,
+  "chat.useAgentSkills": true,
+  "chat.tools.compressOutput.enabled": true
+}

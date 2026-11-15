@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ro"><head><meta charset="utf-8"><title>Ecran Firme</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* ARBORE */
+  .tree-tools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  .tree { padding: 8px 8px; overflow: hidden; }
+  .node { display: flex; align-items: center; gap: 7px; height: 32px; border-radius: 7px; padding-right: 8px; font-size: 13px; white-space: nowrap; }
+  .node .tg { width: 14px; color: #8a94a3; font-size: 10px; text-align: center; }
+  .node .ico { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; flex: 0 0 22px; }
+  .i-grp { background: #efe9fd; color: #6b46c1; }
+  .i-co { background: var(--blue-50); color: var(--blue-600); }
+  .i-br { background: #e6f6f4; color: #0f8a7e; }
+  .i-loc { background: #f3f4f6; color: #5b6676; }
+  .node .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+  .node .meta { margin-left: auto; font-size: 11px; color: #8a94a3; }
+  .node.sel { background: var(--blue-50); outline: 1.5px solid var(--blue-100); }
+  .node.sel .nm { font-weight: 700; color: var(--blue-600); }
+  .node.off .nm { color: #9aa4b2; text-decoration: line-through; }
+  .tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #fff4d6; color: #a46b00; margin-left: 4px; }
+  .tree-legend { margin-top: auto; border-top: 1px solid var(--line); padding: 10px 14px; display: flex; gap: 12px; font-size: 11px; color: var(--muted); }
+  .tree-legend span { display: flex; align-items: center; gap: 5px; }
+  .tree-legend b { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+.item.sub { padding-left: 38px; font-size: 12.5px; }
+</style></head>
+<body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+  <nav class="side">
+    <div class="item"><span class="ic">⌂</span>Acasă</div>
+    <div class="sec">Favorite</div>
+    <div class="item"><span class="ic star">★</span>Note contabile</div>
+    <div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+    <div class="sec">Nomenclatoare</div>
+    <div class="item"><span class="ic">◉</span>Parteneri</div>
+    <div class="item"><span class="ic">▣</span>Articole</div>
+    <div class="sec">Module</div>
+    <div class="item"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+    <div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+    <div class="item open"><span class="ic">⛭</span>Administrare<span class="chev">⌄</span></div>
+    <div class="item sub">Utilizatori</div>
+    <div class="item active sub">Firme și structură</div>
+    <div class="item sub">Configurare</div>
+    <div class="side-foot">« Strânge meniul</div>
+  </nav>
+
+  <main class="main">
+    <div>
+      <div class="crumb">Administrare › Firme și structură</div>
+      <div class="head">
+        <div><h1>Firme și structură organizatorică</h1>
+          <div class="sub2">Grupuri, firme, puncte de lucru și locații · 2 grupuri, 4 firme, 5 puncte de lucru, 12 locații</div></div>
+        <div class="actions">
+          <div class="btn ghost">⇩ Export</div>
+          <div class="btn ghost">⇧ Import</div>
+          <div class="btn primary">+ Adaugă ▾</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="split">
+      <section class="panel">
+        <div class="tree-tools">
+          <div class="tsearch">⌕ Caută după denumire, cod sau CUI…</div>
+          <div class="tfilters"><span class="tf on">Toate</span><span class="tf">Doar firme</span><span class="tf">Arată inactive</span><span class="tf">Extinde tot</span></div>
+        </div>
+        <div class="tree">
+          <div class="node"><span class="tg">▾</span><span class="ico i-grp">G</span><span class="nm">Grupul Exemplu</span><span class="meta">grup</span></div>
+          <div class="node" style="padding-left:22px"><span class="tg">▾</span><span class="ico i-co">F</span><span class="nm sel-nm">Exemplu Holding SA</span><span class="tag">MAMĂ</span><span class="meta">RO10000001</span></div>
+          <div class="node" style="padding-left:44px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Sediu social București</span><span class="meta">birou</span></div>
+          <div class="node sel" style="padding-left:22px"><span class="tg">▾</span><span class="ico i-co">F</span><span class="nm">Exemplu Distribuție SRL</span><span class="meta">RO12345678</span></div>
+          <div class="node" style="padding-left:44px"><span class="tg">▾</span><span class="ico i-br">P</span><span class="nm">Punct de lucru Cluj</span><span class="meta">PL-CJ</span></div>
+          <div class="node" style="padding-left:66px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Depozit Cluj</span><span class="meta">depozit</span></div>
+          <div class="node" style="padding-left:66px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Magazin Cluj Centru</span><span class="meta">magazin</span></div>
+          <div class="node" style="padding-left:44px"><span class="tg">▸</span><span class="ico i-br">P</span><span class="nm">Punct de lucru Timișoara</span><span class="meta">PL-TM · 3</span></div>
+          <div class="node" style="padding-left:44px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Depozit central Ploiești</span><span class="meta">depozit</span></div>
+          <div class="node" style="padding-left:22px"><span class="tg">▸</span><span class="ico i-co">F</span><span class="nm">Exemplu Producție SRL</span><span class="meta">RO23456789 · 4</span></div>
+          <div class="node" style="padding-left:22px"><span class="tg">▾</span><span class="ico i-grp">G</span><span class="nm">Subgrup Construcții</span><span class="meta">grup</span></div>
+          <div class="node" style="padding-left:44px"><span class="tg">▾</span><span class="ico i-co">F</span><span class="nm">Exemplu Construct SRL</span><span class="meta">RO34567890</span></div>
+          <div class="node" style="padding-left:66px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Șantier Bloc A Iași</span><span class="meta">șantier</span></div>
+          <div class="node off" style="padding-left:66px"><span class="tg"></span><span class="ico i-loc">L</span><span class="nm">Șantier Hala Bacău</span><span class="meta">închis</span></div>
+        </div>
+        <div class="tree-legend"><span><b class="i-grp"></b>Grup</span><span><b class="i-co"></b>Firmă</span><span><b class="i-br"></b>Punct de lucru</span><span><b class="i-loc"></b>Locație</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="d-head">
+          <div class="logo">Sigla<br>firmei</div>
+          <div class="d-title">
+            <h2>Exemplu Distribuție SRL <span class="pill ok">Activă</span></h2>
+            <div class="path">Grupul Exemplu › Exemplu Distribuție SRL · cod EXD</div>
+            <div class="stats"><span class="stat">2 puncte de lucru</span><span class="stat">4 locații</span><span class="stat">2 conturi bancare</span><span class="stat">38 utilizatori</span></div>
+          </div>
+          <div class="btn ghost sm">+ Punct de lucru</div>
+          <div class="btn ghost sm">+ Locație</div>
+        </div>
+        <div class="tabs"><span class="tab on">Date generale</span><span class="tab">Structură</span><span class="tab">Conturi bancare</span><span class="tab">Serii</span><span class="tab">Setări</span><span class="tab">Certificat ANAF</span><span class="tab">Istoric</span></div>
+        <div class="form">
+          <div class="f"><label>Cod</label><div class="in">EXD</div></div>
+          <div class="f span2"><label>Denumire legală</label><div class="in">Exemplu Distribuție SRL</div></div>
+          <div class="f"><label>CUI</label><div class="in">RO12345678<span class="act">Preia de la ANAF</span></div><div class="hint">✓ Verificat la ANAF pe 14.11.2026</div></div>
+          <div class="f"><label>Nr. registrul comerțului</label><div class="in">J40/1234/2015</div></div>
+          <div class="f"><label>Capital social</label><div class="in">200,00 RON</div></div>
+          <div class="f"><label>Grup</label><div class="in">Grupul Exemplu ▾</div></div>
+          <div class="f"><label>Plătitor de TVA</label><div class="sw"><span class="tog on"></span>Da</div></div>
+          <div class="f"><label>TVA la încasare</label><div class="sw"><span class="tog"></span>Nu</div></div>
+          <div class="secttl">Sediu social</div>
+          <div class="f span2"><label>Adresă</label><div class="in">Str. Exemplului nr. 10, et. 2</div></div>
+          <div class="f"><label>Țară</label><div class="in">România ▾</div></div>
+          <div class="f"><label>Județ</label><div class="in">București ▾</div></div>
+          <div class="f"><label>Localitate</label><div class="in">Sector 1 ▾</div></div>
+          <div class="f"><label>Cod poștal</label><div class="in">010101</div></div>
+          <div class="secttl">Setări contabile</div>
+          <div class="f"><label>Monedă funcțională</label><div class="in">RON</div></div>
+          <div class="f"><label>Politica de zecimale</label><div class="in">Standard (preț 4, cantitate 3) ▾</div></div>
+          <div class="f"><label>Inclusă în consolidare</label><div class="sw"><span class="tog on"></span>Da, în Grupul Exemplu</div></div>
+        </div>
+        <div class="d-foot"><span class="info">Modificat ultima dată de Ion Popescu, 12.11.2026, 10:24</span>
+          <div class="actions"><div class="btn ghost">Anulează</div><div class="btn primary">Salvează</div></div></div>
+      </section>
+    </div>
+  </main>
+</div>
+</body></html>

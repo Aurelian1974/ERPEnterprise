@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Ecran Acasă</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  /* ZONA DE LUCRU */
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .card-h .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+
+  /* DE REZOLVAT */
+  .todo { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .task { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; display: flex; gap: 12px; align-items: center; }
+  .task .n { font-size: 22px; font-weight: 700; min-width: 34px; height: 40px; border-radius: 9px; display: grid; place-items: center; padding: 0 6px; }
+  .task .t { font-weight: 600; font-size: 12.5px; line-height: 1.3; }
+  .task .d { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .r { background: var(--red-50); color: var(--red); }
+  .a { background: var(--amber-50); color: var(--amber); }
+  .b { background: var(--blue-50); color: var(--blue-600); }
+  .g { background: var(--green-50); color: var(--green); }
+
+  /* INDICATORI */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { padding: 13px 16px; }
+  .kpi .l { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .kpi .v { font-size: 22px; font-weight: 700; margin-top: 4px; letter-spacing: -.3px; }
+  .kpi .v small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .kpi .tr { font-size: 12px; margin-top: 3px; font-weight: 600; }
+  .up { color: var(--green); } .down { color: var(--red); }
+
+  /* GRAFICE */
+  .charts { display: grid; grid-template-columns: 1.7fr 1fr; gap: 12px; }
+  .legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .aging { padding: 8px 16px 12px; }
+  .ag-row { display: grid; grid-template-columns: 92px 1fr 92px; align-items: center; gap: 10px; margin: 9px 0; font-size: 12px; }
+  .ag-bar { height: 12px; background: #eef1f5; border-radius: 6px; overflow: hidden; }
+  .ag-bar div { height: 100%; border-radius: 6px; }
+  .ag-row .val { text-align: right; font-weight: 600; }
+
+  /* RÂNDUL DE JOS */
+  .bottom { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 12px; }
+  .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px 14px; }
+  .qa { border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12.5px; }
+  .qa .p { width: 22px; height: 22px; border-radius: 6px; background: var(--blue-50); color: var(--blue-600); display: grid; place-items: center; font-weight: 700; }
+  .list { padding: 6px 16px 10px; }
+  .li { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f2f5; font-size: 12.5px; }
+  .li:last-child { border-bottom: 0; }
+  .li .s { color: var(--muted); font-size: 11.5px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="side">
+      <div class="item active"><span class="ic">⌂</span>Acasă</div>
+
+      <div class="sec">Favorite</div>
+      <div class="item"><span class="ic star">★</span>Note contabile</div>
+      <div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+      <div class="item"><span class="ic star">★</span>Jurnal de vânzări</div>
+
+      <div class="sec">Module</div>
+      <div class="item open"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">▾</span></div>
+      <div class="item sub">Note contabile</div>
+      <div class="item sub">Casă și bancă</div>
+      <div class="item sub">Jurnale TVA</div>
+      <div class="item sub">Declarații</div>
+      <div class="item sub">Închidere de lună</div>
+      <div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+      <div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+      <div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+      <div class="item"><span class="ic">⚙</span>Producție<span class="chev">›</span></div>
+      <div class="item"><span class="ic">☺</span>Salarizare<span class="chev">›</span></div>
+      <div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+      <div class="item"><span class="ic">⇄</span>Integrări ANAF<span class="chev">›</span></div>
+      <div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+
+      <div class="side-foot">« Strânge meniul</div>
+    </nav>
+
+    <main class="main">
+      <div>
+        <div class="crumb">Acasă</div>
+        <div class="head">
+          <div>
+            <h1>Bună ziua, Ion</h1>
+            <div class="sub2">Sâmbătă, 14 noiembrie 2026 · Perioada deschisă: noiembrie 2026</div>
+          </div>
+          <div class="actions">
+            <div class="btn ghost">⚙ Personalizează</div>
+            <div class="btn primary">+ Document nou ▾</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DE REZOLVAT -->
+      <div class="todo">
+        <div class="task"><div class="n r">3</div><div><div class="t">Facturi respinse de ANAF</div><div class="d">e-Factura · de corectat</div></div></div>
+        <div class="task"><div class="n a">7</div><div><div class="t">Facturi furnizori din SPV</div><div class="d">neînregistrate în contabilitate</div></div></div>
+        <div class="task"><div class="n b">12</div><div><div class="t">Documente în ciornă</div><div class="d">create de echipa ta</div></div></div>
+        <div class="task"><div class="n b">4</div><div><div class="t">Aprobări în așteptare</div><div class="d">plăți și note contabile</div></div></div>
+        <div class="task"><div class="n g">3/8</div><div><div class="t">Închidere octombrie</div><div class="d">pași rămași până la D300</div></div></div>
+      </div>
+
+      <!-- INDICATORI -->
+      <div class="kpis">
+        <div class="card kpi"><div class="l">Vânzări noiembrie</div><div class="v">1.248.300 <small>RON</small></div><div class="tr up">▲ 8,2% față de octombrie</div></div>
+        <div class="card kpi"><div class="l">Încasări noiembrie</div><div class="v">986.420 <small>RON</small></div><div class="tr up">▲ 3,1% față de octombrie</div></div>
+        <div class="card kpi"><div class="l">Creanțe restante</div><div class="v">312.750 <small>RON</small></div><div class="tr down">▲ 14,6% · 23 de clienți</div></div>
+        <div class="card kpi"><div class="l">TVA de plată estimat (oct.)</div><div class="v">184.310 <small>RON</small></div><div class="tr" style="color:var(--muted)">Scadent pe 25.11.2026</div></div>
+      </div>
+
+      <!-- GRAFICE -->
+      <div class="charts">
+        <div class="card">
+          <div class="card-h"><h3>Vânzări și încasări pe luni</h3>
+            <div class="legend"><span><i style="background:#2f6fed"></i>Vânzări</span><span><i style="background:#1f9d63"></i>Încasări</span></div></div>
+          <svg width="100%" height="200" viewBox="0 0 700 200" preserveAspectRatio="none" style="display:block;padding:6px 8px 4px">
+            <g stroke="#eef1f5" stroke-width="1">
+              <line x1="40" y1="20" x2="690" y2="20"/><line x1="40" y1="65" x2="690" y2="65"/><line x1="40" y1="110" x2="690" y2="110"/><line x1="40" y1="155" x2="690" y2="155"/>
+            </g>
+            <g font-size="10" fill="#8a94a3" font-family="Inter, Segoe UI, sans-serif">
+              <text x="2" y="24">1,5 mil</text><text x="2" y="69">1,0 mil</text><text x="2" y="114">0,5 mil</text><text x="20" y="159">0</text>
+            </g>
+            <g fill="#2f6fed">
+              <rect x="58" y="72" width="22" height="83" rx="3"/><rect x="112" y="63" width="22" height="92" rx="3"/>
+              <rect x="166" y="68" width="22" height="87" rx="3"/><rect x="220" y="55" width="22" height="100" rx="3"/>
+              <rect x="274" y="60" width="22" height="95" rx="3"/><rect x="328" y="48" width="22" height="107" rx="3"/>
+              <rect x="382" y="52" width="22" height="103" rx="3"/><rect x="436" y="42" width="22" height="113" rx="3"/>
+              <rect x="490" y="46" width="22" height="109" rx="3"/><rect x="544" y="38" width="22" height="117" rx="3"/>
+              <rect x="598" y="44" width="22" height="111" rx="3"/><rect x="652" y="43" width="22" height="112" rx="3" opacity=".45"/>
+            </g>
+            <polyline fill="none" stroke="#1f9d63" stroke-width="2.5" points="69,88 123,80 177,78 231,70 285,72 339,64 393,62 447,58 501,60 555,52 609,54 663,66"/>
+            <g fill="#1f9d63"><circle cx="609" cy="54" r="3.5"/><circle cx="663" cy="66" r="3.5"/></g>
+            <g font-size="10.5" fill="#8a94a3" font-family="Inter, Segoe UI, sans-serif" text-anchor="middle">
+              <text x="69" y="176">Dec</text><text x="123" y="176">Ian</text><text x="177" y="176">Feb</text><text x="231" y="176">Mar</text>
+              <text x="285" y="176">Apr</text><text x="339" y="176">Mai</text><text x="393" y="176">Iun</text><text x="447" y="176">Iul</text>
+              <text x="501" y="176">Aug</text><text x="555" y="176">Sep</text><text x="609" y="176">Oct</text><text x="663" y="176">Nov*</text>
+            </g>
+          </svg>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Scadențar clienți</h3><span class="lnk">Detalii ›</span></div>
+          <div class="aging">
+            <div class="ag-row"><span>Nescadente</span><div class="ag-bar"><div style="width:88%;background:#2f6fed"></div></div><span class="val">1.104.200</span></div>
+            <div class="ag-row"><span>1–30 zile</span><div class="ag-bar"><div style="width:42%;background:#e0a21b"></div></div><span class="val">198.400</span></div>
+            <div class="ag-row"><span>31–60 zile</span><div class="ag-bar"><div style="width:18%;background:#e5862a"></div></div><span class="val">71.900</span></div>
+            <div class="ag-row"><span>61–90 zile</span><div class="ag-bar"><div style="width:8%;background:#d9622b"></div></div><span class="val">27.150</span></div>
+            <div class="ag-row"><span>peste 90 zile</span><div class="ag-bar"><div style="width:6%;background:#d14343"></div></div><span class="val">15.300</span></div>
+            <div class="ag-row" style="margin-top:12px;border-top:1px solid #f0f2f5;padding-top:9px"><span style="font-weight:700">Total</span><span></span><span class="val">1.416.950 RON</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RÂNDUL DE JOS -->
+      <div class="bottom">
+        <div class="card">
+          <div class="card-h"><h3>Acțiuni rapide</h3></div>
+          <div class="quick">
+            <div class="qa"><span class="p">+</span>Notă contabilă</div>
+            <div class="qa"><span class="p">+</span>Factură client</div>
+            <div class="qa"><span class="p">+</span>Plată furnizor</div>
+            <div class="qa"><span class="p">+</span>Extras bancar</div>
+            <div class="qa"><span class="p">↓</span>Preia facturi SPV</div>
+            <div class="qa"><span class="p">▤</span>Balanță de verificare</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>e-Factura · ultimele 7 zile</h3><span class="lnk">Monitor ›</span></div>
+          <div class="list">
+            <div class="li"><span>Trimise și validate</span><span class="pill" style="background:var(--green-50);color:var(--green)">412</span></div>
+            <div class="li"><span>În procesare la ANAF</span><span class="pill" style="background:var(--amber-50);color:var(--amber)">9</span></div>
+            <div class="li"><span>Respinse</span><span class="pill" style="background:var(--red-50);color:var(--red)">3</span></div>
+            <div class="li"><span>Primite de la furnizori</span><span class="pill" style="background:var(--blue-50);color:var(--blue-600)">58</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Documente recente</h3><span class="lnk">Toate ›</span></div>
+          <div class="list">
+            <div class="li"><div>NC-2026-00981 · Amortizare octombrie<div class="s">Notă contabilă · azi, 15:12</div></div><span class="pill" style="background:var(--green-50);color:var(--green)">Validată</span></div>
+            <div class="li"><div>FCT-2026-01247 · Mega Retail SA<div class="s">Factură client · azi, 14:40</div></div><span class="pill" style="background:var(--amber-50);color:var(--amber)">La ANAF</span></div>
+            <div class="li"><div>OP-2026-00412 · Furnizor Ambalaje SRL<div class="s">Plată · ieri, 17:05</div></div><span class="pill" style="background:#eef1f5;color:var(--muted)">Ciornă</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

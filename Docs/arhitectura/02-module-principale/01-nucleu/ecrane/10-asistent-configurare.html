@@ -1,0 +1,266 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Asistent de configurare</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+.ty { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #eef1f5; color: #445064; }
+.ns { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #f3e8ff; color: #7c3aed; }
+.subcard { grid-column: span 3; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fbfcfe; }
+.subcard .h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.subcard .h b { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #445064; }
+.subcard .h span { font-size: 11.5px; color: #8a94a3; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 14px; }
+.uomt th, .uomt td { padding: 7px 10px; font-size: 12.5px; }
+.uomt td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.def { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: var(--blue-50); color: var(--blue-600); margin-right: 3px; }
+.calc { grid-column: span 3; background: #f7f9fc; border: 1px dashed #c9d3e1; border-radius: 9px; padding: 9px 12px; font-size: 12.5px; color: #445064; }
+</style><style>
+.item.sub { padding-left: 38px; font-size: 12.5px; }
+.ut { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
+.ut.emp { background: #e7f0ff; color: #2459c9; } .ut.ext { background: #fdf0e1; color: #b45309; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 11px; color: #fff; flex: none; }
+.uc { display: flex; align-items: center; gap: 10px; }
+.mut { color: #8a94a3; font-size: 11.5px; }
+.kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.kpi .l { font-size: 11.5px; color: var(--muted); } .kpi .v { font-size: 22px; font-weight: 700; margin-top: 4px; } .kpi .s { font-size: 11.5px; color: #8a94a3; margin-top: 2px; }
+.kpi.warn .v { color: var(--amber); } .kpi.bad .v { color: var(--red); }
+.full td { padding: 9px 12px; } .full th { padding: 9px 12px; }
+.rolech { display: inline-block; font-size: 11px; background: #f3f5f8; border-radius: 5px; padding: 1px 6px; margin: 1px 2px 1px 0; color: #445064; white-space: nowrap; }
+.empcard { grid-column: span 3; display: flex; gap: 14px; align-items: center; border: 1px solid var(--blue-100); background: #f6f9ff; border-radius: 10px; padding: 10px 12px; }
+.empcard .g { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 14px; font-size: 12px; }
+.empcard .g div span { display: block; font-size: 10.5px; color: #8a94a3; text-transform: uppercase; letter-spacing: .4px; }
+.note { grid-column: span 3; font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+.note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+.note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+.rt th, .rt td { padding: 6px 10px; font-size: 12.5px; }
+.rtw { grid-column: span 3; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.bigtog { grid-column: span 3; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.btn { white-space: nowrap; }
+.bigtog b { font-size: 13px; } .bigtog .mut { margin-left: 2px; }
+</style><style>
+.tabbar { display:flex; align-items:flex-end; gap:0; background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px 0; }
+.tg { display:flex; flex-direction:column; padding:0 6px; border-right:1px solid #eef1f5; }
+.tg:last-child { border-right:0; }
+.tg .cap { font-size:9.5px; font-weight:700; letter-spacing:.7px; color:#a0a9b6; text-transform:uppercase; padding:2px 8px 2px; }
+.tg .row { display:flex; }
+.tb { padding:7px 9px 9px; font-size:13px; color:var(--muted); font-weight:500; white-space:nowrap; border-bottom:2px solid transparent; display:flex; align-items:center; gap:6px; }
+.tb .i { color:#9aa4b2; font-size:12px; }
+.tb.on { color:var(--blue-600); font-weight:700; border-bottom-color:var(--blue-500); }
+.tb.on .i { color:var(--blue-600); }
+.tb .cnt { font-size:10.5px; font-weight:700; background:var(--red-50); color:var(--red); border-radius:999px; padding:0 6px; }
+.tbr { margin-left:auto; align-self:center; font-size:11.5px; color:#8a94a3; padding-bottom:4px; }
+.grid2 { flex:1; display:grid; gap:14px; min-height:0; }
+.ph { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+.ph h3 { font-size:15px; font-weight:700; }
+.ph .mut { margin-left:2px; }
+.ph .r { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.lst { padding:8px; display:flex; flex-direction:column; gap:2px; }
+.li { display:flex; align-items:center; padding:7px 10px; border-radius:8px; font-size:13px; color:#334155; }
+.li .c { margin-left:auto; font-size:11.5px; color:#8a94a3; }
+.li.on { background:var(--blue-50); color:var(--blue-600); font-weight:600; }
+.li.on .c { color:var(--blue-600); }
+.lcap { font-size:10.5px; font-weight:700; color:#8a94a3; text-transform:uppercase; letter-spacing:.6px; padding:10px 10px 4px; }
+td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+.cell { border:1px solid var(--line); border-radius:6px; padding:4px 8px; background:#fff; display:inline-block; min-width:60px; }
+.cell.err { border-color:var(--red); background:#fff7f7; }
+.errt { color:var(--red); font-size:11px; margin-top:3px; }
+tr.new td { background:#fffbea; }
+.lock { color:#9aa4b2; font-size:11px; white-space:nowrap; }
+.cbx { width:16px; height:16px; border-radius:4px; border:1.5px solid #9aa4b2; display:inline-grid; place-items:center; font-size:11px; color:#fff; vertical-align:middle; }
+.cbx.on { background:var(--blue-500); border-color:var(--blue-500); }
+.cbx.part { background:var(--blue-100); border-color:var(--blue-500); color:var(--blue-600); }
+.cbx.na { border-style:dashed; border-color:#d3d9e2; }
+.mx th { text-align:center; } .mx th:first-child { text-align:left; } .mx td { text-align:center; padding:6px 10px; } .mx td:first-child { text-align:left; }
+.mg td { background:#f6f8fb; font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:#445064; }
+.mg.off td { color:#a0a9b6; }
+.code { font-family: ui-monospace, Consolas, monospace; font-size:11.5px; color:#5b6676; }
+.diff { display:grid; grid-template-columns:120px 1fr 1fr; font-size:12.5px; }
+.diff div { padding:7px 10px; border-bottom:1px solid #f0f2f5; }
+.diff .h { font-size:11px; font-weight:700; color:#8a94a3; text-transform:uppercase; letter-spacing:.5px; background:#fafbfc; }
+.diff .old { background:#fdf1f1; color:#9b2c2c; text-decoration:line-through; }
+.diff .newv { background:#eaf7f0; color:#166534; font-weight:600; }
+.steps { display:flex; gap:0; padding:14px 18px; border-bottom:1px solid var(--line); }
+.stp { flex:1; display:flex; align-items:center; gap:8px; font-size:12.5px; color:#8a94a3; }
+.stp .b { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:12px; background:#eef1f5; color:#8a94a3; }
+.stp.done { color:#445064; } .stp.done .b { background:var(--green-50); color:var(--green); }
+.stp.cur { color:var(--blue-600); font-weight:700; } .stp.cur .b { background:var(--blue-500); color:#fff; }
+.stp .ln { flex:1; height:2px; background:#e6eaf0; margin:0 10px; }
+.bar { height:8px; border-radius:999px; background:#edf0f4; overflow:hidden; }
+.bar i { display:block; height:100%; background:var(--blue-500); border-radius:999px; }
+.bar.w i { background:#e0a21b; }
+.mods { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.mod { border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:12.5px; display:flex; align-items:center; gap:8px; }
+.mod.on { border-color:#bfe3cf; background:#f3fbf6; }
+.mod.off { color:#9aa4b2; background:#fafbfc; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--green); flex:none; }
+.mod.off .dot { background:#cfd6e0; }
+.kv { display:grid; grid-template-columns:150px 1fr; gap:7px 12px; font-size:12.5px; }
+.kv span { color:#8a94a3; }
+.prev { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.chip { font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:5px; background:#eef1f5; color:#5b6676; white-space:nowrap; }
+.chip.b { background:var(--blue-50); color:var(--blue-600); }
+.chip.g { background:var(--green-50); color:var(--green); }
+.chip.a { background:var(--amber-50); color:var(--amber); }
+.chip.r { background:var(--red-50); color:var(--red); }
+.p16 { padding:14px 16px; }
+.tf { white-space:nowrap; } .ph h3 { white-space:nowrap; } .nw td, .nw th { white-space:nowrap; }
+.tight td { padding:5px 10px !important; }
+.fl { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+</style><style>
+.wtop { height:56px; background:var(--navy-900); color:#fff; display:flex; align-items:center; padding:0 24px; gap:16px; }
+.wtop .t { font-size:14px; color:#c8d6ee; } .wtop .r { margin-left:auto; display:flex; gap:12px; align-items:center; font-size:13px; color:#c8d6ee; }
+.wl { display:grid; grid-template-columns:300px 1fr 360px; height:844px; }
+.ws { background:#fff; border-right:1px solid var(--line); padding:24px 18px; display:flex; flex-direction:column; gap:4px; }
+.wst { display:flex; gap:12px; padding:10px; border-radius:10px; align-items:flex-start; }
+.wst .b { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:12px; background:#eef1f5; color:#8a94a3; flex:none; }
+.wst .n { font-weight:600; font-size:13.5px; color:#8a94a3; } .wst .d { font-size:12px; color:#9aa4b2; margin-top:2px; }
+.wst.done .b { background:var(--green-50); color:var(--green); } .wst.done .n { color:var(--ink); }
+.wst.cur { background:var(--blue-50); } .wst.cur .b { background:var(--blue-500); color:#fff; } .wst.cur .n { color:var(--blue-600); }
+.wst .opt { font-size:10.5px; font-weight:700; color:#8a94a3; background:#f3f5f8; border-radius:5px; padding:0 5px; margin-left:4px; }
+.wm { padding:28px 36px; display:flex; flex-direction:column; gap:16px; overflow:hidden; }
+.wm h1 { font-size:24px; } .wm .lead { color:var(--muted); font-size:14px; margin-top:4px; }
+.wh { padding:28px 24px; border-left:1px solid var(--line); background:#fbfcfe; display:flex; flex-direction:column; gap:14px; font-size:13px; color:#445064; }
+.wf { display:flex; justify-content:space-between; align-items:center; margin-top:auto; border-top:1px solid var(--line); padding-top:16px; }
+.prog { height:6px; background:#e6eaf0; border-radius:999px; overflow:hidden; } .prog i { display:block; height:100%; width:37%; background:var(--blue-500); }
+</style></head><body>
+<div class="wtop"><div class="brand" style="width:auto"><div class="mark">E</div>ERP</div><span class="t">Configurare inițială · Grupul Exemplu</span>
+<div class="r"><span>Pasul 3 din 8</span><div style="width:160px" class="prog"><i></i></div><span>Progresul se salvează automat</span></div></div>
+<div class="wl">
+ <aside class="ws"><div class="wst done"><span class="b">✓</span><div><div class="n">Licență</div><div class="d">LIC-2026-0417 · 11 module, valabilă până la 31.12.2027</div></div></div><div class="wst done"><span class="b">✓</span><div><div class="n">Administrator</div><div class="d">andrei.matei · 2FA activată</div></div></div><div class="wst cur"><span class="b">3</span><div><div class="n">Firme și puncte de lucru</div><div class="d">3 firme adăugate</div></div></div><div class="wst "><span class="b">4</span><div><div class="n">Active Directory<span class='opt'>opțional</span></div><div class="d">autentificare cu contul Windows</div></div></div><div class="wst "><span class="b">5</span><div><div class="n">Email (SMTP)</div><div class="d">pentru facturi și notificări</div></div></div><div class="wst "><span class="b">6</span><div><div class="n">Certificat ANAF<span class='opt'>opțional</span></div><div class="d">pentru e-Factura și SPV</div></div></div><div class="wst "><span class="b">7</span><div><div class="n">Import inițial din Excel<span class='opt'>opțional</span></div><div class="d">parteneri, articole, solduri</div></div></div><div class="wst "><span class="b">8</span><div><div class="n">Verificare și pornire</div><div class="d"></div></div></div><div style="margin-top:auto" class="mut">Asistentul pornește o singură dată, la prima instalare. Poți reveni la el din Configurare › Setări cât timp nu e încheiat.</div></aside>
+ <section class="wm">
+  <div><h1>Firme și puncte de lucru</h1><div class="lead">Adaugă firmele din licență. Datele de identificare se preiau de la ANAF după CUI.</div></div>
+  <div class="panel"><table class="uomt"><thead><tr><th>Firmă</th><th>CUI</th><th>Reg. com.</th><th>Localitate</th><th>Puncte de lucru</th><th>Stare</th></tr></thead><tbody><tr><td class="pn">Exemplu Holding SA</td><td class="code">RO10000001</td><td class="tp">J40/100/2010</td><td class="tp">București</td><td class="tp">Sediu social</td><td><span class="st ok">Verificată ANAF</span></td></tr><tr><td class="pn">Exemplu Distribuție SRL</td><td class="code">RO12345678</td><td class="tp">J40/1234/2015</td><td class="tp">București</td><td class="tp">PL Cluj, PL Timișoara</td><td><span class="st ok">Verificată ANAF</span></td></tr><tr><td class="pn">Exemplu Producție SRL</td><td class="code">RO23456789</td><td class="tp">J12/987/2018</td><td class="tp">Florești</td><td class="tp">Fabrica</td><td><span class="st ok">Verificată ANAF</span></td></tr></tbody></table>
+  <div class="lfoot"><span>3 din 5 firme permise de licență</span><span></span></div></div>
+  <div class="panel"><div class="ph"><h3>Firmă nouă</h3><span class="mut">a patra firmă din licență</span></div>
+   <div class="form">
+    <div class="f"><label>CUI <span class="req">*</span></label><div class="in" style="border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(47,111,237,.15)">RO34567890<span class="act">Preia de la ANAF</span></div><div class="hint">✓ Găsit: plătitor de TVA, activ</div></div>
+    <div class="f span2"><label>Denumire</label><div class="in">Exemplu Construct SRL</div></div>
+    <div class="f"><label>Nr. registrul comerțului</label><div class="in">J22/1104/2021</div></div>
+    <div class="f span2"><label>Adresă sediu</label><div class="in">Bd. Independenței 5, Iași, jud. Iași (RO-IS)</div></div>
+    <div class="f"><label>Grup</label><div class="in">Subgrup Construcții ▾</div></div>
+    <div class="f"><label>Plan de conturi</label><div class="in">OMFP 1802/2014 ▾</div></div>
+    <div class="f"><label>Început de exercițiu</label><div class="in">01.01.2027</div></div>
+    <div class="f span3"><div class="sw"><span class="tog on"></span>Creează automat seriile implicite (facturi, chitanțe, avize) pentru 2027</div></div>
+   </div>
+   <div class="d-foot"><span class="info">Punctele de lucru le poți adăuga acum sau mai târziu din Firme</span><div class="actions"><div class="btn ghost sm">+ Punct de lucru</div><div class="btn primary sm">Adaugă firma</div></div></div>
+  </div>
+  <div class="wf"><div class="btn ghost">‹ Înapoi: Administrator</div><div class="actions"><div class="btn ghost">Continuă mai târziu</div><div class="btn primary">Continuă: Active Directory ›</div></div></div>
+ </section>
+ <aside class="wh">
+  <b style="font-size:14px;color:var(--ink)">De ce e nevoie aici</b>
+  <div>Fiecare firmă are CUI-ul ei, propriile serii de numerotare și propriul certificat ANAF. Partenerii și articolele sunt comune grupului.</div>
+  <div class="subcard" style="grid-column:auto"><div class="h"><b>Ce se creează automat</b></div><div class="fl" style="flex-direction:column;align-items:flex-start;gap:4px"><span>✓ Planul de conturi ales</span><span>✓ Seriile implicite pe anul de început</span><span>✓ Gestiunea „Sediu”</span><span>✓ Politica de precizie STANDARD</span></div></div>
+  <div class="note info" style="display:block">Nu ai acum toate datele? Continuă mai târziu: tot ce ai completat rămâne salvat, iar aplicația rămâne în modul de configurare până la ultimul pas.</div>
+  <div class="note warn" style="display:block">Exercițiul financiar și planul de conturi nu se mai schimbă după prima notă contabilă.</div>
+ </aside>
+</div></body></html>

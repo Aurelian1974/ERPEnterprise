@@ -1,0 +1,209 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Ecran Articole</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+.ty { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #eef1f5; color: #445064; }
+.ns { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #f3e8ff; color: #7c3aed; }
+.subcard { grid-column: span 3; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fbfcfe; }
+.subcard .h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.subcard .h b { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #445064; }
+.subcard .h span { font-size: 11.5px; color: #8a94a3; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 14px; }
+.uomt th, .uomt td { padding: 7px 10px; font-size: 12.5px; }
+.uomt td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.def { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: var(--blue-50); color: var(--blue-600); margin-right: 3px; }
+.calc { grid-column: span 3; background: #f7f9fc; border: 1px dashed #c9d3e1; border-radius: 9px; padding: 9px 12px; font-size: 12.5px; color: #445064; }
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+    <div class="item"><span class="ic">⌂</span>Acasă</div>
+    <div class="sec">Favorite</div>
+    <div class="item"><span class="ic star">★</span>Note contabile</div>
+    <div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+    <div class="sec">Nomenclatoare</div>
+    <div class="item"><span class="ic">◉</span>Parteneri</div>
+    <div class="item active"><span class="ic">▣</span>Articole</div>
+    <div class="sec">Module</div>
+    <div class="item"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+    <div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+    <div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+    <div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+    <div class="side-foot">« Strânge meniul</div>
+  </nav>
+<main class="main">
+  <div>
+    <div class="crumb">Nomenclatoare › Articole</div>
+    <div class="head">
+      <div><h1>Articole</h1><div class="sub2">Nomenclator comun grupului · setările contabile și de stoc sunt pe firma curentă</div></div>
+      <div class="actions"><div class="btn ghost">⇩ Export Excel</div><div class="btn ghost">⇧ Import</div><div class="btn primary">+ Articol nou</div></div>
+    </div>
+  </div>
+  <div class="split">
+    <section class="panel">
+      <div class="ltools">
+        <div class="tsearch">⌕ Caută după denumire, cod sau cod de bare…</div>
+        <div class="tfilters"><span class="tf on">Toate</span><span class="tf">Stocabile</span><span class="tf">Nestocabile</span><span class="tf">Grupă ▾</span><span class="tf">Tip ▾</span><span class="tf">+ Filtru</span></div>
+      </div>
+      <table><thead><tr><th>Articol</th><th>Tip</th><th>Stoc</th><th>TVA</th></tr></thead><tbody><tr class="sel"><td><div class="pn">Apă minerală 0,5 L</div><div class="pc">APA05 · 5941234500011</div></td><td><span class="ty">Marfă</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">11%</td></tr><tr class=""><td><div class="pn">Apă minerală 2 L</div><div class="pc">APA2 · 5941234500028</div></td><td><span class="ty">Marfă</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">11%</td></tr><tr class=""><td><div class="pn">Sirop fructe 1 L</div><div class="pc">SIR1 · 5941234500035</div></td><td><span class="ty">Produs finit</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">11%</td></tr><tr class=""><td><div class="pn">Zahăr tos</div><div class="pc">ZAH · MP-0012</div></td><td><span class="ty">Materie primă</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">11%</td></tr><tr class=""><td><div class="pn">Etichetă autoadezivă</div><div class="pc">ETK · MAT-0204</div></td><td><span class="ty">Material</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">21%</td></tr><tr class=""><td><div class="pn">Bax folie 6×0,5 L</div><div class="pc">BAX6 · AMB-0007</div></td><td><span class="ty">Ambalaj</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">21%</td></tr><tr class=""><td><div class="pn">Energie electrică</div><div class="pc">EE · SRV-0001</div></td><td><span class="ty">Serviciu</span></td><td><span class="ns">Nestocabil</span></td><td class="tp">21%</td></tr><tr class=""><td><div class="pn">Transport marfă</div><div class="pc">TRS · SRV-0010</div></td><td><span class="ty">Serviciu</span></td><td><span class="ns">Nestocabil</span></td><td class="tp">21%</td></tr><tr class=""><td><div class="pn">Linie îmbuteliere L2</div><div class="pc">MF-L2 · MF-0003</div></td><td><span class="ty">Mijloc fix</span></td><td><span class="ns">Nestocabil</span></td><td class="tp">21%</td></tr><tr class=""><td><div class="pn">Garanție SGR PET</div><div class="pc">SGR · SGR-0001</div></td><td><span class="ty">Ambalaj</span></td><td><span class="st ok">Stocabil</span></td><td class="tp">—</td></tr></tbody></table>
+      <div class="lfoot"><span>1–10 din 6.932</span><span>‹ 1 2 3 … 694 ›</span></div>
+    </section>
+    <section class="panel">
+      <div class="d-head">
+        <div class="d-title">
+          <h2>Apă minerală 0,5 L <span class="pill ok">Activ</span></h2>
+          <div class="path">Cod APA05 · Grupa Băuturi › Ape minerale · folosit în 3 firme</div>
+          <div class="stats"><span class="stat">Stoc: 18.240 buc</span><span class="stat">3 coduri de bare</span><span class="stat">Ultimul preț achiziție 1,2345 RON</span></div>
+        </div>
+      </div>
+      <div class="tabs"><span class="tab on">Date generale</span><span class="tab">UM și conversii</span><span class="tab">Proprietăți</span><span class="tab">Contabilitate</span><span class="tab">Stoc</span><span class="tab">Coduri de bare</span><span class="tab">Istoric</span></div>
+      <div class="form">
+        <div class="f"><label>Cod <span class="req">*</span></label><div class="in">APA05</div></div>
+        <div class="f span2"><label>Denumire <span class="req">*</span></label><div class="in">Apă minerală naturală carbogazoasă 0,5 L</div></div>
+        <div class="f"><label>Tip articol <span class="req">*</span></label><div class="in">Marfă ▾</div></div>
+        <div class="f"><label>Grupă</label><div class="in">Băuturi › Ape minerale ▾</div></div>
+        <div class="f"><label>Stocabil</label><div class="sw"><span class="tog on"></span>Da, se ține stoc</div></div>
+        <div class="f"><label>Cotă TVA implicită <span class="req">*</span></label><div class="in">11% · S ▾</div></div>
+        <div class="f"><label>Cod NC (vamal)</label><div class="in">2201 10 11</div></div>
+        <div class="f"><label>Garanție SGR</label><div class="in">SGR PET 0,50 RON ▾</div></div>
+        <div class="f"><label>Set UM <span class="req">*</span></label><div class="in">Băuturi 0,5 L ▾<span class="act">Vezi</span></div></div>
+        <div class="f"><label>UM de bază</label><div class="in" style="background:#f7f9fc">buc (H87)</div></div>
+        <div class="f"><label>Zecimale preț / cantitate</label><div class="in">4 / 0 (politica CANTITATE-INTREAGA)</div></div>
+        <div class="subcard">
+          <div class="h"><b>Contabilitate și gestiune · Exemplu Distribuție SRL</b><span>valori pe firma curentă · tab-urile Contabilitate și Stoc</span></div>
+          <div class="g3">
+            <div class="f"><label>Cont de stoc</label><div class="in">371 · Mărfuri ▾</div></div>
+            <div class="f"><label>Cont de cheltuială</label><div class="in">607 · Cheltuieli mărfuri ▾</div></div>
+            <div class="f"><label>Cont de venit</label><div class="in">707 · Venituri mărfuri ▾</div></div>
+            <div class="f"><label>Gestiune implicită</label><div class="in">Depozit Cluj ▾</div></div>
+            <div class="f"><label>Metodă de evaluare</label><div class="in">FIFO ▾</div></div>
+            <div class="f"><label>Urmărire</label><div class="in">Lot și termen valabilitate ▾</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="d-foot"><span class="info">Modificat ultima dată de Ana Ionescu, 11.11.2026, 16:40</span>
+        <div class="actions"><div class="btn ghost">Anulează</div><div class="btn primary">Salvează</div></div></div>
+    </section>
+  </div>
+</main></div></body></html>
