@@ -83,7 +83,7 @@ internal sealed class InstallCommand(TimeProvider time)
 
         public void Finished(IInstallStep step, StepResult result, TimeSpan elapsed)
         {
-            var line = $"[{step.Id}] {Label(result.Outcome)} ({StepOrchestrator.FormatElapsed(elapsed)}){(result.Message is null ? string.Empty : ": " + result.Message)}";
+            var line = StepOrchestrator.FormatFinished(step, result, elapsed);
             switch (result.Outcome)
             {
                 case StepOutcome.Warning:
@@ -97,14 +97,6 @@ internal sealed class InstallCommand(TimeProvider time)
                     break;
             }
         }
-
-        private static string Label(StepOutcome outcome) => outcome switch
-        {
-            StepOutcome.Done => "OK",
-            StepOutcome.Skipped => "Sărit",
-            StepOutcome.Warning => "Avertisment",
-            _ => "EȘEC",
-        };
     }
 
     private sealed class ConsolePrompt(OperatorConsole console) : IOperatorPrompt

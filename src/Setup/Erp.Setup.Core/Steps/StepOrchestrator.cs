@@ -91,6 +91,20 @@ public sealed class StepOrchestrator(IStepReporter reporter, IStepJournal? journ
 
     public static string FormatElapsed(TimeSpan elapsed) =>
         elapsed.TotalSeconds < 1 ? "<1 s" : string.Create(CultureInfo.InvariantCulture, $"{elapsed.TotalSeconds:F0} s");
+
+    /// <summary>Formatul din 6.6: <c>[I-07] Rulez migrațiile bazei de date... OK (42 scripturi, 18 s)</c>.</summary>
+    public static string FormatFinished(IInstallStep step, StepResult result, TimeSpan elapsed)
+    {
+        var details = result.Message is null ? FormatElapsed(elapsed) : $"{result.Message}, {FormatElapsed(elapsed)}";
+        var label = result.Outcome switch
+        {
+            StepOutcome.Done => "OK",
+            StepOutcome.Skipped => "Sărit",
+            StepOutcome.Warning => "Avertisment",
+            _ => "EȘEC",
+        };
+        return $"[{step.Id}] {step.Title}... {label} ({details})";
+    }
 }
 
 /// <summary>Pas definit printr-o functie; pasii installer-ului sunt compozitii mici ale serviciilor din T5–T12.</summary>

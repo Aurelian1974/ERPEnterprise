@@ -436,11 +436,12 @@ Starea instalării, scrisă de installer după fiecare pas reușit, citită de `
   "appLogin": "erp_prod_app",
   "migratorLogin": "erp_prod_mig",
   "backupRoot": "B:\\SQLBackup",
+  "certificateThumbprint": "3F2A9C...E1",
   "completedSteps": ["I-01", "I-02", "I-03"]
 }
 ```
 
-`state` ia valorile: `Installing`, `Installed`, `Upgrading`, `RollingBack`, `Maintenance`, `Failed`. Fișierul nu conține secrete.
+`state` ia valorile: `Installing`, `Installed`, `Upgrading`, `RollingBack`, `Maintenance`, `Failed`. Fișierul nu conține secrete. `certificateThumbprint` este certificatul legat la I-18 (cel din răspunsuri sau cel autosemnat generat); la reluare, certificatul autosemnat se refolosește, nu se generează altul.
 
 ### 6.6 Afișare și jurnal
 

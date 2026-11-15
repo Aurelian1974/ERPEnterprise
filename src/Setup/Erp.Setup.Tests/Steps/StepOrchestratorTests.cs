@@ -84,6 +84,17 @@ public sealed class StepOrchestratorTests
         Assert.Equal(ExitCodes.CancelledByOperator, result.ExitCode);
     }
 
+    [Fact]
+    public void Console_line_uses_the_documented_format()
+    {
+        var step = new DelegateStep("I-09", "Rulez migrațiile bazei de date", (_, _) => Task.FromResult(StepResult.Done()));
+
+        Assert.Equal("[I-09] Rulez migrațiile bazei de date... OK (42 scripturi, 18 s)",
+            StepOrchestrator.FormatFinished(step, StepResult.Done("42 scripturi"), TimeSpan.FromSeconds(18)));
+        Assert.Equal("[I-09] Rulez migrațiile bazei de date... EȘEC (<1 s)",
+            StepOrchestrator.FormatFinished(step, new StepResult(StepOutcome.Failed), TimeSpan.Zero));
+    }
+
     private sealed class CodedException(int exitCode) : Exception("eșec")
     {
         public int ExitCode => exitCode;
