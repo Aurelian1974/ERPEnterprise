@@ -13,7 +13,7 @@ public interface IProcessRunner
 
 public sealed class ProcessRunner(ILogger log) : IProcessRunner
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(30);
 
     public ProcessResult Run(string fileName, IReadOnlyList<string> arguments)
     {

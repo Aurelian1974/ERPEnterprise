@@ -24,7 +24,11 @@ public sealed class SetupCommandLineTests
         var text = output.ToString();
         Assert.Contains("Comenzi:", text);
         Assert.Contains("Opțiuni comune:", text);
-        foreach (var command in new[] { "check", "install", "upgrade", "repair", "reset-admin", "rollback", "uninstall", "diagnose", "status" })
+        foreach (var command in new[]
+        {
+            "check", "install", "upgrade", "rollback", "repair", "recover", "reset-admin", "export-recovery-key", "verify-recovery-key",
+            "diagnose", "uninstall", "status",
+        })
         {
             Assert.Contains($"  {command} ", text);
         }
@@ -38,20 +42,23 @@ public sealed class SetupCommandLineTests
         var exitCode = CreateCli().Invoke("install", "--help");
 
         Assert.Equal(0, exitCode);
-        Assert.Contains("ErpSetup.exe install --answers <fișier> [--unattended]", output.ToString());
+        Assert.Contains("ErpSetup.Cli.exe install --answers <fișier> [--unattended] [--recovery-key-out <fișier.pfx>]", output.ToString());
         Assert.Empty(invocations);
     }
 
     [Theory]
     [InlineData("check --answers a.json", "check")]
-    [InlineData("install --answers a.json --unattended", "install")]
+    [InlineData("install --answers a.json --unattended --recovery-key-out E:\\cheie.pfx", "install")]
     [InlineData("upgrade --instance PROD --unattended", "upgrade")]
-    [InlineData("repair --instance PROD --rotate-secrets --license x.lic", "repair")]
-    [InlineData("reset-admin --instance PROD --user ion.pop", "reset-admin")]
     [InlineData("rollback --instance PROD", "rollback")]
-    [InlineData("uninstall --instance PROD --unattended --confirm-instance PROD --remove-jobs --remove-logins", "uninstall")]
-    [InlineData("diagnose --instance TEST1", "diagnose")]
-    [InlineData("status --instance PROD --log-level Debug --yes --no-color", "status")]
+    [InlineData("repair --instance PROD --license x.lic", "repair")]
+    [InlineData("recover --answers a.json --recovery-key E:\\cheie.pfx", "recover")]
+    [InlineData("reset-admin --instance PROD", "reset-admin")]
+    [InlineData("export-recovery-key --instance PROD --out E:\\cheie.pfx", "export-recovery-key")]
+    [InlineData("verify-recovery-key --instance PROD --recovery-key E:\\cheie.pfx", "verify-recovery-key")]
+    [InlineData("diagnose --instance TEST1 --out C:\\Temp", "diagnose")]
+    [InlineData("uninstall --instance PROD --confirm-instance PROD", "uninstall")]
+    [InlineData("status --instance PROD --log-level Debug --no-color", "status")]
     public void Valid_command_lines_are_parsed(string commandLine, string command)
     {
         var exitCode = CreateCli().Invoke(commandLine.Split(' '));
@@ -63,24 +70,37 @@ public sealed class SetupCommandLineTests
     [Fact]
     public void Options_are_mapped_to_the_invocation()
     {
-        CreateCli().Invoke("uninstall", "--instance", "PROD", "--unattended", "--confirm-instance", "PROD", "--remove-jobs", "--log-level", "Debug", "--no-color");
+        CreateCli().Invoke("uninstall", "--instance", "PROD", "--confirm-instance", "PROD", "--log-level", "Debug", "--no-color");
+        CreateCli().Invoke("install", "--answers", "a.json", "--unattended", "--recovery-key-out", "cheie.pfx");
+        CreateCli().Invoke("repair", "--instance", "TEST", "--license", "x.lic");
 
-        var invocation = Assert.Single(invocations);
-        Assert.Equal("PROD", invocation.Instance);
-        Assert.True(invocation.Unattended);
-        Assert.Equal("PROD", invocation.ConfirmInstance);
-        Assert.True(invocation.RemoveJobs);
-        Assert.False(invocation.RemoveLogins);
-        Assert.Equal("Debug", invocation.LogLevel);
-        Assert.True(invocation.NoColor);
+        var uninstall = invocations[0];
+        Assert.Equal("PROD", uninstall.Instance);
+        Assert.Equal("PROD", uninstall.ConfirmInstance);
+        Assert.Equal("Debug", uninstall.LogLevel);
+        Assert.True(uninstall.NoColor);
+        Assert.Equal(new SetupInvocation { Command = "install", AnswersPath = "a.json", Unattended = true, RecoveryKeyOut = "cheie.pfx" }, invocations[1]);
+        Assert.Equal("x.lic", invocations[2].LicensePath);
+        Assert.Equal("TEST", invocations[2].Instance);
+    }
+
+    [Fact]
+    public void Passwords_cannot_be_given_as_arguments()
+    {
+        var exitCode = CreateCli().Invoke("install", "--answers", "a.json", "--password", "secret");
+
+        Assert.Equal(ExitCodes.InvalidCommandLine, exitCode);
+        Assert.Empty(invocations);
     }
 
     [Theory]
     [InlineData("install", "Opțiunea --answers este obligatorie pentru comanda install.")]
     [InlineData("upgrade", "Opțiunea --instance este obligatorie pentru comanda upgrade.")]
-    [InlineData("upgrade --instance prod", "Numele instanței „prod” este invalid")]
-    [InlineData("status --instance P", "Numele instanței „P” este invalid")]
-    [InlineData("uninstall --instance PROD --unattended", "Cu --unattended, opțiunea --confirm-instance este obligatorie.")]
+    [InlineData("upgrade --instance prod", "Numele instalării „prod” este invalid")]
+    [InlineData("status --instance P", "Numele instalării „P” este invalid")]
+    [InlineData("uninstall --instance PROD", "Opțiunea --confirm-instance este obligatorie pentru comanda uninstall.")]
+    [InlineData("recover --answers a.json", "Opțiunea --recovery-key este obligatorie pentru comanda recover.")]
+    [InlineData("export-recovery-key --instance PROD", "Opțiunea --out este obligatorie pentru comanda export-recovery-key.")]
     [InlineData("status --instance PROD --log-level Trace", "Valoarea „Trace” pentru --log-level nu este permisă")]
     [InlineData("status --instance PROD --bogus", "Comandă sau argument necunoscut: „--bogus”.")]
     [InlineData("install --answers", "Lipsește valoarea pentru opțiunea --answers.")]

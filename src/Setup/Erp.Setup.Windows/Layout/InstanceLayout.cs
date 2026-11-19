@@ -18,14 +18,14 @@ public sealed record InstanceLayout(string InstallRoot, string DataRoot, string 
 
     public string WorkerDirectory(string version) => Path.Combine(VersionsDirectory, version, "worker");
 
-    /// <summary>Pasul I-05: folderele din DataRoot (idempotent).</summary>
+    /// <summary>Pasul I-01: folderele din DataRoot (5.7, idempotent).</summary>
     public void CreateDataFolders()
     {
         var data = Data;
         foreach (var folder in new[]
         {
-            data.InstanceDirectory, data.ConfigDirectory, data.LicenseDirectory, data.KeysDirectory, data.HostLogs, data.WorkerLogs,
-            data.SetupLogs, data.MaintenanceDirectory, data.UpgradeDirectory, data.InstallDirectory,
+            data.InstanceDirectory, data.ConfigDirectory, data.HostLogs, data.WorkerLogs, data.SetupLogs, data.MaintenanceDirectory,
+            data.UpgradeDirectory, data.InstallDirectory,
         })
         {
             Directory.CreateDirectory(folder);
@@ -34,9 +34,10 @@ public sealed record InstanceLayout(string InstallRoot, string DataRoot, string 
 }
 
 /// <summary>
-/// Pasul I-17 (3.2): drepturile NTFS. DataRoot\&lt;Instanta&gt; e protejat (fara mostenire) si apartine Administrators si SYSTEM;
-/// pool-ul Host si serviciul primesc doar ce le trebuie. Folderele de versiune mostenesc drepturile din Program Files
-/// (Administrators, SYSTEM) si primesc citire pentru componenta lor. Reaplicarea nu dubleaza regulile (R8).
+/// Pasul I-07 (5.7): drepturile NTFS. DataRoot\&lt;Instanta&gt; e protejat (fara mostenire) si apartine Administrators si SYSTEM;
+/// pool-ul si serviciul primesc doar ce le trebuie (install\ si upgrade\ raman doar ale administratorilor). Folderele de versiune
+/// mostenesc drepturile din Program Files (Administrators, SYSTEM) si primesc citire pentru componenta lor. Reaplicarea nu
+/// dubleaza regulile.
 /// </summary>
 public static class NtfsPermissions
 {
@@ -66,13 +67,12 @@ public static class NtfsPermissions
 
         root.SetAccessControl(security);
 
-        foreach (var folder in new[] { data.ConfigDirectory, data.LicenseDirectory, data.MaintenanceDirectory })
+        foreach (var folder in new[] { data.ConfigDirectory, data.MaintenanceDirectory })
         {
             Grant(new DirectoryInfo(folder), identities.HostPool, Read);
             Grant(new DirectoryInfo(folder), identities.Worker, Read);
         }
 
-        Grant(new DirectoryInfo(data.KeysDirectory), identities.HostPool, Write);
         Grant(new DirectoryInfo(data.HostLogs), identities.HostPool, Write);
         Grant(new DirectoryInfo(data.WorkerLogs), identities.Worker, Write);
 
@@ -80,6 +80,11 @@ public static class NtfsPermissions
         {
             GrantFile(data.InstanceJson, identities.HostPool, Read);
             GrantFile(data.InstanceJson, identities.Worker, Read);
+        }
+
+        if (File.Exists(data.InternalCertificate))
+        {
+            GrantFile(data.InternalCertificate, new SecurityIdentifier(WellKnownSidType.WorldSid, null), Read);
         }
     }
 

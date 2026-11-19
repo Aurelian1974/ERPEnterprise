@@ -54,8 +54,8 @@ public sealed class AuthDatabase(SqlServerFixture sql) : IAsyncLifetime
         ConnectionString = await sql.CreateErpDatabaseAsync("ERP_IT_AUTH", CancellationToken.None);
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
-        var admin = await new InitialAdminCreator(new SqlOperator(sql.Target("master"), sql.SaPassword, new LoggerConfiguration().CreateLogger()))
-            .CreateAsync(connection, new InitialAdminRequest("administrator", "Administrator ERP", null, null, "test", "IT"), CancellationToken.None);
+        var admin = await new InitialAdminCreator(sql.Operator())
+            .CreateAsync(connection, new InitialAdminRequest("administrator", "Administrator ERP", null, "test", "IT"), CancellationToken.None);
         AdminTemporaryPassword = admin.TemporaryPassword!;
         foreach (var user in new[] { "operator.it", "blocat.it", "revocat.it", "inactiv.it" })
         {

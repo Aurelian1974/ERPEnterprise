@@ -1,83 +1,113 @@
 using Dapper;
-using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
 using Microsoft.Data.SqlClient;
 
 namespace Erp.Setup.Sql.Probes;
 
-/// <summary>Conexiunea operatorului la master (C-09): timeout 15 s, criptarea din configurare.</summary>
+/// <summary>
+/// Conexiunea operatorului la master (C-10): Windows authentication cu contul curent (R5), criptata (Encrypt = Mandatory),
+/// timeout 15 s. Daca singura problema e certificatul serverului SQL, se reincearca fara verificarea lui, cu avertisment.
+/// </summary>
 public sealed class SqlServerConnector : ISqlServerConnector
 {
-    public static SqlConnectionStringBuilder BuildOperatorConnectionString(SqlTarget target, string? operatorPassword)
+    private readonly Action<SqlConnectionStringBuilder>? customize;
+
+    public SqlServerConnector()
+    {
+    }
+
+    /// <param name="customize">Doar testele de integrare: autentificarea SQL in containerul Linux.</param>
+    internal SqlServerConnector(Action<SqlConnectionStringBuilder>? customize) => this.customize = customize;
+
+    public static SqlConnectionStringBuilder BuildOperatorConnectionString(SqlTarget target, string database = "master") =>
+        BuildOperatorConnectionString(target, database, customize: null);
+
+    internal static SqlConnectionStringBuilder BuildOperatorConnectionString(SqlTarget target, string database, Action<SqlConnectionStringBuilder>? customize)
     {
         var builder = new SqlConnectionStringBuilder
         {
             DataSource = target.Server,
-            InitialCatalog = "master",
+            InitialCatalog = database,
+            IntegratedSecurity = true,
             ConnectTimeout = 15,
-            Encrypt = target.Encrypt switch
-            {
-                SqlEncrypt.Strict => SqlConnectionEncryptOption.Strict,
-                SqlEncrypt.Optional => SqlConnectionEncryptOption.Optional,
-                _ => SqlConnectionEncryptOption.Mandatory,
-            },
+            Encrypt = SqlConnectionEncryptOption.Mandatory,
             TrustServerCertificate = target.TrustServerCertificate,
             ApplicationName = $"ERP-{target.Instance}-Setup",
             Pooling = false,
         };
-
-        if (target.OperatorAuthentication == SqlAuthentication.Sql)
-        {
-            builder.UserID = target.OperatorSqlLogin;
-            builder.Password = operatorPassword;
-        }
-        else
-        {
-            builder.IntegratedSecurity = true;
-        }
-
+        customize?.Invoke(builder);
         return builder;
     }
 
-    public async Task<ISqlServerProbe> ConnectAsync(SqlTarget target, string? operatorPassword, CancellationToken ct)
+    public async Task<ISqlServerProbe> ConnectAsync(SqlTarget target, CancellationToken ct)
     {
-        var connection = new SqlConnection(BuildOperatorConnectionString(target, operatorPassword).ConnectionString);
         try
         {
-            await connection.OpenAsync(ct).ConfigureAwait(false);
-            return new SqlServerProbe(connection);
+            return new SqlServerProbe(await OpenAsync(target, ct).ConfigureAwait(false), target.TrustServerCertificate);
+        }
+        catch (SqlException ex) when (!target.TrustServerCertificate && IsCertificateFailure(ex))
+        {
+            try
+            {
+                return new SqlServerProbe(await OpenAsync(target with { TrustServerCertificate = true }, ct).ConfigureAwait(false), trusted: true);
+            }
+            catch (SqlException retry)
+            {
+                throw Failed(target, retry);
+            }
         }
         catch (SqlException ex)
         {
-            await connection.DisposeAsync().ConfigureAwait(false);
-            // Mesajul SqlClient nu contine parola; contine serverul si, la autentificare SQL, numele loginului.
-            throw new SqlConnectFailedException($"Conexiunea la {target.Server} a eșuat (eroare {ex.Number}): {ex.Message}", ex);
+            throw Failed(target, ex);
         }
     }
+
+    /// <summary>Esecul vine doar din validarea certificatului TLS al serverului SQL (autoritate necunoscuta, nume diferit).</summary>
+    public static bool IsCertificateFailure(SqlException ex) =>
+        ex.Message.Contains("certificate", StringComparison.OrdinalIgnoreCase) || ex.InnerException?.Message.Contains("certificate", StringComparison.OrdinalIgnoreCase) == true;
+
+    private async Task<SqlConnection> OpenAsync(SqlTarget target, CancellationToken ct)
+    {
+        var connection = new SqlConnection(BuildOperatorConnectionString(target, "master", customize).ConnectionString);
+        try
+        {
+            await connection.OpenAsync(ct).ConfigureAwait(false);
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private static SqlConnectFailedException Failed(SqlTarget target, SqlException ex) =>
+        new($"Conexiunea la {target.Server} cu contul Windows curent a eșuat (eroare {ex.Number}): {ex.Message}", ex);
 }
 
-/// <summary>Interogarile pentru C-10…C-19, pe master, cu conexiunea operatorului.</summary>
-public sealed class SqlServerProbe(SqlConnection connection) : ISqlServerProbe
+/// <summary>Interogarile verificarilor C-11…C-20, pe master, cu conexiunea operatorului.</summary>
+public sealed class SqlServerProbe(SqlConnection connection, bool trusted) : ISqlServerProbe
 {
     private const int Timeout = 30;
+
+    public bool TrustedServerCertificate { get; } = trusted;
 
     public async Task<SqlServerInfo> GetServerInfoAsync(CancellationToken ct)
     {
         const string sql = """
-            SELECT CAST(SERVERPROPERTY('ProductMajorVersion') AS int)           AS MajorVersion,
-                   CAST(SERVERPROPERTY('EngineEdition') AS int)                 AS EngineEdition,
-                   CAST(SERVERPROPERTY('Edition') AS nvarchar(128))             AS Edition,
-                   CAST(SERVERPROPERTY('Collation') AS nvarchar(128))           AS Collation,
-                   CAST(ISNULL(IS_SRVROLEMEMBER(N'sysadmin'), 0) AS bit)        AS IsSysadmin,
-                   CAST(ISNULL(IS_SRVROLEMEMBER(N'dbcreator'), 0) AS bit)       AS IsDbCreator,
-                   CAST(ISNULL(IS_SRVROLEMEMBER(N'securityadmin'), 0) AS bit)   AS IsSecurityAdmin,
-                   SYSUTCDATETIME()                                             AS UtcNow,
+            SELECT CAST(SERVERPROPERTY('ProductMajorVersion') AS int)               AS MajorVersion,
+                   CAST(SERVERPROPERTY('Edition') AS nvarchar(128))                 AS Edition,
+                   CAST(SERVERPROPERTY('Collation') AS nvarchar(128))               AS Collation,
+                   CAST(ISNULL(IS_SRVROLEMEMBER(N'sysadmin'), 0) AS bit)            AS IsSysadmin,
+                   CAST(SERVERPROPERTY('MachineName') AS nvarchar(128))             AS MachineName,
+                   SYSUTCDATETIME()                                                 AS UtcNow,
                    CAST(SERVERPROPERTY('InstanceDefaultDataPath') AS nvarchar(260)) AS DefaultDataPath,
-                   CAST(SERVERPROPERTY('InstanceDefaultLogPath') AS nvarchar(260))  AS DefaultLogPath;
+                   CAST(SERVERPROPERTY('InstanceDefaultLogPath') AS nvarchar(260))  AS DefaultLogPath,
+                   CAST(SERVERPROPERTY('InstanceDefaultBackupPath') AS nvarchar(260)) AS DefaultBackupPath;
             """;
         var row = await connection.QuerySingleAsync<ServerRow>(new CommandDefinition(sql, commandTimeout: Timeout, cancellationToken: ct)).ConfigureAwait(false);
-        return new SqlServerInfo(row.MajorVersion, row.EngineEdition, row.Edition, row.Collation, row.IsSysadmin, row.IsDbCreator,
-            row.IsSecurityAdmin, row.UtcNow, row.DefaultDataPath, row.DefaultLogPath);
+        return new SqlServerInfo(row.MajorVersion, row.Edition, row.Collation, row.IsSysadmin, row.MachineName, row.UtcNow,
+            Trim(row.DefaultDataPath), Trim(row.DefaultLogPath), Trim(row.DefaultBackupPath));
     }
 
     public async Task<string?> GetAgentStatusAsync(CancellationToken ct)
@@ -93,7 +123,6 @@ public sealed class SqlServerProbe(SqlConnection connection) : ISqlServerProbe
         }
         catch (SqlException)
         {
-            // Fara VIEW SERVER STATE starea nu se poate citi; C-13 raporteaza agentul ca nepornit.
             return null;
         }
     }
@@ -113,108 +142,42 @@ public sealed class SqlServerProbe(SqlConnection connection) : ISqlServerProbe
             return null;
         }
 
-        // Numele bazei nu poate fi parametru intr-un nume in trei parti; e validat (6.2) si citat (8.2).
+        // Numele bazei nu poate fi parametru intr-un nume in trei parti; e validat (08, 6.2) si citat (08, 5.6).
         var database = SqlText.QuoteName(databaseName);
         var detailsSql = $"""
-            SELECT (SELECT COUNT(*) FROM {database}.sys.tables AS t WHERE t.is_ms_shipped = 0) AS UserTableCount,
-                   (SELECT CAST(p.value AS nvarchar(100)) FROM {database}.sys.extended_properties AS p
-                    WHERE p.class = 0 AND p.name = N'ErpInstallId') AS ErpInstallId;
+            SELECT (SELECT COUNT(*) FROM {database}.sys.objects AS o WHERE o.is_ms_shipped = 0)
+                 + (SELECT COUNT(*) FROM {database}.sys.schemas AS s WHERE s.schema_id > 4 AND s.schema_id < 16384) AS UserObjectCount,
+                   (SELECT CAST(p.value AS nvarchar(100)) FROM {database}.sys.extended_properties AS p WHERE p.class = 0 AND p.name = N'ErpProduct')   AS ErpProduct,
+                   (SELECT CAST(p.value AS nvarchar(100)) FROM {database}.sys.extended_properties AS p WHERE p.class = 0 AND p.name = N'ErpInstance')  AS ErpInstance,
+                   (SELECT CAST(p.value AS nvarchar(100)) FROM {database}.sys.extended_properties AS p WHERE p.class = 0 AND p.name = N'ErpInstallId') AS ErpInstallId,
+                   CAST(CASE WHEN OBJECT_ID(N'{database}.core.SchemaVersion', N'U') IS NULL THEN 0 ELSE 1 END AS bit) AS HasJournal;
             """;
         var details = await connection.QuerySingleAsync<DatabaseDetailsRow>(
             new CommandDefinition(detailsSql, commandTimeout: Timeout, cancellationToken: ct)).ConfigureAwait(false);
-        return new DatabaseInfo(row.Collation ?? string.Empty, details.UserTableCount, details.ErpInstallId, row.SizeBytes ?? 0);
-    }
-
-    public async Task<SqlDirectoryState> GetDirectoryStateAsync(string path, CancellationToken ct)
-    {
-        const string sql = """
-            SELECT CAST(f.file_is_a_directory AS bit) AS IsDirectory
-            FROM sys.dm_os_file_exists(@Path) AS f;
-            """;
-        var current = path;
-        var first = true;
-        while (!string.IsNullOrEmpty(current))
+        string? lastMigration = null;
+        if (details.HasJournal)
         {
-            var isDirectory = await connection.QuerySingleOrDefaultAsync<bool?>(
-                new CommandDefinition(sql, new { Path = current }, commandTimeout: Timeout, cancellationToken: ct)).ConfigureAwait(false);
-            if (isDirectory == true)
-            {
-                return first ? SqlDirectoryState.Exists : SqlDirectoryState.WillBeCreated;
-            }
-
-            first = false;
-            current = ParentOf(current);
+            lastMigration = await connection.QuerySingleOrDefaultAsync<string>(new CommandDefinition(
+                $"SELECT TOP (1) v.ScriptName FROM {database}.core.SchemaVersion AS v ORDER BY v.Id DESC;", commandTimeout: Timeout, cancellationToken: ct))
+                .ConfigureAwait(false);
         }
 
-        return SqlDirectoryState.Unreachable;
+        return new DatabaseInfo(row.Collation ?? string.Empty, details.UserObjectCount, details.ErpProduct, details.ErpInstance, details.ErpInstallId,
+            lastMigration, row.SizeBytes ?? 0);
     }
 
-    public async Task CreateDirectoryAsync(string path, CancellationToken ct)
-    {
+    public async Task CreateDirectoryAsync(string path, CancellationToken ct) =>
         await connection.ExecuteAsync(new CommandDefinition("EXEC master.dbo.xp_create_subdir @Path;", new { Path = path },
             commandTimeout: Timeout, cancellationToken: ct)).ConfigureAwait(false);
-    }
-
-    public async Task<long?> GetFreeSpaceBytesAsync(string path, CancellationToken ct)
-    {
-        const string sql = """
-            SELECT d.fixed_drive_path AS DrivePath, CAST(d.free_space_in_bytes AS bigint) AS FreeBytes
-            FROM sys.dm_os_enumerate_fixed_drives AS d;
-            """;
-        IEnumerable<DriveRow> drives;
-        try
-        {
-            drives = await connection.QueryAsync<DriveRow>(new CommandDefinition(sql, commandTimeout: Timeout, cancellationToken: ct)).ConfigureAwait(false);
-        }
-        catch (SqlException)
-        {
-            return null;
-        }
-
-        return drives
-            .Where(d => !string.IsNullOrEmpty(d.DrivePath) && path.StartsWith(d.DrivePath, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(d => d.DrivePath.Length)
-            .Select(d => (long?)d.FreeBytes)
-            .FirstOrDefault();
-    }
 
     public ValueTask DisposeAsync() => connection.DisposeAsync();
 
-    internal static string? ParentOf(string path)
-    {
-        var trimmed = path.TrimEnd('\\', '/');
-        if (trimmed.Length == 0 || (trimmed.Length == 2 && trimmed[1] == ':'))
-        {
-            return null;
-        }
+    private static string? Trim(string? path) => string.IsNullOrWhiteSpace(path) ? null : path.TrimEnd('\\');
 
-        var index = trimmed.LastIndexOfAny(['\\', '/']);
-        if (index < 0)
-        {
-            return null;
-        }
-
-        var parent = trimmed[..index];
-        if (parent.Length == 0)
-        {
-            return "/";
-        }
-
-        if (parent.Length == 2 && parent[1] == ':')
-        {
-            return parent + "\\";
-        }
-
-        // \\server\share este radacina unei cai UNC.
-        return parent.StartsWith(@"\\", StringComparison.Ordinal) && parent.IndexOf('\\', 2) < 0 ? null : parent;
-    }
-
-    private sealed record ServerRow(int MajorVersion, int EngineEdition, string Edition, string Collation, bool IsSysadmin,
-        bool IsDbCreator, bool IsSecurityAdmin, DateTime UtcNow, string? DefaultDataPath, string? DefaultLogPath);
+    private sealed record ServerRow(int MajorVersion, string Edition, string Collation, bool IsSysadmin, string MachineName, DateTime UtcNow,
+        string? DefaultDataPath, string? DefaultLogPath, string? DefaultBackupPath);
 
     private sealed record DatabaseRow(string? Collation, long? SizeBytes);
 
-    private sealed record DatabaseDetailsRow(int UserTableCount, string? ErpInstallId);
-
-    private sealed record DriveRow(string DrivePath, long FreeBytes);
+    private sealed record DatabaseDetailsRow(int UserObjectCount, string? ErpProduct, string? ErpInstance, string? ErpInstallId, bool HasJournal);
 }

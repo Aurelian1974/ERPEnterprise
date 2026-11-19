@@ -22,7 +22,7 @@ public sealed class DatabaseSetupIntegrationTests(SqlServerFixture sql)
     private SqlOperator Operator()
     {
         var log = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(logSink).CreateLogger();
-        return new SqlOperator(sql.Target("master"), sql.SaPassword, log);
+        return sql.Operator(log);
     }
 
     private static DatabaseCreateOptions Options(string name, Guid? installId = null) =>
@@ -30,9 +30,7 @@ public sealed class DatabaseSetupIntegrationTests(SqlServerFixture sql)
 
     private async Task<T?> Scalar<T>(string query, string database = "master")
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         return await SqlOperator.ScalarAsync<T>(connection, query, Ct);
     }
@@ -161,69 +159,41 @@ public sealed class DatabaseSetupIntegrationTests(SqlServerFixture sql)
 
     [Fact]
     [Trait("Criteriu", "08-IA-14")]
-    public async Task App_login_has_module_roles_but_no_db_owner_and_no_server_rights()
+    public async Task App_identity_has_module_roles_but_no_db_owner_and_no_server_rights()
     {
         var database = await CreateBootstrappedDatabase("ERP_IT_APP");
-        var principals = SqlPrincipals.For("ITAPP");
-        var manager = new LoginManager(Operator(), principals);
-        var first = SqlPasswordGenerator.Generate();
-        var password = SqlPasswordGenerator.Generate();
-        await manager.EnsureAppLoginAsync(database, SqlAuthentication.Sql, first, Ct);
+        const string login = "erp_it_app";
 
-        await manager.EnsureAppLoginAsync(database, SqlAuthentication.Sql, password, Ct);
+        // Loginul Windows al aplicatiei (I-11) e inlocuit in container de un login SQL cu acelasi utilizator si aceleasi roluri;
+        // a doua rulare (reluare, „Repară”) nu dubleaza nimic.
+        var app = new SqlConnectionStringBuilder(await sql.CreateAppLoginAsync(database, login, Ct));
+        await new LoginManager(Operator()).EnsureUsersAsync(database, [new AppPrincipal(login, "erp_app")], Ct);
 
-        var app = Operator().ConnectionStringFor(database, principals.AppLogin, password);
         Assert.Equal(0, await ScalarAs<int>(app, "SELECT IS_SRVROLEMEMBER(N'sysadmin') + IS_SRVROLEMEMBER(N'dbcreator') + IS_SRVROLEMEMBER(N'securityadmin');"));
         Assert.Equal(0, await ScalarAs<int>(app, "SELECT IS_MEMBER(N'db_owner');"));
         Assert.Equal(1, await ScalarAs<int>(app, "SELECT IS_ROLEMEMBER(N'role_core');"));
         Assert.Equal(1, await ScalarAs<int>(app, "SELECT HAS_PERMS_BY_NAME(N'rpt', N'SCHEMA', N'EXECUTE');"));
         Assert.Equal(0, await ScalarAs<int>(app, "SELECT HAS_PERMS_BY_NAME(NULL, N'DATABASE', N'CREATE TABLE');"));
+        Assert.Equal("core", await ScalarAs<string>(app, "SELECT default_schema_name FROM sys.database_principals WHERE name = N'erp_app';"));
         Assert.Equal(0, await Scalar<int>($"""
             SELECT COUNT(*) FROM sys.server_role_members AS m
             JOIN sys.server_principals AS p ON p.principal_id = m.member_principal_id
-            WHERE p.name = N'{principals.AppLogin}';
+            WHERE p.name = N'{login}';
             """));
-        var msdb = Operator().ConnectionStringFor("msdb", principals.AppLogin, password);
+        var msdb = new SqlConnectionStringBuilder(app.ConnectionString) { InitialCatalog = "msdb" };
         Assert.True(await ScalarAs<int>(msdb, "SELECT COUNT(*) FROM dbo.backupset;") >= 0);
-
-        // Parola veche nu mai functioneaza dupa rotire.
-        await Assert.ThrowsAsync<SqlException>(() => ScalarAs<int>(Operator().ConnectionStringFor(database, principals.AppLogin, first), "SELECT 1;"));
-        Assert.DoesNotContain(password, logSink.Text);
-        Assert.DoesNotContain(first, logSink.Text);
     }
 
     [Fact]
-    [Trait("Criteriu", "08-IA-14")]
-    public async Task Migrator_is_db_owner_only_while_running_and_disabled_afterwards()
+    public async Task Windows_logins_are_validated_before_any_sql_text_is_built()
     {
-        var database = await CreateBootstrappedDatabase("ERP_IT_MIG");
-        var principals = SqlPrincipals.For("ITMIG");
-        SqlConnectionStringBuilder? used = null;
+        Assert.Throws<SqlSetupException>(() => LoginScripts.CreateWindowsLogin("erp_app", "ERP_PROD"));
+        Assert.Throws<SqlSetupException>(() => LoginScripts.CreateWindowsLogin("DOMENIU\\x]; DROP LOGIN sa; --", "ERP_PROD"));
+        Assert.Contains("CREATE LOGIN [IIS APPPOOL\\ERP-PROD] FROM WINDOWS", LoginScripts.CreateWindowsLogin("IIS APPPOOL\\ERP-PROD", "ERP_PROD"));
 
-        await new LoginManager(Operator(), principals).RunAsMigratorAsync(database, async (builder, ct) =>
-        {
-            used = builder;
-            Assert.Equal(1, await ScalarAs<int>(builder, "SELECT IS_MEMBER(N'db_owner');"));
-            Assert.Equal(0, await ScalarAs<int>(builder, "SELECT IS_SRVROLEMEMBER(N'sysadmin');"));
-        }, Ct);
-
-        Assert.True(await Scalar<bool>($"SELECT is_disabled FROM sys.server_principals WHERE name = N'{principals.MigratorLogin}';"));
-        var ex = await Assert.ThrowsAsync<SqlException>(() => ScalarAs<int>(used!, "SELECT 1;"));
-        Assert.Equal(18470, ex.Number);
-        Assert.DoesNotContain(used!.Password, logSink.Text);
-    }
-
-    [Fact]
-    [Trait("Criteriu", "08-IA-14")]
-    public async Task Migrator_is_disabled_even_when_the_work_fails()
-    {
-        var database = await CreateBootstrappedDatabase("ERP_IT_MIGFAIL");
-        var principals = SqlPrincipals.For("ITFAIL");
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => new LoginManager(Operator(), principals)
-            .RunAsMigratorAsync(database, (_, _) => throw new InvalidOperationException("migrare eșuată"), Ct));
-
-        Assert.Equal("migrare eșuată", ex.Message);
-        Assert.True(await Scalar<bool>($"SELECT is_disabled FROM sys.server_principals WHERE name = N'{principals.MigratorLogin}';"));
+        // Dezactivarea la „Dezinstalează”: loginul ramane, dezactivat.
+        await sql.ExecuteAsync("IF SUSER_ID(N'erp_it_off') IS NULL CREATE LOGIN [erp_it_off] WITH PASSWORD = N'Off#Parola_2026x', CHECK_POLICY = OFF;");
+        await new LoginManager(Operator()).DisableAsync(["erp_it_off"], Ct);
+        Assert.True(await Scalar<bool>("SELECT is_disabled FROM sys.server_principals WHERE name = N'erp_it_off';"));
     }
 }

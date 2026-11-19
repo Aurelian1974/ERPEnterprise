@@ -283,11 +283,13 @@ Dacă și cum se folosește câmpul este o decizie comercială a lui Aurelian, l
 
 ```
 src/Setup/
-├── Erp.Setup.Core/          net10.0   InstallRequest, PlanBuilder, IInstallStep, orchestratorul, verificările C-xx,
-│                                      instance.json, fișierul de răspunsuri, codurile de ieșire, actualizarea și revenirea
+├── Erp.Setup.Core/          net10.0   InstallRequest, IInstallStep, orchestratorul, verificările C-xx, instance.json,
+│                                      fișierul de răspunsuri, codurile de ieșire
 ├── Erp.Setup.Sql/           net10.0   baza, bootstrap, loginuri, DbUp, joburi SQL Agent, snapshot, backup/restaurare
 ├── Erp.Setup.Windows/       net10.0   IIS, DISM, Hosting Bundle, serviciu, firewall, ACL, certificate, gMSA
 │                                      ([SupportedOSPlatform("windows")])
+├── Erp.Setup.Engine/        net10.0   PlanBuilder și pașii I-xx / U-xx / R-xx, sesiunea, IWindowsSetup (operațiile Windows,
+│                                      simulate în teste); compune Sql și Windows, pe care Core nu le poate referi
 ├── Erp.Setup.Presentation/  net10.0   ViewModel-urile ecranelor 0–6 (CommunityToolkit.Mvvm), fără referință la WPF
 ├── Erp.Setup/               net10.0-windows, WPF   doar XAML, App, stiluri → ErpSetup.exe (requireAdministrator)
 ├── Erp.Setup.Cli/           net10.0   comenzile din secțiunea 6 → ErpSetup.Cli.exe (asInvoker)
@@ -296,7 +298,7 @@ src/Setup/
 
 De ce așa (D12): testele de integrare SQL rulează în CI pe Ubuntu (Testcontainers), iar un assembly `net10.0-windows` nu rulează pe Linux. Proiectele WPF se compilează și pe Linux cu `EnableWindowsTargeting=true` (verificat), dar se rulează doar pe Windows; de aceea în ele nu stă nimic de testat.
 
-**Un singur plan (R13).** Fereastra (din valorile ecranelor) și linia de comandă (din fișierul de răspunsuri) construiesc același `InstallRequest`. `PlanBuilder.Build(InstallRequest, InstanceState?)` produce lista de `PlannedStep` pentru instalare, actualizare, reparare sau recuperare; `StepOrchestrator` o rulează și raportează prin `IStepReporter`, cu două implementări: `ConsoleStepReporter` (CLI) și `ViewModelStepReporter` (fereastra, prin `IProgress<T>`). Testul IA-13 verifică echivalența.
+**Un singur plan (R13).** Fereastra (din valorile ecranelor) și linia de comandă (din fișierul de răspunsuri) construiesc același `InstallRequest`. `PlanBuilder` (în `Erp.Setup.Engine`) produce, dintr-o sesiune construită din `InstallRequest` și `instance.json`, lista de `PlannedStep` pentru instalare, actualizare, reparare sau recuperare; `StepOrchestrator` o rulează și raportează prin `IStepReporter`, cu două implementări: `ConsoleStepReporter` (CLI) și `ViewModelStepReporter` (fereastra, prin `IProgress<T>`). Testul IA-13 verifică echivalența.
 
 ```csharp
 public interface IInstallStep
@@ -1153,7 +1155,7 @@ src/
 │   ├── Erp.LicenseGen.Core/         LicenseWriter, registrul, cheile private (net10.0)
 │   ├── Erp.LicenseGen.Tests/        IA-01, IA-02 (net10.0)
 │   └── Erp.DevDatabase/             baza de dezvoltare (existent)
-├── Setup/                           aplicația 2: Erp.Setup.Core, .Sql, .Windows, .Presentation, Erp.Setup (WPF), Erp.Setup.Cli, .Tests (5.2)
+├── Setup/                           aplicația 2: Erp.Setup.Core, .Sql, .Windows, .Engine, .Presentation, Erp.Setup (WPF), Erp.Setup.Cli, .Tests (5.2)
 ├── Shared/
 │   ├── Erp.Licensing/               citire, decriptare, verificare licență; FiscalCode; LicenseKeys.cs (chei publice + AES mascat)
 │   ├── Erp.Configuration/           appsettings.Installation.json, șirul de conexiune

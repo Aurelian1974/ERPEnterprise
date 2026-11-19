@@ -3,23 +3,23 @@ using Erp.Setup.Core.Answers;
 
 namespace Erp.Setup.Tests.Answers;
 
+/// <summary>Fisierul de raspunsuri, formatul 1 (08, 6.2).</summary>
 public sealed class AnswersValidatorTests
 {
-    private const string ValidJson = """
+    private const string MinimalJson = """
         {
-          "instance": "PROD",
-          "site": { "hostName": "erp.grupulexemplu.local", "certificateThumbprint": "3F2A9C00112233445566778899AABBCCDDEEFFE1" },
-          "sql": { "server": "SQL01\\ERP" },
-          "backup": { "backupRoot": "B:\\SQLBackup" },
-          "license": { "filePath": "C:\\Kit\\grupul-exemplu.lic" }
+          "formatVersion": 1,
+          "sql": { "server": "SQL01", "database": "ERP_PROD" },
+          "site": { "hostName": "srv-erp.grupulexemplu.local" },
+          "license": { "file": "C:\\Kit\\grupul-exemplu.lic" }
         }
         """;
 
-    private static AnswersValidationResult Validate(string json) => AnswersValidator.Parse(json, _ => true);
+    private static AnswersLoadResult Validate(string json) => AnswersValidator.Validate(AnswersFile.Parse(json), dataRoot: @"C:\ProgramData\Erp");
 
-    private static AnswersValidationResult ValidateWith(string path, JsonNode? value)
+    private static AnswersLoadResult ValidateWith(string path, JsonNode? value)
     {
-        var root = JsonNode.Parse(ValidJson)!.AsObject();
+        var root = JsonNode.Parse(MinimalJson)!.AsObject();
         var segments = path.Split('.');
         var target = root;
         foreach (var segment in segments[..^1])
@@ -39,257 +39,188 @@ public sealed class AnswersValidatorTests
         return Validate(root.ToJsonString());
     }
 
-    [Fact]
-    public void Minimal_file_gets_documented_defaults()
+    private static void AssertError(AnswersLoadResult result, string field)
     {
-        var result = Validate(ValidJson);
-
-        Assert.True(result.IsValid, string.Join("; ", result.Errors));
-        var a = result.Answers!;
-        Assert.Equal(@"C:\Program Files\Erp", a.InstallRoot);
-        Assert.Equal(@"C:\ProgramData\Erp", a.DataRoot);
-        Assert.Equal(443, a.Site.HttpsPort);
-        Assert.True(a.Site.HttpRedirect);
-        Assert.False(a.Site.AllowSelfSignedCertificate);
-        Assert.Equal("ERP_PROD", a.Sql.DatabaseName);
-        Assert.Equal(SqlAuthentication.Windows, a.Sql.OperatorAuthentication);
-        Assert.Equal(SqlAuthentication.Sql, a.Sql.AppAuthentication);
-        Assert.Equal(1024, a.Sql.InitialDataSizeMb);
-        Assert.Equal(512, a.Sql.InitialLogSizeMb);
-        Assert.Equal(SqlEncrypt.Mandatory, a.Sql.Encrypt);
-        Assert.False(a.Sql.TrustServerCertificate);
-        Assert.Equal(new TimeOnly(1, 0), a.Backup.FullBackupTime);
-        Assert.Equal(15, a.Backup.LogBackupEveryMinutes);
-        Assert.Equal(14, a.Backup.RetentionDays);
-        Assert.Equal(DayOfWeek.Sunday, a.Backup.IntegrityCheckDay);
-        Assert.Equal(new TimeOnly(3, 0), a.Backup.IntegrityCheckTime);
-        Assert.Equal("administrator", a.Administrator.UserName);
-        Assert.Equal("Administrator ERP", a.Administrator.DisplayName);
-        Assert.Null(a.Administrator.Email);
-        Assert.True(a.Prerequisites.InstallIisFeatures);
-        Assert.True(a.Prerequisites.InstallHostingBundle);
-    }
-
-    [Fact]
-    public void Instance_defaults_to_PROD_and_database_name_follows_instance()
-    {
-        var withoutInstance = ValidateWith("instance", null);
-        var test = ValidateWith("instance", "TEST");
-
-        Assert.Equal("PROD", withoutInstance.Answers!.Instance);
-        Assert.Equal("ERP_TEST", test.Answers!.Sql.DatabaseName);
-    }
-
-    public static TheoryData<string, string> InvalidValues => new()
-    {
-        { "instance", "\"prod\"" },
-        { "instance", "\"P\"" },
-        { "instance", "\"PRODUCTION1\"" },
-        { "instance", "\"1PROD\"" },
-        { "installRoot", "\"Program Files\\\\Erp\"" },
-        { "installRoot", "\"\\\\\\\\server\\\\share\\\\Erp\"" },
-        { "installRoot", "\"C:\\\\\"" },
-        { "dataRoot", "\"D:\"" },
-        { "dataRoot", "\"C:\\\\Data|Erp\"" },
-        { "site.hostName", "\"erp_server.local\"" },
-        { "site.hostName", "\"-erp.local\"" },
-        { "site.httpsPort", "0" },
-        { "site.httpsPort", "65536" },
-        { "site.certificateThumbprint", "\"XYZ\"" },
-        { "sql.server", "\"SQL01\\\\ERP,1433\"" },
-        { "sql.server", "\"SQL01,70000\"" },
-        { "sql.server", "\"SQL01;Database=x\"" },
-        { "sql.databaseName", "\"1ERP\"" },
-        { "sql.databaseName", "\"ER\"" },
-        { "sql.databaseName", "\"ERP-PROD\"" },
-        { "sql.operatorAuthentication", "\"windows\"" },
-        { "sql.operatorAuthentication", "\"Kerberos\"" },
-        { "sql.appAuthentication", "\"0\"" },
-        { "sql.dataFilePath", "\"D:\\\\SQL'Data\"" },
-        { "sql.dataFilePath", "\"D:\\\\SQL;Data\"" },
-        { "sql.logFilePath", "\"L:\\\\SQL--Log\"" },
-        { "sql.logFilePath", "\"SQLLog\"" },
-        { "sql.initialDataSizeMb", "255" },
-        { "sql.initialLogSizeMb", "100" },
-        { "sql.encrypt", "\"True\"" },
-        { "backup.backupRoot", "\"\"" },
-        { "backup.backupRoot", "\"B:\\\\Backup\\u0001\"" },
-        { "backup.fullBackupTime", "\"1:00\"" },
-        { "backup.fullBackupTime", "\"25:00\"" },
-        { "backup.logBackupEveryMinutes", "4" },
-        { "backup.logBackupEveryMinutes", "61" },
-        { "backup.retentionDays", "2" },
-        { "backup.retentionDays", "91" },
-        { "backup.integrityCheckDay", "\"Duminică\"" },
-        { "backup.integrityCheckDay", "\"sunday\"" },
-        { "backup.integrityCheckTime", "\"03:00:00\"" },
-        { "administrator.userName", "\"Administrator\"" },
-        { "administrator.userName", "\"ab\"" },
-        { "administrator.userName", "\"1admin\"" },
-        { "administrator.displayName", "\"\"" },
-        { "administrator.email", "\"it@\"" },
-        { "administrator.email", "\"it at firma.ro\"" },
-    };
-
-    [Theory]
-    [MemberData(nameof(InvalidValues))]
-    public void Invalid_value_is_reported_on_its_field(string field, string jsonValue)
-    {
-        var result = ValidateWith(field, JsonNode.Parse(jsonValue));
-
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.Field == field);
     }
 
-    public static TheoryData<string> RequiredFields => new()
+    [Fact]
+    public void Minimal_file_gets_the_documented_defaults()
     {
-        "site.hostName",
-        "sql.server",
-        "backup.backupRoot",
-        "license.filePath",
-    };
+        var result = Validate(MinimalJson);
 
-    [Theory]
-    [MemberData(nameof(RequiredFields))]
-    public void Required_field_is_reported_when_missing(string field)
-    {
-        var result = ValidateWith(field, null);
-
-        Assert.Contains(result.Errors, e => e.Field == field && e.Message == "Câmpul este obligatoriu.");
+        Assert.True(result.IsValid, string.Join("; ", result.Errors.Select(e => $"{e.Field}: {e.Message}")));
+        var r = result.Request!;
+        Assert.Equal("PROD", r.Instance);
+        Assert.Equal(@"C:\Program Files\Erp", r.InstallRoot);
+        Assert.Equal(@"C:\ProgramData\Erp", r.DataRoot);
+        Assert.Equal(Path.Combine(@"C:\ProgramData\Erp", "PROD"), r.InstanceDirectory);
+        Assert.Equal("ERP-PROD", r.SiteName);
+        Assert.Equal("ErpWorker-PROD", r.ServiceName);
+        Assert.Equal(new SqlRequest("SQL01", "ERP_PROD", null, null, AppIdentity.VirtualAccounts, null), r.Sql);
+        Assert.Equal(new SiteRequest("srv-erp.grupulexemplu.local", 443, true, CertificateKind.Internal, null), r.Site);
+        Assert.Equal(new BackupRequest(null, new TimeOnly(1, 0), 15, 14, DayOfWeek.Saturday, new TimeOnly(2, 0)), r.Backup);
+        Assert.Empty(r.AcceptedWarnings);
     }
 
     [Fact]
-    public void Thumbprint_is_required_unless_self_signed_is_allowed()
+    public void The_documented_example_file_is_valid()
     {
-        var withoutThumbprint = ValidateWith("site.certificateThumbprint", null);
-        Assert.Contains(withoutThumbprint.Errors, e => e.Field == "site.certificateThumbprint");
+        var path = Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "answers.example.json");
 
-        var root = JsonNode.Parse(ValidJson)!.AsObject();
-        root["site"]!.AsObject().Remove("certificateThumbprint");
-        root["site"]!["allowSelfSignedCertificate"] = true;
-        var selfSigned = Validate(root.ToJsonString());
+        var result = AnswersValidator.Load(path);
 
-        Assert.True(selfSigned.IsValid);
-        Assert.Contains(selfSigned.Warnings, w => w.Field == "site.allowSelfSignedCertificate");
-    }
-
-    [Fact]
-    public void Thumbprint_spaces_are_removed_and_uppercased()
-    {
-        var result = ValidateWith("site.certificateThumbprint", "3f 2a 9c 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff e1");
-
-        Assert.Equal("3F2A9C00112233445566778899AABBCCDDEEFFE1", result.Answers!.Site.CertificateThumbprint);
-    }
-
-    [Fact]
-    public void Operator_sql_login_is_required_for_sql_authentication()
-    {
-        var result = ValidateWith("sql.operatorAuthentication", "Sql");
-
-        Assert.Contains(result.Errors, e => e.Field == "sql.operatorSqlLogin");
+        Assert.True(result.IsValid, string.Join("; ", result.Errors.Select(e => $"{e.Field}: {e.Message}")));
+        Assert.Equal(AppIdentity.VirtualAccounts, result.Request!.Sql.AppIdentity);
+        Assert.Equal("srv-erp.firma.local", result.Request.Site.HostName);
+        Assert.Empty(result.Request.AcceptedWarnings);
     }
 
     [Theory]
-    [InlineData(null, false)]
-    [InlineData("svc-erp", false)]
-    [InlineData("CONTOSO\\svc-erp", true)]
-    [InlineData("CONTOSO\\svc-erp$", true)]
-    public void App_windows_account_is_required_and_validated_for_windows_authentication(string? account, bool valid)
+    [InlineData("formatVersion", null)]
+    [InlineData("formatVersion", 2)]
+    [InlineData("sql.server", null)]
+    [InlineData("sql.database", null)]
+    [InlineData("site.hostName", null)]
+    [InlineData("license.file", null)]
+    public void Mandatory_fields_and_an_unknown_format_are_refused_with_the_field_name(string field, int? value)
     {
-        var root = JsonNode.Parse(ValidJson)!.AsObject();
-        root["sql"]!["appAuthentication"] = "Windows";
-        if (account is not null)
-        {
-            root["sql"]!["appWindowsAccount"] = account;
-        }
+        AssertError(ValidateWith(field, value is null ? null : JsonValue.Create(value.Value)), field);
+    }
 
-        var result = Validate(root.ToJsonString());
+    [Theory]
+    [InlineData("instance", "prod")]
+    [InlineData("instance", "P")]
+    [InlineData("instance", "PRODUCTIE123")]
+    [InlineData("sql.server", "SQL01; DROP")]
+    [InlineData("sql.database", "1ERP")]
+    [InlineData("sql.database", "ERP-PROD")]
+    [InlineData("sql.dataFolder", "relativ\\date")]
+    [InlineData("sql.logFolder", "D:\\Log'--")]
+    [InlineData("sql.appIdentity", "Sql")]
+    [InlineData("backup.folder", "B:\\x;y")]
+    [InlineData("backup.fullBackupTime", "25:00")]
+    [InlineData("backup.integrityCheckDay", "Sambata")]
+    [InlineData("site.hostName", "erp_server")]
+    [InlineData("site.certificate.kind", "SelfSigned")]
+    public void Invalid_values_are_refused_with_the_field_name(string field, string value)
+    {
+        AssertError(ValidateWith(field, JsonValue.Create(value)), field);
+    }
 
-        Assert.Equal(valid, result.IsValid);
-        if (!valid)
-        {
-            Assert.Contains(result.Errors, e => e.Field == "sql.appWindowsAccount");
-        }
+    [Theory]
+    [InlineData("backup.logBackupEveryMinutes", 4)]
+    [InlineData("backup.logBackupEveryMinutes", 61)]
+    [InlineData("backup.retentionDays", 2)]
+    [InlineData("backup.retentionDays", 91)]
+    [InlineData("site.httpsPort", 0)]
+    [InlineData("site.httpsPort", 70000)]
+    public void Numbers_outside_the_allowed_range_are_refused(string field, int value)
+    {
+        AssertError(ValidateWith(field, JsonValue.Create(value)), field);
     }
 
     [Theory]
     [InlineData("SQL01")]
     [InlineData("SQL01\\ERP")]
-    [InlineData("sql01.firma.local,1433")]
-    [InlineData(".")]
-    public void Supported_sql_server_forms_are_accepted(string server)
+    [InlineData("sql01.grupulexemplu.local,1433")]
+    public void Sql_server_accepts_server_instance_and_port_forms(string server)
     {
         Assert.True(ValidateWith("sql.server", server).IsValid);
     }
 
     [Fact]
-    public void Missing_license_file_is_reported()
+    public void Gmsa_identity_requires_a_DOMAIN_name_dollar_account()
     {
-        var result = AnswersValidator.Parse(ValidJson, _ => false);
+        AssertError(ValidateWith("sql.appIdentity", "Gmsa"), "sql.gmsaAccount");
 
-        Assert.Contains(result.Errors, e => e.Field == "license.filePath" && e.Message.StartsWith("Fișierul de licență nu există", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void Backup_on_the_same_drive_as_data_is_a_warning()
-    {
-        var root = JsonNode.Parse(ValidJson)!.AsObject();
-        root["sql"]!["dataFilePath"] = @"D:\SQLData";
-        root["backup"]!["backupRoot"] = @"d:\SQLBackup";
-
+        var root = JsonNode.Parse(MinimalJson)!.AsObject();
+        root["sql"]!["appIdentity"] = "Gmsa";
+        root["sql"]!["gmsaAccount"] = @"GRUPULEXEMPLU\erp-prod$";
         var result = Validate(root.ToJsonString());
 
         Assert.True(result.IsValid);
-        Assert.Contains(result.Warnings, w => w.Field == "backup.backupRoot");
+        Assert.Equal(@"GRUPULEXEMPLU\erp-prod$", result.Request!.Sql.GmsaAccount);
     }
 
     [Fact]
-    public void Trusting_the_server_certificate_is_a_warning()
+    public void Gmsa_account_is_ignored_for_other_identities()
     {
-        var result = ValidateWith("sql.trustServerCertificate", true);
-
-        Assert.True(result.IsValid);
-        Assert.Contains(result.Warnings, w => w.Field == "sql.trustServerCertificate");
-    }
-
-    [Theory]
-    [InlineData("password")]
-    [InlineData("sqlPassword")]
-    public void Unknown_fields_such_as_passwords_are_rejected(string field)
-    {
-        var root = JsonNode.Parse(ValidJson)!.AsObject();
-        root["sql"]![field] = "Secret123!";
+        var root = JsonNode.Parse(MinimalJson)!.AsObject();
+        root["sql"]!["appIdentity"] = "ComputerAccount";
+        root["sql"]!["gmsaAccount"] = @"GRUPULEXEMPLU\erp-prod$";
 
         var result = Validate(root.ToJsonString());
 
-        var issue = Assert.Single(result.Errors);
-        Assert.Equal($"sql.{field}", issue.Field);
-        Assert.DoesNotContain("Secret123!", issue.Message);
+        Assert.Equal(AppIdentity.ComputerAccount, result.Request!.Sql.AppIdentity);
+        Assert.Null(result.Request.Sql.GmsaAccount);
     }
 
     [Fact]
-    public void Wrong_type_is_reported_on_its_field()
+    public void Existing_certificate_requires_a_40_character_thumbprint_normalized_to_upper_case()
     {
-        var result = ValidateWith("site.httpsPort", "443");
+        AssertError(ValidateWith("site.certificate", new JsonObject { ["kind"] = "Existing" }), "site.certificate.thumbprint");
 
-        Assert.Equal("site.httpsPort", Assert.Single(result.Errors).Field);
+        var result = ValidateWith("site.certificate", new JsonObject { ["kind"] = "Existing", ["thumbprint"] = "3f 2a9c00112233445566778899aabbccddeeffe1" });
+
+        Assert.Equal(CertificateKind.Existing, result.Request!.Site.Certificate);
+        Assert.Equal("3F2A9C00112233445566778899AABBCCDDEEFFE1", result.Request.Site.CertificateThumbprint);
     }
 
     [Fact]
-    public void Missing_answers_file_is_reported()
+    public void Accepted_warnings_must_be_check_ids()
     {
-        var result = AnswersValidator.Load(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json"));
+        AssertError(ValidateWith("acceptedWarnings", new JsonArray("C-11", "toate")), "acceptedWarnings");
 
-        Assert.Equal("--answers", Assert.Single(result.Errors).Field);
+        var result = ValidateWith("acceptedWarnings", new JsonArray("C-11", "C-19"));
+        Assert.True(result.Request!.Accepts("C-19"));
+        Assert.False(result.Request.Accepts("C-18"));
     }
 
     [Fact]
-    public void Example_answers_file_from_the_kit_is_valid()
+    public void Missing_or_malformed_file_is_reported()
     {
-        var path = Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "answers.example.json");
+        Assert.False(AnswersValidator.Load(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json")).IsValid);
 
-        var result = AnswersValidator.Parse(File.ReadAllText(path), _ => true);
+        var path = Path.Combine(Path.GetTempPath(), $"erp-answers-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, "{ nu e json");
+        try
+        {
+            Assert.False(AnswersValidator.Load(path).IsValid);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 
-        Assert.True(result.IsValid, string.Join("; ", result.Errors));
+    [Fact]
+    public void Written_file_round_trips_to_the_same_request_without_secrets()
+    {
+        var original = Validate(MinimalJson).Request! with
+        {
+            Sql = new SqlRequest("SQL01", "ERP_PROD", @"D:\Date", @"L:\Log", AppIdentity.Gmsa, @"GRUPULEXEMPLU\erp-prod$"),
+            Backup = new BackupRequest(@"B:\SQLBackup\ERP_PROD", new TimeOnly(0, 30), 10, 21, DayOfWeek.Sunday, new TimeOnly(3, 15)),
+            AcceptedWarnings = new HashSet<string>(["C-11"]),
+        };
+        var path = Path.Combine(Path.GetTempPath(), $"erp-answers-{Guid.NewGuid():N}.json");
+        try
+        {
+            AnswersFile.Write(path, original);
+            var text = File.ReadAllText(path);
+            var reloaded = AnswersValidator.Validate(AnswersFile.Parse(text), original.DataRoot).Request!;
+
+            Assert.DoesNotContain("password", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(original.Sql, reloaded.Sql);
+            Assert.Equal(original.Site, reloaded.Site);
+            Assert.Equal(original.Backup, reloaded.Backup);
+            Assert.Equal(original.LicenseFile, reloaded.LicenseFile);
+            Assert.Equal(original.AcceptedWarnings, reloaded.AcceptedWarnings);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

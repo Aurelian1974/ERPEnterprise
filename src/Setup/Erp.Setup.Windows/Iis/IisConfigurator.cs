@@ -10,11 +10,11 @@ public sealed record IisSiteSpec(
     int HttpsPort,
     bool HttpRedirect,
     string CertificateThumbprint,
-    string? WindowsAccount = null)
+    string? GmsaAccount = null)
 {
     public string SiteName => $"ERP-{Instance}";
 
-    public string PoolName => $"ERP-{Instance}-Host";
+    public string PoolName => $"ERP-{Instance}";
 
     public string HttpsBinding => $"*:{HttpsPort}:{HostName}";
 
@@ -22,8 +22,9 @@ public sealed record IisSiteSpec(
 }
 
 /// <summary>
-/// Pasul I-18 (8.11) cu ServerManager: toate modificarile intr-un singur CommitChanges(); obiectele existente se actualizeaza,
-/// nu se recreeaza (reluare, repair), iar legarile adaugate de client pe site se pastreaza.
+/// Pasul I-06 (5.11) cu ServerManager: toate modificarile intr-un singur CommitChanges(); obiectele existente se actualizeaza,
+/// nu se recreeaza (reluare, „Repară”), iar legarile adaugate de client pe site se pastreaza. Site-ul si pool-ul nou create
+/// raman oprite pana la I-17.
 /// </summary>
 public static class IisConfigurator
 {
@@ -51,11 +52,26 @@ public static class IisConfigurator
 
             manager.CommitChanges();
         }
-
-        EnsureStarted(spec);
     }
 
-    /// <summary>U-12 / R-03: comutarea caii fizice a site-ului pe folderul altei versiuni.</summary>
+    /// <summary>Opreste site-ul si pool-ul (I-06 la o instalare noua; actualizarea, 10.2).</summary>
+    public static void Stop(IisSiteSpec spec)
+    {
+        using var manager = new ServerManager();
+        var site = manager.Sites[spec.SiteName];
+        if (site is not null && site.State is ObjectState.Started or ObjectState.Starting)
+        {
+            site.Stop();
+        }
+
+        var pool = manager.ApplicationPools[spec.PoolName];
+        if (pool is not null && pool.State is ObjectState.Started or ObjectState.Starting)
+        {
+            pool.Stop();
+        }
+    }
+
+    /// <summary>Actualizarea si revenirea (10.2): comutarea caii fizice a site-ului pe folderul altei versiuni.</summary>
     public static void SetPhysicalPath(string siteName, string physicalPath)
     {
         using var manager = new ServerManager();
@@ -71,7 +87,7 @@ public static class IisConfigurator
         pool.Enable32BitAppOnWin64 = false;
         pool.StartMode = StartMode.AlwaysRunning;
         pool.AutoStart = true;
-        if (spec.WindowsAccount is null)
+        if (spec.GmsaAccount is null)
         {
             pool.ProcessModel.IdentityType = ProcessModelIdentityType.ApplicationPoolIdentity;
         }
@@ -79,7 +95,7 @@ public static class IisConfigurator
         {
             // gMSA: fara parola (Windows o administreaza).
             pool.ProcessModel.IdentityType = ProcessModelIdentityType.SpecificUser;
-            pool.ProcessModel.UserName = spec.WindowsAccount;
+            pool.ProcessModel.UserName = spec.GmsaAccount;
             pool.ProcessModel.Password = string.Empty;
         }
 
@@ -120,7 +136,7 @@ public static class IisConfigurator
         }
     }
 
-    /// <summary>Porneste pool-ul si site-ul daca sunt oprite si verifica starea Started (8.11, I-23).</summary>
+    /// <summary>Porneste pool-ul si site-ul daca sunt oprite si verifica starea Started (I-17).</summary>
     public static void EnsureStarted(IisSiteSpec spec)
     {
         using var manager = new ServerManager();

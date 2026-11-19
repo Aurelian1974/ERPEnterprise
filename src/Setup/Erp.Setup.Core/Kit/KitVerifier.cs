@@ -13,6 +13,10 @@ public sealed class KitVerifier
     public const string ManifestFileName = "manifest.json";
     public const string SignatureFileName = "manifest.sig";
     public const string SetupExecutableName = "ErpSetup.exe";
+    public const string CliExecutableName = "ErpSetup.Cli.exe";
+
+    /// <summary>Folderele in care nu se accepta fisiere in plus (C-05, D15): programul si scripturile SQL.</summary>
+    public static readonly IReadOnlyList<string> ClosedFolders = ["app/", "database/"];
     public const string Product = "ERP";
 
     public const string SignatureFailureMessage = "Kitul nu este semnat de producător sau a fost modificat.";
@@ -130,12 +134,12 @@ public sealed class KitVerifier
         foreach (var fullPath in Directory.EnumerateFiles(kitRoot, "*", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(kitRoot, fullPath).Replace(Path.DirectorySeparatorChar, '/');
-            if (relative is ManifestFileName or SignatureFileName or SetupExecutableName)
+            if (relative is ManifestFileName or SignatureFileName or SetupExecutableName or CliExecutableName)
             {
                 continue;
             }
 
-            if (!listed.Contains(relative))
+            if (!listed.Contains(relative) && ClosedFolders.Any(folder => relative.StartsWith(folder, StringComparison.Ordinal)))
             {
                 problems.Add($"în plus: {relative}");
             }

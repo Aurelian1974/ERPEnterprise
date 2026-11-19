@@ -1,7 +1,7 @@
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using Erp.Setup.Core.Health;
-using Erp.Setup.Windows.Iis;
+using Erp.Setup.Windows.Certificates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -25,7 +25,7 @@ public sealed class InstallerHealthCheckTests : IAsyncDisposable
 
     public InstallerHealthCheckTests()
     {
-        using var ephemeral = SelfSignedCertificate.Create(HostName, DateTimeOffset.UtcNow);
+        using var ephemeral = InternalHttpsCertificate.Create(HostName, "ERP-TEST", DateTimeOffset.UtcNow);
         // SChannel nu foloseste chei efemere pentru TLS server; certificatul se reincarca din PFX.
         certificate = X509CertificateLoader.LoadPkcs12(ephemeral.Export(X509ContentType.Pkcs12), null);
     }

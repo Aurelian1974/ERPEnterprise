@@ -1,3 +1,4 @@
+using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.State;
 
 namespace Erp.Setup.Tests.State;
@@ -24,8 +25,10 @@ public sealed class InstanceStateStoreTests : IDisposable
             InstallId = Guid.NewGuid(),
             State = InstanceLifecycle.Installing,
             InstallRoot = @"C:\Program Files\Erp",
-            DataRoot = @"C:\ProgramData\Erp",
             DatabaseName = "ERP_PROD",
+            AppIdentity = AppIdentity.Gmsa,
+            AppIdentityAccount = @"GRUPULEXEMPLU\erp-prod$",
+            BackupEdition = BackupEdition.Agent,
             CompletedSteps = ["I-01", "I-02"],
         };
 
@@ -36,6 +39,9 @@ public sealed class InstanceStateStoreTests : IDisposable
         Assert.Contains("\"state\": \"Installed\"", json);
         Assert.Contains("\"completedSteps\": [", json);
         Assert.Contains("\"currentVersion\": \"2027.1.0\"", json);
+        Assert.Contains("\"formatVersion\": 2", json);
+        Assert.Contains("\"appIdentity\": \"Gmsa\"", json);
+        Assert.Contains("\"certificateKind\": \"Internal\"", json);
         Assert.False(File.Exists(path + ".tmp"));
 
         var read = InstanceStateStore.Read(path)!;

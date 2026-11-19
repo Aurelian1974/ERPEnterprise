@@ -1,5 +1,4 @@
 using System.Text;
-using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
 using Erp.Setup.Sql;
 using Erp.Setup.Sql.Administrator;
@@ -9,7 +8,7 @@ using Microsoft.Data.SqlClient;
 using Serilog;
 
 // Baza de dezvoltare, fara installer: aceiasi pasi SQL ca la instalare (I-06, I-07, I-09…I-11, optional I-13), cu contul Windows
-// al dezvoltatorului. Doar pentru dezvoltare: nu creeaza loginurile _app/_mig, joburile SQL Agent si nu incarca licenta.
+// al dezvoltatorului. Doar pentru dezvoltare: nu creeaza loginurile aplicatiei, joburile SQL Agent si nu incarca licenta.
 // Pornire: build/dev-database.ps1 (aseaza scripturile din depozit ca in kit, apoi ruleaza acest program).
 Console.OutputEncoding = Encoding.UTF8;
 var options = DevOptions.Parse(args);
@@ -21,8 +20,8 @@ if (options is null)
 
 using var log = new LoggerConfiguration().MinimumLevel.Information().WriteTo.Console().CreateLogger();
 var ct = CancellationToken.None;
-var target = new SqlTarget(options.Server, options.Database, SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, true, options.Instance);
-var sql = new SqlOperator(target, null, log);
+var target = new SqlTarget(options.Server, options.Database, options.Instance, TrustServerCertificate: true);
+var sql = new SqlOperator(target, log);
 
 try
 {
@@ -34,8 +33,7 @@ try
     var bootstrap = await new BootstrapRunner(sql).RunAsync(options.Database, Path.Combine(options.Scripts, "bootstrap"), ct);
     log.Information("Bootstrap: {Count} scripturi", bootstrap);
 
-    var connection = SqlServerConnector.BuildOperatorConnectionString(target, null);
-    connection.InitialCatalog = options.Database;
+    var connection = SqlServerConnector.BuildOperatorConnectionString(target, options.Database);
     var scripts = KitScripts.Load(options.Scripts);
     var runner = new MigrationRunner(log);
     log.Information("Migrații: {Count} noi", runner.RunMigrations(connection.ConnectionString, scripts).ScriptsExecuted);
@@ -47,7 +45,7 @@ try
         await using var database = new SqlConnection(connection.ConnectionString);
         await database.OpenAsync(ct);
         var admin = await new InitialAdminCreator(sql).CreateAsync(database,
-            new InitialAdminRequest("administrator", "Administrator ERP", null, null, "dev", Environment.MachineName), ct);
+            new InitialAdminRequest("administrator", "Administrator ERP", null, "dev", Environment.MachineName), ct);
         if (admin.Created)
         {
             // Afisata o singura data, doar pe ecran (R6); in jurnal nu ajunge.
@@ -92,7 +90,7 @@ catch (Exception ex) when (ex is SqlException or SqlSetupException or InvalidOpe
 // Reluarea pe aceeasi baza: DatabaseCreator accepta doar baza creata cu acelasi ErpInstallId (8.1).
 static async Task<Guid?> ReadInstallIdAsync(SqlTarget target, string database, CancellationToken ct)
 {
-    await using var master = new SqlConnection(SqlServerConnector.BuildOperatorConnectionString(target, null).ConnectionString);
+    await using var master = new SqlConnection(SqlServerConnector.BuildOperatorConnectionString(target).ConnectionString);
     await master.OpenAsync(ct);
     await using var exists = new SqlCommand("SELECT DB_ID(@name);", master);
     exists.Parameters.AddWithValue("@name", database);

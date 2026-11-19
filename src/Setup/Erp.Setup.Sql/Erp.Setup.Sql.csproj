@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Erp.Setup.Tests" />
+    <!-- Autentificarea SQL in containerul de test (SqlOperator, SqlServerConnector). -->
+    <InternalsVisibleTo Include="Erp.Testing.Sql" />
   </ItemGroup>
 
 </Project>

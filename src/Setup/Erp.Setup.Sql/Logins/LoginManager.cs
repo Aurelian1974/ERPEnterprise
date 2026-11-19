@@ -1,47 +1,43 @@
 using System.Text.RegularExpressions;
 using Erp.Setup.Core.Answers;
-using Microsoft.Data.SqlClient;
 
 namespace Erp.Setup.Sql.Logins;
 
-/// <summary>Numele loginurilor si utilizatorilor SQL ai unei instante (3.3, 8.4); loginurile cu litere mici (R4).</summary>
-public sealed record SqlPrincipals(string AppLogin, string MigratorLogin)
-{
-    public const string AppUser = "erp_app";
-    public const string MigratorUser = "erp_migrator";
+/// <summary>Un login Windows al aplicatiei si utilizatorul lui din baza ERP (08, 5.8).</summary>
+public sealed record AppPrincipal(string Login, string User);
 
-    public static SqlPrincipals For(string instance, SqlAuthentication appAuthentication = SqlAuthentication.Sql, string? appWindowsAccount = null)
+/// <summary>Identitatile aplicatiei pe SQL Server (08, 5.8, D3, D21). Nu exista parole.</summary>
+public static class AppPrincipals
+{
+    public static string PoolName(string instance) => $"ERP-{instance}";
+
+    public static string ServiceName(string instance) => $"ErpWorker-{instance}";
+
+    /// <param name="account">Contul gMSA sau al calculatorului (DOMENIU\nume$), cand SQL e pe alt calculator.</param>
+    public static IReadOnlyList<AppPrincipal> For(string instance, AppIdentity identity, string? account) => identity switch
     {
-        var prefix = $"erp_{instance.ToLowerInvariant()}";
-        return new SqlPrincipals(
-            appAuthentication == SqlAuthentication.Windows ? appWindowsAccount! : $"{prefix}_app",
-            $"{prefix}_mig");
-    }
+        AppIdentity.VirtualAccounts =>
+        [
+            new AppPrincipal($@"IIS APPPOOL\{PoolName(instance)}", "erp_web"),
+            new AppPrincipal($@"NT SERVICE\{ServiceName(instance)}", "erp_worker"),
+        ],
+        _ => [new AppPrincipal(account ?? throw new ArgumentNullException(nameof(account)), "erp_app")],
+    };
 }
 
-/// <summary>Textul comenzilor de login (8.4). Contine parole: nu se jurnalizeaza niciodata (R6).</summary>
+/// <summary>Textul comenzilor de login (08, 5.8). Numele trec prin QuoteName, dupa validare (abaterea de la SP-06, 08, 15).</summary>
 public static partial class LoginScripts
 {
-    public static string CreateOrAlterSqlLogin(string login, string password, string database) => $"""
-        IF SUSER_ID({SqlText.SqlLiteral(login)}) IS NULL
-            CREATE LOGIN {SqlText.QuoteName(login)} WITH PASSWORD = {SqlText.SqlLiteral(Password(password))},
-                CHECK_POLICY = ON, CHECK_EXPIRATION = OFF,
-                DEFAULT_DATABASE = {SqlText.QuoteName(database)}, DEFAULT_LANGUAGE = [us_english];
-        ELSE
-            ALTER LOGIN {SqlText.QuoteName(login)} WITH PASSWORD = {SqlText.SqlLiteral(Password(password))};
-        ALTER LOGIN {SqlText.QuoteName(login)} ENABLE;
-        """;
-
     public static string CreateWindowsLogin(string account, string database)
     {
         if (!WindowsAccount().IsMatch(account))
         {
-            throw new SqlSetupException($"Contul Windows „{account}” este invalid (DOMENIU\\cont sau DOMENIU\\gmsa$).");
+            throw new SqlSetupException($"Contul Windows „{account}” este invalid (DOMENIU\\cont, DOMENIU\\gmsa$, IIS APPPOOL\\pool sau NT SERVICE\\serviciu).");
         }
 
         return $"""
             IF SUSER_ID({SqlText.SqlLiteral(account)}) IS NULL
-                CREATE LOGIN {SqlText.QuoteName(account)} FROM WINDOWS WITH DEFAULT_DATABASE = {SqlText.QuoteName(database)};
+                CREATE LOGIN {SqlText.QuoteName(account)} FROM WINDOWS WITH DEFAULT_DATABASE = {SqlText.QuoteName(database)}, DEFAULT_LANGUAGE = [us_english];
             ALTER LOGIN {SqlText.QuoteName(account)} ENABLE;
             """;
     }
@@ -51,7 +47,7 @@ public static partial class LoginScripts
             ALTER LOGIN {SqlText.QuoteName(login)} DISABLE;
         """;
 
-    /// <summary>Utilizatorul din baza, legat de login; refacut daca legatura s-a pierdut (de exemplu dupa restaurare).</summary>
+    /// <summary>Utilizatorul din baza, legat de login; refacut daca legatura s-a pierdut (dupa o restaurare sau o recuperare).</summary>
     public static string CreateOrRemapUser(string user, string login, string? defaultSchema)
     {
         var schema = defaultSchema is null ? string.Empty : $" WITH DEFAULT_SCHEMA = {SqlText.QuoteName(defaultSchema)}";
@@ -66,118 +62,63 @@ public static partial class LoginScripts
     public static string AddRoleMember(string role, string user) =>
         $"ALTER ROLE {SqlText.QuoteName(role)} ADD MEMBER {SqlText.QuoteName(user)};";
 
-    private static string Password(string password)
-    {
-        if (password.Length < 16 || password.Any(c => c is '\'' or '"' or ';' || char.IsControl(c)))
-        {
-            throw new SqlSetupException("Parola generată pentru loginul SQL nu respectă regulile din 8.4.");
-        }
-
-        return password;
-    }
-
-    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9.-]{0,63}\\[A-Za-z0-9._-]{1,20}\$?$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(IIS APPPOOL|NT SERVICE|[A-Za-z0-9][A-Za-z0-9.\-]{0,63})\\[A-Za-z0-9._\-]{1,64}\$?$", RegexOptions.CultureInvariant)]
     private static partial Regex WindowsAccount();
 }
 
-/// <summary>Pasii I-08 si I-14 (8.4): loginurile aplicatiei si de migrare, utilizatorii din baza ERP si din msdb.</summary>
-public sealed class LoginManager(SqlOperator sql, SqlPrincipals principals)
+/// <summary>
+/// Pasul I-11 (08, 5.8): loginurile Windows ale aplicatiei, utilizatorii din baza ERP (membri in rolurile de modul, fara db_owner,
+/// SP-19) si din msdb (ecranul „Ultimul backup”). Idempotent (R10).
+/// </summary>
+public sealed class LoginManager(SqlOperator sql)
 {
-    public SqlPrincipals Principals { get; } = principals;
-
-    /// <summary>
-    /// Loginul aplicatiei: membru in toate rolurile de modul, fara db_owner si fara drepturi pe server (SP-19).
-    /// La autentificare SQL, parola data inlocuieste parola existenta (instalare reluata sau repair --rotate-secrets).
-    /// </summary>
-    public async Task EnsureAppLoginAsync(string database, SqlAuthentication appAuthentication, string? password, CancellationToken ct)
+    public async Task EnsureAsync(string database, IReadOnlyList<AppPrincipal> principals, CancellationToken ct)
     {
-        var login = Principals.AppLogin;
         await using (var master = await sql.OpenAsync("master", ct).ConfigureAwait(false))
         {
-            var script = appAuthentication == SqlAuthentication.Sql
-                ? LoginScripts.CreateOrAlterSqlLogin(login, password ?? throw new ArgumentNullException(nameof(password)), database)
-                : LoginScripts.CreateWindowsLogin(login, database);
-            await sql.ExecuteAsync(master, $"Creare login {login}", script, ct).ConfigureAwait(false);
-        }
-
-        await using (var erp = await sql.OpenAsync(database, ct).ConfigureAwait(false))
-        {
-            await sql.ExecuteAsync(erp, $"Utilizator {SqlPrincipals.AppUser} pentru {login}",
-                LoginScripts.CreateOrRemapUser(SqlPrincipals.AppUser, login, "core"), ct).ConfigureAwait(false);
-            foreach (var schema in ModuleOrder.Schemas)
+            foreach (var principal in principals)
             {
-                await sql.ExecuteAsync(erp, $"{SqlPrincipals.AppUser} în role_{schema}",
-                    LoginScripts.AddRoleMember($"role_{schema}", SqlPrincipals.AppUser), ct).ConfigureAwait(false);
+                await sql.ExecuteAsync(master, $"Login {principal.Login}", LoginScripts.CreateWindowsLogin(principal.Login, database), ct).ConfigureAwait(false);
             }
         }
 
-        // msdb: ecranul „Ultimul backup” din aplicatie.
-        await using var msdb = await sql.OpenAsync("msdb", ct).ConfigureAwait(false);
-        await sql.ExecuteAsync(msdb, $"Utilizator {login} în msdb", LoginScripts.CreateOrRemapUser(login, login, null), ct).ConfigureAwait(false);
-        await sql.ExecuteAsync(msdb, $"Drept SELECT pe msdb.dbo.backupset pentru {login}",
-            $"GRANT SELECT ON dbo.backupset TO {SqlText.QuoteName(login)};", ct).ConfigureAwait(false);
+        await EnsureUsersAsync(database, principals, ct).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Activeaza loginul de migrare cu o parola noua, nesalvata, ruleaza lucrul cu el si il dezactiveaza in <c>finally</c>,
-    /// inclusiv la esec (8.4, IA-14).
+    /// Utilizatorii loginurilor existente: in baza ERP (rolurile de modul) si in msdb. Separat de crearea loginurilor pentru ca
+    /// „Recuperează” reface doar legatura utilizatorilor, iar testele din containerul Linux folosesc un login SQL in locul celui Windows.
     /// </summary>
-    public async Task RunAsMigratorAsync(string database, Func<SqlConnectionStringBuilder, CancellationToken, Task> work, CancellationToken ct)
+    public async Task EnsureUsersAsync(string database, IReadOnlyList<AppPrincipal> principals, CancellationToken ct)
     {
-        var password = SqlPasswordGenerator.Generate();
-        var failed = false;
-        try
+        foreach (var principal in principals)
         {
-            await EnableMigratorAsync(database, password, ct).ConfigureAwait(false);
-            await work(sql.ConnectionStringFor(database, Principals.MigratorLogin, password), ct).ConfigureAwait(false);
-        }
-        catch
-        {
-            failed = true;
-            throw;
-        }
-        finally
-        {
-            try
+            await using (var erp = await sql.OpenAsync(database, ct).ConfigureAwait(false))
             {
-                // Dezactivarea nu se anuleaza odata cu lucrul.
-                await DisableMigratorAsync(CancellationToken.None).ConfigureAwait(false);
+                await sql.ExecuteAsync(erp, $"Utilizator {principal.User} pentru {principal.Login}",
+                    LoginScripts.CreateOrRemapUser(principal.User, principal.Login, "core"), ct).ConfigureAwait(false);
+                foreach (var schema in ModuleOrder.Schemas)
+                {
+                    await sql.ExecuteAsync(erp, $"{principal.User} în role_{schema}",
+                        LoginScripts.AddRoleMember($"role_{schema}", principal.User), ct).ConfigureAwait(false);
+                }
             }
-            catch (Exception ex) when (failed)
-            {
-                // Eroarea initiala ramane cea raportata; esecul dezactivarii trebuie vazut in jurnal.
-                sql.Log.Error(ex, "Loginul {Login} NU a putut fi dezactivat după eșec; dezactivați-l manual: ALTER LOGIN [{Login}] DISABLE;",
-                    Principals.MigratorLogin, Principals.MigratorLogin);
-            }
+
+            await using var msdb = await sql.OpenAsync("msdb", ct).ConfigureAwait(false);
+            await sql.ExecuteAsync(msdb, $"Utilizator {principal.Login} în msdb", LoginScripts.CreateOrRemapUser(principal.Login, principal.Login, null), ct)
+                .ConfigureAwait(false);
+            await sql.ExecuteAsync(msdb, $"Drept SELECT pe msdb.dbo.backupset pentru {principal.Login}",
+                $"GRANT SELECT ON dbo.backupset TO {SqlText.QuoteName(principal.Login)};", ct).ConfigureAwait(false);
         }
     }
 
-    public async Task DisableMigratorAsync(CancellationToken ct)
+    /// <summary>„Dezinstaleaza” (08, 11.6): loginurile se dezactiveaza, nu se sterg.</summary>
+    public async Task DisableAsync(IReadOnlyList<string> logins, CancellationToken ct)
     {
         await using var master = await sql.OpenAsync("master", ct).ConfigureAwait(false);
-        await sql.ExecuteAsync(master, $"Dezactivare login {Principals.MigratorLogin}", LoginScripts.DisableLogin(Principals.MigratorLogin), ct).ConfigureAwait(false);
-    }
-
-    /// <summary>I-08: activeaza loginul de migrare cu o parola noua, nesalvata; intoarce conexiunea cu care ruleaza I-09…I-13.</summary>
-    public async Task<SqlConnectionStringBuilder> EnableMigratorAsync(string database, CancellationToken ct)
-    {
-        var password = SqlPasswordGenerator.Generate();
-        await EnableMigratorAsync(database, password, ct).ConfigureAwait(false);
-        return sql.ConnectionStringFor(database, Principals.MigratorLogin, password);
-    }
-
-    private async Task EnableMigratorAsync(string database, string password, CancellationToken ct)
-    {
-        var login = Principals.MigratorLogin;
-        await using (var master = await sql.OpenAsync("master", ct).ConfigureAwait(false))
+        foreach (var login in logins)
         {
-            await sql.ExecuteAsync(master, $"Creare login {login}", LoginScripts.CreateOrAlterSqlLogin(login, password, database), ct).ConfigureAwait(false);
+            await sql.ExecuteAsync(master, $"Dezactivare login {login}", LoginScripts.DisableLogin(login), ct).ConfigureAwait(false);
         }
-
-        await using var erp = await sql.OpenAsync(database, ct).ConfigureAwait(false);
-        await sql.ExecuteAsync(erp, $"Utilizator {SqlPrincipals.MigratorUser} pentru {login}",
-            LoginScripts.CreateOrRemapUser(SqlPrincipals.MigratorUser, login, "core"), ct).ConfigureAwait(false);
-        await sql.ExecuteAsync(erp, $"{SqlPrincipals.MigratorUser} în db_owner",
-            LoginScripts.AddRoleMember("db_owner", SqlPrincipals.MigratorUser), ct).ConfigureAwait(false);
     }
 }

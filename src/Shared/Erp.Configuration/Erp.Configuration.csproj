@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Configurarea instalarii, comuna pentru installer, Erp.Host si Erp.Worker (8.10): secretele DPAPI si caile instantei. -->
-  <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
-  </ItemGroup>
+  <!-- Caile instalarii (08, 5.7), comune pentru installer, Erp.Host si Erp.Worker. Fara secrete: nu exista parole SQL (D3). -->
 
 </Project>

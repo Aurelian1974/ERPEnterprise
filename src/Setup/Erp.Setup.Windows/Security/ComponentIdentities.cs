@@ -7,22 +7,22 @@ using System.Text;
 namespace Erp.Setup.Windows.Security;
 
 /// <summary>
-/// Identitatile componentelor (3.3). SID-urile conturilor virtuale se calculeaza determinist din nume (SHA-1 peste nume,
-/// UTF-16LE: NT SERVICE = S-1-5-80-… cu majuscule, IIS AppPool = S-1-5-82-… cu litere mici), deci drepturile NTFS (I-17) se pot da
-/// inainte ca pool-ul (I-18) si serviciul (I-19) sa existe.
+/// Identitatile pool-ului si serviciului (5.8): conturile virtuale sau, cu gMSA, acelasi cont pentru amandoua. SID-urile conturilor
+/// virtuale se calculeaza determinist din nume (SHA-1 peste nume, UTF-16LE: NT SERVICE = S-1-5-80-… cu majuscule,
+/// IIS AppPool = S-1-5-82-… cu litere mici), deci nu depind de ordinea in care se creeaza obiectele.
 /// </summary>
 public sealed record ComponentIdentities(SecurityIdentifier HostPool, SecurityIdentifier Worker)
 {
-    public static string PoolName(string instance) => $"ERP-{instance}-Host";
+    public static string PoolName(string instance) => $"ERP-{instance}";
 
     public static string ServiceName(string instance) => $"ErpWorker-{instance}";
 
-    /// <param name="appWindowsAccount">Contul de domeniu sau gMSA (appAuthentication = Windows); altfel conturile virtuale.</param>
-    public static ComponentIdentities For(string instance, string? appWindowsAccount = null)
+    /// <param name="gmsaAccount">Contul gMSA (appIdentity = Gmsa); altfel conturile virtuale (si pentru ComputerAccount).</param>
+    public static ComponentIdentities For(string instance, string? gmsaAccount = null)
     {
-        if (appWindowsAccount is not null)
+        if (gmsaAccount is not null)
         {
-            var account = (SecurityIdentifier)new NTAccount(appWindowsAccount).Translate(typeof(SecurityIdentifier));
+            var account = (SecurityIdentifier)new NTAccount(gmsaAccount).Translate(typeof(SecurityIdentifier));
             return new ComponentIdentities(account, account);
         }
 

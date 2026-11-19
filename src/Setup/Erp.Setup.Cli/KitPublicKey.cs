@@ -1,9 +1,9 @@
-namespace Erp.Setup;
+namespace Erp.Setup.Cli;
 
-/// <summary>Cheia publica a kitului, incorporata la build (-p:KitPublicKeyFile, 4.3).</summary>
+/// <summary>Cheia publica a kitului, incorporata la build (-p:KitPublicKeyFile, 08, 7).</summary>
 internal static class KitPublicKey
 {
-    public const string ResourceName = "Erp.Setup.KitPublicKey.pem";
+    public const string ResourceName = "Erp.Setup.Cli.KitPublicKey.pem";
 
     public static string? Load()
     {

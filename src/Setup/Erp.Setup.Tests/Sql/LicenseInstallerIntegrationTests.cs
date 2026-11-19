@@ -21,7 +21,7 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
 
     public void Dispose() => licenses.Dispose();
 
-    private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword, new LoggerConfiguration().CreateLogger());
+    private SqlOperator Operator() => sql.Operator();
 
     private VerifiedLicense Verified(License payload)
     {
@@ -37,33 +37,21 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
         using var kit = TempKitDatabase.FromRepository();
         var scripts = KitScripts.Load(kit.Root);
         var runner = new MigrationRunner(new LoggerConfiguration().CreateLogger());
-        await new LoginManager(op, SqlPrincipals.For(instance)).RunAsMigratorAsync(name, (builder, _) =>
-        {
-            runner.RunMigrations(builder.ConnectionString, scripts);
-            runner.RunProgrammability(builder.ConnectionString, scripts);
-            return Task.CompletedTask;
-        }, Ct);
+        runner.RunMigrations(op.ConnectionString(name), scripts);
+        runner.RunProgrammability(op.ConnectionString(name), scripts);
         return name;
     }
 
     private async Task<int> SaveAsMigrator(string database, string instance, VerifiedLicense license)
     {
-        var id = 0;
         var op = Operator();
-        await new LoginManager(op, SqlPrincipals.For(instance)).RunAsMigratorAsync(database, async (builder, ct) =>
-        {
-            await using var connection = new SqlConnection(builder.ConnectionString);
-            await connection.OpenAsync(ct);
-            id = await new LicenseInstaller(licenses.Reader, op).SaveAsync(connection, license, ct);
-        }, Ct);
-        return id;
+        await using var connection = await op.OpenAsync(database, Ct);
+        return await new LicenseInstaller(licenses.Reader, op).SaveAsync(connection, license, Ct);
     }
 
     private async Task<T?> Scalar<T>(string database, string query)
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         return await SqlOperator.ScalarAsync<T>(connection, query, Ct);
     }
@@ -112,11 +100,7 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
     {
         var database = await DeployedDatabase("ERP_IT_LICAPP", "ITLICA");
         await SaveAsMigrator(database, "ITLICA", Verified(TestLicenses.Payload()));
-        var principals = SqlPrincipals.For("ITLICA");
-        var password = SqlPasswordGenerator.Generate();
-        await new LoginManager(Operator(), principals).EnsureAppLoginAsync(database, Core.Answers.SqlAuthentication.Sql, password, Ct);
-
-        await using var app = new SqlConnection(Operator().ConnectionStringFor(database, principals.AppLogin, password).ConnectionString);
+        await using var app = new SqlConnection(await sql.CreateAppLoginAsync(database, "erp_it_licapp", Ct));
         await app.OpenAsync(Ct);
 
         Assert.Equal("LIC-2026-000123", await SqlOperator.ScalarAsync<string>(app, "SELECT LicenseId FROM core.InstallationLicense WHERE IsCurrent = 1;", Ct));

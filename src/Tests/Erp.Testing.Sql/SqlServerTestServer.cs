@@ -1,7 +1,7 @@
-using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
 using Erp.Setup.Sql;
 using Erp.Setup.Sql.Database;
+using Erp.Setup.Sql.Logins;
 using Erp.Setup.Sql.Probes;
 using Microsoft.Data.SqlClient;
 using Serilog;
@@ -60,17 +60,38 @@ public class SqlServerTestServer
 
     public ValueTask StopAsync() => container?.DisposeAsync() ?? ValueTask.CompletedTask;
 
-    public SqlTarget Target(string database, string login = "sa") => externalServer is not null
-        ? new(Server, database, SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT")
-        : new(Server, database, SqlAuthentication.Sql, login, SqlEncrypt.Mandatory, TrustServerCertificate: true, "IT");
+    /// <summary>Tinta operatorului; in container autentificarea e SQL (vezi <see cref="Credentials"/>), altfel Windows.</summary>
+    public SqlTarget Target(string database) => new(Server, database, "IT", TrustServerCertificate: true);
+
+    /// <summary>
+    /// Installer-ul foloseste doar Windows authentication (08, D3); containerul Linux nu o are, deci testele inlocuiesc
+    /// autentificarea cu un login SQL. Pe un server extern (ERP_TEST_SQL_SERVER) ramane Windows authentication.
+    /// </summary>
+    public Action<SqlConnectionStringBuilder>? Credentials(string login = "sa", string? password = null)
+    {
+        if (externalServer is not null)
+        {
+            return null;
+        }
+
+        var secret = password ?? SaPassword;
+        return builder =>
+        {
+            builder.IntegratedSecurity = false;
+            builder.UserID = login;
+            builder.Password = secret;
+        };
+    }
+
+    /// <summary>Operatorul installer-ului (implicit sa).</summary>
+    public SqlOperator Operator(ILogger? log = null, string login = "sa", string? password = null) =>
+        new(Target("master"), log ?? new LoggerConfiguration().CreateLogger(), Credentials(login, password));
+
+    public SqlServerConnector Connector(string login = "sa", string? password = null) => new(Credentials(login, password));
 
     /// <summary>Sirul de conexiune ca sa la o baza anume.</summary>
-    public string ConnectionString(string database)
-    {
-        var builder = SqlServerConnector.BuildOperatorConnectionString(Target(database), SaPassword);
-        builder.InitialCatalog = database;
-        return builder.ConnectionString;
-    }
+    public string ConnectionString(string database) =>
+        SqlServerConnector.BuildOperatorConnectionString(Target(database), database, Credentials()).ConnectionString;
 
     public async Task ExecuteAsync(string sql, string database = "master")
     {
@@ -91,7 +112,7 @@ public class SqlServerTestServer
             await DropTestDatabaseAsync(database);
         }
 
-        var sql = new SqlOperator(Target("master"), SaPassword, new LoggerConfiguration().CreateLogger());
+        var sql = Operator();
         await new DatabaseCreator(sql).CreateAsync(new DatabaseCreateOptions(database, "IT", Guid.NewGuid(), null, null, 256, 256), ct);
         await new BootstrapRunner(sql).RunAsync(database, TestPaths.BootstrapDirectory(), ct);
         using var kit = TempKitDatabase.FromRepository();
@@ -102,6 +123,28 @@ public class SqlServerTestServer
         runner.RunProgrammability(connectionString, scripts);
         runner.RunSeed(connectionString, scripts);
         return connectionString;
+    }
+
+    /// <summary>
+    /// Echivalentul identitatii aplicatiei (08, 5.8, I-11) in containerul Linux, unde loginurile Windows nu exista: un login SQL cu
+    /// acelasi utilizator si aceleasi roluri ca loginul Windows real (fara db_owner). Intoarce sirul de conexiune al aplicatiei.
+    /// </summary>
+    public async Task<string> CreateAppLoginAsync(string database, string login, CancellationToken ct)
+    {
+        var password = "It#" + Guid.NewGuid().ToString("N") + "aA1!";
+        await ExecuteAsync($"""
+            IF SUSER_ID(N'{login}') IS NULL CREATE LOGIN [{login}] WITH PASSWORD = N'{password}', CHECK_POLICY = OFF;
+            ELSE ALTER LOGIN [{login}] WITH PASSWORD = N'{password}';
+            """);
+        await new LoginManager(Operator()).EnsureUsersAsync(database, [new AppPrincipal(login, "erp_app")], ct);
+        var builder = new SqlConnectionStringBuilder(ConnectionString(database))
+        {
+            IntegratedSecurity = false,
+            UserID = login,
+            Password = password,
+            ApplicationName = "ERP-IT-App",
+        };
+        return builder.ConnectionString;
     }
 
     /// <summary>Pe un server existent (ERP_TEST_SQL_SERVER) se sterg doar bazele de test ERP_IT_*.</summary>

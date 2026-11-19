@@ -13,37 +13,38 @@ public enum PrerequisiteResult
 }
 
 /// <summary>
-/// Pasul I-04 (C-05, C-06): instaleaza rolurile IIS lipsa (Install-WindowsFeature, lista fixa din C-05) si Hosting Bundle-ul
-/// din kit (/install /quiet /norestart, apoi iisreset /restart). O repornire necesara opreste instalarea cu codul 12.
+/// Pasii I-02 si I-03 (5.11, C-06, C-07): activeaza functiile IIS lipsa prin DISM (aceleasi nume pe Windows 10/11 si Server) si
+/// instaleaza Hosting Bundle-ul din kit (/install /quiet /norestart, apoi iisreset /restart). Codul 3010 = repornire necesara.
 /// </summary>
 public sealed class PrerequisitesInstaller(IProcessRunner processes)
 {
-    public PrerequisiteResult InstallIisFeatures(IReadOnlyCollection<string> missing)
+    public const int RestartRequiredExitCode = 3010;
+
+    public PrerequisiteResult EnableIisFeatures(IReadOnlyCollection<string> missing)
     {
         if (missing.Count == 0)
         {
             return PrerequisiteResult.AlreadyPresent;
         }
 
-        // Numele vin doar din lista fixa C-05, deci comanda nu contine text primit din afara.
+        // Numele vin doar din lista fixa (5.11), deci comanda nu contine text primit din afara.
         var unknown = missing.Where(f => !RequirementsChecker.IisFeatures.Contains(f)).ToList();
         if (unknown.Count > 0)
         {
             throw new WindowsSetupException($"Funcții Windows necunoscute: {string.Join(", ", unknown)}.");
         }
 
-        var result = processes.Run(ProcessRunner.System32(@"WindowsPowerShell\v1.0\powershell.exe"),
-            ["-NoProfile", "-NonInteractive", "-Command", InstallFeaturesCommand(missing)]);
-        if (result.ExitCode != 0)
+        var result = processes.Run(ProcessRunner.System32("dism.exe"), EnableFeaturesArguments(missing));
+        return result.ExitCode switch
         {
-            throw new WindowsSetupException($"Install-WindowsFeature a eșuat (cod {result.ExitCode}): {result.Output}");
-        }
-
-        return result.Output.Contains("Yes", StringComparison.OrdinalIgnoreCase) ? PrerequisiteResult.RestartRequired : PrerequisiteResult.Installed;
+            0 => PrerequisiteResult.Installed,
+            RestartRequiredExitCode => PrerequisiteResult.RestartRequired,
+            _ => throw new WindowsSetupException($"dism /Enable-Feature a eșuat (cod {result.ExitCode}): {result.Output}"),
+        };
     }
 
-    public static string InstallFeaturesCommand(IReadOnlyCollection<string> features) =>
-        $"(Install-WindowsFeature -Name {string.Join(',', features)}).RestartNeeded";
+    public static IReadOnlyList<string> EnableFeaturesArguments(IEnumerable<string> features) =>
+        ["/Online", "/Enable-Feature", .. features.Select(f => $"/FeatureName:{f}"), "/All", "/NoRestart"];
 
     public PrerequisiteResult InstallHostingBundle(string kitRoot)
     {
@@ -55,7 +56,7 @@ public sealed class PrerequisitesInstaller(IProcessRunner processes)
         }
 
         var result = processes.Run(installer, ["/install", "/quiet", "/norestart"]);
-        if (result.ExitCode is not (0 or 3010))
+        if (result.ExitCode is not (0 or RestartRequiredExitCode))
         {
             throw new WindowsSetupException($"Instalarea Hosting Bundle a eșuat (cod {result.ExitCode}).");
         }
@@ -66,11 +67,11 @@ public sealed class PrerequisitesInstaller(IProcessRunner processes)
             throw new WindowsSetupException($"iisreset /restart a eșuat (cod {reset.ExitCode}): {reset.Output}");
         }
 
-        return result.ExitCode == 3010 ? PrerequisiteResult.RestartRequired : PrerequisiteResult.Installed;
+        return result.ExitCode == RestartRequiredExitCode ? PrerequisiteResult.RestartRequired : PrerequisiteResult.Installed;
     }
 }
 
-/// <summary>Pornirea si oprirea serviciului (I-23, U-07, U-13, R-01, R-05).</summary>
+/// <summary>Pornirea si oprirea serviciului (I-17, actualizarea si revenirea, 10.2).</summary>
 public static class ServiceControl
 {
     public static void Start(string serviceName, TimeSpan timeout)

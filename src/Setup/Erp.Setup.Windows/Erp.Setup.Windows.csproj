@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- LibraryImport (netapi32, logoncli, advapi32 LSA) genereaza cod unsafe. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
 

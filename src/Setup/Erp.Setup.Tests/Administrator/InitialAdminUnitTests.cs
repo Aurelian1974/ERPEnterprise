@@ -21,7 +21,6 @@ public sealed class InitialAdminUnitTests
             Assert.DoesNotContain(p, c => "Il1O0o".Contains(c));
             Assert.True(p.Count(char.IsUpper) >= 2 && p.Count(char.IsLower) >= 2 && p.Count(char.IsDigit) >= 2);
             Assert.True(p.Count(c => "!#$%&*+-=?@_".Contains(c)) >= 2);
-            Assert.Empty(InitialPasswordPolicy.Validate(p, "administrator"));
         });
         Assert.Equal(passwords.Count, passwords.Distinct().Count());
     }

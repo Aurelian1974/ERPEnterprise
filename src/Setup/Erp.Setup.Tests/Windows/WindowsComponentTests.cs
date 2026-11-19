@@ -9,6 +9,8 @@ using Erp.Setup.Core;
 using Erp.Setup.Core.Deployment;
 using Erp.Setup.Core.Kit;
 using Erp.Setup.Windows.Iis;
+using Erp.Setup.Windows.Prerequisites;
+using Erp.Setup.Windows.Certificates;
 using Erp.Setup.Windows.Layout;
 using Erp.Setup.Windows.Processes;
 using Erp.Setup.Windows.Security;
@@ -18,8 +20,8 @@ namespace Erp.Setup.Tests.Windows;
 
 public sealed class DeploymentGeneratorTests
 {
-    private static InstallationSettingsValues Values(string authentication = "Sql", string? login = "erp_prod_app") =>
-        new("PROD", "2027.1.0", "https://erp.grupulexemplu.local", @"C:\ProgramData\Erp\PROD", @"SQL01\ERP", "ERP_PROD", authentication, login, "Mandatory", false);
+    private static InstallationSettingsValues Values(bool trust = false) =>
+        new("PROD", "2027.1.0", "https://erp.grupulexemplu.local", @"C:\ProgramData\Erp\PROD", @"SQL01\ERP", "ERP_PROD", trust, "9C41D000112233445566778899AABBCCDDEEFF7A");
 
     private static string Template => File.ReadAllText(Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "appsettings.Installation.json"));
 
@@ -30,10 +32,14 @@ public sealed class DeploymentGeneratorTests
 
         Assert.Equal("PROD", (string?)json["Erp"]!["Instance"]);
         Assert.Equal("2027.1.0", (string?)json["Erp"]!["Version"]);
-        Assert.Equal(@"C:\ProgramData\Erp\PROD\license\erp.lic", (string?)json["Erp"]!["LicensePath"]);
+        Assert.Equal("https://erp.grupulexemplu.local", (string?)json["Erp"]!["PublicOrigin"]);
+        Assert.Equal(@"C:\ProgramData\Erp\PROD", (string?)json["Erp"]!["DataRoot"]);
         Assert.Equal(@"C:\ProgramData\Erp\PROD\maintenance\maintenance.flag", (string?)json["Erp"]!["MaintenanceFlagPath"]);
-        Assert.Equal(@"C:\ProgramData\Erp\PROD\keys", (string?)json["Erp"]!["DataProtectionKeysPath"]);
-        Assert.Equal("erp_prod_app", (string?)json["Database"]!["UserId"]);
+        Assert.Equal(@"SQL01\ERP", (string?)json["Database"]!["Server"]);
+        Assert.Equal("ERP_PROD", (string?)json["Database"]!["Name"]);
+        Assert.Equal("Mandatory", (string?)json["Database"]!["Encrypt"]);
+        Assert.False((bool?)json["Database"]!["TrustServerCertificate"]);
+        Assert.Equal("9C41D000112233445566778899AABBCCDDEEFF7A", (string?)json["DataProtection"]!["CertificateThumbprint"]);
         Assert.Equal(30, (int?)json["Database"]!["CommandTimeoutSeconds"]);
         Assert.Equal(30, (int?)json["Auth"]!["IdleTimeoutMinutes"]);
         Assert.Equal("Database", (string?)json["Attachments"]!["StorageKind"]);
@@ -60,12 +66,21 @@ public sealed class DeploymentGeneratorTests
     }
 
     [Fact]
-    public void Windows_authentication_has_no_sql_user()
+    public void Settings_of_the_previous_format_are_removed_and_no_secret_is_written()
     {
-        var json = JsonNode.Parse(AppSettingsGenerator.Generate(Template, null, Values("Windows", null)))!;
+        var existing = """
+            { "Erp": { "LicensePath": "x", "DataProtectionKeysPath": "y" }, "Database": { "Authentication": "Sql", "UserId": "erp_prod_app" } }
+            """;
 
-        Assert.Equal("Windows", (string?)json["Database"]!["Authentication"]);
+        var text = AppSettingsGenerator.Generate(Template, existing, Values(trust: true));
+        var json = JsonNode.Parse(text)!;
+
+        Assert.Null(json["Erp"]!["LicensePath"]);
+        Assert.Null(json["Erp"]!["DataProtectionKeysPath"]);
+        Assert.Null(json["Database"]!["Authentication"]);
         Assert.Null(json["Database"]!["UserId"]);
+        Assert.True((bool?)json["Database"]!["TrustServerCertificate"]);
+        Assert.DoesNotContain("Password", text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -121,7 +136,7 @@ public sealed class WindowsComponentTests
     private static readonly WorkerServiceSpec Service = new("PROD", @"C:\Program Files\Erp\PROD\versions\2027.1.0\worker\Erp.Worker.exe", @"C:\ProgramData\Erp\PROD");
 
     [Fact]
-    public void Service_commands_match_section_8_12()
+    public void Service_commands_match_section_5_11()
     {
         Assert.Equal(
             ["create", "ErpWorker-PROD", "binPath=", "\"C:\\Program Files\\Erp\\PROD\\versions\\2027.1.0\\worker\\Erp.Worker.exe\" --instance-dir \"C:\\ProgramData\\Erp\\PROD\"",
@@ -136,7 +151,7 @@ public sealed class WindowsComponentTests
     [Fact]
     public void Gmsa_service_uses_the_account_with_an_empty_password()
     {
-        var args = ServiceCommands.Create(Service with { WindowsAccount = @"CONTOSO\svc-erp$" });
+        var args = ServiceCommands.Create(Service with { GmsaAccount = @"CONTOSO\svc-erp$" });
 
         Assert.Equal(@"CONTOSO\svc-erp$", args[args.ToList().IndexOf("obj=") + 1]);
         Assert.Equal(string.Empty, args[args.ToList().IndexOf("password=") + 1]);
@@ -201,18 +216,63 @@ public sealed class WindowsComponentTests
     }
 
     [Fact]
-    public void Self_signed_certificate_is_valid_one_year_for_the_host_name_with_server_authentication()
+    public void Internal_https_certificate_is_rsa_3072_valid_two_years_for_the_address_and_the_machine_name()
     {
         var now = DateTimeOffset.UtcNow;
 
-        using var certificate = SelfSignedCertificate.Create("erp-test.firma.local", now);
+        using var certificate = InternalHttpsCertificate.Create("erp-test.firma.local", "SRV-ERP", now);
 
         Assert.Equal("CN=erp-test.firma.local", certificate.Subject);
         Assert.True(certificate.HasPrivateKey);
-        Assert.InRange(certificate.NotAfter.ToUniversalTime(), now.AddYears(1).AddMinutes(-1).UtcDateTime, now.AddYears(1).AddMinutes(1).UtcDateTime);
-        Assert.Equal(["erp-test.firma.local"], certificate.Extensions.OfType<X509SubjectAlternativeNameExtension>().Single().EnumerateDnsNames());
+        Assert.Equal(3072, certificate.GetRSAPublicKey()!.KeySize);
+        Assert.InRange(certificate.NotAfter.ToUniversalTime(), now.AddYears(2).AddMinutes(-1).UtcDateTime, now.AddYears(2).AddMinutes(1).UtcDateTime);
+        Assert.True((certificate.NotAfter.ToUniversalTime() - now.UtcDateTime).TotalDays < 825);
+        Assert.Equal(["erp-test.firma.local", "SRV-ERP"], certificate.Extensions.OfType<X509SubjectAlternativeNameExtension>().Single().EnumerateDnsNames());
         Assert.Contains(certificate.Extensions.OfType<X509EnhancedKeyUsageExtension>().Single().EnhancedKeyUsages.Cast<Oid>(),
-            o => o.Value == SelfSignedCertificate.ServerAuthenticationEku);
+            o => o.Value == InternalHttpsCertificate.ServerAuthenticationEku);
+    }
+
+    [Fact]
+    public void Data_protection_certificate_is_rsa_3072_for_key_encipherment_valid_twenty_years()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        using var certificate = DataProtectionCertificate.Create("PROD", now);
+
+        Assert.Equal("CN=ERP-PROD Data Protection", certificate.Subject);
+        Assert.Equal(3072, certificate.GetRSAPublicKey()!.KeySize);
+        Assert.Equal(X509KeyUsageFlags.KeyEncipherment, certificate.Extensions.OfType<X509KeyUsageExtension>().Single().KeyUsages);
+        Assert.InRange(certificate.NotAfter.ToUniversalTime(), now.AddYears(20).AddMinutes(-1).UtcDateTime, now.AddYears(20).AddMinutes(1).UtcDateTime);
+    }
+
+    [Fact]
+    public void Iis_features_are_enabled_with_dism_without_restart_and_3010_means_restart()
+    {
+        var runner = new FakeRunner { ExitCode = _ => 3010 };
+        var installer = new PrerequisitesInstaller(runner);
+
+        Assert.Equal(PrerequisiteResult.AlreadyPresent, installer.EnableIisFeatures([]));
+        Assert.Equal(PrerequisiteResult.RestartRequired, installer.EnableIisFeatures(["IIS-WebSockets", "IIS-WindowsAuthentication"]));
+        Assert.Equal("dism.exe", runner.Calls.Single().File);
+        Assert.Equal(["/Online", "/Enable-Feature", "/FeatureName:IIS-WebSockets", "/FeatureName:IIS-WindowsAuthentication", "/All", "/NoRestart"],
+            runner.Calls.Single().Arguments);
+        Assert.Throws<WindowsSetupException>(() => installer.EnableIisFeatures(["Web-Server; calc"]));
+    }
+
+    [Fact]
+    public void Dism_feature_table_is_parsed_to_the_enabled_features()
+    {
+        const string table = """
+            Deployment Image Servicing and Management tool
+            Feature Name                                | State
+            ------------------------------------------- | --------
+            IIS-WebServerRole                           | Enabled
+            IIS-WebSockets                              | Disabled
+            IIS-WindowsAuthentication                   | Enabled
+            The operation completed successfully.
+            """;
+
+        Assert.Equal(["IIS-WebServerRole", "IIS-WindowsAuthentication"], Erp.Setup.Windows.Probes.WindowsProbe.ParseDismFeatureTable(table).Order());
     }
 
     [Theory]
@@ -232,7 +292,8 @@ public sealed class WindowsComponentTests
     [Fact]
     public void Component_identities_use_the_pool_and_service_names_of_the_instance()
     {
-        Assert.Equal((VirtualSid(82, "ERP-PROD-Host"), VirtualSid(80, "ErpWorker-PROD")), Identities("PROD"));
+        Assert.Equal((VirtualSid(82, "ERP-PROD"), VirtualSid(80, "ErpWorker-PROD")), Identities("PROD"));
+        Assert.Equal("ERP-PROD", ComponentIdentities.PoolName("PROD"));
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -265,20 +326,6 @@ public sealed class WindowsFileSystemTests : IDisposable
     private InstanceLayout Layout() => new(Path.Combine(root, "Program Files", "Erp"), Path.Combine(root, "ProgramData", "Erp"), "PROD");
 
     [Fact]
-    public void Secrets_are_dpapi_protected_with_per_instance_entropy()
-    {
-        Directory.CreateDirectory(root);
-        var path = Path.Combine(root, InstallationSecrets.FileName);
-        const string password = "Secret#Parola_SQL_1234567890abcdef";
-
-        InstallationSecrets.Write(path, new Dictionary<string, string> { [InstallationSecrets.DatabasePasswordKey] = password }, "PROD");
-
-        Assert.Equal(password, InstallationSecrets.Read(path, "PROD")[InstallationSecrets.DatabasePasswordKey]);
-        Assert.DoesNotContain(password, System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(path)));
-        Assert.ThrowsAny<CryptographicException>(() => InstallationSecrets.Read(path, "TEST"));
-    }
-
-    [Fact]
     public void Data_folders_are_protected_and_components_get_only_their_rights()
     {
         var layout = Layout();
@@ -297,17 +344,15 @@ public sealed class WindowsFileSystemTests : IDisposable
 
         Assert.True(Has(layout.Data.ConfigDirectory, identities.HostPool, FileSystemRights.ReadAndExecute));
         Assert.True(Has(layout.Data.ConfigDirectory, identities.Worker, FileSystemRights.ReadAndExecute));
-        Assert.True(Has(layout.Data.LicenseDirectory, identities.Worker, FileSystemRights.ReadAndExecute));
         Assert.True(Has(layout.Data.MaintenanceDirectory, identities.HostPool, FileSystemRights.ReadAndExecute));
-        Assert.True(Has(layout.Data.KeysDirectory, identities.HostPool, FileSystemRights.Modify));
-        Assert.False(Has(layout.Data.KeysDirectory, identities.Worker, FileSystemRights.ReadData));
+        Assert.True(Has(layout.Data.MaintenanceDirectory, identities.Worker, FileSystemRights.ReadAndExecute));
         Assert.True(Has(layout.Data.HostLogs, identities.HostPool, FileSystemRights.Modify));
         Assert.True(Has(layout.Data.WorkerLogs, identities.Worker, FileSystemRights.Modify));
         Assert.False(Has(layout.Data.UpgradeDirectory, identities.HostPool, FileSystemRights.ReadData));
         Assert.False(Has(layout.Data.InstallDirectory, identities.Worker, FileSystemRights.ReadData));
         Assert.False(Has(layout.Data.SetupLogs, identities.HostPool, FileSystemRights.ReadData));
         Assert.True(Has(layout.Data.InstanceJson, identities.HostPool, FileSystemRights.Read));
-        Assert.Single(Rules(layout.Data.KeysDirectory), r => r.IdentityReference == identities.HostPool && !r.IsInherited);
+        Assert.Single(Rules(layout.Data.HostLogs), r => r.IdentityReference == identities.HostPool && !r.IsInherited);
     }
 
     [Fact]
@@ -350,23 +395,27 @@ public sealed class WindowsFileSystemTests : IDisposable
     }
 
     [Fact]
-    public void Configuration_writer_creates_settings_secrets_and_web_config()
+    public void Configuration_writer_creates_settings_maintenance_pages_and_web_config()
     {
         var kit = Path.Combine(root, "kit");
         Directory.CreateDirectory(Path.Combine(kit, "templates"));
-        File.Copy(Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", "appsettings.Installation.json"),
-            Path.Combine(kit, "templates", "appsettings.Installation.json"));
+        foreach (var template in new[] { "appsettings.Installation.json", "maintenance.html", "app_offline.template.htm" })
+        {
+            File.Copy(Path.Combine(TestPaths.RepositoryRoot(), "src", "Setup", "Erp.Setup", "Kit", "templates", template), Path.Combine(kit, "templates", template));
+        }
+
         var layout = Layout();
         var values = new InstallationSettingsValues("PROD", "2027.1.0", "https://erp.firma.ro", layout.Data.InstanceDirectory, "SQL01", "ERP_PROD",
-            "Sql", "erp_prod_app", "Mandatory", false);
+            false, "9C41D000112233445566778899AABBCCDDEEFF7A");
 
-        Assert.Throws<WindowsSetupException>(() => ConfigurationWriter.Write(kit, layout, "2027.1.0", values, secrets: null));
-        ConfigurationWriter.Write(kit, layout, "2027.1.0", values, new Dictionary<string, string> { ["Database:Password"] = "p" });
-        ConfigurationWriter.Write(kit, layout, "2027.1.0", values, secrets: null);
+        ConfigurationWriter.Write(kit, layout, "2027.1.0", values);
+        ConfigurationWriter.Write(kit, layout, "2027.1.0", values);
 
-        Assert.Contains("erp_prod_app", File.ReadAllText(layout.Data.AppSettings));
-        Assert.Equal("p", InstallationSecrets.Read(layout.Data.Secrets, "PROD")["Database:Password"]);
+        Assert.Contains("9C41D000112233445566778899AABBCCDDEEFF7A", File.ReadAllText(layout.Data.AppSettings));
+        Assert.True(File.Exists(layout.Data.MaintenancePage));
+        Assert.True(File.Exists(layout.Data.AppOfflineTemplate));
         Assert.Contains(layout.Data.InstanceDirectory, File.ReadAllText(Path.Combine(layout.HostDirectory("2027.1.0"), "web.config")));
+        Assert.Empty(Directory.GetFiles(layout.Data.ConfigDirectory, "*.tmp"));
     }
 
     private static KitFile AddKitFile(string kit, string relative, string content)

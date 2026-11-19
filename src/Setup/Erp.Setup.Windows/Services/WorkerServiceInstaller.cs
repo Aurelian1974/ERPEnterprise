@@ -2,19 +2,19 @@ using Erp.Setup.Windows.Processes;
 
 namespace Erp.Setup.Windows.Services;
 
-/// <summary>Serviciul ErpWorker-&lt;Instanta&gt; (8.12, I-19; U-12, R-03).</summary>
-public sealed record WorkerServiceSpec(string Instance, string WorkerExecutable, string InstanceDirectory, string? WindowsAccount = null)
+/// <summary>Serviciul ErpWorker-&lt;Instanta&gt; (I-06, 5.11; actualizarea si revenirea, 10.2).</summary>
+public sealed record WorkerServiceSpec(string Instance, string WorkerExecutable, string InstanceDirectory, string? GmsaAccount = null)
 {
     public string Name => $"ErpWorker-{Instance}";
 
     public string DisplayName => $"ERP Worker ({Instance})";
 
-    public string Account => WindowsAccount ?? $@"NT SERVICE\{Name}";
+    public string Account => GmsaAccount ?? $@"NT SERVICE\{Name}";
 
     public string BinaryPath => $"\"{WorkerExecutable}\" --instance-dir \"{InstanceDirectory.TrimEnd('\\')}\"";
 }
 
-/// <summary>Comenzile sc.exe (8.12), construite ca liste de argumente; numele parametrilor sc.exe includ „=”.</summary>
+/// <summary>Comenzile sc.exe (5.11), construite ca liste de argumente; numele parametrilor sc.exe includ „=”.</summary>
 public static class ServiceCommands
 {
     public const string Description = "Procesare în fundal ERP: outbox, joburi Hangfire, sincronizări ANAF și BNR.";
@@ -32,7 +32,7 @@ public static class ServiceCommands
 
     public static IReadOnlyList<string> FailureFlag(WorkerServiceSpec spec) => ["failureflag", spec.Name, "1"];
 
-    /// <summary>U-12 / R-03: doar calea binarului (comutarea pe alta versiune).</summary>
+    /// <summary>Actualizarea si revenirea: doar calea binarului (comutarea pe alta versiune).</summary>
     public static IReadOnlyList<string> SetBinaryPath(WorkerServiceSpec spec) => ["config", spec.Name, "binPath=", spec.BinaryPath];
 
     private static IEnumerable<string> Settings(WorkerServiceSpec spec)
@@ -45,7 +45,7 @@ public static class ServiceCommands
         yield return spec.Account;
 
         // Un gMSA nu are parola; sc.exe o cere totusi explicit, goala.
-        if (spec.WindowsAccount is not null)
+        if (spec.GmsaAccount is not null)
         {
             yield return "password=";
             yield return string.Empty;
@@ -53,7 +53,7 @@ public static class ServiceCommands
     }
 }
 
-/// <summary>Creeaza sau actualizeaza serviciul (la reluare si repair se foloseste sc.exe config, 8.12).</summary>
+/// <summary>Creeaza sau actualizeaza serviciul (la reluare si „Repară” se foloseste sc.exe config, 5.11).</summary>
 public sealed class WorkerServiceInstaller(IProcessRunner processes, Func<string, bool> serviceExists)
 {
     public void Install(WorkerServiceSpec spec)
@@ -76,7 +76,7 @@ public sealed class WorkerServiceInstaller(IProcessRunner processes, Func<string
     }
 }
 
-/// <summary>Eroare IIS / serviciu / fisiere (cod 50, 6.4).</summary>
+/// <summary>Eroare IIS, serviciu, certificat, firewall sau fisiere (cod 50, 6.3).</summary>
 public sealed class WindowsSetupException(string message, Exception? inner = null) : Exception(message, inner)
 {
     public int ExitCode => Core.ExitCodes.IisServiceOrFileError;

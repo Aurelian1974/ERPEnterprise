@@ -1,3 +1,4 @@
+using Erp.Setup.Core.Answers;
 using Erp.Setup.Core;
 using Erp.Setup.Sql;
 using Erp.Setup.Sql.Database;
@@ -99,59 +100,50 @@ public sealed class DatabaseScriptsTests
 public sealed class LoginScriptsTests
 {
     [Fact]
-    public void Generated_password_has_32_characters_from_the_allowed_alphabet_with_two_of_each_category()
+    public void Same_machine_uses_the_virtual_accounts_of_the_pool_and_the_service()
     {
-        var passwords = Enumerable.Range(0, 200).Select(_ => SqlPasswordGenerator.Generate()).ToList();
+        var principals = AppPrincipals.For("PROD", AppIdentity.VirtualAccounts, null);
 
-        Assert.All(passwords, p =>
-        {
-            Assert.Equal(32, p.Length);
-            Assert.All(p, c => Assert.Contains(c, SqlPasswordGenerator.Alphabet));
-            Assert.True(p.Count(char.IsUpper) >= 2);
-            Assert.True(p.Count(char.IsLower) >= 2);
-            Assert.True(p.Count(char.IsDigit) >= 2);
-            Assert.True(p.Count(c => "!#%*+-=?@_".Contains(c)) >= 2);
-        });
-        Assert.Equal(passwords.Count, passwords.Distinct().Count());
-    }
-
-    [Fact]
-    public void Principals_are_lowercase_per_instance()
-    {
-        var principals = SqlPrincipals.For("PROD");
-
-        Assert.Equal("erp_prod_app", principals.AppLogin);
-        Assert.Equal("erp_prod_mig", principals.MigratorLogin);
-        Assert.Equal(@"CONTOSO\svc-erp$", SqlPrincipals.For("PROD", Core.Answers.SqlAuthentication.Windows, @"CONTOSO\svc-erp$").AppLogin);
-    }
-
-    [Fact]
-    public void Sql_login_script_creates_or_rotates_and_enables()
-    {
-        var script = LoginScripts.CreateOrAlterSqlLogin("erp_prod_app", "Abcdefgh12345678!#Abcdefgh123456", "ERP_PROD");
-
-        Assert.Contains("IF SUSER_ID(N'erp_prod_app') IS NULL", script);
-        Assert.Contains("CREATE LOGIN [erp_prod_app] WITH PASSWORD = N'Abcdefgh12345678!#Abcdefgh123456'", script);
-        Assert.Contains("CHECK_POLICY = ON, CHECK_EXPIRATION = OFF", script);
-        Assert.Contains("DEFAULT_DATABASE = [ERP_PROD], DEFAULT_LANGUAGE = [us_english]", script);
-        Assert.Contains("ALTER LOGIN [erp_prod_app] WITH PASSWORD", script);
-        Assert.Contains("ALTER LOGIN [erp_prod_app] ENABLE;", script);
+        Assert.Equal(
+            [new AppPrincipal(@"IIS APPPOOL\ERP-PROD", "erp_web"), new AppPrincipal(@"NT SERVICE\ErpWorker-PROD", "erp_worker")],
+            principals);
     }
 
     [Theory]
-    [InlineData("short")]
-    [InlineData("Abcdefgh12345678'; DROP LOGIN sa; --")]
-    public void Unsafe_passwords_are_refused(string password)
+    [InlineData(AppIdentity.Gmsa, @"GRUPULEXEMPLU\erp-prod$")]
+    [InlineData(AppIdentity.ComputerAccount, @"GRUPULEXEMPLU\SRV-ERP$")]
+    public void Remote_SQL_uses_one_login_for_the_account(AppIdentity identity, string account)
     {
-        Assert.Throws<SqlSetupException>(() => LoginScripts.CreateOrAlterSqlLogin("erp_prod_app", password, "ERP_PROD"));
+        Assert.Equal([new AppPrincipal(account, "erp_app")], AppPrincipals.For("PROD", identity, account));
     }
 
     [Fact]
-    public void Windows_login_is_created_from_windows_and_validated()
+    public void Windows_login_is_created_from_windows_only_when_missing_and_enabled()
     {
-        Assert.Contains(@"CREATE LOGIN [CONTOSO\svc-erp$] FROM WINDOWS WITH DEFAULT_DATABASE = [ERP_PROD];",
-            LoginScripts.CreateWindowsLogin(@"CONTOSO\svc-erp$", "ERP_PROD"));
-        Assert.Throws<SqlSetupException>(() => LoginScripts.CreateWindowsLogin("svc-erp]; DROP LOGIN sa", "ERP_PROD"));
+        var script = LoginScripts.CreateWindowsLogin(@"GRUPULEXEMPLU\erp-prod$", "ERP_PROD");
+
+        Assert.Contains(@"IF SUSER_ID(N'GRUPULEXEMPLU\erp-prod$') IS NULL", script);
+        Assert.Contains(@"CREATE LOGIN [GRUPULEXEMPLU\erp-prod$] FROM WINDOWS WITH DEFAULT_DATABASE = [ERP_PROD], DEFAULT_LANGUAGE = [us_english];", script);
+        Assert.Contains(@"ALTER LOGIN [GRUPULEXEMPLU\erp-prod$] ENABLE;", script);
+        Assert.DoesNotContain("PASSWORD", script);
+    }
+
+    [Theory]
+    [InlineData("erp_prod_app")]
+    [InlineData("svc-erp]; DROP LOGIN sa")]
+    [InlineData(@"DOMENIU\x'; --")]
+    public void Unsafe_or_non_windows_logins_are_refused(string account)
+    {
+        Assert.Throws<SqlSetupException>(() => LoginScripts.CreateWindowsLogin(account, "ERP_PROD"));
+    }
+
+    [Fact]
+    public void User_is_created_or_remapped_to_the_login_after_a_restore()
+    {
+        var script = LoginScripts.CreateOrRemapUser("erp_app", @"GRUPULEXEMPLU\erp-prod$", "core").Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains(@"CREATE USER [erp_app] FOR LOGIN [GRUPULEXEMPLU\erp-prod$] WITH DEFAULT_SCHEMA = [core];", script);
+        Assert.Contains(@"ALTER USER [erp_app] WITH LOGIN = [GRUPULEXEMPLU\erp-prod$];", script);
     }
 
     [Fact]

@@ -18,11 +18,10 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword,
-        new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(logSink).CreateLogger());
+    private SqlOperator Operator() => sql.Operator(new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(logSink).CreateLogger());
 
-    private static InitialAdminRequest Request(string? password = null, string userName = "administrator") =>
-        new(userName, "Administrator ERP", "it@grupulexemplu.ro", password, "2027.1.0", "SRV-ERP01");
+    private static InitialAdminRequest Request(string userName = "administrator") =>
+        new(userName, "Administrator ERP", "it@grupulexemplu.ro", "2027.1.0", "SRV-ERP01");
 
     // Acelasi installId la fiecare rulare din test: a doua rulare reia aceeasi instalare (8.1).
     private readonly Guid installId = Guid.NewGuid();
@@ -35,39 +34,26 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
         using var kit = TempKitDatabase.FromRepository();
         var scripts = KitScripts.Load(kit.Root);
         var runner = new MigrationRunner(op.Log);
-        await AsMigrator(database, instance, (builder, _) =>
+        // Migratiile ruleaza cu contul operatorului (08, 5.8): nu exista un login separat de migrare.
+        var connectionString = op.ConnectionString(database);
+        runner.RunMigrations(connectionString, scripts);
+        runner.RunProgrammability(connectionString, scripts);
+        if (seed)
         {
-            runner.RunMigrations(builder.ConnectionString, scripts);
-            runner.RunProgrammability(builder.ConnectionString, scripts);
-            if (seed)
-            {
-                runner.RunSeed(builder.ConnectionString, scripts);
-            }
-
-            return Task.CompletedTask;
-        });
+            runner.RunSeed(connectionString, scripts);
+        }
     }
-
-    private Task AsMigrator(string database, string instance, Func<SqlConnectionStringBuilder, CancellationToken, Task> work) =>
-        new LoginManager(Operator(), SqlPrincipals.For(instance)).RunAsMigratorAsync(database, work, Ct);
 
     private async Task<InitialAdminResult> CreateAdmin(string database, string instance, InitialAdminRequest request)
     {
-        InitialAdminResult? result = null;
-        await AsMigrator(database, instance, async (builder, ct) =>
-        {
-            await using var connection = new SqlConnection(builder.ConnectionString);
-            await connection.OpenAsync(ct);
-            result = await new InitialAdminCreator(Operator()).CreateAsync(connection, request, ct);
-        });
-        return result!;
+        var op = Operator();
+        await using var connection = await op.OpenAsync(database, Ct);
+        return await new InitialAdminCreator(op).CreateAsync(connection, request, Ct);
     }
 
     private async Task<T?> Scalar<T>(string database, string query)
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         return await SqlOperator.ScalarAsync<T>(connection, query, Ct);
     }
@@ -112,12 +98,12 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
     public async Task Password_is_not_in_logs_audit_or_logged_sql()
     {
         await Deploy("ERP_IT_ADMINLOG", "ITADML");
-        const string password = "Wq7#Hn2p+Kd9!mXa4Rt_";
 
-        var result = await CreateAdmin("ERP_IT_ADMINLOG", "ITADML", Request(password));
+        var result = await CreateAdmin("ERP_IT_ADMINLOG", "ITADML", Request());
+        var password = result.TemporaryPassword!;
 
-        Assert.False(result.PasswordGenerated);
-        Assert.Equal(password, result.TemporaryPassword);
+        Assert.True(result.PasswordGenerated);
+        Assert.Equal(20, password.Length);
         Assert.DoesNotContain(password, result.ToString());
         Assert.DoesNotContain(password, logSink.Text);
         Assert.Contains("administratorul \"administrator\" a fost creat", logSink.Text);
@@ -184,16 +170,13 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task Invalid_operator_password_or_user_name_is_refused_with_code_11()
+    public async Task Invalid_user_name_is_refused_with_code_11()
     {
         await Deploy("ERP_IT_ADMINBAD", "ITADB");
 
-        var weak = await Assert.ThrowsAsync<SqlSetupException>(() => CreateAdmin("ERP_IT_ADMINBAD", "ITADB", Request("short")));
         var upper = await Assert.ThrowsAsync<SqlSetupException>(() => CreateAdmin("ERP_IT_ADMINBAD", "ITADB", Request(userName: "Administrator")));
 
-        Assert.Equal(ExitCodes.InvalidAnswersFile, weak.ExitCode);
         Assert.Equal(ExitCodes.InvalidAnswersFile, upper.ExitCode);
-        Assert.DoesNotContain("short", weak.Message);
         Assert.Equal(0, await Scalar<int>("ERP_IT_ADMINBAD", "SELECT COUNT(*) FROM ids.UserAccount;"));
     }
 }

@@ -6,7 +6,7 @@ using Erp.Setup.Windows.Services;
 namespace Erp.Setup.Windows.Layout;
 
 /// <summary>
-/// Pasul I-15 (8.10) si U-09: copiaza app\host si app\worker din kit in versions\&lt;Versiune&gt;\{host,worker}, apoi
+/// Pasul I-05 (5.11) si actualizarea: copiaza app\host si app\worker din kit in versions\&lt;Versiune&gt;\{host,worker}, apoi
 /// recalculeaza SHA-256 pentru fiecare fisier si il compara cu manifestul. Fisierele deja corecte nu se recopiaza (reluare).
 /// </summary>
 public static class BinaryDeployer
@@ -63,37 +63,48 @@ public static class BinaryDeployer
 }
 
 /// <summary>
-/// Pasul I-16 (8.10) si U-11: appsettings.Installation.json (din sablonul kitului, pastrand valorile existente),
-/// secrets.app.bin (DPAPI) si web.config in folderul host al versiunii.
+/// Pasul I-07 (5.11) si actualizarea: appsettings.Installation.json (din sablonul kitului, pastrand valorile existente, fara
+/// secrete), web.config in folderul host al versiunii si paginile de mentenanta (maintenance.html, app_offline.template.htm).
 /// </summary>
 public static class ConfigurationWriter
 {
     public const string TemplateRelativePath = "templates/appsettings.Installation.json";
+    public const string MaintenancePageRelativePath = "templates/maintenance.html";
+    public const string AppOfflineTemplateRelativePath = "templates/app_offline.template.htm";
 
-    /// <param name="secrets">null = secretele existente se pastreaza (upgrade, repair fara --rotate-secrets).</param>
-    public static void Write(string kitRoot, InstanceLayout layout, string version, InstallationSettingsValues values,
-        IReadOnlyDictionary<string, string>? secrets)
+    public static void Write(string kitRoot, InstanceLayout layout, string version, InstallationSettingsValues values)
     {
         var data = layout.Data;
         Directory.CreateDirectory(data.ConfigDirectory);
+        Directory.CreateDirectory(data.MaintenanceDirectory);
 
-        var template = File.ReadAllText(Path.Combine(kitRoot, TemplateRelativePath.Replace('/', Path.DirectorySeparatorChar)));
+        var template = File.ReadAllText(KitPath(kitRoot, TemplateRelativePath));
         var existing = File.Exists(data.AppSettings) ? File.ReadAllText(data.AppSettings) : null;
         WriteAtomic(data.AppSettings, AppSettingsGenerator.Generate(template, existing, values));
 
-        if (secrets is not null)
-        {
-            InstallationSecrets.Write(data.Secrets, secrets, layout.Instance);
-        }
-        else if (!File.Exists(data.Secrets))
-        {
-            throw new WindowsSetupException($"{data.Secrets} lipsește; folosiți repair --rotate-secrets.");
-        }
+        CopyTemplate(kitRoot, MaintenancePageRelativePath, data.MaintenancePage);
+        CopyTemplate(kitRoot, AppOfflineTemplateRelativePath, data.AppOfflineTemplate);
 
         var hostDirectory = layout.HostDirectory(version);
         Directory.CreateDirectory(hostDirectory);
         WriteAtomic(Path.Combine(hostDirectory, "web.config"), WebConfigGenerator.Generate(data.InstanceDirectory));
     }
+
+    private static void CopyTemplate(string kitRoot, string relativePath, string target)
+    {
+        var source = KitPath(kitRoot, relativePath);
+        if (!File.Exists(source))
+        {
+            throw new WindowsSetupException($"Kitul nu conține {relativePath}.");
+        }
+
+        var temporary = target + ".tmp";
+        File.Copy(source, temporary, overwrite: true);
+        File.Move(temporary, target, overwrite: true);
+    }
+
+    private static string KitPath(string kitRoot, string relativePath) =>
+        Path.Combine(kitRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
 
     private static void WriteAtomic(string path, string content)
     {

@@ -11,7 +11,6 @@ public sealed record InitialAdminRequest(
     string UserName,
     string DisplayName,
     string? Email,
-    string? Password,
     string SetupVersion,
     string MachineName);
 
@@ -42,13 +41,9 @@ public sealed partial class InitialAdminCreator(SqlOperator sql)
             return new InitialAdminResult(false, request.UserName, null, false);
         }
 
-        var generated = request.Password is null;
-        var password = request.Password ?? InitialPasswordGenerator.Generate();
-        var problems = InitialPasswordPolicy.Validate(password, request.UserName);
-        if (problems.Count > 0)
-        {
-            throw new SqlSetupException("Parola inițială a administratorului nu respectă politica: " + string.Join(" ", problems), ExitCodes.InvalidAnswersFile);
-        }
+        // 08, 5.10: parola temporara se genereaza intotdeauna; operatorul nu o alege.
+        const bool generated = true;
+        var password = InitialPasswordGenerator.Generate();
 
         var subjectId = Guid.NewGuid();
         await using var transaction = (SqlTransaction)await migrator.BeginTransactionAsync(ct).ConfigureAwait(false);

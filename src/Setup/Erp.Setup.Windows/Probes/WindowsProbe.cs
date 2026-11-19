@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
@@ -45,16 +46,64 @@ public sealed partial class WindowsProbe : IWindowsProbe
         return drive.IsReady ? drive.AvailableFreeSpace : null;
     }
 
-    public IReadOnlySet<string>? GetInstalledWindowsFeatures()
+    /// <summary>
+    /// <c>dism /Online /Get-Features /Format:Table /English</c>: numele DISM sunt aceleasi pe Windows 10/11 si pe Windows Server
+    /// (5.11), spre deosebire de Get-WindowsFeature, care exista doar pe Server.
+    /// </summary>
+    public IReadOnlySet<string>? GetEnabledWindowsFeatures()
     {
-        var output = RunProcess(
-            Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe"),
-            ["-NoProfile", "-NonInteractive", "-Command",
-                "Get-WindowsFeature -Name 'Web-*' | Where-Object Installed | ForEach-Object Name"]);
-        return output is { ExitCode: 0 }
-            ? output.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.Ordinal)
-            : null;
+        var output = RunProcess(Path.Combine(Environment.SystemDirectory, "dism.exe"),
+            ["/Online", "/Get-Features", "/Format:Table", "/English"]);
+        return output is { ExitCode: 0 } ? ParseDismFeatureTable(output.Text) : null;
     }
+
+    /// <summary>Randurile tabelului DISM au forma „IIS-WebServer | Enabled”; restul (antet, separatori) se ignora.</summary>
+    public static IReadOnlySet<string> ParseDismFeatureTable(string text)
+    {
+        var enabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Split('|', StringSplitOptions.TrimEntries);
+            if (parts.Length == 2 && parts[1].Equals("Enabled", StringComparison.OrdinalIgnoreCase))
+            {
+                enabled.Add(parts[0]);
+            }
+        }
+
+        return enabled;
+    }
+
+    public string MachineName => Environment.MachineName;
+
+    public string? GetComputerDomain()
+    {
+        var status = NetGetJoinInformation(null, out var buffer, out var joinStatus);
+        try
+        {
+            return status == 0 && joinStatus == NetSetupDomainName ? Marshal.PtrToStringUni(buffer) : null;
+        }
+        finally
+        {
+            if (buffer != IntPtr.Zero)
+            {
+                _ = NetApiBufferFree(buffer);
+            }
+        }
+    }
+
+    public bool IsServiceAccountUsable(string account) =>
+        NetIsServiceAccount(null, account, out var isService) == 0 && isService;
+
+    private const int NetSetupDomainName = 3;
+
+    [LibraryImport("netapi32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int NetGetJoinInformation(string? server, out IntPtr nameBuffer, out int status);
+
+    [LibraryImport("netapi32.dll")]
+    private static partial int NetApiBufferFree(IntPtr buffer);
+
+    [LibraryImport("logoncli.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int NetIsServiceAccount(string? server, string account, [MarshalAs(UnmanagedType.Bool)] out bool isService);
 
     public IReadOnlyList<Version> GetAspNetCoreRuntimeVersions()
     {

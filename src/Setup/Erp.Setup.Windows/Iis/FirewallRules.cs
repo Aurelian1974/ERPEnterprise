@@ -4,7 +4,7 @@ using Erp.Setup.Windows.Services;
 namespace Erp.Setup.Windows.Iis;
 
 /// <summary>
-/// Pasul I-20 (3.4): regula de intrare „ERP &lt;Instanta&gt; HTTPS” pe TCP &lt;port&gt;, profilurile Domain si Private, si
+/// Pasul I-15 (5.5): regula de intrare „ERP &lt;Instanta&gt; HTTPS” pe TCP &lt;port&gt;, profilurile Domain si Private, si
 /// „ERP &lt;Instanta&gt; HTTP” pe 80 doar cu redirect. Idempotent: regula cu acelasi nume se sterge si se recreeaza.
 /// </summary>
 public sealed class FirewallRules(IProcessRunner processes)

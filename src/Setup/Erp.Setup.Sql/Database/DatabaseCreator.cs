@@ -10,8 +10,9 @@ public sealed record DatabaseCreateOptions(
     Guid InstallId,
     string? DataFilePath,
     string? LogFilePath,
-    int InitialDataSizeMb,
-    int InitialLogSizeMb);
+    int InitialDataSizeMb = 1024,
+    int InitialLogSizeMb = 512,
+    bool Recover = false);
 
 public enum DatabaseCreateOutcome
 {
@@ -21,8 +22,11 @@ public enum DatabaseCreateOutcome
     /// <summary>Baza fusese creata de aceeasi instalare (ErpInstallId egal); setarile au fost reaplicate (8.1, reluare).</summary>
     Resumed,
 
-    /// <summary>Baza exista goala, cu collation-ul corect, fara ErpInstallId (C-15 avertisment); a fost preluata.</summary>
+    /// <summary>Baza exista goala, cu collation-ul corect, pregatita de administratorul SQL (08, 5.6, D25); a fost preluata.</summary>
     AdoptedEmpty,
+
+    /// <summary>Baza ERP existenta, preluata de „Recupereaza” pe alt calculator (08, 11.2); ErpInstallId ramane al ei.</summary>
+    Recovered,
 }
 
 /// <summary>Pasul I-06 (8.2): creeaza baza case sensitive cu setarile ei si o verifica. Nu suprascrie nimic (R7) si e idempotent (R8).</summary>
@@ -39,7 +43,7 @@ public sealed class DatabaseCreator(SqlOperator sql)
             var existing = await ReadExistingAsync(name, ct).ConfigureAwait(false);
             if (existing is not null)
             {
-                outcome = Classify(name, options.InstallId, existing);
+                outcome = Classify(name, options, existing);
                 sql.Log.Information("Baza {Database} există ({Outcome}); se reaplică setările", name, outcome);
             }
             else
@@ -83,7 +87,7 @@ public sealed class DatabaseCreator(SqlOperator sql)
         {
             await UpsertPropertyAsync(database, "ErpProduct", "ERP", ct).ConfigureAwait(false);
             await UpsertPropertyAsync(database, "ErpInstance", options.Instance, ct).ConfigureAwait(false);
-            if (outcome != DatabaseCreateOutcome.Resumed)
+            if (outcome is DatabaseCreateOutcome.Created or DatabaseCreateOutcome.AdoptedEmpty)
             {
                 await UpsertPropertyAsync(database, "ErpInstallId", options.InstallId.ToString(), ct).ConfigureAwait(false);
             }
@@ -93,7 +97,7 @@ public sealed class DatabaseCreator(SqlOperator sql)
         return outcome;
     }
 
-    private static DatabaseCreateOutcome Classify(string name, Guid installId, Core.Checks.DatabaseInfo existing)
+    private static DatabaseCreateOutcome Classify(string name, DatabaseCreateOptions options, Core.Checks.DatabaseInfo existing)
     {
         if (!string.Equals(existing.Collation, DatabaseScripts.Collation, StringComparison.Ordinal))
         {
@@ -101,12 +105,17 @@ public sealed class DatabaseCreator(SqlOperator sql)
                 $"Baza {name} există cu collation {existing.Collation}; este necesar {DatabaseScripts.Collation}.", ExitCodes.WrongDatabaseCollation);
         }
 
-        if (string.Equals(existing.ErpInstallId, installId.ToString(), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(existing.ErpInstallId, options.InstallId.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             return DatabaseCreateOutcome.Resumed;
         }
 
-        if (existing.ErpInstallId is not null || existing.UserTableCount > 0)
+        if (options.Recover && existing.IsErp)
+        {
+            return DatabaseCreateOutcome.Recovered;
+        }
+
+        if (existing.IsErp || existing.ErpInstallId is not null || !existing.IsEmpty)
         {
             throw new SqlSetupException(
                 $"Baza {name} există și nu a fost creată de această instalare; instalarea nouă nu o suprascrie.", ExitCodes.DatabaseExistsNotEmpty);
@@ -156,7 +165,7 @@ public sealed class DatabaseCreator(SqlOperator sql)
 
     private async Task<Core.Checks.DatabaseInfo?> ReadExistingAsync(string name, CancellationToken ct)
     {
-        await using var probe = new SqlServerProbe(await sql.OpenAsync("master", ct).ConfigureAwait(false));
+        await using var probe = new SqlServerProbe(await sql.OpenAsync("master", ct).ConfigureAwait(false), sql.Target.TrustServerCertificate);
         return await probe.GetDatabaseAsync(name, ct).ConfigureAwait(false);
     }
 

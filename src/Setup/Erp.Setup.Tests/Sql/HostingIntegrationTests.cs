@@ -17,7 +17,7 @@ public sealed class HostingIntegrationTests(SqlServerFixture sql)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword, new LoggerConfiguration().CreateLogger());
+    private SqlOperator Operator() => sql.Operator();
 
     private async Task<(string ConnectionString, string LastMigration)> Deploy(string database, string instance)
     {
@@ -27,19 +27,12 @@ public sealed class HostingIntegrationTests(SqlServerFixture sql)
         using var kit = TempKitDatabase.FromRepository();
         var scripts = KitScripts.Load(kit.Root);
         var runner = new MigrationRunner(op.Log);
-        await new LoginManager(op, SqlPrincipals.For(instance)).RunAsMigratorAsync(database, (builder, _) =>
-        {
-            runner.RunMigrations(builder.ConnectionString, scripts);
-            runner.RunProgrammability(builder.ConnectionString, scripts);
-            runner.RunSeed(builder.ConnectionString, scripts);
-            return Task.CompletedTask;
-        }, Ct);
+        runner.RunMigrations(op.ConnectionString(database), scripts);
+        runner.RunProgrammability(op.ConnectionString(database), scripts);
+        runner.RunSeed(op.ConnectionString(database), scripts);
 
-        // Aplicatia se conecteaza cu loginul ei, fara db_owner (SP-19), ca in productie.
-        var password = SqlPasswordGenerator.Generate();
-        var principals = SqlPrincipals.For(instance);
-        await new LoginManager(op, principals).EnsureAppLoginAsync(database, Core.Answers.SqlAuthentication.Sql, password, Ct);
-        return (op.ConnectionStringFor(database, principals.AppLogin, password).ConnectionString, scripts.LastMigration!);
+        // Aplicatia se conecteaza cu identitatea ei, fara db_owner (SP-19), ca in productie.
+        return (await sql.CreateAppLoginAsync(database, $"erp_it_{instance.ToLowerInvariant()}", Ct), scripts.LastMigration!);
     }
 
     [Fact]

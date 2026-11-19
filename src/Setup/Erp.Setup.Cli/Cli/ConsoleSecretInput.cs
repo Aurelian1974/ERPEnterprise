@@ -1,9 +1,17 @@
 using System.Text;
-using Erp.Setup.Core.Secrets;
 
 namespace Erp.Setup.Cli;
 
-/// <summary>Citire de la consola cu ecou ascuns (6.3).</summary>
+/// <summary>Citirea parolelor fara ecou (08, 6.1): parolele nu se dau niciodata ca argumente.</summary>
+public interface ISecretInput
+{
+    /// <returns>null daca operatorul a apasat Esc.</returns>
+    string? ReadHidden(string prompt);
+
+    void WriteLine(string message);
+}
+
+/// <summary>Citire de la consola cu ecou ascuns (08, 6.1).</summary>
 public sealed class ConsoleSecretInput : ISecretInput
 {
     public string? ReadHidden(string prompt)

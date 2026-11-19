@@ -19,7 +19,7 @@ public sealed class AgentJobIntegrationTests(SqlServerFixture sql)
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword, new LoggerConfiguration().CreateLogger());
+    private SqlOperator Operator() => sql.Operator();
 
     private static BackupSettings Settings(string database) =>
         new(database, BackupRoot, new TimeOnly(1, 0), 15, 14, DayOfWeek.Sunday, new TimeOnly(3, 0));
@@ -32,19 +32,13 @@ public sealed class AgentJobIntegrationTests(SqlServerFixture sql)
         using var kit = TempKitDatabase.FromRepository();
         var scripts = KitScripts.Load(kit.Root);
         var runner = new MigrationRunner(op.Log);
-        await new LoginManager(op, SqlPrincipals.For(instance)).RunAsMigratorAsync(database, (builder, _) =>
-        {
-            runner.RunMigrations(builder.ConnectionString, scripts);
-            runner.RunProgrammability(builder.ConnectionString, scripts);
-            return Task.CompletedTask;
-        }, Ct);
+        runner.RunMigrations(op.ConnectionString(database), scripts);
+        runner.RunProgrammability(op.ConnectionString(database), scripts);
     }
 
     private async Task<T?> Scalar<T>(string database, string query)
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         return await SqlOperator.ScalarAsync<T>(connection, query, Ct);
     }
@@ -176,7 +170,7 @@ public sealed class AgentJobIntegrationTests(SqlServerFixture sql)
             ALTER SERVER ROLE dbcreator ADD MEMBER [{login}];
             ALTER SERVER ROLE securityadmin ADD MEMBER [{login}];
             """);
-        var op = new SqlOperator(sql.Target("master", login), password, new LoggerConfiguration().CreateLogger());
+        var op = sql.Operator(new LoggerConfiguration().CreateLogger(), login, password);
 
         var ex = await Assert.ThrowsAsync<SqlSetupException>(() => new AgentJobInstaller(op).EnsureAsync(Settings("ERP_IT_NOSA"), Ct));
 

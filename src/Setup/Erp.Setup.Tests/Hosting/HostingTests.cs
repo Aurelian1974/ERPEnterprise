@@ -228,16 +228,13 @@ public sealed class HostingTests : IDisposable
     }
 
     [Fact]
-    public void Connection_string_uses_the_installation_settings_and_component_name()
+    public void Connection_string_uses_windows_authentication_and_the_component_name()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Erp:Instance"] = "PROD",
             ["Database:Server"] = @"SQL01\ERP",
             ["Database:Name"] = "ERP_PROD",
-            ["Database:Authentication"] = "Sql",
-            ["Database:UserId"] = "erp_prod_app",
-            ["Database:Password"] = "p@ss",
             ["Database:Encrypt"] = "Strict",
             ["Database:TrustServerCertificate"] = "false",
             ["Database:CommandTimeoutSeconds"] = "45",
@@ -246,26 +243,32 @@ public sealed class HostingTests : IDisposable
         var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(InstallationConfiguration.ConnectionString(configuration, "Host"));
 
         Assert.Equal("ERP-PROD-Host", builder.ApplicationName);
-        Assert.Equal(("erp_prod_app", "p@ss", 45), (builder.UserID, builder.Password, builder.CommandTimeout));
+        Assert.True(builder.IntegratedSecurity);
+        Assert.Equal(string.Empty, builder.UserID);
+        Assert.Equal(string.Empty, builder.Password);
+        Assert.Equal(45, builder.CommandTimeout);
         Assert.Equal(Microsoft.Data.SqlClient.SqlConnectionEncryptOption.Strict, builder.Encrypt);
 
-        configuration["Database:Authentication"] = "Windows";
-        Assert.True(new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(InstallationConfiguration.ConnectionString(configuration, "Worker")).IntegratedSecurity);
+        configuration["Database:Encrypt"] = null;
+        configuration["Database:TrustServerCertificate"] = "true";
+        var defaults = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(InstallationConfiguration.ConnectionString(configuration, "Worker"));
+        Assert.Equal(Microsoft.Data.SqlClient.SqlConnectionEncryptOption.Mandatory, defaults.Encrypt);
+        Assert.True(defaults.TrustServerCertificate);
+        Assert.Equal("ERP-PROD-Worker", defaults.ApplicationName);
     }
 
     [Fact]
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    public void Installation_configuration_reads_settings_and_dpapi_secrets()
+    public void Installation_configuration_is_read_from_the_instance_folder_without_secrets()
     {
         var paths = new Erp.Configuration.InstanceDataPaths(folder);
         Directory.CreateDirectory(paths.ConfigDirectory);
-        File.WriteAllText(paths.AppSettings, """{ "Erp": { "Instance": "PROD" }, "Database": { "UserId": "erp_prod_app" } }""");
-        Erp.Configuration.InstallationSecrets.Write(paths.Secrets, new Dictionary<string, string> { ["Database:Password"] = "secret" }, "PROD");
+        File.WriteAllText(paths.AppSettings, """{ "Erp": { "Instance": "PROD" }, "Database": { "Server": "SQL01", "Name": "ERP_PROD" } }""");
 
         var configuration = new ConfigurationBuilder().AddErpInstallation(folder).Build();
 
-        Assert.Equal("erp_prod_app", configuration["Database:UserId"]);
-        Assert.Equal("secret", configuration["Database:Password"]);
+        Assert.Equal("PROD", configuration["Erp:Instance"]);
+        Assert.Equal("ERP_PROD", configuration["Database:Name"]);
+        Assert.False(File.Exists(Path.Combine(paths.ConfigDirectory, "secrets.app.bin")));
     }
 
     [Fact]

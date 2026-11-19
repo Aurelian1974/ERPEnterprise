@@ -1,46 +1,33 @@
 {
+  // Fișierul de răspunsuri al ErpSetup.Cli.exe (08, 6.2). Copiați-l în afara kitului și completați-l.
+  // Fereastra ErpSetup.exe scrie același format la final, în C:\ProgramData\Erp\<Instanță>\install\answers.json.
+  // Nu conține parole: SQL folosește numai Windows authentication.
+  "formatVersion": 1,
   "instance": "PROD",
-  "installRoot": "C:\\Program Files\\Erp",
-  "dataRoot": "C:\\ProgramData\\Erp",
-  "site": {
-    "hostName": "erp.grupulexemplu.local",
-    "httpsPort": 443,
-    "httpRedirect": true,
-    "certificateThumbprint": "3F2A9C0011223344556677889900AABBCCDDEEE1",
-    "allowSelfSignedCertificate": false
-  },
   "sql": {
-    "server": "SQL01\\ERP",
-    "databaseName": "ERP_PROD",
-    "operatorAuthentication": "Windows",
-    "operatorSqlLogin": null,
-    "appAuthentication": "Sql",
-    "appWindowsAccount": null,
-    "dataFilePath": "D:\\SQLData",
-    "logFilePath": "L:\\SQLLog",
-    "initialDataSizeMb": 1024,
-    "initialLogSizeMb": 512,
-    "encrypt": "Mandatory",
-    "trustServerCertificate": false
+    "server": "localhost",
+    "database": "ERP_PROD",
+    "dataFolder": null,                         // null = folderul implicit al instanței SQL
+    "logFolder": null,
+    "appIdentity": "VirtualAccounts",           // VirtualAccounts (SQL local), Gmsa, ComputerAccount
+    "gmsaAccount": null                         // de exemplu "GRUPULEXEMPLU\\erp-prod$" pentru Gmsa
   },
   "backup": {
-    "backupRoot": "B:\\SQLBackup",
+    "folder": null,                             // null = folderul implicit de backup al instanței SQL + numele bazei
     "fullBackupTime": "01:00",
     "logBackupEveryMinutes": 15,
     "retentionDays": 14,
-    "integrityCheckDay": "Sunday",
-    "integrityCheckTime": "03:00"
+    "integrityCheckDay": "Saturday",
+    "integrityCheckTime": "02:00"
   },
-  "license": {
-    "filePath": "C:\\Kit\\grupul-exemplu.lic"
+  "site": {
+    "hostName": "srv-erp.firma.local",
+    "httpsPort": 443,
+    "httpRedirect": true,
+    "certificate": { "kind": "Internal", "thumbprint": null },   // Internal (generat) sau Existing (cu amprenta)
+    "installRoot": "C:\\Program Files\\Erp"
   },
-  "administrator": {
-    "userName": "administrator",
-    "displayName": "Administrator ERP",
-    "email": "it@grupulexemplu.ro"
-  },
-  "prerequisites": {
-    "installIisFeatures": true,
-    "installHostingBundle": true
-  }
+  "license": { "file": "C:\\Kit\\Client-LIC-2026-000123.lic" },
+  // Avertismentele acceptate explicit la --unattended (de exemplu "C-11" pentru SQL Developer).
+  "acceptedWarnings": []
 }

@@ -8,7 +8,7 @@ namespace Erp.Setup.Cli;
 /// <summary>Comenzile din INSTALARE_ACTUALIZARE.md, 6.1, cu ajutor si mesaje in romana.</summary>
 public sealed partial class SetupCommandLine
 {
-    public const string ExecutableName = "ErpSetup.exe";
+    public const string ExecutableName = "ErpSetup.Cli.exe";
 
     private readonly Func<SetupInvocation, int> run;
     private readonly TextWriter output;
@@ -23,12 +23,6 @@ public sealed partial class SetupCommandLine
         DefaultValueFactory = _ => "Information",
     };
 
-    private readonly Option<bool> yes = new("--yes")
-    {
-        Description = "Răspunde „da” la confirmările care nu sunt distructive.",
-        Recursive = true,
-    };
-
     private readonly Option<bool> noColor = new("--no-color")
     {
         Description = "Afișare fără culori.",
@@ -38,7 +32,7 @@ public sealed partial class SetupCommandLine
 #if DEBUG
     private readonly Option<bool> devSkipSignature = new("--dev-skip-signature")
     {
-        Description = "Numai în build-urile Debug: sare verificarea Authenticode a installer-ului.",
+        Description = "Numai în build-urile Debug: kit de test fără semnătură (sare verificarea Authenticode).",
         Recursive = true,
     };
 #endif
@@ -99,9 +93,8 @@ public sealed partial class SetupCommandLine
 
     private RootCommand BuildRoot()
     {
-        var root = new RootCommand("ErpSetup – installer-ul ERP: instalare, actualizare, reparare și diagnostic.");
+        var root = new RootCommand("ErpSetup.Cli – installer-ul ERP în linia de comandă: instalare, actualizare, reparare, recuperare și diagnostic.");
         root.Options.Add(logLevel);
-        root.Options.Add(yes);
         root.Options.Add(noColor);
 #if DEBUG
         root.Options.Add(devSkipSignature);
@@ -130,19 +123,22 @@ public sealed partial class SetupCommandLine
 
         root.Subcommands.Add(Check());
         root.Subcommands.Add(Install());
-        root.Subcommands.Add(Upgrade());
+        root.Subcommands.Add(InstanceCommand("upgrade", "Actualizare cu kitul curent, cu revenire automată la eșec.", unattended: true));
+        root.Subcommands.Add(InstanceCommand("rollback", "Revenire după o actualizare întreruptă."));
         root.Subcommands.Add(Repair());
-        root.Subcommands.Add(ResetAdmin());
-        root.Subcommands.Add(Rollback());
-        root.Subcommands.Add(Uninstall());
+        root.Subcommands.Add(Recover());
+        root.Subcommands.Add(InstanceCommand("reset-admin", "Parolă temporară nouă pentru administratorul integrat (afișată o singură dată)."));
+        root.Subcommands.Add(ExportRecoveryKey());
+        root.Subcommands.Add(VerifyRecoveryKey());
         root.Subcommands.Add(Diagnose());
-        root.Subcommands.Add(Status());
+        root.Subcommands.Add(Uninstall());
+        root.Subcommands.Add(InstanceCommand("status", "Versiunea, starea, ultimul backup, licența și certificatele instalării."));
         return root;
     }
 
     private Command Check()
     {
-        var command = new Command("check", "Verifică doar cerințele (nu modifică nimic).");
+        var command = new Command("check", "Rulează verificările (nu modifică nimic).");
         var answers = AnswersOption(command);
         Bind(command, r => Base(r, "check") with { AnswersPath = r.GetValue(answers) });
         return command;
@@ -150,132 +146,103 @@ public sealed partial class SetupCommandLine
 
     private Command Install()
     {
-        var command = new Command("install", "Instalare nouă.");
+        var command = new Command("install", "Instalare nouă din fișierul de răspunsuri.");
         var answers = AnswersOption(command);
         var unattended = UnattendedOption(command);
+        var recoveryKeyOut = new Option<string>("--recovery-key-out")
+        {
+            Description = "Fișierul .pfx în care se exportă cheia de recuperare; obligatoriu cu --unattended (parola din ERP_RECOVERY_KEY_PASSWORD).",
+            HelpName = "fișier.pfx",
+        };
+        command.Options.Add(recoveryKeyOut);
         Bind(command, r => Base(r, "install") with
         {
             AnswersPath = r.GetValue(answers),
             Unattended = r.GetValue(unattended),
-        });
-        return command;
-    }
-
-    private Command Upgrade()
-    {
-        var command = new Command("upgrade", "Actualizare cu kitul curent, cu rollback automat la eșec.");
-        var instance = InstanceOption(command);
-        var unattended = UnattendedOption(command);
-        Bind(command, r => Base(r, "upgrade") with
-        {
-            Instance = r.GetValue(instance),
-            Unattended = r.GetValue(unattended),
+            RecoveryKeyOut = r.GetValue(recoveryKeyOut),
         });
         return command;
     }
 
     private Command Repair()
     {
-        var command = new Command("repair", "Refacere IIS, serviciu, configurare, drepturi și obiecte programabile.");
-        var instance = InstanceOption(command);
-        var rotateSecrets = new Option<bool>("--rotate-secrets")
-        {
-            Description = "Generează o parolă nouă pentru loginul aplicației și rescrie secretele.",
-        };
+        var command = InstanceCommand("repair", "Refacere IIS, serviciu, configurare, drepturi și obiecte programabile (aceeași versiune).");
         var license = new Option<string>("--license")
         {
             Description = "Înlocuiește licența cu fișierul dat.",
-            HelpName = "fișier",
+            HelpName = "fișier.lic",
         };
-        command.Options.Add(rotateSecrets);
         command.Options.Add(license);
-        Bind(command, r => Base(r, "repair") with
-        {
-            Instance = r.GetValue(instance),
-            RotateSecrets = r.GetValue(rotateSecrets),
-            LicensePath = r.GetValue(license),
-        });
+        Rebind(command, (r, invocation) => invocation with { LicensePath = r.GetValue(license) });
         return command;
     }
 
-    private Command ResetAdmin()
+    private Command Recover()
     {
-        var command = new Command("reset-admin", "Acces de urgență pentru administrator.");
-        var instance = InstanceOption(command);
-        var user = new Option<string>("--user")
-        {
-            Description = "Contul resetat; implicit administratorul integrat.",
-            HelpName = "nume",
-        };
-        command.Options.Add(user);
-        Bind(command, r => Base(r, "reset-admin") with
-        {
-            Instance = r.GetValue(instance),
-            User = r.GetValue(user),
-        });
+        var command = new Command("recover", "Recuperează o instalare existentă pe un calculator nou (baza și cheia de recuperare).");
+        var answers = AnswersOption(command);
+        var key = RecoveryKeyOption(command);
+        Bind(command, r => Base(r, "recover") with { AnswersPath = r.GetValue(answers), RecoveryKeyPath = r.GetValue(key) });
         return command;
     }
 
-    private Command Rollback()
+    private Command ExportRecoveryKey()
     {
-        var command = new Command("rollback", "Revenire manuală la o actualizare întreruptă.");
-        var instance = InstanceOption(command);
-        Bind(command, r => Base(r, "rollback") with { Instance = r.GetValue(instance) });
+        var command = InstanceCommand("export-recovery-key", "Exportă din nou cheia de recuperare.");
+        var output = new Option<string>("--out")
+        {
+            Description = "Fișierul .pfx creat.",
+            HelpName = "fișier.pfx",
+        };
+        AddRequired(command, output);
+        Rebind(command, (r, invocation) => invocation with { OutPath = r.GetValue(output) });
         return command;
     }
 
-    private Command Uninstall()
+    private Command VerifyRecoveryKey()
     {
-        var command = new Command("uninstall", "Elimină site-ul, serviciul și binarele; păstrează baza și backup-urile.");
-        var instance = InstanceOption(command);
-        var unattended = UnattendedOption(command);
-        var confirmInstance = new Option<string>("--confirm-instance")
-        {
-            Description = "Confirmarea numelui instanței, obligatorie cu --unattended.",
-            HelpName = "INSTANȚĂ",
-        };
-        var removeJobs = new Option<bool>("--remove-jobs")
-        {
-            Description = "Șterge și joburile SQL Agent ale instalării.",
-        };
-        var removeLogins = new Option<bool>("--remove-logins")
-        {
-            Description = "Șterge loginurile SQL în loc să le dezactiveze.",
-        };
-        command.Options.Add(confirmInstance);
-        command.Options.Add(removeJobs);
-        command.Options.Add(removeLogins);
-        command.Validators.Add(r =>
-        {
-            if (r.GetValue(unattended) && r.GetResult(confirmInstance) is null)
-            {
-                r.AddError("Cu --unattended, opțiunea --confirm-instance este obligatorie.");
-            }
-        });
-        Bind(command, r => Base(r, "uninstall") with
-        {
-            Instance = r.GetValue(instance),
-            Unattended = r.GetValue(unattended),
-            ConfirmInstance = r.GetValue(confirmInstance),
-            RemoveJobs = r.GetValue(removeJobs),
-            RemoveLogins = r.GetValue(removeLogins),
-        });
+        var command = InstanceCommand("verify-recovery-key", "Verifică o cheie de recuperare existentă (nu modifică nimic).");
+        var key = RecoveryKeyOption(command);
+        Rebind(command, (r, invocation) => invocation with { RecoveryKeyPath = r.GetValue(key) });
         return command;
     }
 
     private Command Diagnose()
     {
-        var command = new Command("diagnose", "Pachet ZIP de diagnostic, fără secrete.");
-        var instance = InstanceOption(command);
-        Bind(command, r => Base(r, "diagnose") with { Instance = r.GetValue(instance) });
+        var command = InstanceCommand("diagnose", "Pachet ZIP de diagnostic, fără secrete.");
+        var output = new Option<string>("--out")
+        {
+            Description = "Folderul în care se creează pachetul (implicit folderul curent).",
+            HelpName = "folder",
+        };
+        command.Options.Add(output);
+        Rebind(command, (r, invocation) => invocation with { OutPath = r.GetValue(output) });
         return command;
     }
 
-    private Command Status()
+    private Command Uninstall()
     {
-        var command = new Command("status", "Versiune, stare, ultimul backup, starea health-check.");
+        var command = InstanceCommand("uninstall", "Elimină site-ul, serviciul și programul; păstrează baza, backup-urile și certificatul de protecție a datelor.");
+        var confirm = new Option<string>("--confirm-instance")
+        {
+            Description = "Confirmarea numelui instanței.",
+            HelpName = "INSTANȚĂ",
+        };
+        AddRequired(command, confirm);
+        Rebind(command, (r, invocation) => invocation with { ConfirmInstance = r.GetValue(confirm) });
+        return command;
+    }
+
+    private Command InstanceCommand(string name, string description, bool unattended = false)
+    {
+        var command = new Command(name, description);
         var instance = InstanceOption(command);
-        Bind(command, r => Base(r, "status") with { Instance = r.GetValue(instance) });
+        var unattendedOption = unattended ? UnattendedOption(command) : null;
+        Bind(command, r => Base(r, name) with
+        {
+            Instance = r.GetValue(instance),
+            Unattended = unattendedOption is not null && r.GetValue(unattendedOption),
+        });
         return command;
     }
 
@@ -290,11 +257,22 @@ public sealed partial class SetupCommandLine
         return option;
     }
 
+    private Option<string> RecoveryKeyOption(Command command)
+    {
+        var option = new Option<string>("--recovery-key")
+        {
+            Description = "Cheia de recuperare (.pfx); parola se cere cu ecou ascuns.",
+            HelpName = "fișier.pfx",
+        };
+        AddRequired(command, option);
+        return option;
+    }
+
     private Option<string> InstanceOption(Command command)
     {
         var option = new Option<string>("--instance")
         {
-            Description = "Numele instanței (de exemplu PROD).",
+            Description = "Numele instalării (de exemplu PROD).",
             HelpName = "INSTANȚĂ",
         };
         option.Validators.Add(r =>
@@ -302,7 +280,7 @@ public sealed partial class SetupCommandLine
             var value = r.GetValueOrDefault<string>();
             if (value is null || !InstanceName().IsMatch(value))
             {
-                r.AddError($"Numele instanței „{value}” este invalid: 2–10 caractere, majuscule și cifre, începând cu o literă.");
+                r.AddError($"Numele instalării „{value}” este invalid: 2–10 caractere, majuscule și cifre, începând cu o literă.");
             }
         });
         AddRequired(command, option);
@@ -313,7 +291,7 @@ public sealed partial class SetupCommandLine
     {
         var option = new Option<bool>("--unattended")
         {
-            Description = "Fără întrebări; parolele se citesc din variabilele de mediu (6.3).",
+            Description = "Fără întrebări; avertismentele trebuie acceptate în fișierul de răspunsuri (acceptedWarnings).",
         };
         command.Options.Add(option);
         return option;
@@ -337,14 +315,25 @@ public sealed partial class SetupCommandLine
         });
     }
 
-    private void Bind(Command command, Func<ParseResult, SetupInvocation> invocation) =>
-        command.SetAction(r => run(invocation(r)));
+    private readonly Dictionary<Command, Func<ParseResult, SetupInvocation>> bindings = [];
+
+    private void Bind(Command command, Func<ParseResult, SetupInvocation> invocation)
+    {
+        bindings[command] = invocation;
+        command.SetAction(r => run(bindings[command](r)));
+    }
+
+    /// <summary>Adauga optiunile unei comenzi peste legarea comuna a comenzilor cu --instance.</summary>
+    private void Rebind(Command command, Func<ParseResult, SetupInvocation, SetupInvocation> extra)
+    {
+        var previous = bindings[command];
+        bindings[command] = r => extra(r, previous(r));
+    }
 
     private SetupInvocation Base(ParseResult result, string command) => new()
     {
         Command = command,
         LogLevel = result.GetValue(logLevel) ?? "Information",
-        Yes = result.GetValue(yes),
         NoColor = result.GetValue(noColor),
 #if DEBUG
         DevSkipSignature = result.GetValue(devSkipSignature),

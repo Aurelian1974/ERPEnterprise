@@ -26,8 +26,8 @@ public sealed class LicenseInstallerTests : IDisposable
 
     private LicenseInstaller Installer()
     {
-        var target = new SqlTarget("localhost", "ERP_PROD", SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, false, "PROD");
-        return new LicenseInstaller(licenses.Reader, new SqlOperator(target, null, new LoggerConfiguration().CreateLogger()));
+        var target = new SqlTarget("localhost", "ERP_PROD", "PROD");
+        return new LicenseInstaller(licenses.Reader, new SqlOperator(target, new LoggerConfiguration().CreateLogger()));
     }
 
     private string Source(License payload)

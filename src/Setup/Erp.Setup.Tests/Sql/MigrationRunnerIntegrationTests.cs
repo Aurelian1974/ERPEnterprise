@@ -18,7 +18,7 @@ public sealed class MigrationRunnerIntegrationTests(SqlServerFixture sql)
 
     private ILogger Log => new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Sink(logSink).CreateLogger();
 
-    private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword, Log);
+    private SqlOperator Operator() => sql.Operator(Log);
 
     private async Task<string> NewDatabase(string name)
     {
@@ -30,23 +30,15 @@ public sealed class MigrationRunnerIntegrationTests(SqlServerFixture sql)
 
     private async Task<(MigrationSummary Migrations, MigrationSummary Programmability, MigrationSummary Seed)> Deploy(string database, KitScripts scripts, string instance)
     {
-        (MigrationSummary, MigrationSummary, MigrationSummary) result = default;
+        await Task.CompletedTask;
         var runner = new MigrationRunner(Log);
-        await new LoginManager(Operator(), SqlPrincipals.For(instance)).RunAsMigratorAsync(database, (builder, _) =>
-        {
-            result = (runner.RunMigrations(builder.ConnectionString, scripts),
-                runner.RunProgrammability(builder.ConnectionString, scripts),
-                runner.RunSeed(builder.ConnectionString, scripts));
-            return Task.CompletedTask;
-        }, Ct);
-        return result;
+        var connectionString = Operator().ConnectionString(database);
+        return (runner.RunMigrations(connectionString, scripts), runner.RunProgrammability(connectionString, scripts), runner.RunSeed(connectionString, scripts));
     }
 
     private async Task<T?> Scalar<T>(string database, string query)
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         return await SqlOperator.ScalarAsync<T>(connection, query, Ct);
     }
@@ -164,9 +156,7 @@ public sealed class MigrationRunnerIntegrationTests(SqlServerFixture sql)
 
     private async Task<List<string>> ScalarList(string database, string query)
     {
-        var builder = Erp.Setup.Sql.Probes.SqlServerConnector.BuildOperatorConnectionString(sql.Target(database), sql.SaPassword);
-        builder.InitialCatalog = database;
-        await using var connection = new SqlConnection(builder.ConnectionString);
+        await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
         await using var command = new SqlCommand(query, connection);
         await using var reader = await command.ExecuteReaderAsync(Ct);

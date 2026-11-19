@@ -1,9 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Erp.Setup.Core.Answers;
 
 namespace Erp.Setup.Core.State;
 
+/// <summary>Starea instalarii (08, 5.7).</summary>
 public enum InstanceLifecycle
 {
     Installing,
@@ -11,17 +13,25 @@ public enum InstanceLifecycle
     Upgrading,
     RollingBack,
     Maintenance,
-    Failed,
 }
 
-/// <summary>Starea instalarii (6.5). Nu contine secrete.</summary>
+public enum BackupEdition
+{
+    /// <summary>Joburi SQL Agent (08, 5.13).</summary>
+    Agent,
+
+    /// <summary>SQL Express: fara backup automat.</summary>
+    None,
+}
+
+/// <summary>instance.json, formatul 2 (08, 5.7). Nu contine secrete.</summary>
 public sealed record InstanceState
 {
+    public const int CurrentFormatVersion = 2;
+
+    public int FormatVersion { get; init; } = CurrentFormatVersion;
+
     public required string Instance { get; init; }
-
-    public string Product { get; init; } = "ERP";
-
-    public Guid InstallId { get; init; }
 
     public string? CurrentVersion { get; init; }
 
@@ -29,15 +39,13 @@ public sealed record InstanceState
 
     public required InstanceLifecycle State { get; init; }
 
+    public Guid InstallId { get; init; }
+
     public DateTimeOffset? InstalledAt { get; init; }
 
     public DateTimeOffset? LastUpgradeAt { get; init; }
 
-    public string? LastMigration { get; init; }
-
     public required string InstallRoot { get; init; }
-
-    public required string DataRoot { get; init; }
 
     public string? SiteName { get; init; }
 
@@ -45,27 +53,53 @@ public sealed record InstanceState
 
     public int? HttpsPort { get; init; }
 
+    public bool HttpRedirect { get; init; }
+
+    public CertificateKind CertificateKind { get; init; } = CertificateKind.Internal;
+
+    public string? CertificateThumbprint { get; init; }
+
     public string? ServiceName { get; init; }
 
     public string? SqlServer { get; init; }
 
     public string? DatabaseName { get; init; }
 
-    public string? AppAuthentication { get; init; }
+    public bool SqlIsRemote { get; init; }
 
-    public string? AppLogin { get; init; }
+    public bool TrustServerCertificate { get; init; }
 
-    public string? MigratorLogin { get; init; }
+    public AppIdentity AppIdentity { get; init; } = AppIdentity.VirtualAccounts;
 
-    public string? BackupRoot { get; init; }
+    /// <summary>Contul gMSA sau al calculatorului (DOMENIU\nume$); null pentru conturile virtuale.</summary>
+    public string? AppIdentityAccount { get; init; }
 
-    /// <summary>Amprenta certificatului HTTPS folosit de site (inclusiv cel autosemnat generat la I-18).</summary>
-    public string? CertificateThumbprint { get; init; }
+    public IReadOnlyList<string> AppSqlLogins { get; init; } = [];
+
+    public string? DataProtectionCertificateThumbprint { get; init; }
+
+    public DateTimeOffset? RecoveryKeyExportedAt { get; init; }
+
+    public string? BackupFolder { get; init; }
+
+    public BackupEdition BackupEdition { get; init; } = BackupEdition.Agent;
+
+    public string? FullBackupTime { get; init; }
+
+    public int LogBackupEveryMinutes { get; init; } = 15;
+
+    public int RetentionDays { get; init; } = 14;
+
+    public DayOfWeek IntegrityCheckDay { get; init; } = DayOfWeek.Saturday;
+
+    public string? IntegrityCheckTime { get; init; }
+
+    public string? LastMigration { get; init; }
 
     public IReadOnlyList<string> CompletedSteps { get; init; } = [];
 }
 
-/// <summary>Citirea si scrierea atomica a <c>DataRoot\&lt;Instanta&gt;\instance.json</c>.</summary>
+/// <summary>Citirea si scrierea atomica a <c>C:\ProgramData\Erp\&lt;Instanta&gt;\instance.json</c> (08, 5.7).</summary>
 public static class InstanceStateStore
 {
     public const string FileName = "instance.json";
@@ -96,5 +130,32 @@ public static class InstanceStateStore
         var temporary = path + ".tmp";
         File.WriteAllText(temporary, JsonSerializer.Serialize(state, JsonOptions), new UTF8Encoding(false));
         File.Move(temporary, path, overwrite: true);
+    }
+
+    /// <summary>Instalarile de pe calculator (ecranul 0, 08, 5.3): fiecare folder din DataRoot cu instance.json lizibil.</summary>
+    public static IReadOnlyList<InstanceState> FindAll(string dataRoot)
+    {
+        if (!Directory.Exists(dataRoot))
+        {
+            return [];
+        }
+
+        var found = new List<InstanceState>();
+        foreach (var directory in Directory.EnumerateDirectories(dataRoot))
+        {
+            try
+            {
+                if (Read(Path.Combine(directory, FileName)) is { } state)
+                {
+                    found.Add(state);
+                }
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            {
+                // Un instance.json ilizibil nu ascunde celelalte instalari.
+            }
+        }
+
+        return [.. found.OrderBy(s => s.Instance, StringComparer.Ordinal)];
     }
 }

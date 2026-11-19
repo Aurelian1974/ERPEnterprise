@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace Erp.Setup.Core.Deployment;
 
-/// <summary>Valorile pe care le controleaza installer-ul in appsettings.Installation.json (8.10). Fara secrete.</summary>
+/// <summary>Valorile pe care le controleaza installer-ul in appsettings.Installation.json (08, 5.11). Fara secrete.</summary>
 public sealed record InstallationSettingsValues(
     string Instance,
     string Version,
@@ -11,14 +11,13 @@ public sealed record InstallationSettingsValues(
     string InstanceDirectory,
     string SqlServer,
     string DatabaseName,
-    string Authentication,
-    string? AppLogin,
-    string Encrypt,
-    bool TrustServerCertificate);
+    bool TrustServerCertificate,
+    string? DataProtectionCertificateThumbprint);
 
 /// <summary>
-/// appsettings.Installation.json (8.10, I-16; U-11): sablonul din kit, peste care se pun valorile existente (upgrade: cheile
-/// noi primesc valorile implicite din sablon), apoi valorile controlate de installer (caile, versiunea, baza).
+/// appsettings.Installation.json (08, 5.11, I-07; U-07): sablonul din kit, peste care se pun valorile existente (upgrade: cheile
+/// noi primesc valorile implicite din sablon), apoi valorile controlate de installer (caile, versiunea, baza, certificatul).
+/// Cheile versiunii anterioare care nu mai exista (licenta pe disc, cheile pe disc, autentificarea SQL) se elimina.
 /// </summary>
 public static class AppSettingsGenerator
 {
@@ -45,18 +44,18 @@ public static class AppSettingsGenerator
                 ["Version"] = values.Version,
                 ["PublicOrigin"] = values.PublicOrigin,
                 ["DataRoot"] = dir,
-                ["LicensePath"] = Join(dir, @"license\erp.lic"),
                 ["MaintenanceFlagPath"] = Join(dir, @"maintenance\maintenance.flag"),
-                ["DataProtectionKeysPath"] = Join(dir, "keys"),
             },
             ["Database"] = new JsonObject
             {
                 ["Server"] = values.SqlServer,
                 ["Name"] = values.DatabaseName,
-                ["Authentication"] = values.Authentication,
-                ["UserId"] = values.AppLogin,
-                ["Encrypt"] = values.Encrypt,
+                ["Encrypt"] = "Mandatory",
                 ["TrustServerCertificate"] = values.TrustServerCertificate,
+            },
+            ["DataProtection"] = new JsonObject
+            {
+                ["CertificateThumbprint"] = values.DataProtectionCertificateThumbprint,
             },
             ["Logging"] = new JsonObject
             {
@@ -64,8 +63,18 @@ public static class AppSettingsGenerator
             },
         });
 
+        foreach (var (section, key) in Obsolete)
+        {
+            (result[section] as JsonObject)?.Remove(key);
+        }
+
         return result.ToJsonString(Indented);
     }
+
+    private static readonly (string Section, string Key)[] Obsolete =
+    [
+        ("Erp", "LicensePath"), ("Erp", "DataProtectionKeysPath"), ("Database", "Authentication"), ("Database", "UserId"),
+    ];
 
     /// <summary>PublicOrigin: https://gazda, cu portul doar daca nu e 443.</summary>
     public static string PublicOrigin(string hostName, int httpsPort) =>

@@ -20,6 +20,8 @@ internal sealed class FakeWindowsProbe : IWindowsProbe
 
     public long TotalPhysicalMemoryBytes { get; set; } = 32L * 1024 * 1024 * 1024;
 
+    public string MachineName { get; set; } = "SRV-ERP";
+
     public Dictionary<string, long?> FreeSpace { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public long? DefaultFreeSpace { get; set; } = 100L * 1024 * 1024 * 1024;
@@ -34,13 +36,13 @@ internal sealed class FakeWindowsProbe : IWindowsProbe
 
     public List<IisBinding> Bindings { get; } = [];
 
-    public string? SniThumbprint { get; set; }
-
-    public bool Tls12Disabled { get; set; }
-
     public HashSet<string> Sites { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> Services { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public string? Domain { get; set; } = "GRUPULEXEMPLU";
+
+    public HashSet<string> ServiceAccounts { get; } = new(StringComparer.OrdinalIgnoreCase) { @"GRUPULEXEMPLU\erp-prod$" };
 
     public bool IsAdministrator() => Administrator;
 
@@ -48,7 +50,7 @@ internal sealed class FakeWindowsProbe : IWindowsProbe
 
     public long? GetFreeSpaceBytes(string path) => FreeSpace.TryGetValue(path, out var value) ? value : DefaultFreeSpace;
 
-    public IReadOnlySet<string>? GetInstalledWindowsFeatures() => Features;
+    public IReadOnlySet<string>? GetEnabledWindowsFeatures() => Features;
 
     public IReadOnlyList<Version> GetAspNetCoreRuntimeVersions() => AspNetCoreVersions;
 
@@ -58,43 +60,39 @@ internal sealed class FakeWindowsProbe : IWindowsProbe
 
     public IReadOnlyList<IisBinding> GetIisBindings() => Bindings;
 
-    public string? GetSniBindingThumbprint(string hostName, int port) => SniThumbprint;
-
-    public bool IsTls12ClientDisabled() => Tls12Disabled;
-
     public bool IisSiteExists(string siteName) => Sites.Contains(siteName);
 
     public bool ServiceExists(string serviceName) => Services.Contains(serviceName);
+
+    public string? GetComputerDomain() => Domain;
+
+    public bool IsServiceAccountUsable(string account) => ServiceAccounts.Contains(account);
 }
 
 internal sealed class FakeSqlServer : ISqlServerConnector, ISqlServerProbe
 {
     public string? ConnectError { get; set; }
 
-    public string? ReceivedPassword { get; private set; }
+    /// <summary>Conexiunea reuseste doar fara verificarea certificatului serverului (C-10, avertisment).</summary>
+    public bool TrustedServerCertificate { get; set; }
 
     public bool Disposed { get; private set; }
 
-    public SqlServerInfo Info { get; set; } = new(16, 2, "Standard Edition (64-bit)", "SQL_Latin1_General_CP1_CI_AS",
-        true, true, true, DateTime.UtcNow, @"D:\SQLData\", @"L:\SQLLog\");
+    public SqlServerInfo Info { get; set; } = new(16, "Standard Edition (64-bit)", "SQL_Latin1_General_CP1_CI_AS", true, "SRV-ERP",
+        DateTime.UtcNow, @"D:\SQLData\", @"L:\SQLLog\", @"B:\SQLBackup");
 
     public string? AgentStatus { get; set; } = "Running";
 
     public DatabaseInfo? Database { get; set; }
 
-    public Dictionary<string, SqlDirectoryState> Directories { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> FailingDirectories { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public List<string> CreatedDirectories { get; } = [];
 
-    public long? FreeSpace { get; set; } = 500L * 1024 * 1024 * 1024;
-
-    public Task<ISqlServerProbe> ConnectAsync(SqlTarget target, string? operatorPassword, CancellationToken ct)
-    {
-        ReceivedPassword = operatorPassword;
-        return ConnectError is null
+    public Task<ISqlServerProbe> ConnectAsync(SqlTarget target, CancellationToken ct) =>
+        ConnectError is null
             ? Task.FromResult<ISqlServerProbe>(this)
             : throw new SqlConnectFailedException(ConnectError);
-    }
 
     public Task<SqlServerInfo> GetServerInfoAsync(CancellationToken ct) => Task.FromResult(Info);
 
@@ -102,16 +100,16 @@ internal sealed class FakeSqlServer : ISqlServerConnector, ISqlServerProbe
 
     public Task<DatabaseInfo?> GetDatabaseAsync(string databaseName, CancellationToken ct) => Task.FromResult(Database);
 
-    public Task<SqlDirectoryState> GetDirectoryStateAsync(string path, CancellationToken ct) =>
-        Task.FromResult(Directories.TryGetValue(path, out var state) ? state : SqlDirectoryState.Exists);
-
     public Task CreateDirectoryAsync(string path, CancellationToken ct)
     {
+        if (FailingDirectories.Contains(path))
+        {
+            throw new InvalidOperationException($"Acces refuzat: {path}");
+        }
+
         CreatedDirectories.Add(path);
         return Task.CompletedTask;
     }
-
-    public Task<long?> GetFreeSpaceBytesAsync(string path, CancellationToken ct) => Task.FromResult(FreeSpace);
 
     public ValueTask DisposeAsync()
     {
@@ -169,22 +167,16 @@ internal static class CheckFixtures
         Files = [],
     };
 
-    public static CheckTarget Target(string licensePath, CheckMode mode = CheckMode.Check) => new()
+    public static InstallRequest Request(string licensePath) => new("PROD", @"C:\Program Files\Erp",
+        new SqlRequest(@"SRV-ERP", "ERP_PROD", null, null, AppIdentity.VirtualAccounts, null),
+        new SiteRequest("erp.grupulexemplu.local", 443, true, CertificateKind.Internal, null),
+        new BackupRequest(null, new TimeOnly(1, 0), 15, 14, DayOfWeek.Saturday, new TimeOnly(2, 0)),
+        licensePath, new HashSet<string>())
     {
-        Mode = mode,
-        Instance = "PROD",
-        InstallRoot = @"C:\Program Files\Erp",
         DataRoot = @"C:\ProgramData\Erp",
-        HostName = "erp.grupulexemplu.local",
-        HttpsPort = 443,
-        HttpRedirect = true,
-        CertificateThumbprint = "3F2A9C00112233445566778899AABBCCDDEEFFE1",
-        Sql = new SqlTarget(@"SQL01\ERP", "ERP_PROD", SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, false, "PROD"),
-        DataFilePath = @"D:\SQLData",
-        LogFilePath = @"L:\SQLLog",
-        BackupRoot = @"B:\SQLBackup",
-        LicenseFilePath = licensePath,
     };
+
+    public static CheckTarget Target(string licensePath, CheckMode mode = CheckMode.Check) => CheckTarget.From(Request(licensePath), mode);
 
     public static string WriteTemp(string content)
     {

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Planul comun al ambelor invelisuri (08, 5.2, R13): sesiunea, pasii I-01…I-18 si PlanBuilder. Sta separat de Erp.Setup.Core
+    pentru ca pasii compun Erp.Setup.Sql si Erp.Setup.Windows, iar Core nu le poate referi. Operatiile Windows trec prin
+    IWindowsSetup, deci planul (si pasii SQL) se testeaza si pe Linux.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
+    <ProjectReference Include="..\Erp.Setup.Sql\Erp.Setup.Sql.csproj" />
+    <ProjectReference Include="..\Erp.Setup.Windows\Erp.Setup.Windows.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Setup.Tests" />
+  </ItemGroup>
+
+</Project>

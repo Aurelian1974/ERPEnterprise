@@ -7,7 +7,7 @@ using Serilog;
 
 namespace Erp.Setup.Sql;
 
-/// <summary>Eroare SQL la instalare, cu codul de iesire din 6.4 (implicit 30). Mesajul nu contine secrete.</summary>
+/// <summary>Eroare SQL la instalare, cu codul de iesire din 08, 6.3 (implicit 30). Mesajul nu contine secrete.</summary>
 public sealed class SqlSetupException(string message, int exitCode = ExitCodes.SqlInstallError, Exception? inner = null)
     : Exception(message, inner)
 {
@@ -15,22 +15,39 @@ public sealed class SqlSetupException(string message, int exitCode = ExitCodes.S
 }
 
 /// <summary>
-/// Conexiunile operatorului si executia comenzilor installer-ului. Jurnalul primeste doar descrierea comenzii si durata,
-/// niciodata textul SQL (6.6, R6): textul comenzilor de login contine parole.
+/// Conexiunile operatorului (Windows authentication, contul curent, R5) si executia comenzilor installer-ului. Migratiile ruleaza
+/// tot cu aceasta conexiune: nu exista un login SQL separat pentru migratii (08, 5.8, SP-19).
 /// </summary>
-public sealed class SqlOperator(SqlTarget target, string? operatorPassword, ILogger log)
+public sealed class SqlOperator
 {
     public const int CommandTimeoutSeconds = 600;
 
-    public SqlTarget Target { get; } = target;
+    private readonly Action<SqlConnectionStringBuilder>? customize;
 
-    public ILogger Log { get; } = log;
+    public SqlOperator(SqlTarget target, ILogger log)
+        : this(target, log, customize: null)
+    {
+    }
+
+    /// <param name="customize">Doar testele de integrare: autentificarea SQL in containerul Linux, unde Windows authentication lipseste.</param>
+    internal SqlOperator(SqlTarget target, ILogger log, Action<SqlConnectionStringBuilder>? customize)
+    {
+        Target = target;
+        Log = log;
+        this.customize = customize;
+    }
+
+    public SqlTarget Target { get; }
+
+    public ILogger Log { get; }
+
+    /// <summary>Sirul de conexiune al operatorului pentru o baza (migratiile DbUp, procedurile installer-ului).</summary>
+    public string ConnectionString(string database) =>
+        SqlServerConnector.BuildOperatorConnectionString(Target, database, customize).ConnectionString;
 
     public async Task<SqlConnection> OpenAsync(string database, CancellationToken ct)
     {
-        var builder = SqlServerConnector.BuildOperatorConnectionString(Target, operatorPassword);
-        builder.InitialCatalog = database;
-        var connection = new SqlConnection(builder.ConnectionString);
+        var connection = new SqlConnection(ConnectionString(database));
         try
         {
             await connection.OpenAsync(ct).ConfigureAwait(false);
@@ -41,14 +58,6 @@ public sealed class SqlOperator(SqlTarget target, string? operatorPassword, ILog
             await connection.DisposeAsync().ConfigureAwait(false);
             throw;
         }
-    }
-
-    /// <summary>Conexiune cu alt login SQL (de exemplu loginul de migrare), cu aceleasi setari de server si criptare.</summary>
-    public SqlConnectionStringBuilder ConnectionStringFor(string database, string login, string password)
-    {
-        var builder = SqlServerConnector.BuildOperatorConnectionString(Target with { OperatorAuthentication = Core.Answers.SqlAuthentication.Sql, OperatorSqlLogin = login }, password);
-        builder.InitialCatalog = database;
-        return builder;
     }
 
     public async Task ExecuteAsync(SqlConnection connection, string description, string sql, CancellationToken ct, params SqlParameter[] parameters)
