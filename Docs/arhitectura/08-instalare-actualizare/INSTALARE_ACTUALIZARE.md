@@ -1,6 +1,6 @@
 # ERP · 08 Instalare și actualizare
 
-19 noiembrie 2026 · Aurelian, Claude · **Versiunea 3, rescrisă de Claude prin delegarea lui Aurelian (19.11.2026)**; înlocuiește versiunea din 15.11.2026 și este sursa de adevăr pentru implementare · Documente legate: [Ghidul operațional](GHID_INSTALARE_ACTUALIZARE.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md)
+19 noiembrie 2026 · Aurelian, Claude · **Validat de Aurelian (19.11.2026)** · Versiunea 3, rescrisă de Claude prin delegarea lui Aurelian; înlocuiește versiunea din 15.11.2026 și este sursa de adevăr pentru implementare; machetele ecranelor rămân de validat · Documente legate: [Ghidul operațional](GHID_INSTALARE_ACTUALIZARE.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md)
 
 Instalarea ERP-ului se face cu **două aplicații mici, cu ecrane simple**:
 
@@ -9,7 +9,7 @@ Instalarea ERP-ului se face cu **două aplicații mici, cu ecrane simple**:
 
 Lângă installer, kitul conține și `ErpSetup.Cli.exe`: aceeași logică, aceiași pași, fără ferestre, pentru instalarea neasistată și pentru testele automate pe mașini virtuale (decizia D13). Modelul e cel al produselor Microsoft de tip on-premise: SQL Server (`Setup.exe /ConfigurationFile=… /Q`) și Business Central (`setup.exe /config … /quiet`) au un expert cu ferestre pentru operator și un mod silențios condus de un fișier de răspunsuri, pe care expertul îl poate produce.
 
-Documentul e scris ca specificație de implementare: un agent de cod (Claude Code, GitHub Copilot) trebuie să poată construi ambele aplicații doar din el. Deciziile sunt în secțiunea 14; cele marcate „Claude, prin delegare” au fost luate la cererea explicită a lui Aurelian din 19.11.2026 („ne vom ghida după documentația scrisă de tine”).
+Documentul e scris ca specificație de implementare: un agent de cod (Claude Code, GitHub Copilot) trebuie să poată construi ambele aplicații doar din el. Deciziile sunt în secțiunea 14; D12–D32 au fost propuse de Claude la cererea explicită a lui Aurelian din 19.11.2026 („ne vom ghida după documentația scrisă de tine”) și validate de Aurelian în aceeași zi, odată cu documentul.
 
 **Ce s-a schimbat față de versiunea din 15.11.2026** (motivele sunt în secțiunea 14):
 
@@ -1482,27 +1482,27 @@ Depozitul conține deja o implementare a versiunii anterioare a acestei specific
 | D9 | Certificatul HTTPS intern e opțiunea implicită pe ecranul 2; alternativ, un certificat existent din `LocalMachine\My` | Decis de Aurelian, 15.11.2026 |
 | D10 | Toate schemele modulelor se instalează indiferent de licență; licența decide doar ce module pornesc | Validat 14.11.2026 |
 | D11 | Backup complet zilnic, log la 15 minute, păstrare 14 zile, CHECKDB săptămânal | Validat 14.11.2026 |
-| D12 | Logica și ViewModel-urile în proiecte `net10.0`; doar View-urile WPF în `net10.0-windows`. Motiv: testele SQL rulează în CI pe Linux, unde un assembly Windows nu rulează | Claude, prin delegare, 19.11.2026 |
-| D13 | Două învelișuri peste același plan: `ErpSetup.exe` (fereastra, calea operatorului) și `ErpSetup.Cli.exe` (neasistat, E2E). Motiv: modelul SQL Server și Business Central; testele E2E automate; costul e aproape zero, logica fiind comună | Claude, prin delegare, 19.11.2026 |
-| D14 | Fișierul de răspunsuri e produs de expert și citit de linia de comandă; avertismentele se acceptă explicit, pe ID | Claude, prin delegare, 19.11.2026 |
-| D15 | `manifest.json` semnat (`manifest.sig`, ECDSA P-256) + Authenticode cu marcă de timp. Motiv: hash-urile nesemnate pot fi rescrise odată cu fișierul | Claude, prin delegare, 19.11.2026 |
-| D16 | Cheie activă + cheie de rezervă (privată doar offline), pentru licențe și pentru kit, livrate de la prima versiune. Motiv: rotirea nu cere actualizarea clienților | Claude, prin delegare, 19.11.2026 |
-| D17 | `sysadmin` obligatoriu pentru operator pe durata operațiilor installer-ului, retras după. Motiv: `dbcreator` + `securityadmin` nu acoperă proprietarul bazei și al joburilor, `xp_create_subdir` și restaurarea | Claude, prin delegare, 19.11.2026 |
-| D18 | Licența stă numai în bază; fișierul `.lic` e doar mijlocul de transport. Motiv: o singură sursă, inclusă în backup | Claude, prin delegare, 19.11.2026 |
-| D19 | Câmpul opțional `updatesUntil` (dreptul la actualizări); implicit „Fără limită”. Folosirea lui e decizia comercială a lui Aurelian, la fiecare licență | Claude, prin delegare, 19.11.2026 (mecanismul) |
-| D20 | Licențele mai vechi decât cea activă sunt refuzate; expirarea se calculează față de cea mai mare dată văzută | Claude, prin delegare, 19.11.2026 |
-| D21 | Pe SQL la distanță, identitatea aplicației e de preferință un gMSA; contul calculatorului e acceptat cu avertisment | Claude, prin delegare, 19.11.2026 |
-| D22 | Inelul de chei Data Protection în bază, protejat cu certificatul instalării; cheia de recuperare (`.pfx` cu parolă) obligatorie la instalare. Înlocuiește DPAPI `LocalMachine` din `NET-17` | Claude, prin delegare, 19.11.2026 |
-| D23 | La actualizare: snapshot al bazei pentru revenire rapidă + backup `COPY_ONLY` verificat pentru siguranță | Claude, prin delegare, 19.11.2026 |
-| D24 | Ordinea pașilor de instalare: Windows și identitățile înaintea SQL (5.5) | Claude, prin delegare, 19.11.2026 |
-| D25 | O bază goală, cu collation-ul corect, pregătită de administratorul SQL, se preia | Claude, prin delegare, 19.11.2026 |
-| D26 | „Recuperează o instalare existentă” pe alt calculator, din bază și cheia de recuperare | Claude, prin delegare, 19.11.2026 |
-| D27 | Windows 10 acceptat cu avertisment (fără actualizări de securitate din 14.10.2025, în afara ESU) | Claude, prin delegare, 19.11.2026 |
-| D28 | Codurile de ieșire din 6.3 sunt contractul liniei de comandă; fereastra afișează aceleași coduri | Claude, prin delegare, 19.11.2026 |
-| D29 | La `--unattended`, parola administratorului în `initial-admin.txt` cu ACL restrâns, șters după prima schimbare | Claude, prin delegare, 19.11.2026 |
-| D30 | Protecția versiune program ↔ bază rămâne o egalitate strictă | Claude, prin delegare, 19.11.2026 (păstrată din versiunea anterioară, cu motivare) |
-| D31 | `app_offline.htm` pentru oprirea curată a aplicației în mentenanță, alături de `maintenance.flag` | Claude, prin delegare, 19.11.2026 |
-| D32 | Livrarea kitului: link cu acces limitat, amprenta SHA-256 pe alt canal, licența separat ([ghidul](GHID_INSTALARE_ACTUALIZARE.md), secțiunea 4) | Claude, prin delegare, 19.11.2026 |
+| D12 | Logica și ViewModel-urile în proiecte `net10.0`; doar View-urile WPF în `net10.0-windows`. Motiv: testele SQL rulează în CI pe Linux, unde un assembly Windows nu rulează | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D13 | Două învelișuri peste același plan: `ErpSetup.exe` (fereastra, calea operatorului) și `ErpSetup.Cli.exe` (neasistat, E2E). Motiv: modelul SQL Server și Business Central; testele E2E automate; costul e aproape zero, logica fiind comună | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D14 | Fișierul de răspunsuri e produs de expert și citit de linia de comandă; avertismentele se acceptă explicit, pe ID | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D15 | `manifest.json` semnat (`manifest.sig`, ECDSA P-256) + Authenticode cu marcă de timp. Motiv: hash-urile nesemnate pot fi rescrise odată cu fișierul | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D16 | Cheie activă + cheie de rezervă (privată doar offline), pentru licențe și pentru kit, livrate de la prima versiune. Motiv: rotirea nu cere actualizarea clienților | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D17 | `sysadmin` obligatoriu pentru operator pe durata operațiilor installer-ului, retras după. Motiv: `dbcreator` + `securityadmin` nu acoperă proprietarul bazei și al joburilor, `xp_create_subdir` și restaurarea | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D18 | Licența stă numai în bază; fișierul `.lic` e doar mijlocul de transport. Motiv: o singură sursă, inclusă în backup | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D19 | Câmpul opțional `updatesUntil` (dreptul la actualizări); implicit „Fără limită”. Folosirea lui e decizia comercială a lui Aurelian, la fiecare licență | Propus de Claude, validat de Aurelian, 19.11.2026 (mecanismul) |
+| D20 | Licențele mai vechi decât cea activă sunt refuzate; expirarea se calculează față de cea mai mare dată văzută | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D21 | Pe SQL la distanță, identitatea aplicației e de preferință un gMSA; contul calculatorului e acceptat cu avertisment | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D22 | Inelul de chei Data Protection în bază, protejat cu certificatul instalării; cheia de recuperare (`.pfx` cu parolă) obligatorie la instalare. Înlocuiește DPAPI `LocalMachine` din `NET-17` | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D23 | La actualizare: snapshot al bazei pentru revenire rapidă + backup `COPY_ONLY` verificat pentru siguranță | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D24 | Ordinea pașilor de instalare: Windows și identitățile înaintea SQL (5.5) | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D25 | O bază goală, cu collation-ul corect, pregătită de administratorul SQL, se preia | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D26 | „Recuperează o instalare existentă” pe alt calculator, din bază și cheia de recuperare | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D27 | Windows 10 acceptat cu avertisment (fără actualizări de securitate din 14.10.2025, în afara ESU) | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D28 | Codurile de ieșire din 6.3 sunt contractul liniei de comandă; fereastra afișează aceleași coduri | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D29 | La `--unattended`, parola administratorului în `initial-admin.txt` cu ACL restrâns, șters după prima schimbare | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D30 | Protecția versiune program ↔ bază rămâne o egalitate strictă | Propus de Claude, validat de Aurelian, 19.11.2026 (păstrată din versiunea anterioară, cu motivare) |
+| D31 | `app_offline.htm` pentru oprirea curată a aplicației în mentenanță, alături de `maintenance.flag` | Propus de Claude, validat de Aurelian, 19.11.2026 |
+| D32 | Livrarea kitului: link cu acces limitat, amprenta SHA-256 pe alt canal, licența separat ([ghidul](GHID_INSTALARE_ACTUALIZARE.md), secțiunea 4) | Propus de Claude, validat de Aurelian, 19.11.2026 |
 
 ---
 

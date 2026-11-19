@@ -1,6 +1,6 @@
 # Ghid de instalare și actualizare ERP
 
-19 noiembrie 2026 · Aurelian, Claude · **Rescris de Claude prin delegarea lui Aurelian (19.11.2026)**, aliniat la versiunea 3 a [specificației](INSTALARE_ACTUALIZARE.md)
+19 noiembrie 2026 · Aurelian, Claude · **Validat de Aurelian (19.11.2026)** · rescris de Claude prin delegare, aliniat la versiunea 3 a [specificației](INSTALARE_ACTUALIZARE.md)
 
 Ghid practic pentru cine construiește kitul, cine îl livrează și cine instalează, actualizează sau recuperează ERP-ul la client. Sursa de adevăr rămâne [specificația installer-ului](INSTALARE_ACTUALIZARE.md); ghidul trimite la secțiunile ei și nu le înlocuiește. La o contradicție, prevalează specificația.
 
@@ -116,7 +116,7 @@ Procedura e aceeași pentru prima versiune și pentru orice versiune ulterioară
 
 ## 4. Livrarea kitului către client
 
-Decizia D32 (Claude, prin delegarea lui Aurelian, 19.11.2026):
+Decizia D32 (propusă de Claude, validată de Aurelian, 19.11.2026):
 
 - kitul (`ERP-<Versiune>-kit.zip`) se transmite printr-un link de descărcare cu acces limitat (de exemplu un link de partajare cu expirare și parolă) sau direct pe server, în sesiunea de la distanță;
 - amprenta SHA-256 a arhivei se transmite **pe alt canal** (de exemplu email, dacă kitul a mers prin link), iar operatorul o compară cu `Get-FileHash` înainte de dezarhivare;
