@@ -207,7 +207,7 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | Cont | Detaliu |
 | --- | --- |
 | `system` (`Id = 1`) | Utilizator tehnic creat de prima migrare, `IsActive = 0`, fără cont în `ids`; e `CreatedBy` pentru datele livrate și pentru joburi |
-| Administratorul integrat | Creat de installer (08, secțiunea 8.8): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
+| Administratorul integrat | Creat de installer (08, secțiunea 5.10): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
 
 Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOARE`, `AUDITOR`, `STANDARD`.
 
@@ -236,7 +236,7 @@ Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOA
 | `LoginEvent` | `OccurredAt`, `UserName`, `Success`, `FailureReason`, `IpAddress` | Scrise de modulul de autentificare; baza raportului de autentificări |
 | `ImportJob` | `EntityType`, `FileName`, `Status`, `TotalRows`, `ErrorRows`, `ErrorReport` | Importuri din Excel (fluxul 4.8) |
 | `InstallationLicense` | `LicenseId`, `CustomerName`, `FiscalCodes`, `Modules`, `Limits` (case POS, angajați), `ValidUntil`, `Signature` | Verificată la pornire și zilnic (fluxul 4.4) |
-| `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu DPAPI (`NET-17`) |
+| `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu Data Protection, cu inelul de chei în bază (`NET-17`; 08, secțiunea 5.12) |
 
 ## 4. Fluxuri principale
 
@@ -321,7 +321,7 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 
 1. Modulele trimit notificări prin `INotificationService` (către utilizatori anume sau către un rol dintr-o firmă), în aceeași tranzacție cu operația: se scriu în `core.Notification` și în outbox.
 2. Utilizatorul le vede în aplicație: clopoțel în antet, cu numărul celor necitite.
-3. Emailul pleacă din outbox prin serverul SMTP configurat la instalare (setările `Smtp.*`, parola criptată cu DPAPI), după preferințele utilizatorului pentru fiecare tip de notificare.
+3. Emailul pleacă din outbox prin serverul SMTP configurat la instalare (setările `Smtp.*`, parola criptată cu Data Protection, `NET-17`), după preferințele utilizatorului pentru fiecare tip de notificare.
 4. Notificări trimise de Nucleu: licența expiră în 30 de zile, mesaj outbox eșuat definitiv, cont blocat după încercări greșite (către administratori). Celelalte module își definesc propriile notificări.
 
 ### 4.8 Import inițial din Excel
@@ -595,7 +595,7 @@ Proceduri stocate principale (convenție de nume `core.usp_<Entitate>_<Acțiune>
 | `core.usp_User_GetPermissions` | Permisiunile efective ale unui utilizator pe o firmă | Nu (doar Nucleu) |
 | `core.usp_Outbox_FetchBatch` | Lot de mesaje cu `UPDLOCK, READPAST` | Nu |
 | `core.usp_Audit_Search` | Căutare în jurnalul de audit, paginată | Nu |
-| `core.usp_Maintenance_IndexesAndStatistics` | Mentenanța indecșilor și a statisticilor, rulată de jobul SQL Agent (08, 8.13) | Nu |
+| `core.usp_Maintenance_IndexesAndStatistics` | Mentenanța indecșilor și a statisticilor, rulată de jobul SQL Agent (08, 5.13) | Nu |
 
 Permisiuni SQL: fiecare modul are propriul rol de bază de date (`role_sales`, `role_fin` ș.a.) cu drepturi complete pe schema lui, `SELECT` pe `core.v_*` și `EXECUTE` pe procedurile publice. Aplicația folosește un singur login SQL, dar testele de arhitectură verifică aceste granițe pe un mediu cu loginuri separate.
 
@@ -700,7 +700,7 @@ Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separ
 | Pistă de audit | `core.AuditEntry` doar cu adăugare, cu trigger care refuză UPDATE și DELETE |
 | Arhivare și păstrare | Atașamentele fiscale (XML ANAF, PDF) cu hash SHA-256; păstrare minimum 10 ani pentru audit și atașamente fiscale (fluxul 4.9) |
 
-Integrări ale Nucleului: autentificarea cu ASP.NET Core Identity și cookie, în aceeași aplicație, fără server de identitate separat (deciziile lui Aurelian din 14.11.2026: fără Duende, fără OpenIddict; detalii în [08](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), secțiunea 8.7) (legătura utilizatorilor după `SubjectId`, evenimentele de autentificare scrise în `core.LoginEvent`), Active Directory prin autentificarea Windows din IIS pe `/account/windows` (opțional), cheile API pentru conturile tehnice, serverul SMTP al clientului pentru email, și interogarea ANAF pentru datele unui CUI la adăugarea partenerului (apelată prin modulul Integrări, opțional). Autentificarea își ține datele (conturi locale, parole, 2FA, sesiuni, chei API) într-o schemă `ids` din aceeași bază, ca backup-ul să le cuprindă (confirmat 14.11.2026, detaliat în secțiunea 06).
+Integrări ale Nucleului: autentificarea cu ASP.NET Core Identity și cookie, în aceeași aplicație, fără server de identitate separat (deciziile lui Aurelian din 14.11.2026: fără Duende, fără OpenIddict; detalii în [08](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), secțiunea 8) (legătura utilizatorilor după `SubjectId`, evenimentele de autentificare scrise în `core.LoginEvent`), Active Directory prin autentificarea Windows din IIS pe `/account/windows` (opțional), cheile API pentru conturile tehnice, serverul SMTP al clientului pentru email, și interogarea ANAF pentru datele unui CUI la adăugarea partenerului (apelată prin modulul Integrări, opțional). Autentificarea își ține datele (conturi locale, parole, 2FA, sesiuni, chei API) într-o schemă `ids` din aceeași bază, ca backup-ul să le cuprindă (confirmat 14.11.2026, detaliat în secțiunea 06).
 
 ## 10. Rapoarte ale modulului
 
@@ -724,7 +724,7 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 
 | Ecran | Conținut principal | Note |
 | --- | --- | --- |
-| Autentificare (login) | Utilizator și parolă sau butonul „Autentificare cu contul Windows” (Active Directory, dacă e configurat); pasul al doilea cu cod 2FA dacă e activat; link „Am uitat parola”; blocare temporară după 5 încercări greșite. După autentificare, utilizatorul cu roluri în mai multe firme alege firma (implicit ultima folosită). | Pagină Razor `/account/login` din aplicația ERP; după autentificare se emite cookie-ul de sesiune (08, 8.7). Poartă numele și sigla clientului. Încercările eșuate se jurnalizează. |
+| Autentificare (login) | Utilizator și parolă sau butonul „Autentificare cu contul Windows” (Active Directory, dacă e configurat); pasul al doilea cu cod 2FA dacă e activat; link „Am uitat parola”; blocare temporară după 5 încercări greșite. După autentificare, utilizatorul cu roluri în mai multe firme alege firma (implicit ultima folosită). | Pagină Razor `/account/login` din aplicația ERP; după autentificare se emite cookie-ul de sesiune (08, secțiunea 8). Poartă numele și sigla clientului. Încercările eșuate se jurnalizează. |
 | Parolă: recuperare și schimbare | Email cu link de resetare valabil 30 de minute; schimbare obligatorie la prima autentificare și după resetare de către administrator; reguli de complexitate configurabile. | Doar pentru conturile locale; conturile Active Directory își schimbă parola în Windows. |
 | Activare 2FA | Cod QR pentru o aplicație de autentificare (TOTP) și coduri de rezervă de unică folosință. | Obligatoriu pentru rolul Administrator, opțional pentru restul (configurabil). Valorile de 5 încercări și 30 de minute sunt propuneri. |
 | Selector de firmă | În antetul aplicației; schimbă firma curentă pentru toate ecranele | Doar firmele pe care utilizatorul are roluri |
@@ -813,7 +813,7 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 
 ![Asistent de configurare · pasul Firme](ecrane/10-asistent-configurare.png)
 
-**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, 8.7). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4).
+**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, secțiunea 8). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4).
 
 ## 12. Criterii de acceptare și teste cheie
 
@@ -842,6 +842,6 @@ Nucleul e gata (poarta fazei 0 din roadmap) când toate criteriile de mai jos su
 | A19 | Anonimizarea unei persoane fizice șterge datele personale din nomenclator, păstrează neschimbate documentele fiscale și e înregistrată în audit | Test de integrare |
 | A20 | După 5 autentificări greșite contul se blochează temporar, apare în jurnalul de autentificări, iar administratorii primesc notificare | Test de integrare pe autentificare |
 | A21 | Pe baza `Latin1_General_100_CS_AS_SC_UTF8`, codurile `abc` și `ABC` sunt refuzate ca duplicat, căutarea „brasov” găsește „Brașov”, iar toate procedurile Nucleului rulează pe un server cu collation case insensitive (`TST-09`) | Test de integrare |
-| A22 | După instalare există exact un administrator activ, cu `ADMIN` la nivel de instalare; ultimul administrator activ nu poate fi dezactivat (50015) | Test de integrare (08, IA-04) |
+| A22 | După instalare există exact un administrator activ, cu `ADMIN` la nivel de instalare; ultimul administrator activ nu poate fi dezactivat (50015) | Test de integrare (08, IA-06) |
 
 Testele se scriu înainte sau odată cu codul; criteriile A2, A8 și A10 sunt critice pentru conformitate și nu se acceptă excepții.

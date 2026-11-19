@@ -117,7 +117,7 @@ Decizia lui Aurelian (14.11.2026): baza de date a clientului este **case sensiti
 
 | ID | Nivel | Regulă |
 | --- | --- | --- |
-| `SP-19` | O | Aplicația se conectează cu un login dedicat, fără `sysadmin` și fără `db_owner`; drepturi prin roluri de bază de date per modul (02.01, secțiunea 7). Migrațiile rulează cu un login separat, folosit doar la instalare și actualizare. |
+| `SP-19` | O | Aplicația se conectează cu un login dedicat, fără `sysadmin` și fără `db_owner`; drepturi prin roluri de bază de date per modul (02.01, secțiunea 7). Migrațiile rulează cu o identitate separată, folosită doar la instalare și actualizare: contul Windows al operatorului installer-ului (08, secțiunea 5.8). |
 | `SP-20` | O | Datele personale sensibile (CNP, salarii unde e cazul) se criptează la nivel de coloană; cheile nu stau în baza de date în clar. Detaliile vin în secțiunea 06 Securitate. |
 | `SP-21` | O | Tabelele de audit și jurnalele fiscale au trigger care refuză `UPDATE` și `DELETE`. |
 
@@ -212,7 +212,7 @@ Numărul se alocă înainte, în aceeași tranzacție, prin `core.usp_NumberSeri
 | `NET-14` | O | Bani, prețuri, cantități, cursuri: doar `decimal`. Rotunjirea doar prin `IPrecisionService` (P7); niciun `Math.Round` împrăștiat prin cod. |
 | `NET-15` | O | Timpul vine din `TimeProvider` injectat, niciodată din `DateTime.Now`. Momentele în UTC (`DateTime` cu `Kind.Utc` sau `DateTimeOffset`), zilele ca `DateOnly`. |
 | `NET-16` | O | Tot I/O-ul e asincron, cu `CancellationToken` transmis până la Dapper; fără `.Result`, `.Wait()` sau `async void`. |
-| `NET-17` | O | Configurarea prin Options pattern, validată la pornire (`ValidateOnStart`). Fără secrete în `appsettings.json`: parolele și cheile stau criptate cu DPAPI pe serverul clientului (secțiunea 08). |
+| `NET-17` | O | Configurarea prin Options pattern, validată la pornire (`ValidateOnStart`). Fără secrete în `appsettings.json`: parolele și cheile stau criptate cu ASP.NET Core Data Protection, cu inelul de chei în bază, protejat cu certificatul instalării și cu cheie de recuperare (08, secțiunea 5.12). |
 | `NET-18` | O | Jurnale structurate (Serilog) cu `CorrelationId`, utilizator, firmă și modul. Fără date personale (CNP, IBAN complet, salarii) și fără tokenuri în jurnale. |
 | `NET-19` | R | Cod și identificatori în engleză; termenii fiscali românești fără echivalent păstrează numele românesc din glosarul din 01 (`Saft`, `Revisal`, `D394`). Mesajele pentru utilizator în română, în fișiere de resurse. |
 | `NET-20` | R | Mapster pentru mapare DTO ↔ obiecte doar unde maparea e mecanică; logica de calcul nu se ascunde în configurări de mapare. |

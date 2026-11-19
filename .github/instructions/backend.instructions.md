@@ -17,8 +17,8 @@ Surse: [Bune practici](../../Docs/arhitectura/bune-practici/BUNE_PRACTICI.md), s
 
 ## Autentificare
 
-La modificari Auth, citeste [specificatia](../../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), 8.7-8.10.
+La modificari Auth, citeste [specificatia](../../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), sectiunea 8 si 5.12 (cheile Data Protection).
 
 - Identity cu Dapper in `ids`, pagini Razor `/account/*`, cookie securizat; nu `MapIdentityApi` sau tokenuri browser in locul cookie-ului.
 - Pastreaza antiforgery pentru scrieri autentificate cu cookie, 401/403 fara redirect pe API, revocarea sesiunilor si verificarea `SecurityStamp`.
-- Bootstrap creeaza exact un administrator; upgrade/repair nu modifica utilizatori. Pastreaza schimbarea parolei, 2FA si protectia ultimului administrator.
+- Installer-ul creeaza exact un administrator; upgrade/repair/recover nu modifica utilizatori. Pastreaza schimbarea parolei, 2FA si protectia ultimului administrator.

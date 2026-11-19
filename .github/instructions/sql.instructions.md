@@ -17,4 +17,4 @@ Sursa: [Bune practici](../../Docs/arhitectura/bune-practici/BUNE_PRACTICI.md), s
 - Calculele fiscale sunt in C# cu `IPrecisionService`; SQL stocheaza/verifica, nu implementeaza alte rotunjiri.
 - Migrare noua, ordonata, forward-only; nu edita scripturi livrate. `Programmability` separat cu `CREATE OR ALTER`; seed idempotent; modificari compatibile cu datele existente.
 - Valideaza pe SQL Server real: baza CS pe server CI, instalare curata si upgrade. Nu substitui SQLite/in-memory.
-- Exceptiile installer-ului pentru DDL si obiectele bibliotecilor sunt strict cele din [sectiunea 17](../../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md); nu le generaliza la business.
+- Exceptiile installer-ului pentru DDL si obiectele bibliotecilor sunt strict cele din [sectiunea 15](../../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md); nu le generaliza la business.

@@ -43,9 +43,9 @@ arhitectura/
 ├── 06-securitate-permisiuni/
 ├── 07-stack-tehnologic/               ✓ validat (ST1–ST4) · stack-ul consolidat
 │   └── STACK_TEHNOLOGIC.md
-├── 08-instalare-actualizare/          ✓ validat · specificația installer-ului
+├── 08-instalare-actualizare/          ✓ rescris 19.11.2026 · specificația installer-ului
 │   ├── INSTALARE_ACTUALIZARE.md
-│   ├── GHID_INSTALARE_ACTUALIZARE.md  ghid operațional (propus, de revizuit)
+│   ├── GHID_INSTALARE_ACTUALIZARE.md  ghid operațional
 │   └── flux-actualizare.png
 └── 09-roadmap/
 ```
@@ -62,6 +62,6 @@ arhitectura/
 | 05 | Date și multi-tenancy | De făcut | — | — |
 | 06 | Securitate și permisiuni | De făcut | — | — |
 | 07 | Stack tehnologic | Validat (15.11.2026) pentru ST1–ST4 (numai React, fără Blazor; `src/Web/erp-web`; Node.js ultima stabilă; componente Syncfusion pentru React); restul consolidat din sursele indicate, cu puncte de decis | [STACK_TEHNOLOGIC.md](07-stack-tehnologic/STACK_TEHNOLOGIC.md) | — |
-| 08 | Instalare și actualizare (installer) | Validat (14.11.2026) | [INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/INSTALARE_ACTUALIZARE.md) | — |
-| 08 | Ghid operațional: construirea și livrarea kitului, instalarea, actualizarea | Propus (15.11.2026), de revizuit de Aurelian; canalul de livrare nedecis | [GHID_INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md) | — |
+| 08 | Instalare și actualizare (installer) | Versiunea 3, rescrisă de Claude prin delegarea lui Aurelian (19.11.2026); D1–D11 ale lui Aurelian păstrate, D12–D32 luate de Claude; machetele de validat | [INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/INSTALARE_ACTUALIZARE.md) | — |
+| 08 | Ghid operațional: construirea și livrarea kitului, instalarea, actualizarea | Rescris (19.11.2026), aliniat la versiunea 3; descrie comportamentul țintă (implementarea pe T1–T13) | [GHID_INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md) | — |
 | 09 | Roadmap pe faze | De făcut | — | — |

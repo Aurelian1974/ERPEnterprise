@@ -51,7 +51,7 @@ Pentru o editare triviala nu este necesar un skill. Imbunatateste skill-ul exist
 | Conventii de cod | [Bune practici](../Docs/arhitectura/bune-practici/BUNE_PRACTICI.md): 2-3 SQL, 4 backend, 5 UI, 6 teste, 7 CI/securitate, 8 checklist/plaje erori |
 | Servicii comune | [Nucleu](../Docs/arhitectura/02-module-principale/01-nucleu/NUCLEU.md): 3 entitati, 4 fluxuri, 5 evenimente, 6 contracte, 7 SQL, 8 permisiuni, 11 ecrane, 12 criterii A1-A22 |
 | Ecran concret | Numai HTML-ul relevant din [machete](../Docs/arhitectura/02-module-principale/01-nucleu/ecrane); PNG/browser daca trebuie verificat vizual |
-| Installer/identitate | [Instalare si actualizare](../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md): 0 reguli agent, 5 structura, 8.7 autentificare, 8.8 administrator, 10 upgrade, 14 IA, 15 sarcini, 17 exceptii |
+| Installer/identitate | [Instalare si actualizare](../Docs/arhitectura/08-instalare-actualizare/INSTALARE_ACTUALIZARE.md): 0 reguli agent, 5 installer (5.2 straturi, 5.10 administrator, 5.12 chei), 6 CLI, 8 autentificare, 10 upgrade, 12 IA, 13 sarcini si cod existent, 15 abateri |
 
 Schita este context istoric, nu inlocuitorul specificatiilor detaliate. Paginile marcate „de facut” nu autorizeaza inventarea regulilor. Un statut general „validat” nu transforma automat fiecare propunere interna intr-o decizie aprobata.
 

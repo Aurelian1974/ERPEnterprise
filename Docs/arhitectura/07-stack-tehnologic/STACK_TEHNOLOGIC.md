@@ -30,7 +30,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Versiunea MediatR | **12.5.0**, ultima versiune cu licență Apache 2.0. Versiunile 13 și următoare au licență comercială Lucky Penny Software (gratuită doar sub 5 mil. USD venit anual, cu înregistrare) și nu se folosesc | Verificat pe nuget.org și mediatr.io, 15.11.2026 | Validat (Aurelian, 15.11.2026) |
 | Mapare | Mapster, doar unde maparea e mecanică | `NET-20` | Recomandat |
 | Acces date | Dapper + proceduri stocate, **fără ORM** | 01 (stack fix) | Validat |
-| Migrații | DbUp, scripturi SQL versionate, rulate de installer | 08, secțiunea 8.5 | Validat |
+| Migrații | DbUp, scripturi SQL versionate, rulate de installer | 08, secțiunea 5.9 | Validat |
 | Bază de date | SQL Server 2022 sau mai nou, Standard sau Enterprise; o bază per client; o schemă per modul; collation `Latin1_General_100_CS_AS_SC_UTF8` | 08, secțiunile 1 și 9 | Validat (schița spunea doar 2022) |
 | Mesagerie internă | Outbox în SQL + procesator în fundal; fără broker extern | 01 (P8); schița | Validat |
 | Joburi | Hangfire 1.8, stocare în SQL Server (schema `hangfire`), în serviciul `Erp.Worker` | 08, secțiunile 1 și 8.5 | Validat |
@@ -45,8 +45,8 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Jurnale | Serilog, jurnale structurate fără date personale | `NET-18` | Validat |
 | Observabilitate | OpenTelemetry, Seq local | Schița | Aprobat în schiță |
 | Integrări România | Adaptoare ANAF (e-Factura, e-Transport, SPV), BNR, REVISAL, în modulul `Integrations` | Schița | Aprobat în schiță |
-| POS | Client local cu SQLite și driver pentru casa de marcat; interfața: React în Electron sau WPF | Schița; 08, secțiunea 13 | **De decis** în 02.10 (vezi secțiunea 5) |
-| Installer | Aplicație consolă .NET self-contained (`ErpSetup.exe`), fără MSI | 08, decizia D2 | Validat |
+| POS | Client local cu SQLite și driver pentru casa de marcat; interfața: React în Electron sau WPF | Schița | **De decis** în 02.10 (vezi secțiunea 5) |
+| Installer | Două executabile .NET 10 self-contained peste aceeași logică: `ErpSetup.exe` (ferestre WPF, calea operatorului) și `ErpSetup.Cli.exe` (linie de comandă, instalare neasistată și teste E2E); generatorul de licențe `ErpLicenseGen.exe` (WPF, intern); fără MSI | 08, deciziile D2, D12, D13 | D2 validat (Aurelian, 15–16.11.2026); D12, D13 Claude, prin delegare (19.11.2026) |
 | Teste .NET | xUnit v3 pe Microsoft.Testing.Platform; Testcontainers cu SQL Server real; NetArchTest (fork-ul întreținut `NetArchTest.eNhancedEdition`, același API; originalul nu mai e actualizat din 2021) | `TST-02`–`TST-04`; `global.json` | Validat |
 | Teste end-to-end | Playwright, doar pentru fluxurile critice ale fiecărui modul | `TST-08` | Recomandat. Implementat (etapa 3): rulează local pe Host și baza de dezvoltare (`npm run e2e`), nu în CI (CI-ul nu are încă Host + SQL Server pe Windows) |
 | Teste de componente UI | Vitest + Testing Library (jsdom), în CI (jobul `web`) | Planul Nucleului, aprobat 15.11.2026 | Validat |
@@ -60,7 +60,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | --- | --- | --- |
 | Blazor (orice variantă) | Interfața numai în React | ST1 |
 | Entity Framework Core sau alt ORM | Acces date prin Dapper + proceduri stocate | 01; 08, secțiunea 5 |
-| Duende IdentityServer, OpenIddict, server de identitate separat | Costuri de licență, complexitate inutilă | 08, D10 |
+| Duende IdentityServer, OpenIddict, server de identitate separat | Costuri de licență, complexitate inutilă | 08, D7 |
 | Broker de mesaje extern, microservicii | O dependență în plus la client; echipă mică | 01 (P9); `AGENTS.md` |
 | `float`, `double`, `money` pentru bani, cantități, cursuri | Precizie | `SQL-07`, `NET-14`, `UI-05` |
 | Docker / Linux în producție | „Mai târziu”, nu în prima versiune | 01, perimetrul |

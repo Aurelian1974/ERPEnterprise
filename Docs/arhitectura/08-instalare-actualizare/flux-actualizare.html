@@ -1,0 +1,57 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Actualizarea instalării ERP</title>
+<!-- Sursa imaginii flux-actualizare.png (INSTALARE_ACTUALIZARE.md, 10.2). Randare: 1400x740, scara 2. -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0b1f3a;--muted:#5b6676;--blue:#2f6fed;--orange:#e0892b;--green:#1f9d63;--red:#c0392b;--line:#dbe3f0;--panel:#f3f6fc}
+html,body{width:1400px;height:740px;background:#fff;font-family:"Segoe UI","Inter",system-ui,sans-serif;color:var(--ink)}
+.wrap{padding:28px 40px}
+h1{font-size:25px;font-weight:700;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+.cols{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 12px;min-height:322px}
+.col h2{font-size:13.5px;letter-spacing:.6px;color:var(--blue);font-weight:700;margin-bottom:10px}
+.st{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;line-height:1.38;margin-bottom:9px}
+.st b{display:block;font-size:12.5px}
+.st.safe{border-left:4px solid var(--blue)}.st.db{border-left:4px solid var(--orange)}.st.fin{border-left:4px solid var(--green)}
+.rev{margin-top:16px;background:#fdf1f0;border:1px solid #f1c6c1;border-radius:12px;padding:14px 16px}
+.rev h2{font-size:13.5px;letter-spacing:.4px;color:var(--red);font-weight:700;margin-bottom:6px}
+.rev p{font-size:13px;color:#7a2318;margin-bottom:10px}
+.rs{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.r{background:#fff;border:1px solid #efd3cf;border-left:4px solid var(--red);border-radius:8px;padding:9px 11px;font-size:12.8px;line-height:1.38;min-height:82px}
+.r b{display:block;font-size:12.5px}
+.foot{margin-top:10px;font-size:13px;color:#7a2318}
+.leg{display:flex;gap:26px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.leg span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px;background:var(--c)}
+</style></head><body><div class="wrap">
+<h1>Actualizarea instalării ERP</h1>
+<div class="sub">„Actualizează” din ErpSetup.exe (sau <span style="font-family:Consolas,monospace">ErpSetup.Cli.exe upgrade</span>) · orice eșec între U-03 și U-09 declanșează revenirea automată; după U-10 nu se mai revine automat</div>
+<div class="cols">
+<div class="col"><h2>1 · PREGĂTIRE</h2>
+<div class="st"><b>U-01</b>Verificări, versiuni, dreptul la actualizări din licență, spațiu pentru snapshot, durata estimată</div>
+<div class="st"><b>U-02</b>upgrade-state.json, starea Upgrading</div></div>
+<div class="col"><h2>2 · PROTECȚIE</h2>
+<div class="st safe"><b>U-03</b>Mentenanță: maintenance.flag, app_offline.htm, serviciu oprit, bază RESTRICTED_USER</div>
+<div class="st safe"><b>U-04</b>Backup COPY_ONLY + VERIFYONLY, copia configurării, apoi snapshot al bazei</div></div>
+<div class="col"><h2>3 · APLICARE</h2>
+<div class="st"><b>U-05</b>Programul nou în versions\&lt;nouă&gt;, hash-uri verificate</div>
+<div class="st db"><b>U-06</b>Migrații, obiecte programabile, date livrate</div>
+<div class="st"><b>U-07</b>Configurare și web.config</div>
+<div class="st"><b>U-08</b>Site-ul și serviciul pe folderul nou</div></div>
+<div class="col"><h2>4 · VERIFICARE</h2>
+<div class="st"><b>U-09</b>MULTI_USER, pornire, health-check pe versiunea nouă; utilizatorii văd încă pagina de mentenanță</div></div>
+<div class="col"><h2>5 · CONFIRMARE</h2>
+<div class="st fin"><b>U-10</b>Scoate mentenanța, șterge snapshot-ul, starea Installed; păstrează 3 versiuni și 3 backup-uri</div></div>
+</div>
+<div class="rev"><h2>REVENIRE AUTOMATĂ (EȘEC ÎN U-03 … U-09)</h2>
+<p>Baza se readuce doar dacă U-06 a început: din snapshot (rapid) sau, dacă nu se poate, din backup-ul U-04. Nu se pierd date: din U-03 nimeni nu mai scrie.</p>
+<div class="rs">
+<div class="r"><b>R-01</b>Rămâne în mentenanță; site și serviciu pe folderul vechi</div>
+<div class="r"><b>R-02</b>Baza: din snapshot sau din backup; verifică schema</div>
+<div class="r"><b>R-03</b>Configurarea veche înapoi; MULTI_USER</div>
+<div class="r"><b>R-04</b>Pornire și health-check pe versiunea veche</div>
+<div class="r"><b>R-05</b>Backup complet nou (lanțul de log); șterge snapshot-ul</div>
+<div class="r"><b>R-06</b>Scoate mentenanța: „revenit la versiunea anterioară” (cod 70)</div>
+</div>
+<div class="foot">Dacă un pas R eșuează: instalarea rămâne în mentenanță (cod 71), iar ecranul afișează pașii manuali (10.2).</div></div>
+<div class="leg"><span style="--c:var(--blue)">punct de siguranță</span><span style="--c:var(--orange)">modifică baza de date</span><span style="--c:var(--green)">punct fără întoarcere automată</span><span style="--c:var(--red)">revenire</span></div>
+</div></body></html>
