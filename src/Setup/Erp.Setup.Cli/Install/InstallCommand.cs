@@ -99,9 +99,9 @@ internal sealed class InstallCommand(CommandContext context, Action<string> move
         {
             var fromEnvironment = Environment.GetEnvironmentVariable(RecoveryKeyPasswordVariable);
             Environment.SetEnvironmentVariable(RecoveryKeyPasswordVariable, null);
-            if (fromEnvironment is null || fromEnvironment.Length < DataProtectionCertificate.MinimumPasswordLength)
+            if (fromEnvironment is null || fromEnvironment.Length < RecoveryKeyPolicy.MinimumPasswordLength)
             {
-                console.Error($"Variabila {RecoveryKeyPasswordVariable} lipsește sau are sub {DataProtectionCertificate.MinimumPasswordLength} caractere " +
+                console.Error($"Variabila {RecoveryKeyPasswordVariable} lipsește sau are sub {RecoveryKeyPolicy.MinimumPasswordLength} caractere " +
                     $"(cod {ExitCodes.InvalidAnswersFile}).");
                 return (null, null, ExitCodes.InvalidAnswersFile);
             }
@@ -124,15 +124,15 @@ internal sealed class InstallCommand(CommandContext context, Action<string> move
         var input = new ConsoleSecretInput();
         while (true)
         {
-            var first = input.ReadHidden($"Parola cheii de recuperare (minimum {DataProtectionCertificate.MinimumPasswordLength} caractere): ");
+            var first = input.ReadHidden($"Parola cheii de recuperare (minimum {RecoveryKeyPolicy.MinimumPasswordLength} caractere): ");
             if (first is null)
             {
                 return (null, null, ExitCodes.CancelledByOperator);
             }
 
-            if (first.Length < DataProtectionCertificate.MinimumPasswordLength)
+            if (first.Length < RecoveryKeyPolicy.MinimumPasswordLength)
             {
-                console.Warning($"Parola are sub {DataProtectionCertificate.MinimumPasswordLength} caractere.");
+                console.Warning($"Parola are sub {RecoveryKeyPolicy.MinimumPasswordLength} caractere.");
                 continue;
             }
 

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ErpSetup.exe (08, 5.2): fereastra installer-ului, doar XAML si legaturi; logica e in Erp.Setup.Presentation si Erp.Setup.Engine,
+    testabile pe Linux. Kit/templates contine sabloanele copiate in kit (answers.example.json, maintenance.html, app_offline.template.htm).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>ErpSetup</AssemblyName>
+    <RootNamespace>Erp.Setup</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <!-- Cheia publica a kitului (08, 7). Se da la build: -p:KitPublicKeyFile=<cale PEM>. -->
+  <ItemGroup Condition="'$(KitPublicKeyFile)' != ''">
+    <EmbeddedResource Include="$(KitPublicKeyFile)" LogicalName="Erp.Setup.KitPublicKey.pem" />
+  </ItemGroup>
+
+  <Target Name="RequireKitPublicKeyForRelease" BeforeTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(_IsPublishing)' == 'true' and '$(KitPublicKeyFile)' == ''">
+    <Error Text="Publicarea Release a ErpSetup cere -p:KitPublicKeyFile=&lt;cheia publica a kitului, PEM&gt;." />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Setup.Presentation\Erp.Setup.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

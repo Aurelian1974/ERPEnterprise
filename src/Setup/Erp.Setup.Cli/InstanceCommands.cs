@@ -98,13 +98,13 @@ internal static class InstanceCommands
         var input = new ConsoleSecretInput();
         while (true)
         {
-            var first = input.ReadHidden($"Parola cheii de recuperare (minimum {DataProtectionCertificate.MinimumPasswordLength} caractere): ");
+            var first = input.ReadHidden($"Parola cheii de recuperare (minimum {RecoveryKeyPolicy.MinimumPasswordLength} caractere): ");
             if (first is null)
             {
                 return null;
             }
 
-            if (first.Length >= DataProtectionCertificate.MinimumPasswordLength && input.ReadHidden("Repetați parola: ") == first)
+            if (first.Length >= RecoveryKeyPolicy.MinimumPasswordLength && input.ReadHidden("Repetați parola: ") == first)
             {
                 return first;
             }

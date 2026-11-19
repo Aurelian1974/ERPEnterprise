@@ -454,7 +454,7 @@ public sealed class RequirementsChecker(
         }
     }
 
-    internal static bool DnsNameMatches(string certificateName, string hostName)
+    public static bool DnsNameMatches(string certificateName, string hostName)
     {
         if (certificateName.StartsWith("*.", StringComparison.Ordinal))
         {

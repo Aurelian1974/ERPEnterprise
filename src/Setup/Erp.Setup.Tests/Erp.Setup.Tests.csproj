@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Erp.Setup.Cli\Erp.Setup.Cli.csproj" />
     <ProjectReference Include="..\Erp.Setup.Engine\Erp.Setup.Engine.csproj" />
+    <ProjectReference Include="..\Erp.Setup.Presentation\Erp.Setup.Presentation.csproj" />
     <ProjectReference Include="..\Erp.Setup.Core\Erp.Setup.Core.csproj" />
     <ProjectReference Include="..\..\Shared\Erp.Hosting\Erp.Hosting.csproj" />
     <ProjectReference Include="..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />

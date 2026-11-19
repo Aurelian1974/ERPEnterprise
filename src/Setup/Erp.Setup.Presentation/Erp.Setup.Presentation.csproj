@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ViewModel-urile ecranelor 0–6 ale ErpSetup.exe (08, 5.2, 5.3), fara referinta la WPF, testabile pe Linux. Fereastra
+    (Erp.Setup) doar le afiseaza. Valorile ecranelor trec prin acelasi AnswersValidator ca fisierul de raspunsuri (R13, IA-13).
+  -->
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Setup.Engine\Erp.Setup.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Setup.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -8,3 +8,9 @@ public enum RecoveryKeyCheck
     NoPrivateKey,
     OtherInstallation,
 }
+
+/// <summary>Regulile cheii de recuperare, comune ferestrei si liniei de comanda (08, 5.3, ecranul 6).</summary>
+public static class RecoveryKeyPolicy
+{
+    public const int MinimumPasswordLength = 12;
+}

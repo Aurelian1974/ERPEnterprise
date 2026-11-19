@@ -21,63 +21,85 @@ namespace Erp.Setup.Engine;
 /// </summary>
 public static class PlanBuilder
 {
-    /// <summary>Identificatorii pasilor, in ordine (5.5); testul IA-13 compara planurile celor doua invelisuri.</summary>
-    public static readonly IReadOnlyList<string> InstallStepIds =
-        ["I-01", "I-02", "I-03", "I-04", "I-05", "I-06", "I-07", "I-08", "I-09", "I-10", "I-11", "I-12", "I-13", "I-14", "I-15", "I-16", "I-17", "I-18"];
+    /// <summary>Pasii instalarii, in ordine, cu titlurile afisate pe ecranul 5 si in consola (5.5).</summary>
+    public static readonly IReadOnlyList<(string Id, string Title)> InstallSteps =
+    [
+        ("I-01", "Pregătesc folderele instanței și instance.json"),
+        ("I-02", "Activez funcțiile IIS lipsă"),
+        ("I-03", "Instalez ASP.NET Core Hosting Bundle, dacă lipsește"),
+        ("I-04", "Pregătesc certificatul HTTPS"),
+        ("I-05", "Copiez programul și verific hash-urile"),
+        ("I-06", "Creez site-ul IIS și serviciul Windows (oprite)"),
+        ("I-07", "Scriu configurarea, web.config și drepturile NTFS"),
+        ("I-08", "Creez certificatul de protecție a datelor"),
+        ("I-09", "Creez baza de date (case sensitive)"),
+        ("I-10", "Creez schemele și rolurile bazei"),
+        ("I-11", "Creez loginurile Windows ale aplicației"),
+        ("I-12", "Rulez migrațiile, obiectele programabile și datele livrate"),
+        ("I-13", "Salvez licența în bază"),
+        ("I-14", "Creez utilizatorul Administrator"),
+        ("I-15", "Creez regulile de firewall"),
+        ("I-16", "Creez joburile de backup și fac primul backup complet"),
+        ("I-17", "Pornesc aplicația și verific health-check-ul"),
+        ("I-18", "Finalizez instalarea"),
+    ];
+
+    /// <summary>Identificatorii pasilor, in ordine; testul IA-13 compara planurile celor doua invelisuri.</summary>
+    public static IReadOnlyList<string> InstallStepIds => [.. InstallSteps.Select(s => s.Id)];
 
     public static IReadOnlyList<PlannedStep> Install(InstallSession session, IWindowsSetup windows, ILicenseReader licenses, TimeProvider time) =>
     [
-        Step("I-01", "Pregătesc folderele instanței și instance.json", ExitCodes.IisServiceOrFileError, (_, _) => Prepare(session, windows)),
-        Step("I-02", "Activez funcțiile IIS lipsă", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(EnableIis(session, windows))),
-        Step("I-03", "Instalez ASP.NET Core Hosting Bundle, dacă lipsește", ExitCodes.IisServiceOrFileError,
+        Step("I-01", ExitCodes.IisServiceOrFileError, (_, _) => Prepare(session, windows)),
+        Step("I-02", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(EnableIis(session, windows))),
+        Step("I-03", ExitCodes.IisServiceOrFileError,
             (_, _) => Task.FromResult(InstallHostingBundle(session, windows))),
-        Step("I-04", "Pregătesc certificatul HTTPS", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(HttpsCertificate(session, windows, time))),
-        Step("I-05", "Copiez programul și verific hash-urile", ExitCodes.IisServiceOrFileError, (_, _) =>
+        Step("I-04", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(HttpsCertificate(session, windows, time))),
+        Step("I-05", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             var copied = windows.DeployBinaries(session.KitRoot, session.Manifest, session.Request);
             return Task.FromResult(StepResult.Done($"{copied} fișiere copiate în versions\\{session.Version}"));
         }),
-        Step("I-06", "Creez site-ul IIS și serviciul Windows (oprite)", ExitCodes.IisServiceOrFileError, (_, _) =>
+        Step("I-06", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             windows.CreateSiteAndService(session.Request, session.Version, session.RequireState().CertificateThumbprint
                 ?? throw new InvalidOperationException("Certificatul HTTPS lipsește (I-04)."));
             return Task.FromResult(StepResult.Done($"{session.Request.SiteName}, {session.Request.ServiceName}"));
         }),
-        Step("I-07", "Scriu configurarea, web.config și drepturile NTFS", ExitCodes.IisServiceOrFileError, (_, _) =>
+        Step("I-07", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             windows.WriteConfiguration(session.KitRoot, session.Request, session.Version, SettingsValues(session));
             return Task.FromResult(StepResult.Done(session.Paths.AppSettings));
         }),
-        Step("I-08", "Creez certificatul de protecție a datelor", ExitCodes.IisServiceOrFileError, (_, _) =>
+        Step("I-08", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             var thumbprint = windows.EnsureDataProtectionCertificate(session.Request, session.RequireState().DataProtectionCertificateThumbprint);
             session.UpdateState(state => state with { DataProtectionCertificateThumbprint = thumbprint });
             windows.WriteConfiguration(session.KitRoot, session.Request, session.Version, SettingsValues(session));
             return Task.FromResult(StepResult.Done(thumbprint));
         }),
-        Step("I-09", "Creez baza de date (case sensitive)", ExitCodes.SqlInstallError, (_, ct) => CreateDatabaseAsync(session, ct)),
-        Step("I-10", "Creez schemele și rolurile bazei", ExitCodes.SqlInstallError, async (_, ct) =>
+        Step("I-09", ExitCodes.SqlInstallError, (_, ct) => CreateDatabaseAsync(session, ct)),
+        Step("I-10", ExitCodes.SqlInstallError, async (_, ct) =>
         {
             var count = await new BootstrapRunner(session.Sql).RunAsync(session.Database, Path.Combine(session.DatabaseRoot, "bootstrap"), ct)
                 .ConfigureAwait(false);
             return StepResult.Done($"{count} scripturi");
         }),
-        Step("I-11", "Creez loginurile Windows ale aplicației", ExitCodes.SqlInstallError, (_, ct) => CreateLoginsAsync(session, windows, ct)),
-        Step("I-12", "Rulez migrațiile, obiectele programabile și datele livrate", ExitCodes.SqlInstallError, (context, _) =>
+        Step("I-11", ExitCodes.SqlInstallError, (_, ct) => CreateLoginsAsync(session, windows, ct)),
+        Step("I-12", ExitCodes.SqlInstallError, (context, _) =>
             Task.FromResult(RunMigrations(session, context))),
-        Step("I-13", "Salvez licența în bază", ExitCodes.InvalidLicense, (_, ct) => SaveLicenseAsync(session, licenses, ct)),
-        Step("I-14", "Creez utilizatorul Administrator", ExitCodes.SqlInstallError, (_, ct) => CreateAdministratorAsync(session, ct)),
-        Step("I-15", "Creez regulile de firewall", ExitCodes.IisServiceOrFileError, (_, _) =>
+        Step("I-13", ExitCodes.InvalidLicense, (_, ct) => SaveLicenseAsync(session, licenses, ct)),
+        Step("I-14", ExitCodes.SqlInstallError, (_, ct) => CreateAdministratorAsync(session, ct)),
+        Step("I-15", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             windows.ApplyFirewall(session.Request);
             return Task.FromResult(StepResult.Done(session.Request.Site.HttpRedirect
                 ? $"TCP {session.Request.Site.HttpsPort} și 80"
                 : $"TCP {session.Request.Site.HttpsPort}"));
         }),
-        new PlannedStep(new DelegateStep("I-16", "Creez joburile de backup și fac primul backup complet", (_, ct) => BackupAsync(session, ct)),
+        new PlannedStep(new DelegateStep("I-16", Title("I-16"), (_, ct) => BackupAsync(session, ct)),
             ExitCodes.SqlInstallError, SkipWhenCompleted: true),
-        Step("I-17", "Pornesc aplicația și verific health-check-ul", ExitCodes.HealthCheckFailed, (_, ct) => StartAsync(session, windows, ct)),
-        Step("I-18", "Finalizez instalarea", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(Finish(session, windows, time))),
+        Step("I-17", ExitCodes.HealthCheckFailed, (_, ct) => StartAsync(session, windows, ct)),
+        Step("I-18", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(Finish(session, windows, time))),
     ];
 
     public static BackupSettings BackupSettings(InstallRequest request, string backupFolder) => new(request.Sql.Database, backupFolder,
@@ -319,6 +341,8 @@ public static class PlanBuilder
         return StepResult.Done($"instalarea {session.Request.Instance} {session.Version} s-a încheiat");
     }
 
-    private static PlannedStep Step(string id, string title, int failureExitCode, Func<SetupContext, CancellationToken, Task<StepResult>> execute) =>
-        new(new DelegateStep(id, title, execute), failureExitCode);
+    private static PlannedStep Step(string id, int failureExitCode, Func<SetupContext, CancellationToken, Task<StepResult>> execute) =>
+        new(new DelegateStep(id, Title(id), execute), failureExitCode);
+
+    private static string Title(string id) => InstallSteps.Single(s => s.Id == id).Title;
 }

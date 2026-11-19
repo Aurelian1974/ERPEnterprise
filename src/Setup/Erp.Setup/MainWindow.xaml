@@ -1,0 +1,277 @@
+<Window x:Class="Erp.Setup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Erp.Setup"
+        Title="ERP Setup" Width="980" Height="700" MinWidth="860" MinHeight="600"
+        WindowStartupLocation="CenterScreen" Background="White">
+    <Window.Resources>
+        <local:PageVisibilityConverter x:Key="Page"/>
+        <local:NullVisibilityConverter x:Key="NotNull"/>
+        <local:InverseBooleanConverter x:Key="Not"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Pasii in stanga (stilul machetelor din 02.01: bleumarin, albastru #2f6fed) -->
+        <Border Background="{StaticResource Navy}">
+            <StackPanel Margin="20,24">
+                <TextBlock Text="ERP Setup" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding KitVersion, StringFormat='Kitul {0}'}" Foreground="#AFC0DA" Margin="0,4,0,24"/>
+                <ItemsControl ItemsSource="{Binding Pages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="Item" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                <TextBlock x:Name="Text" Text="{Binding Title}" Foreground="#AFC0DA"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                    <Setter TargetName="Text" Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                    <Setter TargetName="Item" Property="Background" Value="#2F6FED"/>
+                                    <Setter TargetName="Text" Property="Foreground" Value="White"/>
+                                    <Setter TargetName="Text" Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="32,28,32,20">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <!-- 0. Bun venit -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Welcome}">
+                        <TextBlock Style="{StaticResource Title}" Text="Bun venit"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Installer-ul instalează ERP pe acest calculator: site-ul IIS, serviciul Windows și baza de date pe SQL Server."/>
+                        <StackPanel Visibility="{Binding HasInstallations, Converter={StaticResource Visible}}" Margin="0,16,0,0">
+                            <TextBlock Style="{StaticResource Label}" Text="Instalări pe acest calculator"/>
+                            <ListBox ItemsSource="{Binding Installations}" SelectedItem="{Binding SelectedInstallation}" DisplayMemberPath="Summary" MinHeight="80"/>
+                            <StackPanel Margin="0,8,0,0" Visibility="{Binding SelectedInstallation, Converter={StaticResource NotNull}}">
+                                <TextBlock Style="{StaticResource Hint}" Text="{Binding SelectedInstallation.Address, StringFormat='Adresa: {0}'}"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="{Binding SelectedInstallation.RecoveryKey, StringFormat='Cheia de recuperare: {0}'}"/>
+                                <Button Margin="0,10,0,0" HorizontalAlignment="Left" Content="Reia instalarea" Command="{Binding ResumeInstallationCommand}"
+                                        Visibility="{Binding SelectedInstallation.CanResume, Converter={StaticResource Visible}}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                            <Button Style="{StaticResource Primary}" Content="Instalare nouă" Command="{Binding NewInstallationCommand}"/>
+                            <Button Content="Încarcă un fișier de răspunsuri…" Command="{Binding LoadAnswersCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 1. Baza de date -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Database}">
+                        <TextBlock Style="{StaticResource Title}" Text="Baza de date"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Server SQL"/>
+                        <TextBox Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Numele bazei"/>
+                        <TextBox Text="{Binding Database, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Autentificare"/>
+                        <TextBlock Text="{Binding CurrentUser, StringFormat='Windows, contul curent: {0}'}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Content="Testează conexiunea" Command="{Binding TestSqlCommand}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding SqlStatus}"/>
+                        <StackPanel Visibility="{Binding IsSqlRemote, Converter={StaticResource Visible}}">
+                            <TextBlock Style="{StaticResource Label}" Text="Identitatea aplicației (SQL e pe alt calculator)"/>
+                            <ComboBox ItemsSource="{Binding RemoteIdentities}" SelectedItem="{Binding RemoteIdentity}" DisplayMemberPath="Title"/>
+                            <StackPanel Visibility="{Binding IsGmsa, Converter={StaticResource Visible}}">
+                                <TextBlock Style="{StaticResource Label}" Text="Cont gMSA (DOMENIU\nume$)"/>
+                                <TextBox Text="{Binding GmsaAccount, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="Folder backup (pe serverul SQL)"/>
+                        <TextBox Text="{Binding BackupFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding DefaultBackupFolder, StringFormat='Gol = {0}'}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Ora backup-ului complet"/>
+                        <TextBox Width="90" HorizontalAlignment="Left" Text="{Binding FullBackupTime, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Expander Header="Avansat" Margin="0,14,0,0" IsExpanded="{Binding ShowAdvanced}">
+                            <StackPanel Margin="0,4,0,0">
+                                <TextBlock Style="{StaticResource Label}" Text="Folderul fișierelor de date (gol = implicit)"/>
+                                <TextBox Text="{Binding DataFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Style="{StaticResource Label}" Text="Folderul fișierelor de log (gol = implicit)"/>
+                                <TextBox Text="{Binding LogFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Style="{StaticResource Label}" Text="Backup de log la (minute)"/>
+                                <TextBox Width="90" HorizontalAlignment="Left" Text="{Binding LogBackupEveryMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Style="{StaticResource Label}" Text="Păstrare (zile)"/>
+                                <TextBox Width="90" HorizontalAlignment="Left" Text="{Binding RetentionDays, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Style="{StaticResource Label}" Text="Verificarea integrității"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ComboBox Width="140" ItemsSource="{Binding Days}" SelectedItem="{Binding IntegrityCheckDay}"/>
+                                    <TextBox Width="90" Margin="8,0,0,0" Text="{Binding IntegrityCheckTime, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding DatabaseErrors}"/>
+                    </StackPanel>
+
+                    <!-- 2. Site web -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Site}">
+                        <TextBlock Style="{StaticResource Title}" Text="Site web"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Nume instalare"/>
+                        <TextBox Width="160" HorizontalAlignment="Left" Text="{Binding Instance, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Adresă"/>
+                        <TextBox Text="{Binding HostName, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Port HTTPS"/>
+                        <TextBox Width="90" HorizontalAlignment="Left" Text="{Binding HttpsPort, UpdateSourceTrigger=PropertyChanged}"/>
+                        <CheckBox Content="Redirecționează HTTP (80) spre HTTPS" IsChecked="{Binding HttpRedirect}"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Certificat"/>
+                        <RadioButton Content="Generează un certificat intern" IsChecked="{Binding UseInternalCertificate}" Margin="0,4,0,0"/>
+                        <RadioButton Content="Folosește un certificat existent din LocalMachine\My" IsChecked="{Binding UseExistingCertificate}" Margin="0,4,0,0"/>
+                        <StackPanel Visibility="{Binding UseExistingCertificate, Converter={StaticResource Visible}}" Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ComboBox Width="460" ItemsSource="{Binding Certificates}" SelectedItem="{Binding SelectedCertificate}" DisplayMemberPath="Display"/>
+                                <Button Margin="8,0,0,0" Content="Caută" Command="{Binding FindCertificatesCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="Folder program"/>
+                        <TextBox Text="{Binding InstallRoot, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding SiteErrors}"/>
+                    </StackPanel>
+
+                    <!-- 3. Licenta -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=License}">
+                        <TextBlock Style="{StaticResource Title}" Text="Licență"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Alege fișierul de licență…" Command="{Binding ChooseLicenseCommand}"/>
+                            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Muted}" Text="{Binding LicensePath}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,12,0,0" Visibility="{Binding License, Converter={StaticResource NotNull}}">
+                            <TextBlock Style="{StaticResource Label}" Text="{Binding License.CustomerName}"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding LicenseFiscalCodes, StringFormat='CUI-uri: {0}'}"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding License.Companies, StringFormat='Firme: {0}'}"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding LicenseModules, StringFormat='Module: {0}'}"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding LicenseValidity}"/>
+                            <TextBlock Margin="0,8,0,0" Foreground="#1E7B45" Text="{Binding LicenseCompatibility}"
+                                       Visibility="{Binding LicenseIsValid, Converter={StaticResource Visible}}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding LicenseError}"/>
+                    </StackPanel>
+
+                    <!-- 4. Verificare -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Checks}">
+                        <TextBlock Style="{StaticResource Title}" Text="Verificare"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Rulează verificările" Command="{Binding RunChecksCommand}"/>
+                            <Button Content="Salvează răspunsurile…" Command="{Binding SaveAnswersCommand}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding ChoicesSummary}"/>
+                        <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding CheckResults}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="26"/>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="240"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="Symbol" Text="{Binding Symbol}" FontWeight="Bold" Foreground="#1E7B45"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Id}" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Title}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Warning">
+                                            <Setter TargetName="Symbol" Property="Foreground" Value="#B7791F"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                            <Setter TargetName="Symbol" Property="Foreground" Value="#C0392B"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <CheckBox Content="Am citit avertismentele" IsChecked="{Binding WarningsAccepted}"
+                                  Visibility="{Binding HasWarnings, Converter={StaticResource Visible}}"/>
+                    </StackPanel>
+
+                    <!-- 5. Instalare -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Install}">
+                        <TextBlock Style="{StaticResource Title}" Text="Instalare"/>
+                        <ProgressBar Height="8" Value="{Binding Progress}" Maximum="100" Foreground="{StaticResource Blue}"/>
+                        <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding Steps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="26"/>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="330"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Symbol}" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Id}" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Title}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding InstallError}"/>
+                        <Button Margin="0,10,0,0" HorizontalAlignment="Left" Content="Reîncearcă" Command="{Binding RetryCommand}"
+                                Visibility="{Binding InstallError, Converter={StaticResource NotNull}}"/>
+                    </StackPanel>
+
+                    <!-- 6. Gata -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Done}">
+                        <TextBlock Style="{StaticResource Title}" Text="Gata"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Adresa aplicației"/>
+                        <TextBlock Text="{Binding ApplicationUrl}" Foreground="{StaticResource Blue}"/>
+                        <StackPanel Visibility="{Binding TemporaryPassword, Converter={StaticResource NotNull}}">
+                            <TextBlock Style="{StaticResource Label}" Text="{Binding AdministratorUserName, StringFormat='Utilizator: {0}'}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox IsReadOnly="True" FontFamily="Consolas" FontSize="22" Text="{Binding TemporaryPassword, Mode=OneWay}"/>
+                                <Button Margin="8,0,0,0" Content="Copiază" Command="{Binding CopyPasswordCommand}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Hint}" Text="Parola temporară e afișată o singură dată."/>
+                            <CheckBox Content="Am notat parola" IsChecked="{Binding PasswordNoted}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="Cheia de recuperare"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Permite citirea datelor criptate după mutarea bazei pe alt server. Păstrați-o separat de backup-uri, cu parola în managerul de parole."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <PasswordBox x:Name="RecoveryPassword" Width="200" PasswordChanged="RecoveryPasswordChanged"/>
+                            <PasswordBox x:Name="RecoveryPasswordConfirm" Width="200" Margin="8,0,0,0" PasswordChanged="RecoveryPasswordChanged"/>
+                            <Button Margin="8,0,0,0" Content="Salvează cheia de recuperare…" Command="{Binding SaveRecoveryKeyCommand}" Click="ClearRecoveryPasswords"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="Parola (minimum 12 caractere), introdusă de două ori."/>
+                        <TextBlock Margin="0,6,0,0" Foreground="#1E7B45" Text="{Binding RecoveryKeyPath, StringFormat='✓ Salvată în {0}'}"
+                                   Visibility="{Binding RecoveryKeyPath, Converter={StaticResource NotNull}}"/>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding RecoveryKeyError}"/>
+                        <StackPanel Visibility="{Binding InternalCertificatePath, Converter={StaticResource NotNull}}">
+                            <TextBlock Style="{StaticResource Label}" Text="Certificatul intern"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding InternalCertificatePath, StringFormat='Instalați {0} pe calculatoarele utilizatorilor (manual sau prin politică de grup); altfel browserul afișează un avertisment.'}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,14,0,0" Text="La prima autentificare vi se cere o parolă nouă și activarea autentificării în 2 pași (2FA), apoi porniți asistentul de configurare."/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- Butoanele de jos -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Content="Înapoi" Command="{Binding BackCommand}"/>
+                <Button Style="{StaticResource Primary}" Content="Înainte" Command="{Binding NextCommand}"
+                        Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Database|Site|License}"/>
+                <Button Style="{StaticResource Primary}" Content="Instalează" Command="{Binding InstallCommand}"
+                        Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Checks}"/>
+                <Button Content="Deschide aplicația" Command="{Binding OpenApplicationCommand}"
+                        Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Done}"/>
+                <Button Style="{StaticResource Primary}" Content="Închide" Click="CloseClicked" IsEnabled="{Binding CanClose}"
+                        Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Done}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

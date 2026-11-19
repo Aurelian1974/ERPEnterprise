@@ -19,7 +19,7 @@ public static class DataProtectionCertificate
     /// <summary>PBES2 cu AES-256-CBC si SHA-256 (importabil pe Windows 10 1709+ si Windows Server 2019+).</summary>
     private static readonly PbeParameters RecoveryKeyEncryption = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 100_000);
 
-    public const int MinimumPasswordLength = 12;
+    public const int MinimumPasswordLength = RecoveryKeyPolicy.MinimumPasswordLength;
 
     public static string Subject(string instance) => $"CN=ERP-{instance} Data Protection";
 
