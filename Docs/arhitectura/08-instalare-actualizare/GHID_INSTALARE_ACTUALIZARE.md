@@ -139,7 +139,7 @@ Lista completă este verificarea C-01…C-20 (specificația 5.4); ecranul 4 (sau
 | IIS și Hosting Bundle | Se instalează automat dacă lipsesc. Dacă Windows cere repornire, installer-ul o cere și se redeschide singur. Instalarea Hosting Bundle repornește IIS: anunțați utilizatorii altor site-uri de pe același server |
 | SQL Server | 2022 sau mai nou, Standard sau Enterprise (Developer și Express doar pentru test); **SQL Server Agent pornit și pe Automatic** (în afară de Express); acces de pe serverul de aplicație pe portul instanței (implicit 1433) |
 | Discurile SQL | Date, log și **backup** (de preferat alt disc decât datele); spațiu pentru date ≥ 2 × dimensiunea estimată. Administratorul SQL poate crea el baza goală, cu collation-ul `Latin1_General_100_CS_AS_SC_UTF8`, pe discurile alese; installer-ul o preia (specificația 5.6) |
-| SQL pe alt calculator | Ambele calculatoare în același domeniu; contul gMSA al aplicației (5.2) |
+| SQL pe alt calculator | Ambele calculatoare în același domeniu; contul gMSA al aplicației, creat de administratorul AD cu cel puțin o zi înainte (5.2) |
 | Certificatul HTTPS | Implicit, installer-ul generează unul intern; partea publică se distribuie apoi pe calculatoarele utilizatorilor (6.4). Alternativ, un certificat din `LocalMachine\My`, cu cheie privată, adresa în SAN, valabil cel puțin 30 de zile (de exemplu emis de AD CS-ul clientului) |
 | DNS | Adresa site-ului (de exemplu `erp.grupulexemplu.local`) indică spre serverul de aplicație |
 | Rețea | Utilizatorii → server: 443 (și 80, dacă se folosește redirecționarea); server → internet, ieșire 443: ANAF și BNR (avertisment dacă lipsește); internet → server: **nimic** |
@@ -147,27 +147,153 @@ Lista completă este verificarea C-01…C-20 (specificația 5.4); ecranul 4 (sau
 | Licența | Fișierul `.lic` copiat pe server, în afara folderului kitului |
 | Cheia de recuperare | Un suport extern (stick USB criptat) și un loc în managerul de parole al clientului, pentru parola ei (6.3) |
 
-### 5.2 Contul gMSA, pentru SQL pe alt calculator
+### 5.2 Contul gMSA al aplicației (SQL Server pe alt calculator)
 
-Administratorul Active Directory, o singură dată pentru fiecare instalare (exemplu pentru instalarea `PROD` pe serverul `SRV-ERP`):
+Secțiune pentru administratorul Active Directory și administratorul SQL ai clientului. Se aplică doar când SQL Server rulează pe alt calculator decât serverul de aplicație. Fundamentul tehnic e în specificație, 5.8 (D21).
+
+#### 5.2.1 Ce este și de ce e nevoie de el
+
+O instalare ERP folosește trei feluri de calculatoare:
+
+```
+Calculatoarele utilizatorilor ──HTTPS (browser)──▶ Serverul de aplicație ──SQL (Windows auth)──▶ Serverul SQL
+   oricâte, oriunde în rețea                        site IIS ERP-PROD +
+   NU se conectează la SQL                          serviciul ErpWorker-PROD
+```
+
+Doar serverul de aplicație vorbește cu SQL Server, și o face **fără parolă SQL**, cu identitatea Windows sub care rulează site-ul și serviciul. Contul Windows al utilizatorilor nu ajunge niciodată la SQL Server; drepturile lor le verifică aplicația.
+
+Un **gMSA** (*group Managed Service Account*) este un cont Active Directory destinat serviciilor, nu oamenilor:
+
+- parola o generează și o schimbă **Active Directory**, automat, implicit la 30 de zile; nu o știe, nu o tastează și nu o păstrează nimeni;
+- îl pot folosi **numai** calculatoarele permise explicit;
+- numele se termină cu `$`, de exemplu `GRUPULEXEMPLU\erp-prod$`.
+
+| Configurare | Cum se prezintă aplicația la SQL Server | Consecință |
+| --- | --- | --- |
+| SQL pe **același** calculator cu serverul de aplicație | Conturi virtuale locale (`IIS APPPOOL\ERP-PROD`, `NT SERVICE\ErpWorker-PROD`) | Corect; **nu e nevoie de gMSA** |
+| SQL pe alt calculator, **cu gMSA** (recomandat) | `GRUPULEXEMPLU\erp-prod$`, folosit numai de ERP | Doar aplicația ERP are acces la bază |
+| SQL pe alt calculator, fără gMSA | Contul calculatorului, `GRUPULEXEMPLU\SRV-ERP$` | **Orice** alt program sau site IIS de pe serverul de aplicație care iese în rețea cu contul calculatorului are acces la baza ERP. Installer-ul acceptă varianta, cu avertisment (C-15) |
+
+#### 5.2.2 Cerințe
+
+| Cerință | Detalii | Cum se verifică |
+| --- | --- | --- |
+| Domeniu Active Directory | Serverul de aplicație și serverul SQL în același domeniu | `(Get-CimInstance Win32_ComputerSystem).Domain` pe fiecare |
+| Controler de domeniu Windows Server 2012 sau mai nou | Necesar pentru conturile gMSA | `Get-ADDomainController -Filter * \| Select Name, OperatingSystem` |
+| Cheia rădăcină KDS | O singură dată pe pădurea AD, folosită de toate conturile gMSA | `Get-KdsRootKey` (dacă întoarce ceva, există deja) |
+| Drepturi pentru administratorul AD | Domain Admins sau drept delegat de creare a obiectelor `msDS-GroupManagedServiceAccount` în containerul ales | — |
+| Modulul PowerShell ActiveDirectory pe serverul de aplicație | Pentru verificarea finală (5.2.3, pasul 4). Windows Server: `Install-WindowsFeature RSAT-AD-PowerShell`. Windows 10/11: `Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0` | `Get-Module -ListAvailable ActiveDirectory` |
+
+**Convenția de nume:** `erp-<instanță>` cu litere mici, de exemplu `erp-prod`, `erp-test`; **maximum 15 caractere** (limita numelui de cont Windows). **Câte un cont gMSA pentru fiecare instalare**: instalarea de test nu trebuie să poată accesa baza de producție.
+
+#### 5.2.3 Pașii
+
+Exemplul folosește domeniul `grupulexemplu.local` (NetBIOS `GRUPULEXEMPLU`), serverul de aplicație `SRV-ERP` și instalarea `PROD`. Înlocuiți valorile cu cele reale.
+
+**Pasul 1 — Cheia rădăcină KDS** (administratorul AD, pe un controler de domeniu; doar dacă `Get-KdsRootKey` nu întoarce nimic):
 
 ```powershell
-# O singură dată pe pădurea AD, doar dacă nu există deja o cheie KDS (Get-KdsRootKey).
-# Cheia devine folosibilă după replicarea între controlerele de domeniu (până la 10 ore).
 Add-KdsRootKey -EffectiveImmediately
-
-New-ADServiceAccount -Name erp-prod -DNSHostName erp-prod.grupulexemplu.local `
-    -PrincipalsAllowedToRetrieveManagedPassword 'SRV-ERP$'
 ```
 
-Pe serverul de aplicație (modulul PowerShell ActiveDirectory, din RSAT):
+Cheia devine folosibilă după replicarea între controlerele de domeniu, **până la 10 ore**: planificați pasul cu o zi înainte de instalare. Varianta care o face folosibilă imediat (`-EffectiveTime ((Get-Date).AddHours(-10))`) se folosește doar într-un laborator cu un singur controler de domeniu, niciodată în producție.
+
+**Pasul 2 — Grupul calculatoarelor permise** (administratorul AD). Recomandat: un grup de securitate, nu calculatorul direct. La înlocuirea serverului se schimbă doar membrii grupului, nu contul.
 
 ```powershell
-Install-ADServiceAccount -Identity erp-prod
-Test-ADServiceAccount -Identity erp-prod      # trebuie să întoarcă True; dacă nu, reporniți serverul și încercați din nou
+New-ADGroup -Name 'ERP-PROD-Servere' -GroupScope Global -GroupCategory Security `
+    -Description 'Calculatoarele care pot folosi contul gMSA erp-prod (ERP, instalarea PROD)'
+Add-ADGroupMember -Identity 'ERP-PROD-Servere' -Members 'SRV-ERP$'
 ```
 
-Pe ecranul 1 al installer-ului se alege apoi „Cont gMSA” cu `GRUPULEXEMPLU\erp-prod$`. Installer-ul face restul: identitatea pool-ului și a serviciului, dreptul „Log on as a service”, loginul SQL. Fără gMSA, installer-ul acceptă contul calculatorului, cu avertisment (specificația 5.8).
+**Pasul 3 — Contul gMSA** (administratorul AD):
+
+```powershell
+New-ADServiceAccount -Name 'erp-prod' `
+    -DNSHostName 'erp-prod.grupulexemplu.local' `
+    -PrincipalsAllowedToRetrieveManagedPassword 'ERP-PROD-Servere' `
+    -KerberosEncryptionType AES128, AES256 `
+    -Description 'ERP PROD: site-ul IIS și serviciul ErpWorker-PROD'
+```
+
+- `-DNSHostName` e un atribut cerut de comandă; nu trebuie să existe o înregistrare DNS cu acest nume.
+- `-KerberosEncryptionType AES128, AES256` exclude criptarea RC4, considerată slabă.
+- Contul se creează implicit în containerul `Managed Service Accounts`; cu `-Path` se poate alege altă unitate organizațională.
+- **Nu adăugați contul în niciun alt grup** și nu îi dați alte drepturi în AD: nu are nevoie.
+
+**Pasul 4 — Serverul de aplicație** (administrator local pe `SRV-ERP`). Calculatorul află că e membru în grupul nou abia după reînnoirea tichetelor Kerberos, deci reporniți serverul sau goliți tichetele contului de sistem:
+
+```powershell
+klist -li 0x3e7 purge                         # sau o repornire a serverului
+Install-ADServiceAccount -Identity erp-prod   # verifică și pregătește folosirea contului pe acest calculator
+Test-ADServiceAccount -Identity erp-prod      # trebuie să întoarcă True
+```
+
+**Pasul 5 — Predarea către operatorul installer-ului:** numele contului, `GRUPULEXEMPLU\erp-prod$`. Pe ecranul 1 al `ErpSetup.exe`, după „Testează conexiunea”, se alege „Cont gMSA” și se scrie acest nume; installer-ul îl verifică pe loc (C-15). În fișierul de răspunsuri: `"appIdentity": "Gmsa"` și `"gmsaAccount": "GRUPULEXEMPLU\\erp-prod$"`.
+
+**Administratorul SQL nu are nimic de făcut** pentru acest cont: installer-ul creează loginul, cu dreptul `sysadmin` temporar al operatorului.
+
+#### 5.2.4 Ce face installer-ul cu contul și ce drepturi primește
+
+Contul primește strict ce îi trebuie aplicației:
+
+| Unde | Ce primește | Pasul |
+| --- | --- | --- |
+| IIS | Identitatea pool-ului `ERP-PROD` (`SpecificUser`, parolă goală; IIS îl adaugă singur în `IIS_IUSRS`) | I-06 |
+| Serviciul Windows | Contul de pornire al `ErpWorker-PROD` și dreptul local „Log on as a service” | I-06 |
+| Sistemul de fișiere | Citire pe programul din `C:\Program Files\Erp\PROD\` și pe configurarea din `C:\ProgramData\Erp\PROD\`, scriere pe jurnale | I-07 |
+| Certificatul instalării | Citire pe cheia privată a certificatului „ERP-PROD Data Protection” | I-08 |
+| SQL Server | Loginul `[GRUPULEXEMPLU\erp-prod$]`; în baza `ERP_PROD`, utilizatorul `erp_app`, membru în rolurile de modul (`role_core`, `role_fin` …); **fără** `db_owner` și fără `sysadmin` | I-11 |
+| SQL Server, `msdb` | `SELECT` pe `dbo.backupset`, pentru afișarea ultimului backup în aplicație | I-11 |
+| Active Directory | Nimic în plus | — |
+
+**Rețeaua.** Serverul de aplicație trebuie să ajungă la serverul SQL pe portul instanței: TCP 1433 pentru instanța implicită; pentru o instanță cu nume, portul ei TCP și UDP 1434 (SQL Server Browser), sau un port TCP fix configurat de administratorul SQL. Comunicarea cu controlerele de domeniu (Kerberos, LDAP) există deja, fiind un calculator din domeniu. Conexiunea spre SQL e criptată (`Encrypt = Mandatory`, C-10).
+
+**Kerberos pentru SQL Server** (recomandat, nu obligatoriu). Dacă serviciul SQL Server are SPN-ul înregistrat (`MSSQLSvc/<server>.<domeniu>:1433`), conexiunea se autentifică prin Kerberos; altfel se folosește NTLM, care funcționează, dar e mai slab. Administratorul SQL verifică cu `setspn -L <contul serviciului SQL Server>` și caută SPN-uri dublate cu `setspn -X`.
+
+#### 5.2.5 Verificarea după instalare
+
+```powershell
+# Pe serverul de aplicație: identitatea pool-ului și a serviciului
+Import-Module WebAdministration
+Get-ItemProperty 'IIS:\AppPools\ERP-PROD' -Name processModel | Select-Object identityType, userName
+Get-CimInstance Win32_Service -Filter "Name='ErpWorker-PROD'" | Select-Object Name, StartName, State
+```
+
+Ambele trebuie să arate `GRUPULEXEMPLU\erp-prod$`.
+
+```sql
+-- Pe SQL Server: sesiunile aplicației folosesc contul gMSA (ApplicationName = ERP-<Instanță>-<Componentă>)
+SELECT s.login_name, s.program_name, s.auth_scheme
+FROM sys.dm_exec_sessions AS s
+JOIN sys.dm_exec_connections AS c ON c.session_id = s.session_id
+WHERE s.program_name LIKE N'ERP-PROD-%';
+```
+
+Rezultatul așteptat: `login_name = GRUPULEXEMPLU\erp-prod$`, `program_name` `ERP-PROD-Host` și `ERP-PROD-Worker`, `auth_scheme` `KERBEROS` (sau `NTLM` fără SPN). Ecranul „Stare” al installer-ului trebuie să arate `database: Healthy`.
+
+#### 5.2.6 Probleme frecvente
+
+| Simptom | Cauza probabilă | Ce faceți |
+| --- | --- | --- |
+| `Test-ADServiceAccount` întoarce `False` | Calculatorul nu are încă tichetele cu noul grup; cheia KDS nu e încă folosibilă; calculatorul nu e în grup | `klist -li 0x3e7 purge` sau repornire; așteptați replicarea cheii KDS (până la 10 ore); verificați `Get-ADGroupMember ERP-PROD-Servere` |
+| `New-ADServiceAccount` eșuează cu „Key does not exist” | Cheia rădăcină KDS lipsește sau nu e încă folosibilă | Pasul 1, apoi așteptați |
+| Serviciul nu pornește, eroarea 1069 („logon failure”) | O politică de grup din domeniu definește „Log on as a service” și înlocuiește dreptul local dat de installer | Adăugați `GRUPULEXEMPLU\erp-prod$` în acea politică de grup |
+| Pool-ul IIS se oprește singur; în Event Log, WAS 5021 („identity of application pool is invalid”) | Calculatorul nu poate obține parola contului (nu e în grup sau tichetele sunt vechi) | Ca la primul rând, apoi „Repară” |
+| Jurnalul aplicației: „Login failed for user 'GRUPULEXEMPLU\SRV-ERP$'” | Pool-ul sau serviciul rulează cu contul virtual, nu cu gMSA (de exemplu după o modificare manuală) | „Repară” |
+| Jurnalul aplicației: „Login failed for user 'NT AUTHORITY\ANONYMOUS LOGON'” | Problemă Kerberos: SPN dublat sau greșit pentru SQL Server | Administratorul SQL: `setspn -X`, corectarea SPN-ului |
+| Jurnalul aplicației: „Login failed for user 'GRUPULEXEMPLU\erp-prod$'” | Loginul SQL lipsește, e dezactivat sau utilizatorul din bază nu mai e legat de el (după o restaurare) | „Repară” (recreează loginul și reface legătura) |
+
+#### 5.2.7 Ciclul de viață al contului
+
+- **Parola:** se schimbă automat; nu e nevoie de nicio acțiune și nicio repornire.
+- **Înlocuirea serverului de aplicație:** noul calculator se adaugă în grupul `ERP-PROD-Servere`, se face pasul 4 pe el, apoi „Recuperează o instalare existentă” (secțiunea 9.1). La final, vechiul calculator se scoate din grup.
+- **Mai multe instalări** (`PROD`, `TEST`): câte un cont și câte un grup pentru fiecare.
+- **Retragerea instalării:** după „Dezinstalează”, loginul SQL al contului rămâne dezactivat. Dacă instalarea nu mai revine, administratorul SQL șterge loginul, iar administratorul AD contul (`Remove-ADServiceAccount -Identity erp-prod`) și grupul.
+- **Audit:** tot ce face aplicația în SQL Server apare sub numele `erp-prod$`, separat de orice alt program; util la investigații.
+
+**Fără domeniu sau fără gMSA.** Pe calculatoare care nu sunt într-un domeniu, gMSA nu există; atunci SQL Server trebuie să fie pe același calculator cu serverul de aplicație (specificația 5.1). Dacă există domeniu, dar clientul nu vrea un gMSA, installer-ul folosește contul calculatorului, cu avertismentul din 5.2.1.
 
 ---
 
@@ -264,7 +390,7 @@ Toate scenariile presupun: backup-urile bazei copiate în afara serverului (6.4)
 
 ### 9.1 Serverul de aplicație pierdut, SQL Server intact
 
-1. Pregătiți noul server de aplicație (secțiunea 5). Pentru SQL pe alt calculator cu gMSA: administratorul AD adaugă noul calculator în `PrincipalsAllowedToRetrieveManagedPassword` (`Set-ADServiceAccount`), apoi `Install-ADServiceAccount` pe noul server.
+1. Pregătiți noul server de aplicație (secțiunea 5). Pentru SQL pe alt calculator cu gMSA: administratorul AD adaugă noul calculator în grupul calculatoarelor permise (de exemplu `ERP-PROD-Servere`), apoi pasul 4 din 5.2.3 pe noul server.
 2. Porniți `ErpSetup.exe` din kitul **versiunii bazei** → „Recuperează o instalare existentă”.
 3. Ecranul 1: serverul SQL și baza; installer-ul recunoaște instalarea și versiunea ei. Ecranul 2: site-ul. Apoi cheia de recuperare și parola.
 4. La final, raportul listează loginurile SQL vechi (ale calculatorului vechi); administratorul SQL le dezactivează.

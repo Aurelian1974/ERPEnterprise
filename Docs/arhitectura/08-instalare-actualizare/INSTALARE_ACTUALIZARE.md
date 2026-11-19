@@ -75,6 +75,16 @@ Actualizarea se face cu același `ErpSetup.exe`, dintr-un kit nou: aplicația re
 
 **Produsul.** ERP românesc licențiat, vândut companiilor medii și mari, instalat **on-premise** la fiecare client. O instalare servește un grup de firme și are **o singură bază SQL Server**; firmele sunt separate prin `CompanyId`. Pe un calculator pot exista mai multe instalări independente (de exemplu `PROD` și `TEST`), fiecare cu baza, site-ul și serviciul ei. Echipa e mică (Aurelian + Claude), deci instalarea trebuie să fie simplă și fără pași manuali în SQL (principiul P9 din 01).
 
+**Calculatoarele unei instalări.** În tot documentul, „calculatorul” installer-ului și al aplicației înseamnă **serverul de aplicație**:
+
+| Rol | Ce rulează pe el | Se conectează la SQL Server? |
+| --- | --- | --- |
+| Calculatoarele utilizatorilor | Doar browserul; deschid ERP-ul prin HTTPS, de oriunde din rețea sau prin VPN | **Nu, niciodată** |
+| Serverul de aplicație | Site-ul IIS (`Erp.Host`), serviciul `ErpWorker`; aici rulează installer-ul | Da, cu identitatea Windows a aplicației (5.8) |
+| Serverul SQL | SQL Server și SQL Server Agent | — |
+
+„SQL Server pe același calculator” înseamnă că serverul de aplicație și serverul SQL sunt aceeași mașină; poziția utilizatorilor nu contează. Contul Windows al unui utilizator nu ajunge niciodată la SQL Server, nici când se autentifică în ERP cu contul de domeniu: autentificarea îl identifică în aplicație, iar aplicația lucrează cu baza sub identitatea ei și verifică singură drepturile utilizatorului.
+
 | Strat | Tehnologie |
 | --- | --- |
 | Sistem de operare | Windows Server 2019, 2022, 2025 (producție) sau Windows 11 (firme mici, demonstrații, test); Windows 10 22H2 acceptat cu avertisment (D27) |
@@ -566,11 +576,11 @@ Aplicația nu are parolă SQL: se conectează cu identitatea Windows a procesulu
 
 | Situație | Identitatea pool-ului și a serviciului | Loginuri SQL create |
 | --- | --- | --- |
-| SQL Server pe **același** calculator | Conturi virtuale: `IIS APPPOOL\ERP-PROD`, `NT SERVICE\ErpWorker-PROD` | Câte un login pentru fiecare |
-| SQL pe **alt** calculator, cu **gMSA** (recomandat) | Același cont gMSA, de exemplu `GRUPULEXEMPLU\erp-prod$`, pentru pool (`SpecificUser`, parolă goală) și serviciu (`obj= GRUPULEXEMPLU\erp-prod$ password= ""`) | Un login, pentru contul gMSA |
+| SQL Server pe **același** calculator cu serverul de aplicație | Conturi virtuale: `IIS APPPOOL\ERP-PROD`, `NT SERVICE\ErpWorker-PROD` | Câte un login pentru fiecare |
+| SQL pe **alt** calculator, cu **gMSA** (recomandat) | Câte un cont gMSA pentru fiecare instalare (de exemplu `GRUPULEXEMPLU\erp-prod$`, iar pentru `TEST` altul), același pentru pool (`SpecificUser`, parolă goală) și serviciu (`obj= GRUPULEXEMPLU\erp-prod$ password= ""`) | Un login, pentru contul gMSA |
 | SQL pe **alt** calculator, fără gMSA | Conturi virtuale; în rețea ies cu contul calculatorului | Un login, `[DOMENIU\CALCULATOR$]` (⚠ C-15) |
 
-**De ce gMSA** (D21): contul calculatorului e folosit în rețea de *orice* serviciu al acelui calculator care rulează ca Network Service sau cu o identitate virtuală, deci un alt site IIS de pe același server ar avea acces la baza ERP. Un gMSA e o identitate dedicată, cu parola gestionată automat de Active Directory: rămâne Windows authentication, fără nicio parolă de păstrat. Contul gMSA îl creează administratorul AD înainte de instalare ([ghidul](GHID_INSTALARE_ACTUALIZARE.md), secțiunea 5.2); installer-ul doar îl verifică (C-15) și îl folosește.
+**De ce gMSA** (D21): contul calculatorului e folosit în rețea de *orice* serviciu al acelui calculator care rulează ca Network Service sau cu o identitate virtuală, deci un alt site IIS de pe același server ar avea acces la baza ERP. Un gMSA e o identitate dedicată, cu parola gestionată automat de Active Directory: rămâne Windows authentication, fără nicio parolă de păstrat. Contul gMSA îl creează administratorul AD înainte de instalare, după ghidul detaliat pentru IT-ul clientului ([ghidul](GHID_INSTALARE_ACTUALIZARE.md), secțiunea 5.2: cerințe, comenzi, drepturile primite, verificare, probleme frecvente); installer-ul doar îl verifică (C-15) și îl folosește.
 
 Pool-ul și serviciul se creează (oprite) la I-06, înainte de I-11, pentru că loginurile conturilor virtuale cer existența lor. Serviciul creat la I-06 indică deja programul copiat la I-05.
 
