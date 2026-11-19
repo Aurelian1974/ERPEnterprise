@@ -24,6 +24,9 @@ public sealed record KitManifest
 
     public string? LastMigration { get; init; }
 
+    /// <summary>Cheia cu care e semnat manifestul (08, 7): 1 = activa, 2 = de rezerva, ca la licente (3.5).</summary>
+    public int KitKeyId { get; init; } = 1;
+
     public required IReadOnlyList<KitFile> Files { get; init; }
 
     public static readonly JsonSerializerOptions JsonOptions = new()

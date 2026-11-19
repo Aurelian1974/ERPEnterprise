@@ -22,14 +22,15 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
-  <!-- Cheia publica a kitului (08, 7). Se da la build: -p:KitPublicKeyFile=<cale PEM>. -->
-  <ItemGroup Condition="'$(KitPublicKeyFile)' != ''">
-    <EmbeddedResource Include="$(KitPublicKeyFile)" LogicalName="Erp.Setup.KitPublicKey.pem" />
+  <!-- Cheile publice ale kitului (08, 7): -p:KitPublicKey1File=<activa, PEM> si, optional, -p:KitPublicKey2File=<de rezerva, PEM>. -->
+  <ItemGroup>
+    <EmbeddedResource Include="$(KitPublicKey1File)" LogicalName="Erp.Setup.KitPublicKey.1.pem" Condition="'$(KitPublicKey1File)' != ''" />
+    <EmbeddedResource Include="$(KitPublicKey2File)" LogicalName="Erp.Setup.KitPublicKey.2.pem" Condition="'$(KitPublicKey2File)' != ''" />
   </ItemGroup>
 
   <Target Name="RequireKitPublicKeyForRelease" BeforeTargets="Build"
-          Condition="'$(Configuration)' == 'Release' and '$(_IsPublishing)' == 'true' and '$(KitPublicKeyFile)' == ''">
-    <Error Text="Publicarea Release a ErpSetup cere -p:KitPublicKeyFile=&lt;cheia publica a kitului, PEM&gt;." />
+          Condition="'$(Configuration)' == 'Release' and '$(_IsPublishing)' == 'true' and '$(KitPublicKey1File)' == ''">
+    <Error Text="Publicarea Release cere -p:KitPublicKey1File=&lt;cheia publica activa a kitului, PEM&gt;." />
   </Target>
 
   <ItemGroup>

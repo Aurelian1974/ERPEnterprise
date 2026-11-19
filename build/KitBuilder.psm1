@@ -270,6 +270,7 @@ function New-KitManifest {
         databaseCollation        = 'Latin1_General_100_CS_AS_SC_UTF8'
         hostingBundleVersion     = $Metadata.HostingBundleVersion
         lastMigration            = $Metadata.LastMigration
+        kitKeyId                 = if ($Metadata.ContainsKey('KitKeyId')) { [int]$Metadata.KitKeyId } else { 1 }
         files                    = @($files)
     }
 

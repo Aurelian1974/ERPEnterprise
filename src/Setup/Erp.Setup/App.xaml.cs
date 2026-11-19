@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using Erp.Setup.Core;
 using Erp.Setup.Core.Kit;
@@ -81,20 +80,8 @@ public partial class App : Application
     }
 }
 
-/// <summary>Cheia publica a kitului, incorporata la build (-p:KitPublicKeyFile, 08, 7).</summary>
+/// <summary>Cheile publice ale kitului incorporate la build (08, 7).</summary>
 internal static class KitPublicKey
 {
-    public const string ResourceName = "Erp.Setup.KitPublicKey.pem";
-
-    public static string? Load()
-    {
-        using var stream = typeof(KitPublicKey).Assembly.GetManifestResourceStream(ResourceName);
-        if (stream is null)
-        {
-            return null;
-        }
-
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
+    public static IReadOnlyDictionary<int, string> Load() => KitPublicKeys.FromAssembly(typeof(KitPublicKey).Assembly, "Erp.Setup");
 }

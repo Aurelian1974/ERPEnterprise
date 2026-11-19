@@ -1,0 +1,24 @@
+ERP – componente terțe incluse în program
+=========================================
+
+Programul ERP și installer-ul folosesc următoarele componente open source. Textul complet al fiecărei licențe
+se găsește la adresa proiectului.
+
+.NET și ASP.NET Core (Microsoft.* , System.*)            MIT                 https://github.com/dotnet/runtime
+Microsoft.Data.SqlClient                                 MIT                 https://github.com/dotnet/SqlClient
+Microsoft.Extensions.Identity.Core                       MIT                 https://github.com/dotnet/aspnetcore
+System.CommandLine                                       MIT                 https://github.com/dotnet/command-line-api
+CommunityToolkit.Mvvm                                    MIT                 https://github.com/CommunityToolkit/dotnet
+Dapper                                                   Apache-2.0          https://github.com/DapperLib/Dapper
+dbup-sqlserver                                           MIT                 https://github.com/DbUp/DbUp
+Serilog, Serilog.Sinks.File, Serilog.Sinks.Console,
+Serilog.Formatting.Compact                               Apache-2.0          https://github.com/serilog/serilog
+Hangfire.Core, Hangfire.SqlServer                        LGPL-3.0            https://github.com/HangfireIO/Hangfire
+Newtonsoft.Json                                          MIT                 https://github.com/JamesNK/Newtonsoft.Json
+MediatR 12.5.0                                           Apache-2.0          https://github.com/jbogard/MediatR
+FluentValidation                                         Apache-2.0          https://github.com/FluentValidation/FluentValidation
+QRCoder                                                  MIT                 https://github.com/codebude/QRCoder
+Microsoft.Web.Administration                             licența pachetului  https://www.nuget.org/packages/Microsoft.Web.Administration
+
+Interfața web folosește React (MIT) și alte biblioteci npm open source, precum și Syncfusion Essential Studio,
+sub licența comercială a furnizorului ERP.

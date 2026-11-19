@@ -6,10 +6,14 @@
 .DESCRIPTION
     1. Verifica scripturile SQL (nume MIG-01, prefixe unice, CREATE OR ALTER, fara dbo., UTF-8 fara BOM, MIG-02).
     2. Construieste interfata React (src/Web/erp-web: npm ci, npm run build -> wwwroot al Erp.Host), apoi publica Erp.Host,
-       Erp.Worker (framework-dependent, win-x64) si ErpSetup.exe (self-contained, single-file),
-       cu cheia publica a kitului incorporata.
+       Erp.Worker (framework-dependent, win-x64), ErpSetup.exe (fereastra WPF) si ErpSetup.Cli.exe (linia de comanda), ambele
+       self-contained, single-file, cu cheile publice ale kitului incorporate (1 activa, 2 de rezerva, 08, 7).
     3. Copiaza scripturile, sabloanele si Hosting Bundle-ul; semneaza Authenticode binarele proprii (release).
-    4. Genereaza manifest.json (SHA-256 pentru fiecare fisier) si manifest.sig (ECDSA P-256 / SHA-256), apoi arhiveaza.
+    4. Genereaza manifest.json (SHA-256 pentru fiecare fisier, releaseDate, kitKeyId) si manifest.sig (ECDSA P-256 / SHA-256),
+       apoi arhiveaza.
+
+    -KitKeyId alege cheia de semnare: 1 (activa) sau 2 (de rezerva, dupa compromiterea cheii 1). -PublicKeyPath e cheia publica a
+    cheii de semnare; -OtherPublicKeyPath e cealalta cheie publica, incorporata si ea in installer.
 
     -TestKit: kit de test, build Debug, pereche de chei generata pe loc (numai pentru CI si teste), fara Authenticode.
     Cheia privata de productie nu sta in depozit (build/kit-signing/README.md).
@@ -18,8 +22,8 @@
     ./build/package-kit.ps1 -Version 2026.0.1 -TestKit
 
 .EXAMPLE
-    ./build/package-kit.ps1 -Version 2027.1.0 -SigningKeyPath K:\kit-signing\kit-private.pem -PublicKeyPath K:\kit-signing\kit-public.pem `
-        -CodeSigningCertThumbprint 3F2A... -HostingBundlePath D:\Prereq\dotnet-hosting-10.0.3-win.exe
+    ./build/package-kit.ps1 -Version 2027.1.0 -SigningKeyPath K:\kit-signing\kit-1-private.pem -PublicKeyPath K:\kit-signing\kit-1-public.pem `
+        -OtherPublicKeyPath K:\kit-signing\kit-2-public.pem -CodeSigningCertThumbprint 3F2A... -HostingBundlePath D:\Prereq\dotnet-hosting-10.0.3-win.exe
 #>
 [CmdletBinding()]
 param(
@@ -31,6 +35,8 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')][string]$HostingBundleVersion,
     [string]$SigningKeyPath,
     [string]$PublicKeyPath,
+    [ValidateSet(1, 2)][int]$KitKeyId = 1,
+    [string]$OtherPublicKeyPath,
     [string]$CodeSigningCertThumbprint,
     [string]$TimestampUrl = 'http://timestamp.digicert.com',
     [string]$OutputDir = (Join-Path $PSScriptRoot '..' 'artifacts'),
@@ -62,6 +68,7 @@ if (-not $TestKit) {
     if (-not $PublicKeyPath) { $missing += '-PublicKeyPath' }
     if (-not $CodeSigningCertThumbprint) { $missing += '-CodeSigningCertThumbprint' }
     if (-not $HostingBundlePath) { $missing += '-HostingBundlePath' }
+    if (-not $OtherPublicKeyPath) { $missing += '-OtherPublicKeyPath' }
     if ($missing) { throw "Un kit livrabil cere: $($missing -join ', '). Pentru un kit de test folosiți -TestKit." }
 }
 
@@ -116,6 +123,13 @@ if ($signingKey.ExportSubjectPublicKeyInfoPem() -ne $publicKey.ExportSubjectPubl
     throw 'Cheia publică nu corespunde cheii private de semnare a kitului.'
 }
 
+# Cheile incorporate in installer, dupa kitKeyId: cheia de semnare are id-ul -KitKeyId, cealalta pe celalalt.
+$keyFiles = @{ $KitKeyId = $PublicKeyPath }
+if ($OtherPublicKeyPath) { $keyFiles[3 - $KitKeyId] = (Resolve-Path $OtherPublicKeyPath).Path }
+if (-not $keyFiles.ContainsKey(1)) { throw 'Kitul semnat cu cheia 2 cere și cheia publică 1 (-OtherPublicKeyPath).' }
+$keyProperties = @("-p:KitPublicKey1File=$($keyFiles[1])")
+if ($keyFiles.ContainsKey(2)) { $keyProperties += "-p:KitPublicKey2File=$($keyFiles[2])" }
+
 try {
     # --- 2. Publicare ---
     # Interfata React (07, ST2): construita in wwwroot al Erp.Host, inainte de publicare. Fara cheia Syncfusion,
@@ -142,8 +156,11 @@ try {
     if (-not (Test-Path (Join-Path $kitRoot 'app/host/wwwroot/index.html'))) { throw 'Interfața React lipsește din kit (app/host/wwwroot/index.html).' }
     Invoke-Native 'Erp.Worker' { dotnet publish (Join-Path $repoRoot 'src/Worker/Erp.Worker/Erp.Worker.csproj') @common -o (Join-Path $kitRoot 'app/worker') }
     $setupOut = Join-Path $work 'setup'
-    Invoke-Native 'ErpSetup' { dotnet publish (Join-Path $repoRoot 'src/Setup/Erp.Setup/Erp.Setup.csproj') @common -o $setupOut "-p:KitPublicKeyFile=$PublicKeyPath" }
+    Invoke-Native 'ErpSetup (fereastra)' { dotnet publish (Join-Path $repoRoot 'src/Setup/Erp.Setup/Erp.Setup.csproj') @common -o $setupOut @keyProperties }
     Copy-Item (Join-Path $setupOut 'ErpSetup.exe') $kitRoot
+    $cliOut = Join-Path $work 'cli'
+    Invoke-Native 'ErpSetup.Cli' { dotnet publish (Join-Path $repoRoot 'src/Setup/Erp.Setup.Cli/Erp.Setup.Cli.csproj') @common -o $cliOut @keyProperties }
+    Copy-Item (Join-Path $cliOut 'ErpSetup.Cli.exe') $kitRoot
 
     # --- 3. Scripturi, sabloane, cerinte preliminare ---
     Write-Host '3. Copiez scripturile, șabloanele și cerințele preliminare'
@@ -156,7 +173,8 @@ try {
     }
 
     if (-not $TestKit) {
-        $required = 'CITESTE-MA.txt', 'THIRD-PARTY-NOTICES.txt', 'templates/appsettings.Installation.json', 'templates/maintenance.html', 'templates/answers.example.json'
+        $required = 'CITESTE-MA.txt', 'THIRD-PARTY-NOTICES.txt', 'templates/appsettings.Installation.json', 'templates/maintenance.html',
+            'templates/app_offline.template.htm', 'templates/answers.example.json'
         $absent = @($required | Where-Object { -not (Test-Path (Join-Path $kitRoot $_)) })
         if ($absent) { throw "Kitul livrabil nu are: $($absent -join ', ') (sursa: src/Setup/Erp.Setup/Kit)." }
 
@@ -167,7 +185,7 @@ try {
                 Sort-Object FullName | Select-Object -Last 1 -ExpandProperty FullName
         }
         if (-not $signtool) { throw 'signtool.exe nu a fost găsit (Windows SDK).' }
-        $ownBinaries = @(Get-Item (Join-Path $kitRoot 'ErpSetup.exe')) + @(Get-ChildItem (Join-Path $kitRoot 'app') -Recurse -File -Include 'Erp.*.dll', 'Erp.*.exe')
+        $ownBinaries = @(Get-Item (Join-Path $kitRoot 'ErpSetup.exe'), (Join-Path $kitRoot 'ErpSetup.Cli.exe')) + @(Get-ChildItem (Join-Path $kitRoot 'app') -Recurse -File -Include 'Erp.*.dll', 'Erp.*.exe')
         Invoke-Native 'signtool' { & $signtool sign /sha1 $CodeSigningCertThumbprint /fd SHA256 /tr $TimestampUrl /td SHA256 @($ownBinaries.FullName) }
     }
 
@@ -179,6 +197,7 @@ try {
         MinUpgradeFrom       = $MinUpgradeFrom
         HostingBundleVersion = $HostingBundleVersion
         LastMigration        = $lastMigration
+        KitKeyId             = $KitKeyId
     }
 
     $zip = Join-Path $OutputDir "$kitName.zip"

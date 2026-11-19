@@ -70,6 +70,37 @@ public sealed class KitVerifierTests : IDisposable
     }
 
     [Fact]
+    [Trait("Criteriu", "08-IA-16")]
+    public void Kit_signed_with_the_reserve_key_2_is_accepted_only_by_its_kitKeyId()
+    {
+        using var reserve = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        WriteSignedManifest(kitKeyId: 2, key: reserve);
+        var keys = new Dictionary<int, string>
+        {
+            [1] = signingKey.ExportSubjectPublicKeyInfoPem(),
+            [2] = reserve.ExportSubjectPublicKeyInfoPem(),
+        };
+
+        var result = new KitVerifier(keys).Verify(kitRoot);
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Details));
+        Assert.Equal(2, result.Manifest!.KitKeyId);
+        Assert.Equal(ExitCodes.InvalidKitSignature, Verify().ExitCode);
+        Assert.Equal(ExitCodes.InvalidKitSignature, new KitVerifier(new Dictionary<int, string> { [1] = keys[1] }).Verify(kitRoot).ExitCode);
+    }
+
+    [Fact]
+    public void Extra_files_outside_app_and_database_are_not_rejected()
+    {
+        AddFile("CITESTE-MA.txt", "text");
+        WriteSignedManifest();
+        File.WriteAllText(Path.Combine(kitRoot, "nota-client.txt"), "adăugat de client");
+        File.WriteAllText(Path.Combine(kitRoot, KitVerifier.CliExecutableName), "cli");
+
+        Assert.True(Verify().Succeeded);
+    }
+
+    [Fact]
     public void Kit_signed_with_another_key_is_rejected_with_code_20()
     {
         using var otherKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -106,7 +137,7 @@ public sealed class KitVerifierTests : IDisposable
     [Fact]
     public void Installer_without_embedded_public_key_rejects_the_kit_with_code_20()
     {
-        var result = new KitVerifier(null).Verify(kitRoot);
+        var result = new KitVerifier((string?)null).Verify(kitRoot);
 
         Assert.Equal(ExitCodes.InvalidKitSignature, result.ExitCode);
     }
@@ -184,7 +215,7 @@ public sealed class KitVerifierTests : IDisposable
         File.WriteAllBytes(fullPath, bytes);
     }
 
-    private void WriteSignedManifest(string product = "ERP")
+    private void WriteSignedManifest(string product = "ERP", int kitKeyId = 1, ECDsa? key = null)
     {
         var manifest = new KitManifest
         {
@@ -197,11 +228,12 @@ public sealed class KitVerifierTests : IDisposable
             DatabaseCollation = "Latin1_General_100_CS_AS_SC_UTF8",
             HostingBundleVersion = "10.0.3",
             LastMigration = "core/2026.11.001_Create_Company.sql",
+            KitKeyId = kitKeyId,
             Files = manifestFiles,
         };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(manifest, KitManifest.JsonOptions);
         File.WriteAllBytes(Path.Combine(kitRoot, KitVerifier.ManifestFileName), bytes);
-        var signature = signingKey.SignData(bytes, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        var signature = (key ?? signingKey).SignData(bytes, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         File.WriteAllText(Path.Combine(kitRoot, KitVerifier.SignatureFileName), Convert.ToBase64String(signature));
     }
 }

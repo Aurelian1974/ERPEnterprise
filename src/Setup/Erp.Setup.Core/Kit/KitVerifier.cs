@@ -22,11 +22,35 @@ public sealed class KitVerifier
     public const string SignatureFailureMessage = "Kitul nu este semnat de producător sau a fost modificat.";
     public const string FilesFailureMessage = "Fișiere din kit lipsă sau modificate.";
 
-    private readonly string? publicKeyPem;
+    private readonly IReadOnlyDictionary<int, string> publicKeys;
+    private string? publicKeyPem;
 
+    /// <summary>Doar cheia 1 (testele si kiturile semnate cu cheia activa).</summary>
     public KitVerifier(string? publicKeyPem)
+        : this(publicKeyPem is null ? new Dictionary<int, string>() : new Dictionary<int, string> { [1] = publicKeyPem })
     {
-        this.publicKeyPem = publicKeyPem;
+    }
+
+    /// <param name="publicKeys">Cheile publice ale kitului incorporate in installer, dupa kitKeyId (1 activa, 2 de rezerva).</param>
+    public KitVerifier(IReadOnlyDictionary<int, string> publicKeys)
+    {
+        this.publicKeys = publicKeys;
+    }
+
+    /// <summary>
+    /// kitKeyId se citeste din manifest inainte de verificare doar ca sa aleaga cheia; valoarea e apoi acoperita de semnatura.
+    /// </summary>
+    private static int ReadKeyId(byte[] manifestBytes)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(manifestBytes);
+            return document.RootElement.TryGetProperty("kitKeyId", out var id) && id.TryGetInt32(out var value) ? value : 1;
+        }
+        catch (JsonException)
+        {
+            return 1;
+        }
     }
 
     public KitVerificationResult Verify(string kitRoot)
@@ -34,7 +58,7 @@ public sealed class KitVerifier
         var manifestPath = Path.Combine(kitRoot, ManifestFileName);
         var signaturePath = Path.Combine(kitRoot, SignatureFileName);
 
-        if (string.IsNullOrWhiteSpace(publicKeyPem))
+        if (publicKeys.Count == 0)
         {
             return KitVerificationResult.Fail(ExitCodes.InvalidKitSignature, SignatureFailureMessage,
                 "Installer-ul nu conține cheia publică a kitului.");
@@ -47,6 +71,13 @@ public sealed class KitVerifier
         }
 
         var manifestBytes = File.ReadAllBytes(manifestPath);
+        var keyId = ReadKeyId(manifestBytes);
+        if (!publicKeys.TryGetValue(keyId, out publicKeyPem) || string.IsNullOrWhiteSpace(publicKeyPem))
+        {
+            return KitVerificationResult.Fail(ExitCodes.InvalidKitSignature, SignatureFailureMessage,
+                $"Installer-ul nu conține cheia publică {keyId} a kitului.");
+        }
+
         if (!IsSignatureValid(manifestBytes, File.ReadAllText(signaturePath)))
         {
             return KitVerificationResult.Fail(ExitCodes.InvalidKitSignature, SignatureFailureMessage);

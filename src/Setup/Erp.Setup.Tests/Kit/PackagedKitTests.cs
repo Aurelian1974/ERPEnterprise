@@ -39,6 +39,9 @@ public sealed class PackagedKitTests : IDisposable
         Assert.True(result.Succeeded, string.Join("; ", result.Details));
         Assert.Contains(result.Manifest!.Files, f => f.Path == "app/host/Erp.Host.dll");
         Assert.Contains(result.Manifest.Files, f => f.Path == "ErpSetup.exe");
+        Assert.Contains(result.Manifest.Files, f => f.Path == "ErpSetup.Cli.exe");
+        Assert.Contains(result.Manifest.Files, f => f.Path == "templates/app_offline.template.htm");
+        Assert.Equal(1, result.Manifest.KitKeyId);
     }
 
     [Fact]

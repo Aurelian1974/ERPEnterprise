@@ -187,6 +187,19 @@ Describe 'New-KitManifest' {
         $manifest.files.path | Should -Be @('app/host/Erp.Host.dll', 'templates/answers.example.json')
         $manifest.files[0].sha256 | Should -Be (Get-FileHash (Join-Path $kit 'app/host/Erp.Host.dll')).Hash.ToLowerInvariant()
         $manifest.databaseCollation | Should -BeExactly 'Latin1_General_100_CS_AS_SC_UTF8'
+        $manifest.kitKeyId | Should -Be 1
+        $key.Dispose()
+        Remove-Item $kit -Recurse -Force
+    }
+
+    It 'scrie kitKeyId 2 pentru un kit semnat cu cheia de rezerva' {
+        $kit = New-FakeRepo
+        Add-Sql $kit 'app/host/Erp.Host.dll' 'host'
+        $key = [Security.Cryptography.ECDsa]::Create([Security.Cryptography.ECCurve+NamedCurves]::nistP256)
+
+        New-KitManifest -KitRoot $kit -SigningKey $key -Metadata @{ Version = '2026.0.1'; ReleaseDate = '2026-11-15'; MinUpgradeFrom = '2026.0.1'; HostingBundleVersion = '10.0.0'; LastMigration = $null; KitKeyId = 2 }
+
+        ((Get-Content -Raw (Join-Path $kit 'manifest.json')) | ConvertFrom-Json).kitKeyId | Should -Be 2
         $key.Dispose()
         Remove-Item $kit -Recurse -Force
     }

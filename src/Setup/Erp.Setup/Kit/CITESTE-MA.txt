@@ -1,0 +1,32 @@
+ERP – kitul de instalare
+========================
+
+Instalare, actualizare și întreținere
+-------------------------------------
+Porniți ErpSetup.exe (clic dreapta › Executare ca administrator, dacă Windows nu cere singur drepturile)
+direct din acest folder. Fereastra vă ghidează pas cu pas:
+
+  • Instalare nouă: baza de date, site-ul web, licența, verificarea cerințelor, instalarea.
+  • Pentru o instalare existentă: Actualizează, Repară, Resetează accesul administratorului,
+    Cheia de recuperare…, Pachet de diagnostic, Dezinstalează.
+  • Recuperează o instalare existentă: după reinstalarea serverului sau mutarea pe alt calculator,
+    cu baza existentă și cheia de recuperare.
+
+Înainte de instalare
+--------------------
+  • Contul Windows cu care rulați installer-ul trebuie să fie administrator local și sysadmin
+    pe SQL Server pe durata instalării (dreptul se poate retrage după aceea).
+  • SQL Server 2022 sau mai nou. Dacă SQL Server e pe alt calculator, administratorul Active Directory
+    creează în prealabil contul gMSA al aplicației (ghidul de instalare, secțiunea 5.2).
+  • Fișierul de licență (.lic) primit de la furnizor.
+
+La final
+--------
+  • Parola temporară a utilizatorului „administrator” se afișează o singură dată: notați-o.
+  • Salvați cheia de recuperare (.pfx) separat de server și de backup-uri, iar parola ei
+    în managerul de parole al firmei. Fără ea, datele criptate nu pot fi citite pe alt server.
+  • Dacă ați folosit certificatul intern, instalați fișierul certificat-erp.cer pe calculatoarele
+    utilizatorilor (manual sau prin politică de grup).
+  • Copiați backup-urile bazei în afara serverului SQL (responsabilitatea IT-ului firmei).
+
+Jurnale: C:\ProgramData\Erp\<Instalare>\logs\setup\
