@@ -32,6 +32,9 @@ builder.Services.AddSingleton(sp => new SchemaVersionGuard(sp.GetRequiredService
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SchemaVersionGuard>());
 builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:MaintenanceFlagPath"], TimeProvider.System));
 
+// Acelasi inel de chei Data Protection ca Erp.Host (08, 5.12): Worker-ul citeste secretele criptate (de exemplu parola SMTP).
+builder.Services.AddErpDataProtection(builder.Configuration, () => new SqlConnection(connectionString), development);
+
 // Tabelele Hangfire vin din migrarile hangfire/ (8.5), deci PrepareSchemaIfNecessary = false.
 GlobalConfiguration.Configuration.SetDataCompatibilityLevel(CompatibilityLevel.Version_180);
 var storage = new SqlServerStorage(() => new SqlConnection(connectionString), new SqlServerStorageOptions

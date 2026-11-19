@@ -44,13 +44,9 @@ builder.Services.AddErpMediator();
 builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(development));
 builder.Services.AddErpApi();
 
-// Autentificarea (08, 8.7): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile TOTP)
-// stau in DataRoot\<Instanta>\keys, criptate DPAPI (8.10); in Development, in profilul utilizatorului.
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName($"ERP-{builder.Configuration["Erp:Instance"]}");
-if (builder.Configuration["Erp:DataProtectionKeysPath"] is { Length: > 0 } keysPath && OperatingSystem.IsWindows())
-{
-    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath)).ProtectKeysWithDpapi(protectToLocalMachine: true);
-}
+// Autentificarea (08, sectiunea 8): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile
+// TOTP, secretele din core.Setting) stau in baza, protejate cu certificatul instalarii (08, 5.12); in Development, in profil.
+builder.Services.AddErpDataProtection(builder.Configuration, Connect, development);
 
 builder.Services.AddErpAuth(builder.Configuration);
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
@@ -84,6 +80,7 @@ app.MapErpHealth(build, () =>
     new DatabaseCheck(Connect),
     new SchemaCheck(schemaReader, build, allowUnversionedBuild: development),
     new LicenseCheck(() => app.Services.GetRequiredService<ILicenseInfo>() is { HasLicense: true, State: not LicenseState.ReadOnly }),
+    new DataProtectionCheck(app.Services.GetRequiredService<IDataProtectionProvider>()),
     new WorkerCheck(Connect),
 ]);
 
