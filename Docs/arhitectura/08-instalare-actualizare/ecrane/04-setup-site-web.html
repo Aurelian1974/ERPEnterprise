@@ -1,0 +1,59 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>ERP Setup · Site web</title><style>*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy-900:#0b1f3a;--navy-800:#102a4c;--blue-500:#2f6fed;--blue-600:#2459c9;--blue-50:#eef3fd;--blue-100:#dbe6fc;--ink:#1a2433;--muted:#5b6676;--line:#e3e7ee;--bg:#f5f7fa;--green:#1f9d63;--green-50:#e3f5ec;--red:#d14343;--red-50:#fbe9e9;--amber:#b07a00;--amber-50:#fbf1dc}
+html,body{width:1440px;height:900px;font-family:"Segoe UI","Inter",system-ui,sans-serif;color:var(--ink);font-size:13px;background:linear-gradient(135deg,#c9d6ea 0%,#e6ecf5 45%,#d5def0 100%);}
+.desk{width:1440px;height:900px;display:grid;place-items:center}
+.win{width:1180px;height:780px;background:#fff;border-radius:10px;box-shadow:0 24px 60px rgba(11,31,58,.28),0 0 0 1px rgba(11,31,58,.12);overflow:hidden;display:flex;flex-direction:column}
+.tb{height:36px;display:flex;align-items:center;padding-left:12px;background:#f3f5f9;border-bottom:1px solid var(--line);font-size:12px;color:#334155;gap:8px}
+.tb .mk{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#4f8cff,#2f6fed);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center}
+.tb .ctl{margin-left:auto;display:flex}.tb .ctl span{width:46px;height:36px;display:grid;place-items:center;font-size:13px;color:#475569}
+.body{flex:1;display:flex;min-height:0}
+.steps{width:270px;background:var(--navy-900);color:#fff;padding:26px 20px;display:flex;flex-direction:column}
+.steps .brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:17px;margin-bottom:6px}
+.steps .brand .mk{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#4f8cff,#2f6fed);display:grid;place-items:center;font-size:13px}
+.steps .ver{font-size:11.5px;color:#9fb2d1;margin-bottom:28px}
+.st{display:flex;gap:12px;align-items:center;padding:9px 10px;border-radius:8px;color:#9fb2d1;font-size:13.5px;margin-bottom:4px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1.5px solid #3b5277;display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+.st.done{color:#d6e0f0}.st.done .n{background:#1f9d63;border-color:#1f9d63;color:#fff}
+.st.cur{background:rgba(79,140,255,.16);color:#fff;font-weight:600}.st.cur .n{background:var(--blue-500);border-color:var(--blue-500);color:#fff}
+.steps .foot{margin-top:auto;font-size:11.5px;color:#8ea3c4;line-height:1.5}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.content{flex:1;padding:30px 38px;overflow:hidden}
+h1{font-size:22px;font-weight:700;margin-bottom:6px}.sub{color:var(--muted);font-size:13.5px;margin-bottom:24px;line-height:1.5}
+.fbar{height:68px;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 38px;gap:10px;background:#fafbfc}
+.btn{height:36px;padding:0 18px;border-radius:8px;border:1px solid #cfd6e1;background:#fff;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;color:#1f2a3a}
+.btn.p{background:var(--blue-500);border-color:var(--blue-500);color:#fff}.btn.dis{opacity:.45}.btn.g{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.danger{color:var(--red);border-color:#f0c4c4}
+.sp{flex:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}
+.fld label{display:block;font-weight:600;font-size:12.5px;margin-bottom:6px;color:#334155}
+.fld .in{height:36px;border:1px solid #cfd6e1;border-radius:7px;display:flex;align-items:center;padding:0 12px;background:#fff;font-size:13.5px}
+.fld .in.ro{background:#f3f5f9;color:#475569}.fld .in.foc{border-color:var(--blue-500);box-shadow:0 0 0 3px var(--blue-100)}
+.fld .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.fld .in .dd{margin-left:auto;color:#64748b}
+.card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff}
+.ok{color:var(--green)}.warn{color:var(--amber)}.err{color:var(--red)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--green-50)}.pill.warn{background:var(--amber-50)}.pill.err{background:var(--red-50)}.pill.b{background:var(--blue-50);color:var(--blue-600)}
+.kv{display:grid;grid-template-columns:170px 1fr;gap:8px 12px;font-size:13px}.kv dt{color:var(--muted)}.kv dd{font-weight:600}
+.radio{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px}
+.radio.on{border-color:var(--blue-500);background:var(--blue-50)}
+.radio .o{width:16px;height:16px;border-radius:50%;border:1.5px solid #94a3b8;flex:none;margin-top:2px}
+.radio.on .o{border:5px solid var(--blue-500)}
+.radio b{display:block;font-size:13.5px;margin-bottom:2px}.radio span{font-size:12px;color:var(--muted)}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #94a3b8;display:inline-grid;place-items:center;flex:none;font-size:11px;color:#fff}
+.cb.on{background:var(--blue-500);border-color:var(--blue-500)}.cb.lock{background:#94a3b8;border-color:#94a3b8}
+table{border-collapse:collapse;width:100%}th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:7px 10px;border-bottom:1px solid #eef1f5;font-size:12.8px}
+.alert{border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.5;display:flex;gap:10px}
+.alert.warn{background:var(--amber-50);color:#6b4b00}.alert.err{background:var(--red-50);color:#8a2424}.alert.ok{background:var(--green-50);color:#11603b}.alert.info{background:var(--blue-50);color:#1d3f8f}
+.mono{white-space:nowrap;font-family:"Cascadia Mono",Consolas,monospace}
+.bar{height:8px;border-radius:99px;background:#e6ebf2;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue-500);border-radius:99px}
+</style></head><body><div class="desk"><div class="win"><div class="tb"><div class="mk">E</div>ERP Setup · Instalare<div class="ctl"><span>—</span><span>☐</span><span>✕</span></div></div><div class="body"><div class="steps"><div class="brand"><div class="mk">E</div>ERP Setup</div><div class="ver">Kit 2027.1.0 · instalare nouă</div><div class="st done"><div class="n">✓</div>Baza de date</div><div class="st cur"><div class="n">2</div>Site web</div><div class="st "><div class="n">3</div>Licență</div><div class="st "><div class="n">4</div>Verificare</div><div class="st "><div class="n">5</div>Instalare</div><div class="st "><div class="n">6</div>Gata</div><div class="foot">Rulează ca administrator<br>Cont Windows: GRUPULEXEMPLU\andrei.matei</div></div><div class="main"><div class="content"><h1>Site web</h1><div class="sub">Adresa la care utilizatorii deschid ERP-ul în browser și certificatul pentru HTTPS.</div>
+<div class="grid2" style="grid-template-columns:200px 1fr 120px"><div class="fld"><label>Nume instalare *</label><div class="in">PROD</div><div class="hint">PROD, TEST…</div></div>
+<div class="fld"><label>Adresă *</label><div class="in">srv-erp.grupulexemplu.local</div><div class="hint">Implicit: numele complet al acestui calculator</div></div>
+<div class="fld"><label>Port HTTPS</label><div class="in">443</div></div></div>
+<div class="fld" style="margin-top:18px"><label>Certificat</label>
+<div class="radio on"><div class="o"></div><div><b>Generează un certificat intern (recomandat, implicit)</b><span>Valabil 2 ani pentru srv-erp.grupulexemplu.local. Fișierul certificat-erp.cer trebuie instalat pe calculatoarele utilizatorilor (manual sau prin politică de grup), altfel browserul afișează un avertisment.</span></div></div>
+<div class="radio"><div class="o"></div><div><b>Folosește un certificat existent pe acest calculator</b><span>Doar certificatele valabile pentru adresă, cu cheie privată (de exemplu emise de autoritatea de certificare a firmei)</span>
+<div class="in ro" style="margin-top:8px;height:32px;border:1px solid #cfd6e1;border-radius:7px;display:flex;align-items:center;padding:0 10px;font-size:12.5px;color:#94a3b8;width:680px;white-space:nowrap">CN=srv-erp.grupulexemplu.local · emis de GRUPULEXEMPLU-CA · până la 10.03.2028 <span style="margin-left:auto">▾</span></div></div></div></div>
+<div class="fld" style="margin-top:12px;width:420px"><label>Folder program</label><div class="in">C:\Program Files\Erp <span class="dd">…</span></div></div></div><div class="fbar"><button class="btn g">Anulează</button><div class="sp"></div><button class="btn">← Înapoi</button><button class="btn p">Înainte →</button></div></div></div></div></div></body></html>
