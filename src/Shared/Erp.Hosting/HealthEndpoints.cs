@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Erp.Licensing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -87,13 +86,13 @@ public sealed class SchemaCheck(ISchemaVersionSource reader, ErpBuildInfo build,
     }
 }
 
-/// <summary>license: licenta e valida si incarcata (08, 5.14).</summary>
-public sealed class LicenseCheck(string licensePath, ILicenseReader reader) : IReadinessCheck
+/// <summary>license: licenta activa din baza e valida si incarcata (08, 5.14); starea vine din aplicatie.</summary>
+public sealed class LicenseCheck(Func<bool> isValid) : IReadinessCheck
 {
     public string Name => "license";
 
     public Task<HealthStatus> CheckAsync(CancellationToken ct) =>
-        Task.FromResult(File.Exists(licensePath) && reader.Read(File.ReadAllBytes(licensePath)).IsValid
+        Task.FromResult(isValid()
             ? HealthStatus.Healthy
             : HealthStatus.Unhealthy);
 }

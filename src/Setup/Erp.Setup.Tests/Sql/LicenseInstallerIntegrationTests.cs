@@ -23,8 +23,11 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
 
     private SqlOperator Operator() => new(sql.Target("master"), sql.SaPassword, new LoggerConfiguration().CreateLogger());
 
-    private LicenseReadResult Verified(License payload) =>
-        licenses.Reader.Read(licenses.Create(payload));
+    private VerifiedLicense Verified(License payload)
+    {
+        var file = licenses.Create(payload);
+        return new VerifiedLicense(file, licenses.Reader.Read(file));
+    }
 
     private async Task<string> DeployedDatabase(string name, string instance)
     {
@@ -43,7 +46,7 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
         return name;
     }
 
-    private async Task<int> SaveAsMigrator(string database, string instance, LicenseReadResult license)
+    private async Task<int> SaveAsMigrator(string database, string instance, VerifiedLicense license)
     {
         var id = 0;
         var op = Operator();
@@ -95,7 +98,7 @@ public sealed class LicenseInstallerIntegrationTests(SqlServerFixture sql) : IDi
     {
         var database = await DeployedDatabase("ERP_IT_LICDATES", "ITLICD");
         var license = Verified(TestLicenses.Payload(validUntil: "2099-01-01"));
-        var badDates = license with { License = license.License! with { IssuedAt = new DateOnly(2099, 6, 1) } };
+        var badDates = license with { Result = license.Result with { License = license.License with { IssuedAt = new DateOnly(2099, 6, 1) } } };
 
         var ex = await Assert.ThrowsAsync<SqlSetupException>(() => SaveAsMigrator(database, "ITLICD", badDates));
 

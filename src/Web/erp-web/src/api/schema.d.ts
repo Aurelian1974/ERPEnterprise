@@ -293,6 +293,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLicense"];
+        put?: never;
+        post: operations["UploadLicense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -618,6 +634,48 @@ export interface components {
             autoRollover: boolean;
             /** Format: byte */
             rowVersion: null | string;
+        };
+        LicenseDto: {
+            hasLicense: boolean;
+            licenseId: null | string;
+            keyId: null | string;
+            customerName: null | string;
+            fiscalCodes: string[];
+            modules: string[];
+            /** Format: int32 */
+            users: number;
+            /** Format: int32 */
+            payrollEmployees: number;
+            /** Format: int32 */
+            posTerminals: number;
+            /** Format: date */
+            issuedAt: null | string;
+            /** Format: date */
+            validUntil: null | string;
+            /** Format: date */
+            updatesUntil: null | string;
+            state: string;
+            clockBehind: boolean;
+            history: components["schemas"]["LicenseHistoryItem"][];
+        };
+        LicenseHistoryItem: {
+            licenseId: string;
+            keyId: string;
+            customerName: string;
+            /** Format: int32 */
+            companies: number;
+            /** Format: date */
+            issuedAt: string;
+            /** Format: date */
+            validUntil: null | string;
+            /** Format: date */
+            updatesUntil: null | string;
+            isCurrent: boolean;
+            /** Format: date-time */
+            loadedAt: string;
+        };
+        UploadLicense: {
+            fileBase64: string;
         };
     };
     responses: never;
@@ -1541,6 +1599,86 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLicense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UploadLicense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadLicense"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

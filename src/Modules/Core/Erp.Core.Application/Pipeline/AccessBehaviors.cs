@@ -23,8 +23,11 @@ internal sealed class CorrelationBehavior<TRequest, TResponse>(ICurrentContext c
     }
 }
 
-/// <summary>4.1 pasul 2: modulul trebuie sa fie licentiat; in modul doar-citire (4.4) orice comanda e refuzata.</summary>
-internal sealed class LicenseBehavior<TRequest, TResponse>(ILicenseInfo license) : IPipelineBehavior<TRequest, TResponse>
+/// <summary>
+/// 4.1 pasul 2: modulul trebuie sa fie licentiat. In modul doar-citire (4.4) orice comanda e refuzata, la fel pe o firma al carei
+/// CUI nu mai e in licenta (08, 4.3 pasul 7), cu exceptia comenzilor care permit iesirea din aceasta stare (incarcarea licentei).
+/// </summary>
+internal sealed class LicenseBehavior<TRequest, TResponse>(ILicenseInfo license, ICurrentContext context) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -35,10 +38,21 @@ internal sealed class LicenseBehavior<TRequest, TResponse>(ILicenseInfo license)
             throw new ErpException(ErpErrorKind.Forbidden, CoreErrorCodes.ModuleNotLicensed, $"Modulul {module} nu este inclus în licență.");
         }
 
-        if (RequestMetadata<TRequest>.IsCommand && license.State == LicenseState.ReadOnly)
+        if (RequestMetadata<TRequest>.IsCommand && !RequestMetadata<TRequest>.AllowedWhenLicenseReadOnly)
         {
-            throw new ErpException(ErpErrorKind.Forbidden, CoreErrorCodes.LicenseReadOnly,
-                "Licența a expirat: aplicația funcționează doar pentru consultare. Încărcați o licență nouă.");
+            if (license.State == LicenseState.ReadOnly)
+            {
+                throw new ErpException(ErpErrorKind.Forbidden, CoreErrorCodes.LicenseReadOnly,
+                    license.HasLicense
+                        ? "Licența a expirat: aplicația funcționează doar pentru consultare. Încărcați o licență nouă."
+                        : "Instalarea nu are o licență validă: aplicația funcționează doar pentru consultare. Încărcați licența.");
+            }
+
+            if (context.CompanyId != 0 && !license.IsCompanyLicensed(context.CompanyId))
+            {
+                throw new ErpException(ErpErrorKind.Forbidden, CoreErrorCodes.CompanyNotLicensed,
+                    "CUI-ul firmei curente nu mai figurează în licență: firma este doar pentru consultare. Încărcați o licență care o include.");
+            }
         }
 
         return next();

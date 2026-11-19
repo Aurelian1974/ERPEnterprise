@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup Label="Host si Worker">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.15" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.15" />
     <!-- Versiunea Hangfire = scriptul din src/Worker/Erp.Worker/Database/Migrations (test HangfireMigrationMatchesPinnedPackage). -->
     <PackageVersion Include="Hangfire.Core" Version="1.8.25" />

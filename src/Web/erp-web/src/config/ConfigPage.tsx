@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useOutletContext, useSearchParams } from 'react-router';
+import { NavLink, useLocation, useOutletContext, useSearchParams } from 'react-router';
 import { useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,14 +12,17 @@ import { applyServerErrors, required } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { orgApi, orgKeys, useNumberSeries, useOrgLookups, useOrgTree, type NumberSeries } from '../org/orgApi';
+import { LicenseTab } from './LicenseTab';
 
-/** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum doar Serii (celelalte vin cu etapele lor). */
+/** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
   const user = useOutletContext<CurrentUser>();
   const canSeries = user.permissions.includes('Core.NumberSeries.Manage');
+  const canLicense = user.permissions.includes('Core.License.Manage');
+  const tab = useLocation().pathname.endsWith('/licenta') && canLicense ? 'license' : 'series';
   return (
     <div className="page wide">
-      <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {t('config.tab.series')}</div>
+      <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tab === 'license' ? t('config.tab.license') : t('config.tab.series')}</div>
       <div className="head">
         <div>
           <h1>{t('config.title')}</h1>
@@ -35,8 +38,16 @@ export function ConfigPage() {
             </NavLink>
           )}
         </div>
+        {canLicense && (
+          <div className="family">
+            <span className="family-name">{t('config.family.system')}</span>
+            <NavLink to="/admin/config/licenta" className="tab">
+              ✓ {t('config.tab.license')}
+            </NavLink>
+          </div>
+        )}
       </nav>
-      {canSeries && <SeriesTab user={user} />}
+      {tab === 'license' ? <LicenseTab /> : canSeries && <SeriesTab user={user} />}
     </div>
   );
 }

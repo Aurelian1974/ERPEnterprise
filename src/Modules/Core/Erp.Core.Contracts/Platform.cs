@@ -49,17 +49,30 @@ public enum LicenseState
 /// <summary>Licenta instalarii (4.4).</summary>
 public interface ILicenseInfo
 {
+    /// <summary>Exista o licenta autentica in baza (valida sau expirata, 08, 4.1).</summary>
+    bool HasLicense { get; }
+
     bool IsModuleActive(string moduleCode);
 
     /// <summary>Codurile modulelor active (meniul interfetei, UI-07); serverul ramane autoritatea prin IsModuleActive.</summary>
     IReadOnlyCollection<string> ActiveModules { get; }
 
-    /// <summary>CUI-ul firmei e in licenta (4.4 pasul 2); comparatie pe cifre, fara prefixul RO.</summary>
+    /// <summary>CUI-ul firmei e in licenta (08, 4.3); comparatie pe cifre, fara prefixul RO.</summary>
     bool IsFiscalCodeLicensed(string fiscalCode);
+
+    /// <summary>Firma activa are CUI-ul in licenta (08, 4.3 pasul 7); altfel e doar pentru consultare.</summary>
+    bool IsCompanyLicensed(int companyId);
 
     int? GetLimit(string limitCode);
 
-    DateOnly ValidUntil { get; }
+    /// <summary>null = nelimitat sau fara licenta (vezi <see cref="HasLicense"/>).</summary>
+    DateOnly? ValidUntil { get; }
+
+    /// <summary>Dreptul la actualizari (08, 4.5); null = fara limita.</summary>
+    DateOnly? UpdatesUntil { get; }
+
+    /// <summary>Ceasul serverului e cu peste o zi in urma celei mai mari date vazute (08, 4.4): avertisment pentru administratori.</summary>
+    bool ClockBehind { get; }
 
     /// <summary>Numele clientului din licenta (afisat pe paginile de autentificare); null fara licenta valida.</summary>
     string? CustomerName { get; }

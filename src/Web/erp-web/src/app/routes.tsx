@@ -14,6 +14,7 @@ export const routes = [
       { index: true, element: <HomePage /> },
       { path: 'admin/firme', element: <OrgPage /> },
       { path: 'admin/config/serii', element: <ConfigPage /> },
+      { path: 'admin/config/licenta', element: <ConfigPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

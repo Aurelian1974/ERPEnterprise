@@ -252,7 +252,7 @@ Testul de acceptare corespunzător este IA-07 (secțiunea 12).
 
 - `validUntil = null`: licența nu expiră; nu se afișează niciun avertisment de expirare, iar `/health/ready` raportează `license: Healthy`. Limitele și CUI-urile se aplică în continuare.
 - Cu dată: avertisment cu 30 de zile înainte, perioadă de grație de 15 zile după, apoi doar citire (02.01, fluxul 4.4).
-- **Data de referință** pentru expirare este cea mai mare dintre data curentă și cea mai mare dată văzută vreodată de aplicație (`core.Setting`, cheia `License.HighestSeenDate`, actualizată la pornire și zilnic de `Erp.Worker`). Un ceas dat înapoi nu prelungește licența și nu blochează nimic altceva. Dacă ceasul serverului e cu peste o zi în urma datei văzute, administratorii primesc un avertisment, iar în audit se scrie `Core.License.ClockBehind`.
+- **Data de referință** pentru expirare este cea mai mare dintre data curentă și cea mai mare dată văzută vreodată de aplicație (`core.Setting`, cheia `License.HighestSeenDate`, actualizată de `Erp.Host` la pornire și la fiecare reîncărcare a licenței, la 5 minute). Un ceas dat înapoi nu prelungește licența și nu blochează nimic altceva. Dacă ceasul serverului e cu peste o zi în urma datei văzute, administratorii primesc un avertisment, iar în audit se scrie `Core.License.ClockBehind`.
 
 ### 4.5 Dreptul la actualizări (D19)
 

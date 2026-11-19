@@ -16,6 +16,9 @@ public static class ExitCodes
     public const int DatabaseExistsNotEmpty = 31;
     public const int WrongDatabaseCollation = 32;
     public const int InvalidLicense = 40;
+
+    /// <summary>Licenta nu include actualizari pentru data de lansare a kitului (08, 4.5).</summary>
+    public const int LicenseExcludesKit = 41;
     public const int IisServiceOrFileError = 50;
     public const int HealthCheckFailed = 60;
     public const int UpgradeFailedRolledBack = 70;

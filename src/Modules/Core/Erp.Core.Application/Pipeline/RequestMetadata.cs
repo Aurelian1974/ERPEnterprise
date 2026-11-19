@@ -15,6 +15,8 @@ internal static class RequestMetadata<TRequest>
 
     public static readonly bool AnyAuthenticatedUser = typeof(TRequest).GetCustomAttribute<AuthenticatedUserAttribute>() is not null;
 
+    public static readonly bool AllowedWhenLicenseReadOnly = typeof(TRequest).GetCustomAttribute<AllowedWhenLicenseReadOnlyAttribute>() is not null;
+
     public static readonly string? AuditAction = typeof(TRequest).GetCustomAttribute<AuditedAttribute>()?.Action;
 
     public static readonly string Name = typeof(TRequest).FullName ?? typeof(TRequest).Name;

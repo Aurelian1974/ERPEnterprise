@@ -169,8 +169,9 @@ internal sealed class SaveCompanyHandler(IOrganizationStore store, ICurrentConte
         var fiscalCode = RomanianFiscalCode.Normalize(request.FiscalCode)!;
         if (request.IsActive && !license.IsFiscalCodeLicensed(fiscalCode))
         {
-            throw ErpException.Conflict("CORE_COMPANY_NOT_LICENSED",
-                $"CUI-ul {fiscalCode} nu este în licență (4.4). Cereți furnizorului o licență care include firma.");
+            // 08, 4.3: inainte de orice scriere; mesajul se afiseaza pe campul CUI.
+            throw new ErpException(ErpErrorKind.Forbidden, CoreErrorCodes.FiscalCodeNotLicensed,
+                $"CUI-ul {fiscalCode} nu figurează în licența acestei instalări. Pentru a adăuga firma, cereți furnizorului o licență care o include și încărcați-o din Administrare › Configurare › Licență.");
         }
 
         var command = request with

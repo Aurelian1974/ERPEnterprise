@@ -55,7 +55,7 @@ public sealed class OrganizationIntegrationTests(OrgDatabase database) : IClassF
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddErpMediator(typeof(OrganizationIntegrationTests).Assembly);
-        services.AddCoreInfrastructure(database.ConnectionString, new LicenseOptions(null, Development: true));
+        services.AddCoreInfrastructure(database.ConnectionString, new LicenseOptions(Development: true));
         var context = new FakeContext { UserId = userId ?? database.AdminId, CompanyId = companyId };
         context.Permissions.UnionWith([CorePermissions.CompanyView, CorePermissions.CompanyManage, CorePermissions.NumberSeriesManage]);
         services.AddSingleton<ICurrentContext>(context);

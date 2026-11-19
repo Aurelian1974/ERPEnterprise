@@ -1241,6 +1241,94 @@
           }
         }
       }
+    },
+    "/api/core/license": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetLicense",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "UploadLicense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadLicense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2491,6 +2579,171 @@
               "string"
             ],
             "format": "byte"
+          }
+        }
+      },
+      "LicenseDto": {
+        "required": [
+          "hasLicense",
+          "licenseId",
+          "keyId",
+          "customerName",
+          "fiscalCodes",
+          "modules",
+          "users",
+          "payrollEmployees",
+          "posTerminals",
+          "issuedAt",
+          "validUntil",
+          "updatesUntil",
+          "state",
+          "clockBehind",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "hasLicense": {
+            "type": "boolean"
+          },
+          "licenseId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fiscalCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "users": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payrollEmployees": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "posTerminals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "updatesUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "state": {
+            "type": "string"
+          },
+          "clockBehind": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LicenseHistoryItem"
+            }
+          }
+        }
+      },
+      "LicenseHistoryItem": {
+        "required": [
+          "licenseId",
+          "keyId",
+          "customerName",
+          "companies",
+          "issuedAt",
+          "validUntil",
+          "updatesUntil",
+          "isCurrent",
+          "loadedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "licenseId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "companies": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "updatesUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "loadedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UploadLicense": {
+        "required": [
+          "fileBase64"
+        ],
+        "type": "object",
+        "properties": {
+          "fileBase64": {
+            "type": "string"
           }
         }
       }

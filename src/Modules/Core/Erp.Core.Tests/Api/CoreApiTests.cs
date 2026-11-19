@@ -37,7 +37,7 @@ public sealed class CoreApiTests
         builder.Services.AddErpMediator(typeof(CoreApiTests).Assembly);
         builder.Services.AddErpApi();
         // Conexiunea nu se deschide: cererile testate se opresc inainte de tranzactie.
-        builder.Services.AddCoreInfrastructure("Server=nefolosit;Database=nefolosit", new LicenseOptions(null, Development: true));
+        builder.Services.AddCoreInfrastructure("Server=nefolosit;Database=nefolosit", new LicenseOptions(Development: true, LoadFromDatabase: false));
         builder.Services.AddSingleton<IUserContextLoader>(users);
         builder.Services.AddSingleton<ILicenseInfo>(new FakeLicense());
         builder.Services.AddSingleton<Erp.Core.Application.Organization.IOrganizationStore>(new FakeOrganizationStore());

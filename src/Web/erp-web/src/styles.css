@@ -765,3 +765,44 @@ p {
   background-color: #f5f7fa;
   border-radius: 8px;
 }
+
+/* Configurare › Licenta (08, 4.1; macheta 07j din 02.01) */
+.module-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+}
+
+.module-list li::before {
+  content: '✓ ';
+  color: var(--green, #1f9d63);
+}
+
+.module-list li.off {
+  color: var(--muted, #8a94a3);
+}
+
+.module-list li.off::before {
+  content: '○ ';
+  color: inherit;
+}
+
+table.simple {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.8px;
+}
+
+table.simple th,
+table.simple td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line, #e3e7ee);
+}
+
+table.simple tr.current td {
+  font-weight: 600;
+}

@@ -38,6 +38,10 @@ public static class CoreErrorCodes
     public const string Forbidden = "CORE_FORBIDDEN";
     public const string ModuleNotLicensed = "CORE_MODULE_NOT_LICENSED";
     public const string LicenseReadOnly = "CORE_LICENSE_READ_ONLY";
+    public const string FiscalCodeNotLicensed = "CORE_FISCAL_CODE_NOT_LICENSED";
+    public const string CompanyNotLicensed = "CORE_COMPANY_NOT_LICENSED";
+    public const string LicenseInvalid = "CORE_LICENSE_INVALID";
+    public const string LicenseOlder = "CORE_LICENSE_OLDER";
     public const string Validation = "CORE_VALIDATION";
     public const string PeriodClosed = "CORE_PERIOD_CLOSED";
     public const string ResourceBusy = "CORE_RESOURCE_BUSY";

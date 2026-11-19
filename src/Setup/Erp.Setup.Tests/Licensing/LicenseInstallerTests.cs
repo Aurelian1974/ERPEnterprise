@@ -9,94 +9,73 @@ using Serilog;
 
 namespace Erp.Setup.Tests.Licensing;
 
+/// <summary>Verificarea licentei la instalare (08, 4.2, 4.5, C-17); licenta nu se mai copiaza pe disc (D18).</summary>
 public sealed class LicenseInstallerTests : IDisposable
 {
     private readonly TestLicenses licenses = new();
-    private readonly string dataRoot = Path.Combine(Path.GetTempPath(), "erp-licdata-" + Guid.NewGuid().ToString("N"));
-    private readonly CapturingSink logSink = new();
-    private readonly List<string> sources = [];
+    private readonly List<string> files = [];
 
     public void Dispose()
     {
         licenses.Dispose();
-        sources.ForEach(File.Delete);
-        if (Directory.Exists(dataRoot))
+        foreach (var file in files.Where(File.Exists))
         {
-            Directory.Delete(dataRoot, recursive: true);
+            File.Delete(file);
         }
     }
 
     private LicenseInstaller Installer()
     {
-        var target = new SqlTarget("SQL01", "ERP_PROD", SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, false, "PROD");
-        var log = new LoggerConfiguration().WriteTo.Sink(logSink).CreateLogger();
-        return new LicenseInstaller(licenses.Reader, new SqlOperator(target, null, log));
+        var target = new SqlTarget("localhost", "ERP_PROD", SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, false, "PROD");
+        return new LicenseInstaller(licenses.Reader, new SqlOperator(target, null, new LoggerConfiguration().CreateLogger()));
     }
 
-    private string Source(Erp.Licensing.License payload)
+    private string Source(License payload)
     {
         var path = CheckFixtures.WriteTemp(licenses.Create(payload));
-        sources.Add(path);
+        files.Add(path);
         return path;
     }
 
     [Fact]
-    public void Valid_license_is_copied_to_the_instance_license_folder()
+    public void Valid_license_is_verified_and_its_exact_bytes_are_kept_for_the_database()
     {
         var source = Source(TestLicenses.Payload());
 
-        var result = Installer().VerifyAndCopy(source, dataRoot, "PROD");
+        var verified = Installer().Verify(source);
 
-        var target = LicenseInstaller.TargetPath(dataRoot, "PROD");
-        Assert.True(result.IsValid);
-        Assert.Equal(File.ReadAllText(source), File.ReadAllText(target));
-        Assert.False(File.Exists(target + ".tmp"));
-        Assert.EndsWith(Path.Combine("PROD", "license", "erp.lic"), target, StringComparison.Ordinal);
+        Assert.True(verified.Result.IsValid);
+        Assert.Equal(File.ReadAllBytes(source), verified.File);
+        Assert.Equal("LIC-2026-000123", verified.License.LicenseId);
     }
 
     [Fact]
-    public void Copying_the_same_license_again_leaves_the_file_unchanged()
+    public void Expired_license_is_refused_with_code_40()
     {
-        var source = Source(TestLicenses.Payload());
-        var installer = Installer();
-        installer.VerifyAndCopy(source, dataRoot, "PROD");
-        var target = LicenseInstaller.TargetPath(dataRoot, "PROD");
-        var written = File.GetLastWriteTimeUtc(target);
-
-        installer.VerifyAndCopy(source, dataRoot, "PROD");
-
-        Assert.Equal(written, File.GetLastWriteTimeUtc(target));
-    }
-
-    [Fact]
-    public void A_new_license_replaces_the_file()
-    {
-        var installer = Installer();
-        installer.VerifyAndCopy(Source(TestLicenses.Payload()), dataRoot, "PROD");
-        var replacement = Source(TestLicenses.Payload(modules: ["Core", "Finance", "Sales", "Hr"]));
-
-        installer.VerifyAndCopy(replacement, dataRoot, "PROD");
-
-        Assert.Equal(File.ReadAllText(replacement), File.ReadAllText(LicenseInstaller.TargetPath(dataRoot, "PROD")));
-    }
-
-    [Fact]
-    public void Expired_license_is_refused_with_code_40_and_nothing_is_copied()
-    {
-        var ex = Assert.Throws<SqlSetupException>(() => Installer().VerifyAndCopy(Source(TestLicenses.Payload(validUntil: "2020-01-01")), dataRoot, "PROD"));
+        var ex = Assert.Throws<SqlSetupException>(() => Installer().Verify(Source(TestLicenses.Payload(validUntil: "2020-01-01"))));
 
         Assert.Equal(ExitCodes.InvalidLicense, ex.ExitCode);
-        Assert.False(File.Exists(LicenseInstaller.TargetPath(dataRoot, "PROD")));
+        Assert.Contains("a expirat", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void License_content_is_not_logged()
+    public void Missing_file_is_refused_with_code_40() =>
+        Assert.Equal(ExitCodes.InvalidLicense, Assert.Throws<SqlSetupException>(() => Installer().Verify("/nu/exista.lic")).ExitCode);
+
+    [Fact]
+    [Trait("Criteriu", "08-IA-15")]
+    public void Kit_released_after_updates_until_is_refused_with_code_41()
     {
-        var source = Source(TestLicenses.Payload());
+        var limited = TestLicenses.Payload() with { UpdatesUntil = new DateOnly(2026, 6, 30) };
 
-        Installer().VerifyAndCopy(source, dataRoot, "PROD");
+        var ex = Assert.Throws<SqlSetupException>(() => Installer().Verify(Source(limited), new DateOnly(2027, 1, 15), "2027.1.0"));
 
-        Assert.Contains("LIC-2026-000123", logSink.Text);
-        Assert.DoesNotContain(File.ReadAllText(source)[..40], logSink.Text);
+        Assert.Equal(ExitCodes.LicenseExcludesKit, ex.ExitCode);
+        Assert.Contains("kitul 2027.1.0 a fost lansat la 15.01.2027", ex.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Kit_released_before_updates_until_is_accepted() =>
+        Assert.True(Installer().Verify(Source(TestLicenses.Payload() with { UpdatesUntil = new DateOnly(2027, 6, 30) }),
+            new DateOnly(2027, 1, 15), "2027.1.0").Result.IsValid);
 }

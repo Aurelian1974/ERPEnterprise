@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Erp.Core.Api\Erp.Core.Api.csproj" />
     <ProjectReference Include="..\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
+    <ProjectReference Include="..\..\..\Tools\Erp.LicenseGen.Core\Erp.LicenseGen.Core.csproj" />
   </ItemGroup>
 
 </Project>

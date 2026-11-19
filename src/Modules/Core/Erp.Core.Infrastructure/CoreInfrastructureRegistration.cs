@@ -28,7 +28,18 @@ public static class CoreInfrastructureRegistration
         services.AddSingleton<IPeriodLock, NoClosedPeriods>();
         services.AddSingleton(license);
         services.AddSingleton<ILicenseReader>(sp => new LicenseReader(LicenseKeys.Embedded, sp.GetRequiredService<TimeProvider>()));
-        services.AddSingleton<ILicenseInfo, LicenseInfo>();
+        services.AddSingleton<LicenseInfo>();
+        services.AddSingleton<ILicenseInfo>(sp => sp.GetRequiredService<LicenseInfo>());
+        services.AddSingleton<Application.Licensing.ILicenseSnapshot>(sp => sp.GetRequiredService<LicenseInfo>());
+        services.AddSingleton(sp => new LicenseRefresher(connectionString, sp.GetRequiredService<LicenseInfo>(),
+            sp.GetRequiredService<ILicenseReader>(), sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LicenseRefresher>>()));
+        services.AddSingleton<Application.Licensing.ILicenseRefresh>(sp => sp.GetRequiredService<LicenseRefresher>());
+        if (license.LoadFromDatabase)
+        {
+            services.AddHostedService(sp => sp.GetRequiredService<LicenseRefresher>());
+        }
+
+        services.AddScoped<Application.Licensing.ILicenseStore, LicenseStore>();
         return services;
     }
 }

@@ -51,6 +51,15 @@ public sealed class AuthenticatedUserAttribute : Attribute
 {
 }
 
+/// <summary>
+/// Comanda permisa si cand licenta e doar-citire sau firma curenta nu e in licenta (08, 4.4): de exemplu incarcarea unei
+/// licente noi, singura cale de iesire din aceasta stare.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public sealed class AllowedWhenLicenseReadOnlyAttribute : Attribute
+{
+}
+
 /// <summary>Comanda scrie in jurnalul de audit, in aceeasi tranzactie (4.1 pasul 8, P5).</summary>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 public sealed class AuditedAttribute(string action) : Attribute

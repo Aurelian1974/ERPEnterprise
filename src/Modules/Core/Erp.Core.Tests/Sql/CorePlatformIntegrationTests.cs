@@ -94,7 +94,7 @@ public sealed class CorePlatformIntegrationTests(CoreDatabase database) : IClass
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddErpMediator(typeof(CorePlatformIntegrationTests).Assembly);
-        services.AddCoreInfrastructure(database.ConnectionString, new LicenseOptions(null, Development: true));
+        services.AddCoreInfrastructure(database.ConnectionString, new LicenseOptions(Development: true));
         var context = new FakeContext { UserId = database.AdminId, CompanyId = 0, IdempotencyKey = idempotencyKey };
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);

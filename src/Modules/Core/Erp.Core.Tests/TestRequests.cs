@@ -127,7 +127,17 @@ public sealed class FakeLicense : ILicenseInfo
 {
     public HashSet<string> Modules { get; } = new(StringComparer.Ordinal) { "Core" };
 
-    public DateOnly ValidUntil { get; set; } = new(2099, 12, 31);
+    public bool HasLicense { get; set; } = true;
+
+    public DateOnly? ValidUntil { get; set; } = new(2099, 12, 31);
+
+    public DateOnly? UpdatesUntil { get; set; }
+
+    public bool ClockBehind { get; set; }
+
+    public HashSet<int> UnlicensedCompanies { get; } = [];
+
+    public bool IsCompanyLicensed(int companyId) => !UnlicensedCompanies.Contains(companyId);
 
     public string? CustomerName { get; set; } = "Grupul Exemplu";
 
@@ -181,4 +191,41 @@ public sealed class FakeOrganizationStore : Erp.Core.Application.Organization.IO
     public Task<Erp.Core.Application.Organization.SavedEntity> SaveNumberSeriesAsync(Erp.Core.Application.NumberSeries.SaveNumberSeries command, int userId, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<Erp.Core.Application.Organization.SavedEntity> CloseNumberSeriesAsync(Erp.Core.Application.NumberSeries.CloseNumberSeries command, int userId, CancellationToken ct) => throw new NotSupportedException();
+}
+
+/// <summary>Comanda permisa si in modul doar-citire (de exemplu incarcarea licentei, 08, 4.4).</summary>
+[Module("Core")]
+[RequiresPermission("Core.Settings.Manage")]
+[AllowedWhenLicenseReadOnly]
+public sealed record UnlockCommand : ICommand<int>;
+
+public sealed class UnlockCommandHandler : ICommandHandler<UnlockCommand, int>
+{
+    public Task<int> Handle(UnlockCommand request, CancellationToken cancellationToken) => Task.FromResult(11);
+}
+
+/// <summary>Licenta activa, istoricul si cererea de reincarcare, fara baza (08, 4.1).</summary>
+public sealed class FakeLicenseFeature : Erp.Core.Application.Licensing.ILicenseSnapshot, Erp.Core.Application.Licensing.ILicenseStore,
+    Erp.Core.Application.Licensing.ILicenseRefresh
+{
+    public Erp.Licensing.License? Current { get; set; }
+
+    public byte KeyId { get; set; }
+
+    public DateOnly ReferenceDate { get; set; } = new(2026, 11, 20);
+
+    public List<(byte[] File, Erp.Licensing.License License)> Saved { get; } = [];
+
+    public int RefreshRequests { get; private set; }
+
+    public Task<int> SaveAsync(byte[] file, Erp.Licensing.License license, byte keyId, int userId, CancellationToken ct)
+    {
+        Saved.Add((file, license));
+        return Task.FromResult(Saved.Count);
+    }
+
+    public Task<IReadOnlyList<Erp.Core.Application.Licensing.LicenseHistoryItem>> ListAsync(CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<Erp.Core.Application.Licensing.LicenseHistoryItem>>([]);
+
+    public void RequestRefresh() => RefreshRequests++;
 }

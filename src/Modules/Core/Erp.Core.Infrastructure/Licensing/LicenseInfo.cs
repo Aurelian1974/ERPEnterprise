@@ -1,3 +1,4 @@
+using Erp.Core.Application.Licensing;
 using Erp.Core.Contracts;
 using Erp.Licensing;
 using Microsoft.Extensions.Logging;
@@ -10,77 +11,79 @@ public static class LicenseStates
     public const int ExpiringSoonDays = 30;
     public const int GraceDays = 15;
 
-    public static LicenseState For(DateOnly validUntil, DateOnly today) =>
-        today > validUntil.AddDays(GraceDays) ? LicenseState.ReadOnly
-        : today > validUntil ? LicenseState.Grace
-        : today > validUntil.AddDays(-ExpiringSoonDays) ? LicenseState.ExpiringSoon
+    public static LicenseState For(DateOnly? validUntil, DateOnly referenceDate) => validUntil is not { } until ? LicenseState.Valid
+        : referenceDate > until.AddDays(GraceDays) ? LicenseState.ReadOnly
+        : referenceDate > until ? LicenseState.Grace
+        : referenceDate > until.AddDays(-ExpiringSoonDays) ? LicenseState.ExpiringSoon
         : LicenseState.Valid;
 }
 
-/// <summary>Optiunile licentei pentru Erp.Host si Erp.Worker.</summary>
-public sealed record LicenseOptions(string? LicensePath, bool Development);
+/// <summary>
+/// Optiunile licentei pentru Erp.Host. In Development, fara licenta valida, toate modulele sunt active.
+/// LoadFromDatabase = false doar in testele fara baza (licenta ramane cea data de test).
+/// </summary>
+public sealed record LicenseOptions(bool Development, bool LoadFromDatabase = true);
+
+/// <summary>Ce a gasit ultima reincarcare (08, 4.1): licenta autentica din baza, data de referinta, firmele nelicentiate.</summary>
+public sealed record LicenseSnapshotData(License? License, byte KeyId, DateOnly HighestSeenDate, bool ClockBehind, IReadOnlySet<int> UnlicensedCompanies)
+{
+    public static LicenseSnapshotData Empty { get; } = new(null, 0, DateOnly.MinValue, false, new HashSet<int>());
+}
 
 /// <summary>
-/// ILicenseInfo din fisierul de licenta (4.4). Fara licenta valida, instalarea ramane doar pentru consultare, cu modulul Core
-/// activ (ca administratorul sa poata incarca o licenta noua); datele nu se blocheaza niciodata.
-/// In mediul Development, fara licenta valida, toate modulele sunt active (licenta de dezvoltare, jurnalizata).
-/// Reverificarea zilnica si refuzul la pornire (A7) se adauga in etapa Licenta.
+/// Licenta instalarii (08, 4.1–4.4), din baza, pastrata in memorie si inlocuita atomic de <see cref="LicenseRefresher"/>.
+/// Fara licenta valida, instalarea ramane doar pentru consultare, cu modulul Core activ (ca administratorul sa poata incarca
+/// o licenta); datele nu se blocheaza niciodata. In Development, fara licenta, toate modulele sunt active.
 /// </summary>
-public sealed class LicenseInfo : ILicenseInfo
+public sealed class LicenseInfo(LicenseOptions options, TimeProvider time, ILogger<LicenseInfo> log) : ILicenseInfo, ILicenseSnapshot
 {
-    private readonly HashSet<string> modules;
-    private readonly HashSet<string> fiscalCodes = new(StringComparer.Ordinal);
-    private readonly License? license;
-    private readonly TimeProvider time;
-    private readonly bool development;
+    private LicenseSnapshotData data = LicenseSnapshotData.Empty;
 
-    public LicenseInfo(LicenseOptions options, ILicenseReader reader, TimeProvider time, ILogger<LicenseInfo> log)
+    private LicenseSnapshotData Data => Volatile.Read(ref data);
+
+    private bool DevelopmentWithoutLicense => options.Development && Data.License is null;
+
+    public bool HasLicense => Data.License is not null;
+
+    public License? Current => Data.License;
+
+    public byte KeyId => Data.KeyId;
+
+    public DateOnly ReferenceDate
     {
-        this.time = time;
-        var result = options.LicensePath is { Length: > 0 } path && File.Exists(path) ? reader.Read(File.ReadAllBytes(path)) : null;
-        var payload = result is { IsAuthentic: true } ? result.License : null;
-
-        if (payload is not null)
+        get
         {
-            modules = new HashSet<string>(payload.Modules, StringComparer.Ordinal);
-            fiscalCodes = new HashSet<string>(payload.FiscalCodeList, StringComparer.Ordinal);
-            license = payload;
-            ValidUntil = payload.ValidUntil ?? DateOnly.MaxValue;
-            CustomerName = payload.CustomerName;
-            log.LogInformation("Licența {LicenseId}: module {Modules}, valabilă până la {ValidUntil}", payload.LicenseId, payload.Modules, payload.ValidUntil?.ToString() ?? "nelimitat");
-            return;
-        }
-
-        development = options.Development;
-        modules = new HashSet<string>(StringComparer.Ordinal) { "Core" };
-        ValidUntil = DateOnly.MinValue;
-        if (development)
-        {
-            log.LogWarning("Mediu Development fără licență validă ({Reason}): toate modulele sunt active.", result?.Message ?? "fișier lipsă");
-        }
-        else
-        {
-            log.LogCritical("Licența lipsește sau nu este validă ({Reason}): aplicația funcționează doar pentru consultare.", result?.Message ?? "fișier lipsă");
+            var today = DateOnly.FromDateTime(time.GetLocalNow().DateTime);
+            var highest = Data.HighestSeenDate;
+            return highest > today ? highest : today;
         }
     }
 
-    public DateOnly ValidUntil { get; }
+    public bool ClockBehind => Data.ClockBehind;
 
-    public string? CustomerName { get; }
+    public DateOnly? ValidUntil => Data.License?.ValidUntil;
 
-    public LicenseState State => development ? LicenseState.Valid
-        : ValidUntil == DateOnly.MinValue ? LicenseState.ReadOnly
-        : ValidUntil == DateOnly.MaxValue ? LicenseState.Valid
-        : LicenseStates.For(ValidUntil, DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime));
+    public DateOnly? UpdatesUntil => Data.License?.UpdatesUntil;
 
-    public bool IsModuleActive(string moduleCode) => development || modules.Contains(moduleCode);
+    public string? CustomerName => Data.License?.CustomerName;
 
-    public IReadOnlyCollection<string> ActiveModules => development ? [.. LicenseModules.Known] : modules;
+    public LicenseState State => DevelopmentWithoutLicense ? LicenseState.Valid
+        : Data.License is not { } license ? LicenseState.ReadOnly
+        : LicenseStates.For(license.ValidUntil, ReferenceDate);
 
-    public bool IsFiscalCodeLicensed(string fiscalCode) =>
-        development || (Domain.RomanianFiscalCode.Normalize(fiscalCode) is { } digits && fiscalCodes.Contains(digits));
+    public bool IsModuleActive(string moduleCode) => DevelopmentWithoutLicense
+        || string.Equals(moduleCode, LicenseModules.Core, StringComparison.Ordinal)
+        || (Data.License?.Modules.Contains(moduleCode, StringComparer.Ordinal) ?? false);
 
-    public int? GetLimit(string limitCode) => license is null ? null : limitCode switch
+    public IReadOnlyCollection<string> ActiveModules => DevelopmentWithoutLicense ? [.. LicenseModules.Known]
+        : Data.License is { } license ? [.. license.Modules.Where(LicenseModules.Known.Contains).Append(LicenseModules.Core).Distinct()]
+        : [LicenseModules.Core];
+
+    public bool IsFiscalCodeLicensed(string fiscalCode) => DevelopmentWithoutLicense || (Data.License?.ContainsFiscalCode(fiscalCode) ?? false);
+
+    public bool IsCompanyLicensed(int companyId) => !Data.UnlicensedCompanies.Contains(companyId);
+
+    public int? GetLimit(string limitCode) => Data.License is not { } license ? null : limitCode switch
     {
         "companies" => license.Companies,
         "users" => license.Limits.Users,
@@ -88,4 +91,31 @@ public sealed class LicenseInfo : ILicenseInfo
         "posTerminals" => license.Limits.PosTerminals,
         _ => null,
     };
+
+    /// <summary>Inlocuieste starea; jurnalizeaza doar schimbarile, fara continutul licentei in afara de numar si client.</summary>
+    public void Apply(LicenseSnapshotData next)
+    {
+        var previous = Interlocked.Exchange(ref data, next);
+        if (!string.Equals(previous.License?.LicenseId, next.License?.LicenseId, StringComparison.Ordinal))
+        {
+            if (next.License is { } license)
+            {
+                log.LogInformation("Licența {LicenseId} ({CustomerName}): {Companies} CUI-uri, module {Modules}, valabilă până la {ValidUntil}",
+                    license.LicenseId, license.CustomerName, license.Companies, license.Modules, license.ValidUntil?.ToString() ?? "nelimitat");
+            }
+            else if (options.Development)
+            {
+                log.LogWarning("Mediu Development fără licență validă: toate modulele sunt active.");
+            }
+            else
+            {
+                log.LogCritical("Licența lipsește sau nu este validă: aplicația funcționează doar pentru consultare.");
+            }
+        }
+
+        if (next.UnlicensedCompanies.Count > 0 && !next.UnlicensedCompanies.SetEquals(previous.UnlicensedCompanies))
+        {
+            log.LogWarning("Firme active al căror CUI nu e în licență (doar consultare): {CompanyIds}", next.UnlicensedCompanies.Order());
+        }
+    }
 }

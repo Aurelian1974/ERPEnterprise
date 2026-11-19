@@ -13,6 +13,7 @@ public sealed class PipelineTests
     private readonly FakeLicense license = new();
     private readonly FakePeriods periods = new();
     private readonly FakeTransient transient = new();
+    private readonly FakeLicenseFeature licenseFeature = new();
     private readonly FakeUnitOfWork unitOfWork;
 
     public PipelineTests() => unitOfWork = new FakeUnitOfWork(transient);
@@ -27,6 +28,10 @@ public sealed class PipelineTests
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddSingleton<ILicenseInfo>(license);
+        services.AddSingleton<Erp.Core.Application.Licensing.ILicenseSnapshot>(licenseFeature);
+        services.AddSingleton<Erp.Core.Application.Licensing.ILicenseStore>(licenseFeature);
+        services.AddSingleton<Erp.Core.Application.Licensing.ILicenseRefresh>(licenseFeature);
+        services.AddSingleton<Erp.Licensing.ILicenseReader>(new Erp.Licensing.LicenseReader(new Erp.Licensing.LicenseKeyRing([]), TimeProvider.System));
         services.AddSingleton<Erp.Core.Application.Organization.IOrganizationStore>(new FakeOrganizationStore());
         services.AddSingleton<IPeriodLock>(periods);
         services.AddSingleton<IUnitOfWork>(unitOfWork);
@@ -100,6 +105,32 @@ public sealed class PipelineTests
 
         Assert.Equal(ErpErrorKind.Forbidden, ex.Kind);
         Assert.Equal(CoreErrorCodes.LicenseReadOnly, ex.Code);
+        Assert.Equal(3, result);
+        Assert.Equal(1, calls.Count);
+    }
+
+    [Fact]
+    public async Task Command_allowed_when_read_only_runs_so_a_new_license_can_be_loaded()
+    {
+        license.State = LicenseState.ReadOnly;
+        var (sender, _) = Build();
+
+        Assert.Equal(11, await sender.Send(new UnlockCommand(), Ct));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "08-IA-07")]
+    public async Task Company_missing_from_the_license_is_read_only()
+    {
+        context.CompanyId = 5;
+        license.UnlicensedCompanies.Add(5);
+        var (sender, calls) = Build();
+
+        var ex = await Assert.ThrowsAsync<ErpException>(() => sender.Send(new PingCommand("x"), Ct));
+        var result = await sender.Send(new ListThings(), Ct);
+
+        Assert.Equal(ErpErrorKind.Forbidden, ex.Kind);
+        Assert.Equal(CoreErrorCodes.CompanyNotLicensed, ex.Code);
         Assert.Equal(3, result);
         Assert.Equal(1, calls.Count);
     }
@@ -187,7 +218,7 @@ public sealed class PipelineTests
         Assert.Equal(CoreErrorCodes.IdempotencyKeyReused, reused.Code);
     }
 
-    private sealed class FakeUnitOfWork(FakeTransient transient) : IUnitOfWork, IIdempotencyStore, IOutbox, IAuditWriter
+    internal sealed class FakeUnitOfWork(FakeTransient transient) : IUnitOfWork, IIdempotencyStore, IOutbox, IAuditWriter
     {
         private readonly Dictionary<string, IdempotentResult> committed = new(StringComparer.Ordinal);
         private readonly Dictionary<string, IdempotentResult> pending = new(StringComparer.Ordinal);
@@ -281,7 +312,7 @@ public sealed class PipelineTests
     }
 
     // FakeUnitOfWork arunca TransientException la commit de FailuresLeft ori (ca un deadlock).
-    private sealed class FakeTransient : ITransientFailureDetector
+    internal sealed class FakeTransient : ITransientFailureDetector
     {
         public int FailuresLeft { get; set; }
 
@@ -290,7 +321,7 @@ public sealed class PipelineTests
 
     private sealed class TransientException : Exception;
 
-    private sealed class NoSqlErrors : ISqlErrorTranslator
+    internal sealed class NoSqlErrors : ISqlErrorTranslator
     {
         public ErpException? Translate(Exception exception) => null;
     }

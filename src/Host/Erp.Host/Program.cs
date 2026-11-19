@@ -6,7 +6,7 @@ using Erp.Core.Application;
 using Erp.Core.Infrastructure;
 using Erp.Core.Infrastructure.Licensing;
 using Erp.Hosting;
-using Erp.Licensing;
+using Erp.Core.Contracts;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.SqlClient;
 
@@ -28,9 +28,6 @@ var build = ErpBuildInfo.From(typeof(Program).Assembly);
 var connectionString = InstallationConfiguration.ConnectionString(builder.Configuration, "Host");
 SqlConnection Connect() => new(connectionString);
 var schemaReader = new SchemaVersionReader(Connect);
-var licenseReader = new LicenseReader(LicenseKeys.Embedded, TimeProvider.System);
-var licensePath = builder.Configuration["Erp:LicensePath"]
-    ?? (instanceDirectory is null ? string.Empty : new InstanceDataPaths(instanceDirectory).License);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(build);
@@ -43,7 +40,8 @@ builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 
 // Nucleul (02.01): pipeline-ul comun al comenzilor, contextul cererii, ProblemDetails. Modulele se adauga aici, dupa licenta.
 builder.Services.AddErpMediator();
-builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(licensePath, development));
+// Licenta (08, 4.1): din baza, reincarcata de LicenseRefresher la pornire, la 5 minute si dupa fiecare incarcare.
+builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(development));
 builder.Services.AddErpApi();
 
 // Autentificarea (08, 8.7): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile TOTP)
@@ -85,7 +83,7 @@ app.MapErpHealth(build, () =>
 [
     new DatabaseCheck(Connect),
     new SchemaCheck(schemaReader, build, allowUnversionedBuild: development),
-    new LicenseCheck(licensePath, licenseReader),
+    new LicenseCheck(() => app.Services.GetRequiredService<ILicenseInfo>() is { HasLicense: true, State: not LicenseState.ReadOnly }),
     new WorkerCheck(Connect),
 ]);
 

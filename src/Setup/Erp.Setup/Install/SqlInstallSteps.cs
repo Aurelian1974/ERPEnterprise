@@ -96,10 +96,12 @@ public static class SqlInstallSteps
         {
             var answers = session.RequireAnswers();
             var installer = new LicenseInstaller(verifier, session.RequireSql());
-            var license = installer.VerifyAndCopy(answers.LicenseFilePath, answers.DataRoot, answers.Instance);
+            var verified = installer.Verify(answers.LicenseFilePath,
+                DateOnly.ParseExact(session.Manifest.ReleaseDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), session.Manifest.Version);
+            var license = verified.Result;
             await using var connection = new SqlConnection(RequireMigrator(session).ConnectionString);
             await connection.OpenAsync(ct);
-            await installer.SaveAsync(connection, license, ct);
+            await installer.SaveAsync(connection, verified, ct);
             return license.UnknownModules.Count > 0
                 ? StepResult.Warning($"{license.Message} Module necunoscute: {string.Join(", ", license.UnknownModules)}.")
                 : StepResult.Done(license.Message);

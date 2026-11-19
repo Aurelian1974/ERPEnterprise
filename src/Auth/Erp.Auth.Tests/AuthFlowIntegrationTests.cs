@@ -264,7 +264,7 @@ internal sealed class TestHost(WebApplication app) : IAsyncDisposable
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["Erp:Instance"] = "IT" });
         builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
         builder.Services.AddErpMediator();
-        builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(null, Development: true));
+        builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(Development: true));
         builder.Services.AddErpApi();
         builder.Services.AddErpAuth(builder.Configuration);
         if (validateEveryRequest)

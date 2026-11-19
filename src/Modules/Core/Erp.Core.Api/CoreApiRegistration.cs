@@ -1,3 +1,4 @@
+using Erp.Core.Application.Licensing;
 using Erp.Core.Application.Me;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
@@ -42,7 +43,20 @@ public static class CoreApiRegistration
             .Produces<CurrentUserDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         MapOrganization(core);
+        MapLicense(core);
         return endpoints;
+    }
+
+    // Administrare › Configurare › Licenta (08, 4.1; macheta 07j din 02.01). Fisierul .lic vine in Base64 (cateva sute de octeti).
+    private static void MapLicense(RouteGroupBuilder core)
+    {
+        core.MapGet("/license", (ISender sender, CancellationToken ct) => sender.Send(new GetLicense(), ct))
+            .WithName("GetLicense").Produces<LicenseDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/license", (UploadLicense body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("UploadLicense").Produces<LicenseDto>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     // Structura organizatorica (macheta 03) si seriile de numerotare (macheta 07c). Antetul X-Company-Id alege firma pe
