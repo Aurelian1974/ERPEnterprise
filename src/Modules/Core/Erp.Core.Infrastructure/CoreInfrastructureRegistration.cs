@@ -27,7 +27,7 @@ public static class CoreInfrastructureRegistration
         services.AddSingleton<ISqlErrorTranslator, SqlErrorTranslator>();
         services.AddSingleton<IPeriodLock, NoClosedPeriods>();
         services.AddSingleton(license);
-        services.AddSingleton(sp => new LicenseVerifier(LicenseKeys.LoadEmbedded(), sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<ILicenseReader>(sp => new LicenseReader(LicenseKeys.Embedded, sp.GetRequiredService<TimeProvider>()));
         services.AddSingleton<ILicenseInfo, LicenseInfo>();
         return services;
     }

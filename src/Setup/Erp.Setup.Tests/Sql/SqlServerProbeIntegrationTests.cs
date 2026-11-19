@@ -51,7 +51,7 @@ public sealed class SqlServerProbeIntegrationTests(SqlServerFixture sql)
                 BackupRoot = "/var/opt/mssql/data/erp-backup-check",
             };
             var checker = new RequirementsChecker(new FakeWindowsProbe(), new SqlServerConnector(), new FakeNetwork(),
-                new LicenseVerifier(licenses.PublicKeys, TimeProvider.System), TimeProvider.System);
+                licenses.Reader, TimeProvider.System);
             return await checker.RunAsync(target, CheckFixtures.Manifest, existing, password ?? sql.SaPassword, Ct);
         }
         finally

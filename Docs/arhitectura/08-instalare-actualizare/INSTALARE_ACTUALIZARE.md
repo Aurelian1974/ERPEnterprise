@@ -115,7 +115,7 @@ O singură fereastră:
 | Câmp | Tip | Regulă |
 | --- | --- | --- |
 | Denumire client | text, obligatoriu | 2–200 caractere; de exemplu „Grupul Exemplu” |
-| CUI-uri | text pe mai multe rânduri, obligatoriu | Se acceptă CUI-uri separate prin rând nou, virgulă, spațiu sau `:`, cu sau fără prefixul `RO`. La „Validează” fiecare CUI se **normalizează la partea numerică** (se elimină `RO`, spațiile și orice altceva decât cifre), se verifică cifra de control CUI și dublurile. Lista normalizată se afișează sub câmp, de exemplu `10000001:12345678:23456789:34567890`. Un CUI invalid se marchează cu roșu și blochează generarea |
+| CUI-uri | text pe mai multe rânduri, obligatoriu | Se acceptă CUI-uri separate prin rând nou, virgulă, spațiu sau `:`, cu sau fără prefixul `RO`. La „Validează” fiecare CUI se **normalizează la partea numerică** (se elimină `RO`, spațiile și orice altceva decât cifre), se verifică cifra de control CUI și dublurile. Lista normalizată se afișează sub câmp, de exemplu `10000008:12345674:23456783:34567892`. Un CUI invalid se marchează cu roșu și blochează generarea |
 | Tip | afișat automat | „Firmă” dacă e un singur CUI, „Grup de N firme” dacă sunt mai multe |
 | Module | casete de bifat | Nucleu bifat și blocat; Finanțe, Vânzări, Achiziții, Stocuri, WMS, Transport, Producție, HR, POS, Construcții, CRM, Raportare, Integrări |
 | Limite | numere | Utilizatori, angajați salarizare, case POS. Numărul de firme = numărul de CUI-uri |
@@ -137,7 +137,7 @@ Conținutul (înainte de criptare) e un JSON UTF-8. CUI-urile sunt **un singur �
   "licenseId": "LIC-2026-000123",
   "product": "ERP",
   "customerName": "Grupul Exemplu",
-  "fiscalCodes": "10000001:12345678:23456789:34567890",
+  "fiscalCodes": "10000008:12345674:23456783:34567892",
   "modules": ["Core", "Finance", "Sales", "Purchasing", "Inventory", "Integrations", "Manufacturing", "Hr", "Pos", "Construction", "Reporting"],
   "limits": { "users": 100, "payrollEmployees": 300, "posTerminals": 10 },
   "issuedAt": "2026-11-15",
@@ -239,9 +239,9 @@ Verificările 1–5 sunt aceleași în generator („Deschide o licență”), �
 
 1. Comenzile `CreateCompany`, `UpdateCompany` (dacă se schimbă CUI-ul) și crearea unui grup cu firmele lui (asistentul de configurare, pasul „Firme”, și ecranul Firme și structură) apelează în handler `ILicenseService.EnsureFiscalCodeLicensed(fiscalCode)`, **înainte** de orice scriere.
 2. `ILicenseService` (în `Erp.Core.Infrastructure`) citește licența activă din bază, o verifică (4.2) și păstrează lista de CUI-uri în memorie. Cache-ul se invalidează imediat la încărcarea unei licențe noi în același proces; celălalt proces (`Erp.Host` sau `Erp.Worker`) observă schimbarea în cel mult 5 minute, comparând `Id`-ul licenței active.
-3. CUI-ul introdus se normalizează cu `FiscalCode.Normalize` (de exemplu `RO 12345678` → `12345678`) și se compară exact (`Ordinal`) cu fiecare element din `fiscalCodes.Split(':')`.
+3. CUI-ul introdus se normalizează cu `FiscalCode.Normalize` (de exemplu `RO 12345674` → `12345674`) și se compară exact (`Ordinal`) cu fiecare element din `fiscalCodes.Split(':')`.
 4. Dacă nu se găsește, comanda se refuză cu `403` și codul `CORE_FISCAL_CODE_NOT_LICENSED`, cu mesajul afișat pe câmpul CUI:
-   > „CUI-ul 12345678 nu figurează în licența acestei instalări. Pentru a adăuga firma, cereți furnizorului o licență care o include și încărcați-o din Administrare › Configurare › Licență.”
+   > „CUI-ul 45678900 nu figurează în licența acestei instalări. Pentru a adăuga firma, cereți furnizorului o licență care o include și încărcați-o din Administrare › Configurare › Licență.”
 5. Pentru un grup, fiecare firmă se verifică separat; mesajul listează toate CUI-urile care lipsesc, iar grupul nu se salvează parțial.
 6. Numărul de firme active nu poate depăși numărul de CUI-uri din licență (consecință directă a regulii de mai sus).
 7. La pornire și zilnic, aplicația verifică și că toate firmele active au CUI-ul în licență (02.01, fluxul 4.4); o firmă al cărei CUI a dispărut dintr-o licență nouă intră în modul doar-citire, cu avertisment pentru administratori.
@@ -1402,7 +1402,7 @@ Versiunea, starea, rezultatul health-check-ului, ultimul backup complet și de l
 
 | # | Criteriu | Test |
 | --- | --- | --- |
-| IA-01 | Generatorul normalizează `RO10000001, ro 12345678` la `10000001:12345678`, refuză un CUI cu cifră de control greșită și dublurile | Unitar |
+| IA-01 | Generatorul normalizează `RO10000008, ro 12345674` la `10000008:12345674`, refuză un CUI cu cifră de control greșită și dublurile | Unitar |
 | IA-02 | O licență generată se citește corect de `Erp.Licensing`, cu cheia 1 și cu cheia de rezervă 2; un singur octet modificat oriunde în fișier duce la refuz; o licență semnată cu altă cheie e refuzată; CUI-urile nu apar în clar în fișier | Unitar |
 | IA-03 | O instalare curată pe Windows Server 2022 + SQL Server 2022 și pe Windows 11 + SQL Server 2022 Developer se termină fără pași manuali în SQL sau IIS, iar `/health/ready` e `Healthy`. Automat prin `ErpSetup.Cli.exe install --unattended`; o dată pe versiune și manual prin fereastră | E2E pe mașini virtuale |
 | IA-04 | Baza creată sau preluată are collation `Latin1_General_100_CS_AS_SC_UTF8`, RCSI activ, recovery `FULL`, nivel de compatibilitate 160 și proprietățile extinse ERP | Integrare |

@@ -60,7 +60,7 @@ internal sealed class CheckCommand(TimeProvider time)
         var existing = ReadExistingInstance(answers, log);
         using var network = new HttpNetworkProbe();
         var checker = new RequirementsChecker(new WindowsProbe(), new SqlServerConnector(), network,
-            new LicenseVerifier(LicenseKeys.LoadEmbedded(), time), time);
+            new LicenseReader(LicenseKeys.Embedded, time), time);
 
         console.Info("Verific cerințele...");
         var report = await checker.RunAsync(target, manifest, existing, password, CancellationToken.None).ConfigureAwait(false);

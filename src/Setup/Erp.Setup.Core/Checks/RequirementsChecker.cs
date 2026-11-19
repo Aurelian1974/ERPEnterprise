@@ -13,7 +13,7 @@ public sealed class RequirementsChecker(
     IWindowsProbe windows,
     ISqlServerConnector sqlConnector,
     INetworkProbe network,
-    LicenseVerifier licenseVerifier,
+    ILicenseReader licenseReader,
     TimeProvider time)
 {
     public const string RequiredCollation = "Latin1_General_100_CS_AS_SC_UTF8";
@@ -597,7 +597,7 @@ public sealed class RequirementsChecker(
             return (CheckStatus.Failed, $"Fișierul de licență nu există: {path}", ExitCodes.InvalidLicense);
         }
 
-        var result = licenseVerifier.Verify(File.ReadAllText(path));
+        var result = licenseReader.Read(File.ReadAllBytes(path));
         if (!result.IsValid)
         {
             return (CheckStatus.Failed, result.Message, ExitCodes.InvalidLicense);

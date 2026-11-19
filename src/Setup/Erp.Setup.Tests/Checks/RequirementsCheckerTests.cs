@@ -20,7 +20,7 @@ public sealed class RequirementsCheckerTests : IDisposable
         tempFiles.ForEach(File.Delete);
     }
 
-    private string License(object? payload = null)
+    private string License(Erp.Licensing.License? payload = null)
     {
         var path = CheckFixtures.WriteTemp(licenses.Create(payload ?? TestLicenses.Payload()));
         tempFiles.Add(path);
@@ -31,7 +31,7 @@ public sealed class RequirementsCheckerTests : IDisposable
     {
         var target = CheckFixtures.Target(License());
         target = configure?.Invoke(target) ?? target;
-        var checker = new RequirementsChecker(windows, sql, network, new LicenseVerifier(licenses.PublicKeys, TimeProvider.System), TimeProvider.System);
+        var checker = new RequirementsChecker(windows, sql, network, licenses.Reader, TimeProvider.System);
         return await checker.RunAsync(target, CheckFixtures.Manifest, existing, password, TestContext.Current.CancellationToken);
     }
 

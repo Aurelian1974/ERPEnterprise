@@ -4,48 +4,15 @@ using System.Text.RegularExpressions;
 namespace Erp.Core.Domain;
 
 /// <summary>
-/// Codul unic de inregistrare (CUI/CIF) romanesc: 2–10 cifre, ultima e cifra de control calculata cu cheia 753217532
-/// (ANAF). Prefixul „RO” (platitor de TVA) si spatiile se ignora la normalizare.
+/// Codul unic de inregistrare (CUI/CIF) romanesc. Algoritmul (cheia 753217532) e unul singur, in Erp.Licensing.FiscalCode
+/// (08, 3.3), folosit si de licenta; aici ramane numele din domeniu.
 /// </summary>
 public static class RomanianFiscalCode
 {
-    private const string Key = "753217532";
-
     /// <summary>Doar cifrele CUI-ului, fara „RO” si spatii; null daca forma nu e valida.</summary>
-    public static string? Normalize(string? value)
-    {
-        if (value is null)
-        {
-            return null;
-        }
+    public static string? Normalize(string? value) => Licensing.FiscalCode.Normalize(value);
 
-        var text = value.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
-        if (text.StartsWith("RO", StringComparison.Ordinal))
-        {
-            text = text[2..];
-        }
-
-        return text.Length is >= 2 and <= 10 && text.All(char.IsAsciiDigit) ? text : null;
-    }
-
-    public static bool IsValid(string? value)
-    {
-        var digits = Normalize(value);
-        if (digits is null)
-        {
-            return false;
-        }
-
-        var body = digits[..^1].PadLeft(Key.Length, '0');
-        var sum = 0;
-        for (var i = 0; i < Key.Length; i++)
-        {
-            sum += (body[i] - '0') * (Key[i] - '0');
-        }
-
-        var control = sum * 10 % 11 % 10;
-        return digits[^1] - '0' == control;
-    }
+    public static bool IsValid(string? value) => Licensing.FiscalCode.IsValid(value);
 }
 
 /// <summary>IBAN dupa ISO 13616: tara, cifre de control, cont; verificarea mod 97 = 1. Romania: 24 de caractere.</summary>

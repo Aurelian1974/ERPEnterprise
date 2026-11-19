@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.LicenseGen.Core\Erp.LicenseGen.Core.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
+  </ItemGroup>
+
+</Project>

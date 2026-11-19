@@ -3,6 +3,7 @@
   <!-- Entitatile si regulile de business ale Nucleului (NET-01), fara acces la date. Se populeaza din etapa 4 (firme). -->
   <ItemGroup>
     <ProjectReference Include="..\Erp.Core.Contracts\Erp.Core.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
   </ItemGroup>
 
 </Project>

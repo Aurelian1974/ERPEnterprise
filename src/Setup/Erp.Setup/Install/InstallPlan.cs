@@ -33,7 +33,7 @@ public interface IOperatorPrompt
 internal sealed class InstallPlan(InstallSession session, string answersPath, OperatorConsole console, IOperatorPrompt prompt, TimeProvider time)
 {
     private readonly WindowsProbe windows = new();
-    private readonly LicenseVerifier licenseVerifier = new(LicenseKeys.LoadEmbedded(), time);
+    private readonly ILicenseReader licenseVerifier = new LicenseReader(LicenseKeys.Embedded, time);
 
     private InstanceLayout Layout => new(Answers.InstallRoot, Answers.DataRoot, Answers.Instance);
 

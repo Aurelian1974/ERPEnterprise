@@ -91,7 +91,7 @@ public static class SqlInstallSteps
             return Task.FromResult(StepResult.Done($"{summary.ScriptsExecuted} scripturi"));
         });
 
-    public static PlannedStep I12_License(InstallSession session, LicenseVerifier verifier) => Step("I-12", "Încarc licența", ExitCodes.InvalidLicense,
+    public static PlannedStep I12_License(InstallSession session, ILicenseReader verifier) => Step("I-12", "Încarc licența", ExitCodes.InvalidLicense,
         async (_, ct) =>
         {
             var answers = session.RequireAnswers();

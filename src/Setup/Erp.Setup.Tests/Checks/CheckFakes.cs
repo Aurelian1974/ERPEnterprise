@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Erp.LicenseGen.Core;
 using Erp.Licensing;
 using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
@@ -127,37 +128,30 @@ internal sealed class FakeNetwork : INetworkProbe
         Task.FromResult(!Unreachable.Contains(uri.Host));
 }
 
-/// <summary>Licente de test semnate cu o cheie generata in test.</summary>
+/// <summary>Licente de test in formatul binar (08, 3.4), scrise cu o cheie generata in test (KeyId 1).</summary>
 internal sealed class TestLicenses : IDisposable
 {
-    public const string KeyId = "lic-test-01";
+    public const string KeyId = "1";
 
-    private readonly ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+    private readonly LicenseSigningKey key = LicenseSigningKey.Generate(1);
 
-    public IReadOnlyDictionary<string, string> PublicKeys => new Dictionary<string, string> { [KeyId] = key.ExportSubjectPublicKeyInfoPem() };
+    public LicenseReader Reader => new(new LicenseKeyRing([key.ToPublicKey()]), TimeProvider.System);
 
-    public static object Payload(string product = "ERP", string validUntil = "2099-12-31", string[]? modules = null) => new
+    public static License Payload(string? validUntil = "2099-12-31", string[]? modules = null) => new()
     {
-        licenseId = "LIC-2026-000123",
-        product,
-        customerName = "Grupul Exemplu",
-        fiscalCodes = new[] { "RO10000001" },
-        modules = modules ?? ["Core", "Finance", "Sales"],
-        limits = new { companies = 5, users = 100, payrollEmployees = 300, posTerminals = 10 },
-        issuedAt = "2026-11-14",
-        validUntil,
+        LicenseId = "LIC-2026-000123",
+        Product = License.ProductCode,
+        CustomerName = "Grupul Exemplu",
+        FiscalCodes = "10000008",
+        Modules = modules ?? ["Core", "Finance", "Sales"],
+        Limits = new LicenseLimits(100, 300, 10),
+        IssuedAt = new DateOnly(2016, 11, 14),
+        ValidUntil = validUntil is null ? null : DateOnly.Parse(validUntil, System.Globalization.CultureInfo.InvariantCulture),
     };
 
-    public string Create(object payload, string keyId = KeyId, ECDsa? signWith = null)
-    {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(payload);
-        var signature = (signWith ?? key).SignData(bytes, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-        return JsonSerializer.Serialize(new { payload = Base64Url(bytes), signature = Base64Url(signature), keyId });
-    }
+    public byte[] Create(License payload) => LicenseWriter.Write(payload, key);
 
     public void Dispose() => key.Dispose();
-
-    private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 internal static class CheckFixtures
@@ -196,6 +190,13 @@ internal static class CheckFixtures
     {
         var path = Path.Combine(Path.GetTempPath(), $"erp-lic-{Guid.NewGuid():N}.lic");
         File.WriteAllText(path, content, new UTF8Encoding(false));
+        return path;
+    }
+
+    public static string WriteTemp(byte[] content)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"erp-lic-{Guid.NewGuid():N}.lic");
+        File.WriteAllBytes(path, content);
         return path;
     }
 }

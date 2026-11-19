@@ -83,7 +83,7 @@ public sealed class InstallResumeIntegrationTests(SqlServerFixture sql) : IDispo
 
     private IReadOnlyList<PlannedStep> SqlPlan(InstallSession session, bool failAfterProgrammability = false)
     {
-        var verifier = new LicenseVerifier(licenses.PublicKeys, TimeProvider.System);
+        var verifier = licenses.Reader;
         var steps = new List<PlannedStep>
         {
             SqlInstallSteps.I05_DataFolders(session),

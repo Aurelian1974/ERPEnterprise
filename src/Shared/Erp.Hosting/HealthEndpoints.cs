@@ -87,13 +87,13 @@ public sealed class SchemaCheck(ISchemaVersionSource reader, ErpBuildInfo build,
     }
 }
 
-/// <summary>license: fisierul de licenta e valid si incarcat (8.9).</summary>
-public sealed class LicenseCheck(string licensePath, LicenseVerifier verifier) : IReadinessCheck
+/// <summary>license: licenta e valida si incarcata (08, 5.14).</summary>
+public sealed class LicenseCheck(string licensePath, ILicenseReader reader) : IReadinessCheck
 {
     public string Name => "license";
 
     public Task<HealthStatus> CheckAsync(CancellationToken ct) =>
-        Task.FromResult(File.Exists(licensePath) && verifier.Verify(File.ReadAllText(licensePath)).IsValid
+        Task.FromResult(File.Exists(licensePath) && reader.Read(File.ReadAllBytes(licensePath)).IsValid
             ? HealthStatus.Healthy
             : HealthStatus.Unhealthy);
 }

@@ -30,24 +30,24 @@ public sealed class LicenseInfo : ILicenseInfo
 {
     private readonly HashSet<string> modules;
     private readonly HashSet<string> fiscalCodes = new(StringComparer.Ordinal);
-    private readonly LicenseLimits? limits;
+    private readonly License? license;
     private readonly TimeProvider time;
     private readonly bool development;
 
-    public LicenseInfo(LicenseOptions options, LicenseVerifier verifier, TimeProvider time, ILogger<LicenseInfo> log)
+    public LicenseInfo(LicenseOptions options, ILicenseReader reader, TimeProvider time, ILogger<LicenseInfo> log)
     {
         this.time = time;
-        var result = options.LicensePath is { Length: > 0 } path && File.Exists(path) ? verifier.Verify(File.ReadAllText(path)) : null;
-        var payload = result is { Status: LicenseStatus.Valid or LicenseStatus.Expired } ? result.Payload : null;
+        var result = options.LicensePath is { Length: > 0 } path && File.Exists(path) ? reader.Read(File.ReadAllBytes(path)) : null;
+        var payload = result is { IsAuthentic: true } ? result.License : null;
 
         if (payload is not null)
         {
             modules = new HashSet<string>(payload.Modules, StringComparer.Ordinal);
-            fiscalCodes = new HashSet<string>(payload.FiscalCodes.Select(Domain.RomanianFiscalCode.Normalize).OfType<string>(), StringComparer.Ordinal);
-            limits = payload.Limits;
-            ValidUntil = payload.ValidUntil;
+            fiscalCodes = new HashSet<string>(payload.FiscalCodeList, StringComparer.Ordinal);
+            license = payload;
+            ValidUntil = payload.ValidUntil ?? DateOnly.MaxValue;
             CustomerName = payload.CustomerName;
-            log.LogInformation("Licența {LicenseId}: module {Modules}, valabilă până la {ValidUntil}", payload.LicenseId, payload.Modules, payload.ValidUntil);
+            log.LogInformation("Licența {LicenseId}: module {Modules}, valabilă până la {ValidUntil}", payload.LicenseId, payload.Modules, payload.ValidUntil?.ToString() ?? "nelimitat");
             return;
         }
 
@@ -70,6 +70,7 @@ public sealed class LicenseInfo : ILicenseInfo
 
     public LicenseState State => development ? LicenseState.Valid
         : ValidUntil == DateOnly.MinValue ? LicenseState.ReadOnly
+        : ValidUntil == DateOnly.MaxValue ? LicenseState.Valid
         : LicenseStates.For(ValidUntil, DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime));
 
     public bool IsModuleActive(string moduleCode) => development || modules.Contains(moduleCode);
@@ -79,12 +80,12 @@ public sealed class LicenseInfo : ILicenseInfo
     public bool IsFiscalCodeLicensed(string fiscalCode) =>
         development || (Domain.RomanianFiscalCode.Normalize(fiscalCode) is { } digits && fiscalCodes.Contains(digits));
 
-    public int? GetLimit(string limitCode) => limits is null ? null : limitCode switch
+    public int? GetLimit(string limitCode) => license is null ? null : limitCode switch
     {
-        "companies" => limits.Companies,
-        "users" => limits.Users,
-        "payrollEmployees" => limits.PayrollEmployees,
-        "posTerminals" => limits.PosTerminals,
+        "companies" => license.Companies,
+        "users" => license.Limits.Users,
+        "payrollEmployees" => license.Limits.PayrollEmployees,
+        "posTerminals" => license.Limits.PosTerminals,
         _ => null,
     };
 }

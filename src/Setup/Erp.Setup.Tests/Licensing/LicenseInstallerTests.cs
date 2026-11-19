@@ -30,10 +30,10 @@ public sealed class LicenseInstallerTests : IDisposable
     {
         var target = new SqlTarget("SQL01", "ERP_PROD", SqlAuthentication.Windows, null, SqlEncrypt.Mandatory, false, "PROD");
         var log = new LoggerConfiguration().WriteTo.Sink(logSink).CreateLogger();
-        return new LicenseInstaller(new LicenseVerifier(licenses.PublicKeys, TimeProvider.System), new SqlOperator(target, null, log));
+        return new LicenseInstaller(licenses.Reader, new SqlOperator(target, null, log));
     }
 
-    private string Source(object payload)
+    private string Source(Erp.Licensing.License payload)
     {
         var path = CheckFixtures.WriteTemp(licenses.Create(payload));
         sources.Add(path);

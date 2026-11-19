@@ -28,7 +28,7 @@ var build = ErpBuildInfo.From(typeof(Program).Assembly);
 var connectionString = InstallationConfiguration.ConnectionString(builder.Configuration, "Host");
 SqlConnection Connect() => new(connectionString);
 var schemaReader = new SchemaVersionReader(Connect);
-var licenseVerifier = new LicenseVerifier(LicenseKeys.LoadEmbedded(), TimeProvider.System);
+var licenseReader = new LicenseReader(LicenseKeys.Embedded, TimeProvider.System);
 var licensePath = builder.Configuration["Erp:LicensePath"]
     ?? (instanceDirectory is null ? string.Empty : new InstanceDataPaths(instanceDirectory).License);
 
@@ -85,7 +85,7 @@ app.MapErpHealth(build, () =>
 [
     new DatabaseCheck(Connect),
     new SchemaCheck(schemaReader, build, allowUnversionedBuild: development),
-    new LicenseCheck(licensePath, licenseVerifier),
+    new LicenseCheck(licensePath, licenseReader),
     new WorkerCheck(Connect),
 ]);
 

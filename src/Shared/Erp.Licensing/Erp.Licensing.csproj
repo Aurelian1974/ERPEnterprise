@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Cheile publice de verificare a licentelor: Keys/<keyId>.pem (8.9); cheia privata nu sta in depozit. -->
+  <!-- Citirea si verificarea licentei (08, 3.4-4.5), folosita de generator, installer si aplicatie. Fara cheie privata. -->
   <ItemGroup>
-    <EmbeddedResource Include="Keys\*.pem" LogicalName="Erp.Licensing.Keys.%(Filename).pem" />
+    <InternalsVisibleTo Include="Erp.LicenseGen.Core" />
+    <InternalsVisibleTo Include="Erp.LicenseGen.Tests" />
   </ItemGroup>
 
 </Project>
