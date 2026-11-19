@@ -37,7 +37,8 @@ public static partial class AnswersValidator
         }
     }
 
-    public static AnswersLoadResult Validate(AnswersFile file, string? dataRoot = null)
+    /// <param name="requireLicense">false la „Recuperează” (11.2): licenta e deja in baza.</param>
+    public static AnswersLoadResult Validate(AnswersFile file, string? dataRoot = null, bool requireLicense = true)
     {
         var issues = new List<AnswersIssue>();
         void Error(string field, string message) => issues.Add(new AnswersIssue(field, message));
@@ -128,7 +129,11 @@ public static partial class AnswersValidator
 
         var installRoot = OptionalPath(siteSection.InstallRoot, "site.installRoot", issues) ?? InstallRequest.DefaultInstallRoot;
         var license = file.License?.File?.Trim();
-        if (string.IsNullOrEmpty(license))
+        if (string.IsNullOrEmpty(license) && !requireLicense)
+        {
+            license = string.Empty;
+        }
+        else if (string.IsNullOrEmpty(license))
         {
             Error("license.file", "Fișierul de licență este obligatoriu.");
         }

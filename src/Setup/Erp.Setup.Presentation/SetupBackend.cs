@@ -118,12 +118,12 @@ public sealed class SetupBackend : ISetupBackend, IDisposable
     public LicenseReadResult ReadLicense(string path) =>
         new LicenseReader(LicenseKeys.Embedded, time).Read(File.ReadAllBytes(path));
 
-    public async Task<RequirementsReport> CheckAsync(InstallRequest request, CancellationToken ct)
+    public async Task<RequirementsReport> CheckAsync(InstallRequest request, CheckMode mode, CancellationToken ct)
     {
         using var network = new HttpNetworkProbe();
         var checker = new RequirementsChecker(probe, new SqlServerConnector(), network, new LicenseReader(LicenseKeys.Embedded, time), time);
         var existing = InstanceStateStore.Read(InstanceStateStore.PathFor(request.DataRoot, request.Instance));
-        var report = await checker.RunAsync(CheckTarget.From(request, CheckMode.Install), Manifest,
+        var report = await checker.RunAsync(CheckTarget.From(request, mode), Manifest,
             new KitCheck(true, $"{Manifest.Product} {Manifest.Version}"), existing, ct);
         foreach (var result in report.Results)
         {
@@ -133,13 +133,89 @@ public sealed class SetupBackend : ISetupBackend, IDisposable
         return report;
     }
 
-    public async Task<InstallOutcome> InstallAsync(InstallRequest request, RequirementsReport report, IStepReporter reporter, CancellationToken ct)
+    public Task<InstallOutcome> InstallAsync(InstallRequest request, RequirementsReport report, IStepReporter reporter, CancellationToken ct) =>
+        RunPlanAsync(InstallSession.Start(request, Manifest, kitRoot, Sql(request, report.TrustServerCertificate), report, unattended: false), reporter, ct);
+
+    public Task<InstallOutcome> RecoverAsync(InstallRequest request, RequirementsReport report, RecoveryKeyInput? recoveryKey, IStepReporter reporter,
+        CancellationToken ct) =>
+        RunPlanAsync(InstallSession.StartRecover(request, Manifest, kitRoot, Sql(request, report.TrustServerCertificate), report, recoveryKey), reporter, ct);
+
+    public async Task<InstallOutcome> RepairAsync(string instance, string? licensePath, IStepReporter reporter, CancellationToken ct)
     {
-        var sql = new SqlOperator(new SqlTarget(request.Sql.Server, request.Sql.Database, request.Instance, report.TrustServerCertificate), log);
-        var session = InstallSession.Start(request, Manifest, kitRoot, sql, report, unattended: false);
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        var report = await CheckAsync(request, CheckMode.Repair, ct);
+        if (report.HasFailures)
+        {
+            var failed = report.Results.First(r => r.Status == CheckStatus.Failed);
+            return new InstallOutcome(report.ExitCode, failed.Id, failed.Message, Url(request), null, null, null, false);
+        }
+
+        return await RunPlanAsync(InstallSession.StartRepair(request, Manifest, kitRoot, Sql(request, report.TrustServerCertificate), state, report, licensePath),
+            reporter, ct);
+    }
+
+    public async Task<UpgradeOutcome> UpgradeAsync(string instance, IStepReporter reporter, CancellationToken ct)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        var report = await CheckAsync(request, CheckMode.Upgrade, ct);
+        if (report.Results.FirstOrDefault(r => r.Status == CheckStatus.Failed) is { } failed)
+        {
+            return new UpgradeOutcome(failed.ExitCode ?? ExitCodes.RequirementsNotMet, failed.Id, failed.Message, []);
+        }
+
+        var session = UpgradeSession.Start(request, state, Manifest, kitRoot, Sql(request, state.TrustServerCertificate), report.BackupFolder);
+        moveLogsTo = session.Paths.SetupLogs;
+        return await Task.Run(() => Upgrader(session, reporter).RunAsync(Context(), ct), ct);
+    }
+
+    public async Task<UpgradeOutcome> RollbackAsync(string instance, IStepReporter reporter, CancellationToken ct)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        var session = UpgradeSession.Start(request, state, Manifest, kitRoot, Sql(request, state.TrustServerCertificate), null);
+        moveLogsTo = session.Paths.SetupLogs;
+        return await Task.Run(() => Upgrader(session, reporter).RollbackAsync(Context(), ct), ct);
+    }
+
+    public async Task<string> ResetAdministratorAsync(string instance, CancellationToken ct)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        return await AdministratorAccess.ResetAsync(state, Sql(request, state.TrustServerCertificate), Manifest.Version, ct);
+    }
+
+    public async Task<string> DiagnoseAsync(string instance, CancellationToken ct)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        return await DiagnosticPackage.CreateAsync(request, state, Sql(request, state.TrustServerCertificate), new WindowsSetup(log, time),
+            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), time, ct);
+    }
+
+    public async Task<(IReadOnlyList<string> Removed, IReadOnlyList<string> Kept)> UninstallAsync(string instance, CancellationToken ct)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        var result = await Uninstaller.RunAsync(request, state, Sql(request, state.TrustServerCertificate), new WindowsSetup(log, time), ct);
+        return (result.Removed, result.Kept);
+    }
+
+    public void ExportRecoveryKey(string instance, string pfxPath, string password)
+    {
+        var (request, state) = UpgradeSession.LoadInstallation(DataRoot, instance);
+        RecoveryKeys.Export(new WindowsSetup(log, time), InstanceStateStore.PathFor(DataRoot, instance), pfxPath, password, time,
+            Sql(request, state.TrustServerCertificate));
+    }
+
+    public RecoveryKeyCheck VerifyRecoveryKey(string instance, string pfxPath, string password)
+    {
+        var state = InstanceStateStore.Read(InstanceStateStore.PathFor(DataRoot, instance))
+            ?? throw new InvalidOperationException($"Instalarea {instance} nu există.");
+        return RecoveryKeys.Verify(new WindowsSetup(log, time), state, pfxPath, password);
+    }
+
+    private async Task<InstallOutcome> RunPlanAsync(InstallSession session, IStepReporter reporter, CancellationToken ct)
+    {
+        var request = session.Request;
         var windows = new WindowsSetup(log, time);
         var plan = PlanBuilder.Install(session, windows, new LicenseReader(LicenseKeys.Embedded, time), time);
-        var context = new SetupContext { Log = log, KitRoot = kitRoot, Unattended = false };
+        var context = Context();
 
         // Orchestratorul ruleaza in fundal; reporter-ul trece pe firul ferestrei prin IProgress.
         var result = await Task.Run(() => new StepOrchestrator(reporter, session).RunAsync(plan, context, ct), ct);
@@ -154,15 +230,22 @@ public sealed class SetupBackend : ISetupBackend, IDisposable
             result.ExitCode,
             result.FailedStep,
             failed.Result?.Message,
-            AppSettingsGenerator.PublicOrigin(request.Site.HostName, request.Site.HttpsPort) + "/",
+            Url(request),
             session.Administrator is { Created: true } ? session.Administrator.UserName : null,
             session.Administrator is { Created: true } ? session.Administrator.TemporaryPassword : null,
             state?.CertificateKind == CertificateKind.Internal ? session.Paths.InternalCertificate : null,
             session.RestartRequired);
     }
 
-    public void ExportRecoveryKey(InstallRequest request, string pfxPath, string password) =>
-        RecoveryKeys.Export(new WindowsSetup(log, time), InstanceStateStore.PathFor(request.DataRoot, request.Instance), pfxPath, password, time);
+    private SqlOperator Sql(InstallRequest request, bool trust) =>
+        new(new SqlTarget(request.Sql.Server, request.Sql.Database, request.Instance, trust), log);
+
+    private SetupContext Context() => new() { Log = log, KitRoot = kitRoot, Unattended = false };
+
+    private UpgradeRunner Upgrader(UpgradeSession session, IStepReporter reporter) =>
+        new(session, new WindowsSetup(log, time), new LicenseReader(LicenseKeys.Embedded, time), time, reporter);
+
+    private static string Url(InstallRequest request) => AppSettingsGenerator.PublicOrigin(request.Site.HostName, request.Site.HttpsPort) + "/";
 
     public void WriteAnswers(string path, InstallRequest request) => AnswersFile.Write(path, request);
 

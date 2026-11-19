@@ -154,13 +154,7 @@ public static class DataProtectionCertificate
 }
 
 /// <summary>Cheia de recuperare lipseste, nu corespunde instalarii sau parola ei e gresita (cod 80).</summary>
-public sealed class RecoveryKeyException(RecoveryKeyCheck check) : Exception(check switch
-{
-    RecoveryKeyCheck.WrongPassword => "Parola cheii de recuperare e greșită sau fișierul nu e o cheie de recuperare.",
-    RecoveryKeyCheck.NoPrivateKey => "Fișierul nu conține cheia privată.",
-    RecoveryKeyCheck.OtherInstallation => "Cheia de recuperare aparține altei instalări.",
-    _ => "Cheia de recuperare nu e validă.",
-})
+public sealed class RecoveryKeyException(RecoveryKeyCheck check) : Exception(RecoveryKeyPolicy.Message(check))
 {
     public RecoveryKeyCheck Check { get; } = check;
 

@@ -38,6 +38,12 @@ public sealed class WpfDialogs(Window owner) : ISetupDialogs
         return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
     }
 
+    public string? AskOpenRecoveryKey()
+    {
+        var dialog = new OpenFileDialog { Filter = "Cheie de recuperare (*.pfx)|*.pfx", InitialDirectory = RemovableDrive() };
+        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+    }
+
     public void CopyToClipboard(string text) => Clipboard.SetText(text);
 
     public void Open(string pathOrUrl) => Process.Start(new ProcessStartInfo(pathOrUrl) { UseShellExecute = true })?.Dispose();

@@ -10,6 +10,18 @@ using Erp.Setup.Sql.Database;
 
 namespace Erp.Setup.Engine;
 
+/// <summary>Ce face planul I-01…I-18 (08, 5.5, 11.1, 11.2).</summary>
+public enum SetupMode
+{
+    Install,
+
+    /// <summary>„Repară”: aceeasi versiune; nu atinge utilizatorii si datele; nu recreeaza certificatul instalarii.</summary>
+    Repair,
+
+    /// <summary>„Recuperează”: baza ERP exista, instalarea de pe calculator nu; certificatul vine din cheia de recuperare.</summary>
+    Recover,
+}
+
 /// <summary>
 /// Starea unei rulari a planului de instalare, partajata intre pasi. Nu contine secrete persistente: parola temporara a
 /// administratorului exista doar in memorie, pana o afiseaza invelisul (ecranul 6 sau consola, 5.10).
@@ -18,7 +30,7 @@ public sealed class InstallSession : IStepJournal
 {
     private readonly List<string> completed = [];
 
-    private InstallSession(InstallRequest request, KitManifest manifest, string kitRoot, SqlOperator sql, InstanceState? state)
+    private InstallSession(InstallRequest request, KitManifest manifest, string kitRoot, SqlOperator sql, InstanceState? state, Guid? installId = null)
     {
         Request = request;
         Manifest = manifest;
@@ -26,8 +38,16 @@ public sealed class InstallSession : IStepJournal
         Sql = sql;
         State = state;
         Resuming = state is { State: InstanceLifecycle.Installing };
-        InstallId = Resuming ? state!.InstallId : Guid.NewGuid();
+        InstallId = installId ?? (state is not null ? state.InstallId : Guid.NewGuid());
     }
+
+    public SetupMode Mode { get; init; } = SetupMode.Install;
+
+    /// <summary>„Repară --license”: licenta noua de incarcat la I-13; altfel I-13 se sare la reparare.</summary>
+    public string? LicenseOverride { get; init; }
+
+    /// <summary>„Recuperează”: cheia de recuperare (5.12); null = continua fara ea, cu confirmarea explicita a operatorului.</summary>
+    public RecoveryKeyInput? RecoveryKey { get; init; }
 
     public InstallRequest Request { get; }
 
@@ -99,12 +119,67 @@ public sealed class InstallSession : IStepJournal
         };
     }
 
+    /// <summary>„Repară” (11.1): aceeasi versiune a kitului ca instalarea (cod 74 altfel), starea si installId-ul raman.</summary>
+    public static InstallSession StartRepair(InstallRequest request, KitManifest manifest, string kitRoot, SqlOperator sql, InstanceState state,
+        RequirementsReport report, string? licenseOverride)
+    {
+        if (!string.Equals(state.CurrentVersion, manifest.Version, StringComparison.Ordinal))
+        {
+            throw new SetupModeException($"Instalarea e la versiunea {state.CurrentVersion}; „Repară” cere kitul {state.CurrentVersion} (kitul curent: {manifest.Version}).",
+                Core.ExitCodes.KitVersionMismatch);
+        }
+
+        return new InstallSession(request, manifest, kitRoot, sql, state)
+        {
+            Mode = SetupMode.Repair,
+            DatabaseRoot = Path.Combine(kitRoot, "database"),
+            Unattended = true,
+            SqlIsRemote = state.SqlIsRemote,
+            SqlIsExpress = state.BackupEdition == BackupEdition.None,
+            BackupFolder = state.BackupFolder ?? report.BackupFolder,
+            LicenseOverride = licenseOverride,
+        };
+    }
+
+    /// <summary>
+    /// „Recuperează” (11.2): baza ERP exista (C-14 o recunoaste), kitul are exact versiunea ei (cod 74), iar noul instance.json
+    /// pastreaza ErpInstallId al bazei.
+    /// </summary>
+    public static InstallSession StartRecover(InstallRequest request, KitManifest manifest, string kitRoot, SqlOperator sql, RequirementsReport report,
+        RecoveryKeyInput? recoveryKey)
+    {
+        if (InstanceStateStore.Read(InstanceStateStore.PathFor(request.DataRoot, request.Instance)) is not null)
+        {
+            throw new SetupModeException($"Instalarea {request.Instance} există pe acest calculator; folosiți „Repară”.", Core.ExitCodes.InvalidCommandLine);
+        }
+
+        var database = report.Database is { IsErp: true } erp ? erp
+            : throw new SetupModeException($"Baza {request.Sql.Database} nu este o bază ERP.", Core.ExitCodes.DatabaseExistsNotEmpty);
+        if (!string.Equals(database.LastMigration, manifest.LastMigration, StringComparison.Ordinal))
+        {
+            throw new SetupModeException($"Baza este la migrarea {database.LastMigration}, iar kitul la {manifest.LastMigration}; folosiți kitul versiunii bazei, apoi actualizați.",
+                Core.ExitCodes.KitVersionMismatch);
+        }
+
+        return new InstallSession(request, manifest, kitRoot, sql, state: null, Guid.TryParse(database.ErpInstallId, out var id) ? id : Guid.NewGuid())
+        {
+            Mode = SetupMode.Recover,
+            DatabaseRoot = Path.Combine(kitRoot, "database"),
+            Unattended = false,
+            SqlIsRemote = report.SqlIsRemote,
+            SqlIsExpress = report.Sql?.IsExpress ?? false,
+            BackupFolder = report.BackupFolder ?? request.Backup.Folder,
+            RecoveryKey = recoveryKey,
+        };
+    }
+
     /// <summary>Sesiunea pentru testele pasilor SQL (fara verificari si fara folderul kitului).</summary>
     internal static InstallSession ForTests(InstallRequest request, KitManifest manifest, string databaseRoot, SqlOperator sql, bool sqlIsRemote = false,
-        bool sqlIsExpress = false, string? backupFolder = null) =>
+        bool sqlIsExpress = false, string? backupFolder = null, SetupMode mode = SetupMode.Install) =>
         new(request, manifest, kitRoot: Path.GetDirectoryName(databaseRoot) ?? databaseRoot, sql,
             InstanceStateStore.Read(InstanceStateStore.PathFor(request.DataRoot, request.Instance)))
         {
+            Mode = mode,
             DatabaseRoot = databaseRoot,
             Unattended = true,
             SqlIsRemote = sqlIsRemote,
@@ -144,4 +219,16 @@ public sealed class InstallSession : IStepJournal
     }
 
     public InstanceState RequireState() => State ?? throw new InvalidOperationException("instance.json nu a fost creat (I-01).");
+}
+
+/// <summary>Fisierul .pfx al cheii de recuperare si parola lui (doar in memorie).</summary>
+public sealed record RecoveryKeyInput(string PfxPath, string Password)
+{
+    public override string ToString() => $"RecoveryKeyInput {{ PfxPath = {PfxPath} }}";
+}
+
+/// <summary>Actiunea nu se poate face cu acest kit sau pe aceasta instalare; contine codul de iesire (6.3).</summary>
+public sealed class SetupModeException(string message, int exitCode) : Exception(message)
+{
+    public int ExitCode { get; } = exitCode;
 }

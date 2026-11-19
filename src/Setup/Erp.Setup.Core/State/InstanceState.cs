@@ -96,6 +96,9 @@ public sealed record InstanceState
 
     public string? LastMigration { get; init; }
 
+    /// <summary>Backup-urile COPY_ONLY ale actualizarilor (U-04), cele mai noi primele; se pastreaza ultimele 3 (U-10).</summary>
+    public IReadOnlyList<string> UpgradeBackups { get; init; } = [];
+
     public IReadOnlyList<string> CompletedSteps { get; init; } = [];
 }
 

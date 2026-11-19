@@ -276,6 +276,73 @@ public sealed class SetupWizardViewModelTests : IDisposable
         Assert.Equal("TEST", wizard.Instance);
     }
 
+    [Fact]
+    public async Task Recover_takes_the_instance_from_the_database_needs_the_recovery_key_and_skips_the_license()
+    {
+        var erp = new DatabaseInfo(RequirementsChecker.RequiredCollation, 300, "ERP", "CONTA", Guid.NewGuid().ToString(), "core/x.sql", 1);
+        backend.Sql = new SqlConnectionTest(true, "Conectat.", Server() with { MachineName = "SRV-ERP" }, erp, false, IsRemote: false, "Running");
+        var wizard = Wizard();
+
+        wizard.RecoverCommand.Execute(null);
+        await wizard.TestSqlCommand.ExecuteAsync(null);
+        Assert.Equal("CONTA", wizard.Instance);
+        wizard.NextCommand.Execute(null);
+        wizard.NextCommand.Execute(null);
+        Assert.Equal(WizardPage.License, wizard.CurrentPage);
+        Assert.False(wizard.NextCommand.CanExecute(null));
+
+        wizard.ChooseRecoveryKeyCommand.Execute(null);
+        wizard.RecoveryKeyPassword = "Parola-Cheie-2026!";
+        Assert.True(wizard.NextCommand.CanExecute(null));
+        wizard.NextCommand.Execute(null);
+        Assert.Equal("Recuperează", wizard.PrimaryActionText);
+        Assert.Equal(string.Empty, wizard.BuildRequest().Request!.LicenseFile);
+
+        backend.Report = Report(("C-14", CheckStatus.Passed));
+        await wizard.RunChecksCommand.ExecuteAsync(null);
+        Assert.Equal(CheckMode.Recover, backend.LastCheckMode);
+        backend.Outcome = new InstallOutcome(ExitCodes.Success, null, null, "https://srv-erp/", null, null, null, false);
+        await wizard.InstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(new RecoveryKeyInput(@"E:\cheie.pfx", "Parola-Cheie-2026!"), backend.RecoveredWith);
+        Assert.Equal(WizardPage.Done, wizard.CurrentPage);
+        Assert.True(wizard.CanClose);
+        Assert.Equal(string.Empty, wizard.RecoveryKeyPassword);
+    }
+
+    [Fact]
+    public async Task Actions_on_an_existing_installation_show_their_results_and_codes()
+    {
+        backend.Installations.Add(new InstanceState { Instance = "PROD", State = InstanceLifecycle.Installed, InstallRoot = @"C:\Program Files\Erp", CurrentVersion = "2026.4.2" });
+        var wizard = Wizard();
+        Assert.True(wizard.SelectedInstallation!.CanUpgrade);
+
+        backend.UpgradeResult = new UpgradeOutcome(ExitCodes.UpgradeFailedRolledBack, "U-06", "migrare defectă", []);
+        await wizard.UpgradeInstallationCommand.ExecuteAsync(null);
+        Assert.Equal(WizardPage.Action, wizard.CurrentPage);
+        Assert.Contains("a revenit automat la versiunea 2026.4.2", wizard.ActionError, StringComparison.Ordinal);
+        Assert.Contains("(cod 70)", wizard.ActionError, StringComparison.Ordinal);
+        Assert.Equal(StepRowStatus.Failed, wizard.Steps.Single(s => s.Id == "U-06").Status);
+        Assert.Equal(StepRowStatus.Done, wizard.Steps.Single(s => s.Id == "R-06").Status);
+
+        wizard.BackToWelcomeCommand.Execute(null);
+        await wizard.ResetAdministratorCommand.ExecuteAsync(null);
+        Assert.Equal("PROD", backend.ResetInstance);
+        Assert.Equal("Nq4#Hn2p+Kd9!mXa4Rt_", wizard.ActionPassword);
+
+        wizard.ManageRecoveryKeyCommand.Execute(null);
+        wizard.RecoveryKeyPassword = "gresita";
+        wizard.VerifyRecoveryKeyCommand.Execute(null);
+        Assert.Contains("(cod 80)", wizard.ActionError, StringComparison.Ordinal);
+
+        wizard.UninstallCommand.Execute(null);
+        Assert.False(wizard.ConfirmUninstallCommand.CanExecute(null));
+        wizard.UninstallConfirmation = "PROD";
+        Assert.True(wizard.ConfirmUninstallCommand.CanExecute(null));
+        await wizard.ConfirmUninstallCommand.ExecuteAsync(null);
+        Assert.Contains("  baza", wizard.ActionLines);
+    }
+
     private static RequirementsReport Report(params (string Id, CheckStatus Status)[] results) =>
         new([.. results.Select(r => new CheckResult(r.Id, r.Id, r.Status, "mesaj", r.Status == CheckStatus.Failed ? ExitCodes.RequirementsNotMet : null))]);
 
@@ -295,6 +362,8 @@ public sealed class SetupWizardViewModelTests : IDisposable
         public string? AskSaveAnswers(string suggestedFileName) => null;
 
         public string? AskSaveRecoveryKey(string suggestedFileName) => @"E:\" + suggestedFileName;
+
+        public string? AskOpenRecoveryKey() => @"E:\cheie.pfx";
 
         public void CopyToClipboard(string text)
         {
@@ -337,7 +406,63 @@ public sealed class SetupWizardViewModelTests : IDisposable
 
         public LicenseReadResult ReadLicense(string path) => licenses.Reader.Read(File.ReadAllBytes(path));
 
-        public Task<RequirementsReport> CheckAsync(InstallRequest request, CancellationToken ct) => Task.FromResult(Report);
+        public CheckMode? LastCheckMode { get; private set; }
+
+        public RecoveryKeyInput? RecoveredWith { get; private set; }
+
+        public string? ResetInstance { get; private set; }
+
+        public Task<RequirementsReport> CheckAsync(InstallRequest request, CheckMode mode, CancellationToken ct)
+        {
+            LastCheckMode = mode;
+            return Task.FromResult(Report);
+        }
+
+        public Task<InstallOutcome> RecoverAsync(InstallRequest request, RequirementsReport report, RecoveryKeyInput? recoveryKey, IStepReporter reporter,
+            CancellationToken ct)
+        {
+            RecoveredWith = recoveryKey;
+            return InstallAsync(request, report, reporter, ct);
+        }
+
+        public UpgradeOutcome UpgradeResult { get; set; } = new(ExitCodes.Success, null, null, []);
+
+        public Task<UpgradeOutcome> UpgradeAsync(string instance, IStepReporter reporter, CancellationToken ct)
+        {
+            foreach (var (id, title) in UpgradeRunner.UpgradeSteps.Take(6))
+            {
+                var step = new DelegateStep(id, title, (_, _) => Task.FromResult(StepResult.Done()));
+                reporter.Started(step);
+                reporter.Finished(step, id == "U-06" ? StepResult.Failed("migrare defectă") : StepResult.Done(), TimeSpan.Zero);
+            }
+
+            foreach (var (id, title) in UpgradeRunner.RollbackSteps)
+            {
+                var step = new DelegateStep(id, title, (_, _) => Task.FromResult(StepResult.Done()));
+                reporter.Finished(step, StepResult.Done(), TimeSpan.Zero);
+            }
+
+            return Task.FromResult(UpgradeResult);
+        }
+
+        public Task<UpgradeOutcome> RollbackAsync(string instance, IStepReporter reporter, CancellationToken ct) => Task.FromResult(UpgradeResult);
+
+        public Task<InstallOutcome> RepairAsync(string instance, string? licensePath, IStepReporter reporter, CancellationToken ct) =>
+            Task.FromResult(new InstallOutcome(ExitCodes.Success, null, null, "https://x/", null, null, null, false));
+
+        public Task<string> ResetAdministratorAsync(string instance, CancellationToken ct)
+        {
+            ResetInstance = instance;
+            return Task.FromResult("Nq4#Hn2p+Kd9!mXa4Rt_");
+        }
+
+        public Task<string> DiagnoseAsync(string instance, CancellationToken ct) => Task.FromResult(@"C:\Users\it\Desktop\erp-diagnostic.zip");
+
+        public Task<(IReadOnlyList<string> Removed, IReadOnlyList<string> Kept)> UninstallAsync(string instance, CancellationToken ct) =>
+            Task.FromResult<(IReadOnlyList<string>, IReadOnlyList<string>)>((["serviciul"], ["baza"]));
+
+        public RecoveryKeyCheck VerifyRecoveryKey(string instance, string pfxPath, string password) =>
+            password == "Parola-Cheie-2026!" ? RecoveryKeyCheck.Valid : RecoveryKeyCheck.WrongPassword;
 
         public Task<InstallOutcome> InstallAsync(InstallRequest request, RequirementsReport report, IStepReporter reporter, CancellationToken ct)
         {
@@ -356,7 +481,7 @@ public sealed class SetupWizardViewModelTests : IDisposable
             return Task.FromResult(Outcome!);
         }
 
-        public void ExportRecoveryKey(InstallRequest request, string pfxPath, string password) => ExportedKey = (pfxPath, password);
+        public void ExportRecoveryKey(string instance, string pfxPath, string password) => ExportedKey = (pfxPath, password);
 
         public void WriteAnswers(string path, InstallRequest request)
         {

@@ -66,6 +66,18 @@ public sealed class WorkerServiceInstaller(IProcessRunner processes, Func<string
 
     public void SetBinaryPath(WorkerServiceSpec spec) => Run(ServiceCommands.SetBinaryPath(spec));
 
+    /// <summary>„Dezinstalează” (11.6): serviciul se sterge dupa oprire.</summary>
+    public bool Delete(string serviceName)
+    {
+        if (!serviceExists(serviceName))
+        {
+            return false;
+        }
+
+        Run(["delete", serviceName]);
+        return true;
+    }
+
     private void Run(IReadOnlyList<string> arguments)
     {
         var result = processes.Run(ProcessRunner.System32("sc.exe"), arguments);

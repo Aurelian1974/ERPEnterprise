@@ -100,6 +100,15 @@ internal sealed class CommandRunner(TimeProvider time)
             return ExitCodes.UnsupportedOsOrNotAdministrator;
         }
 
+        // 10.2: cat timp o actualizare e intrerupta, singura comanda permisa e rollback (plus citirile status si diagnose).
+        if (invocation.Instance is { } instance && invocation.Command is not ("rollback" or "status" or "diagnose")
+            && Core.State.InstanceStateStore.Read(Core.State.InstanceStateStore.PathFor(Core.Answers.InstallRequest.DefaultDataRoot, instance)) is
+                { State: Core.State.InstanceLifecycle.Upgrading or Core.State.InstanceLifecycle.RollingBack })
+        {
+            console.Error($"Există o actualizare întreruptă a instalării {instance}; singura comandă permisă e „rollback” (cod {ExitCodes.UnfinishedUpgrade}).");
+            return ExitCodes.UnfinishedUpgrade;
+        }
+
         using var cancellation = new CancellationTokenSource();
         ConsoleCancelEventHandler onCancel = (_, e) =>
         {
@@ -112,6 +121,13 @@ internal sealed class CommandRunner(TimeProvider time)
             var exitCode = invocation.Command switch
             {
                 "install" => new InstallCommand(context, moveLogsTo).RunAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "upgrade" => new UpgradeCommand(context, moveLogsTo).UpgradeAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "rollback" => new UpgradeCommand(context, moveLogsTo).RollbackAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "repair" => new MaintenanceCommands(context, moveLogsTo).RepairAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "recover" => new MaintenanceCommands(context, moveLogsTo).RecoverAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "reset-admin" => new MaintenanceCommands(context, moveLogsTo).ResetAdminAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "diagnose" => new MaintenanceCommands(context, moveLogsTo).DiagnoseAsync(cancellation.Token).GetAwaiter().GetResult(),
+                "uninstall" => new MaintenanceCommands(context, moveLogsTo).UninstallAsync(cancellation.Token).GetAwaiter().GetResult(),
                 "status" => InstanceCommands.Status(context),
                 "export-recovery-key" => InstanceCommands.ExportRecoveryKey(context),
                 "verify-recovery-key" => InstanceCommands.VerifyRecoveryKey(context),

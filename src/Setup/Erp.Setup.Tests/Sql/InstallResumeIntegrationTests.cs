@@ -196,7 +196,11 @@ internal sealed class FakeWindowsSetup : IWindowsSetup
     public CertificateInfo? FindMachineCertificate(string thumbprint) =>
         certificates.Contains(thumbprint) ? new CertificateInfo(true, DateTimeOffset.UtcNow.AddYears(2), ["erp.test.local"], true) : null;
 
-    public int DeployBinaries(string kitRoot, KitManifest manifest, InstallRequest request) => 0;
+    public int DeployBinaries(string kitRoot, KitManifest manifest, InstallRequest request, bool replaceExisting = false)
+    {
+        Calls.Add($"{nameof(DeployBinaries)} {manifest.Version}");
+        return 0;
+    }
 
     public void CreateSiteAndService(InstallRequest request, string version, string certificateThumbprint) => Calls.Add(nameof(CreateSiteAndService));
 
@@ -207,12 +211,43 @@ internal sealed class FakeWindowsSetup : IWindowsSetup
 
     public string ComputerAccount() => @"TEST\SRV-ERP$";
 
+    public string ImportDataProtectionCertificate(InstallRequest request, string pfxPath, string password)
+    {
+        Calls.Add(nameof(ImportDataProtectionCertificate));
+        return DataProtectionThumbprint;
+    }
+
+    public bool DataProtectionCertificateExists(string thumbprint) => thumbprint == DataProtectionThumbprint;
+
+    public void EnterMaintenance(InstallRequest request, string currentVersion) => Calls.Add($"{nameof(EnterMaintenance)} {currentVersion}");
+
+    public void ClearMaintenanceFlag(InstallRequest request) => Calls.Add(nameof(ClearMaintenanceFlag));
+
+    public void RemoveAppOffline(InstallRequest request, string version) => Calls.Add($"{nameof(RemoveAppOffline)} {version}");
+
+    public void SwitchVersion(InstallRequest request, string version) => Calls.Add($"{nameof(SwitchVersion)} {version}");
+
+    public void BackupConfiguration(InstallRequest request, string folder) => Directory.CreateDirectory(folder);
+
+    public void RestoreConfiguration(InstallRequest request, string folder) => Calls.Add(nameof(RestoreConfiguration));
+
+    public void PruneVersions(InstallRequest request, IReadOnlyCollection<string> keep) => Calls.Add($"{nameof(PruneVersions)} {string.Join(",", keep)}");
+
+    public IReadOnlyList<string> RemoveApplication(InstallRequest request) => ["serviciul", "site-ul"];
+
     public void ApplyFirewall(InstallRequest request) => Calls.Add(nameof(ApplyFirewall));
 
     public void StartApplication(InstallRequest request, string version) => Calls.Add(nameof(StartApplication));
 
     public Task<HealthCheckOutcome> CheckHealthAsync(InstallRequest request, string version, string? lastMigration, string? pinnedThumbprint,
-        CancellationToken ct) => Task.FromResult(Health);
+        CancellationToken ct)
+    {
+        Calls.Add($"Health {version}");
+        return Task.FromResult(HealthFor?.Invoke(version) ?? Health);
+    }
+
+    /// <summary>Raspunsul health-check-ului pe versiune (actualizarea: versiunea noua esueaza, cea veche merge).</summary>
+    public Func<string, HealthCheckOutcome?>? HealthFor { get; set; }
 
     public IReadOnlyList<string> ComponentLogTail(InstallRequest request) => ["(jurnal simulat)"];
 

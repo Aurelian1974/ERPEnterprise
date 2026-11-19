@@ -8,6 +8,9 @@
         <local:PageVisibilityConverter x:Key="Page"/>
         <local:NullVisibilityConverter x:Key="NotNull"/>
         <local:InverseBooleanConverter x:Key="Not"/>
+        <local:HiddenWhenTrueConverter x:Key="Hidden"/>
+        <local:NotZeroVisibilityConverter x:Key="NotZero"/>
+        <local:ActionVisibilityConverter x:Key="Kind"/>
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -62,10 +65,23 @@
                                 <TextBlock Style="{StaticResource Hint}" Text="{Binding SelectedInstallation.RecoveryKey, StringFormat='Cheia de recuperare: {0}'}"/>
                                 <Button Margin="0,10,0,0" HorizontalAlignment="Left" Content="Reia instalarea" Command="{Binding ResumeInstallationCommand}"
                                         Visibility="{Binding SelectedInstallation.CanResume, Converter={StaticResource Visible}}"/>
+                                <Button Margin="0,10,0,0" HorizontalAlignment="Left" Content="Revino la versiunea anterioară" Command="{Binding RollbackInstallationCommand}"
+                                        Visibility="{Binding SelectedInstallation.IsUpgradeInterrupted, Converter={StaticResource Visible}}"/>
+                                <WrapPanel Margin="0,10,0,0" Visibility="{Binding SelectedInstallation.CanManage, Converter={StaticResource Visible}}">
+                                    <Button Style="{StaticResource Primary}" Margin="0,0,8,8" Content="Actualizează" Command="{Binding UpgradeInstallationCommand}"
+                                            Visibility="{Binding SelectedInstallation.CanUpgrade, Converter={StaticResource Visible}}"/>
+                                    <Button Margin="0,0,8,8" Content="Repară" Command="{Binding RepairInstallationCommand}"/>
+                                    <Button Margin="0,0,8,8" Content="Repară cu altă licență…" Command="{Binding RepairWithLicenseCommand}"/>
+                                    <Button Margin="0,0,8,8" Content="Resetează accesul administratorului" Command="{Binding ResetAdministratorCommand}"/>
+                                    <Button Margin="0,0,8,8" Content="Cheia de recuperare…" Command="{Binding ManageRecoveryKeyCommand}"/>
+                                    <Button Margin="0,0,8,8" Content="Pachet de diagnostic" Command="{Binding DiagnoseCommand}"/>
+                                    <Button Margin="0,0,8,8" Content="Dezinstalează" Command="{Binding UninstallCommand}"/>
+                                </WrapPanel>
                             </StackPanel>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                             <Button Style="{StaticResource Primary}" Content="Instalare nouă" Command="{Binding NewInstallationCommand}"/>
+                            <Button Content="Recuperează o instalare existentă" Command="{Binding RecoverCommand}"/>
                             <Button Content="Încarcă un fișier de răspunsuri…" Command="{Binding LoadAnswersCommand}"/>
                         </StackPanel>
                     </StackPanel>
@@ -142,6 +158,18 @@
 
                     <!-- 3. Licenta -->
                     <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=License}">
+                      <StackPanel Visibility="{Binding IsRecoverMode, Converter={StaticResource Visible}}">
+                        <TextBlock Style="{StaticResource Title}" Text="Cheia de recuperare"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="Licența e deja în bază. Cheia de recuperare (.pfx) permite citirea datelor criptate: 2FA-ul utilizatorilor și secretele din Configurare."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Content="Alege cheia de recuperare…" Command="{Binding ChooseRecoveryKeyCommand}"/>
+                            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Muted}" Text="{Binding RecoveryKeyFile}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="Parola cheii"/>
+                        <PasswordBox Width="260" HorizontalAlignment="Left" Tag="1" PasswordChanged="PasswordChanged"/>
+                        <CheckBox Content="Continuă fără cheia de recuperare; datele criptate se pierd" IsChecked="{Binding ContinueWithoutRecoveryKey}"/>
+                      </StackPanel>
+                      <StackPanel Visibility="{Binding IsRecoverMode, Converter={StaticResource Hidden}}">
                         <TextBlock Style="{StaticResource Title}" Text="Licență"/>
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Alege fișierul de licență…" Command="{Binding ChooseLicenseCommand}"/>
@@ -157,6 +185,7 @@
                                        Visibility="{Binding LicenseIsValid, Converter={StaticResource Visible}}"/>
                         </StackPanel>
                         <TextBlock Style="{StaticResource Error}" Text="{Binding LicenseError}"/>
+                      </StackPanel>
                     </StackPanel>
 
                     <!-- 4. Verificare -->
@@ -226,6 +255,54 @@
                                 Visibility="{Binding InstallError, Converter={StaticResource NotNull}}"/>
                     </StackPanel>
 
+                    <!-- Actiunile pe o instalare existenta -->
+                    <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Action}">
+                        <TextBlock Style="{StaticResource Title}" Text="{Binding ActionTitle}"/>
+                        <ProgressBar Height="8" Value="{Binding Progress}" Maximum="100" Foreground="{StaticResource Blue}"
+                                     Visibility="{Binding Steps.Count, Converter={StaticResource NotZero}}"/>
+                        <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding Steps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="26"/>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="330"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Symbol}" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Id}" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Title}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Duration}" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Message}" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding ActionMessage}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding ActionPassword, Converter={StaticResource NotNull}}">
+                            <TextBox IsReadOnly="True" FontFamily="Consolas" FontSize="22" Text="{Binding ActionPassword, Mode=OneWay}"/>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Action, Converter={StaticResource Kind}, ConverterParameter=RecoveryKey}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource Hint}" Text="Parola (minimum 12 caractere), introdusă de două ori pentru export; o singură dată pentru verificare."/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <PasswordBox Width="200" Tag="1" PasswordChanged="PasswordChanged"/>
+                                <PasswordBox Width="200" Margin="8,0,0,0" Tag="2" PasswordChanged="PasswordChanged"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="Exportă cheia de recuperare…" Command="{Binding ExportRecoveryKeyCommand}" Click="ClearPasswords"/>
+                                <Button Content="Verifică o cheie existentă…" Command="{Binding VerifyRecoveryKeyCommand}" Click="ClearPasswords"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Action, Converter={StaticResource Kind}, ConverterParameter=Uninstall}" Margin="0,8,0,0">
+                            <TextBox Width="160" HorizontalAlignment="Left" Text="{Binding UninstallConfirmation, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Margin="0,8,0,0" HorizontalAlignment="Left" Content="Dezinstalează" Command="{Binding ConfirmUninstallCommand}"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding ActionError}"/>
+                        <ItemsControl ItemsSource="{Binding ActionLines}" Margin="0,6,0,0"/>
+                    </StackPanel>
+
                     <!-- 6. Gata -->
                     <StackPanel Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Done}">
                         <TextBlock Style="{StaticResource Title}" Text="Gata"/>
@@ -243,9 +320,9 @@
                         <TextBlock Style="{StaticResource Label}" Text="Cheia de recuperare"/>
                         <TextBlock Style="{StaticResource Hint}" Text="Permite citirea datelor criptate după mutarea bazei pe alt server. Păstrați-o separat de backup-uri, cu parola în managerul de parole."/>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <PasswordBox x:Name="RecoveryPassword" Width="200" PasswordChanged="RecoveryPasswordChanged"/>
-                            <PasswordBox x:Name="RecoveryPasswordConfirm" Width="200" Margin="8,0,0,0" PasswordChanged="RecoveryPasswordChanged"/>
-                            <Button Margin="8,0,0,0" Content="Salvează cheia de recuperare…" Command="{Binding SaveRecoveryKeyCommand}" Click="ClearRecoveryPasswords"/>
+                            <PasswordBox Width="200" Tag="1" PasswordChanged="PasswordChanged"/>
+                            <PasswordBox Width="200" Margin="8,0,0,0" Tag="2" PasswordChanged="PasswordChanged"/>
+                            <Button Margin="8,0,0,0" Content="Salvează cheia de recuperare…" Command="{Binding SaveRecoveryKeyCommand}" Click="ClearPasswords"/>
                         </StackPanel>
                         <TextBlock Style="{StaticResource Hint}" Text="Parola (minimum 12 caractere), introdusă de două ori."/>
                         <TextBlock Margin="0,6,0,0" Foreground="#1E7B45" Text="{Binding RecoveryKeyPath, StringFormat='✓ Salvată în {0}'}"
@@ -265,7 +342,9 @@
                 <Button Content="Înapoi" Command="{Binding BackCommand}"/>
                 <Button Style="{StaticResource Primary}" Content="Înainte" Command="{Binding NextCommand}"
                         Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Database|Site|License}"/>
-                <Button Style="{StaticResource Primary}" Content="Instalează" Command="{Binding InstallCommand}"
+                <Button Content="Înapoi la instalări" Command="{Binding BackToWelcomeCommand}"
+                        Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Action}"/>
+                <Button Style="{StaticResource Primary}" Content="{Binding PrimaryActionText}" Command="{Binding InstallCommand}"
                         Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Checks}"/>
                 <Button Content="Deschide aplicația" Command="{Binding OpenApplicationCommand}"
                         Visibility="{Binding CurrentPage, Converter={StaticResource Page}, ConverterParameter=Done}"/>

@@ -222,26 +222,4 @@ internal sealed class InstallCommand(CommandContext context, Action<string> move
         var answer = Console.ReadLine()?.Trim();
         return answer is not null && (answer.Equals("d", StringComparison.OrdinalIgnoreCase) || answer.Equals("da", StringComparison.OrdinalIgnoreCase));
     }
-
-    private sealed class ConsoleStepReporter(OperatorConsole console) : IStepReporter
-    {
-        public void Started(IInstallStep step) => console.Info($"[{step.Id}] {step.Title}...");
-
-        public void Finished(IInstallStep step, StepResult result, TimeSpan elapsed)
-        {
-            var line = StepOrchestrator.FormatFinished(step, result, elapsed);
-            switch (result.Outcome)
-            {
-                case StepOutcome.Warning:
-                    console.Warning(line);
-                    break;
-                case StepOutcome.Failed:
-                    console.Error(line);
-                    break;
-                default:
-                    console.Info(line);
-                    break;
-            }
-        }
-    }
 }

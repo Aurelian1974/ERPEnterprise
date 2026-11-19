@@ -1,4 +1,6 @@
 using Erp.Licensing;
+using Erp.Setup.Core;
+using Erp.Setup.Engine;
 using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
 using Erp.Setup.Core.Kit;
@@ -52,11 +54,35 @@ public interface ISetupBackend
 
     LicenseReadResult ReadLicense(string path);
 
-    Task<RequirementsReport> CheckAsync(InstallRequest request, CancellationToken ct);
+    Task<RequirementsReport> CheckAsync(InstallRequest request, CheckMode mode, CancellationToken ct);
 
     Task<InstallOutcome> InstallAsync(InstallRequest request, RequirementsReport report, IStepReporter reporter, CancellationToken ct);
 
-    void ExportRecoveryKey(InstallRequest request, string pfxPath, string password);
+    /// <summary>„Recuperează” (11.2); fara cheie, certificatul instalarii e nou si datele criptate anterior se pierd.</summary>
+    Task<InstallOutcome> RecoverAsync(InstallRequest request, RequirementsReport report, RecoveryKeyInput? recoveryKey, IStepReporter reporter,
+        CancellationToken ct);
+
+    /// <summary>„Actualizează” (10), cu revenire automata.</summary>
+    Task<UpgradeOutcome> UpgradeAsync(string instance, IStepReporter reporter, CancellationToken ct);
+
+    /// <summary>„Revino la versiunea anterioară” dupa o actualizare intrerupta (10.2).</summary>
+    Task<UpgradeOutcome> RollbackAsync(string instance, IStepReporter reporter, CancellationToken ct);
+
+    /// <summary>„Repară” (11.1); <paramref name="licensePath"/> = „Încarcă altă licență…”.</summary>
+    Task<InstallOutcome> RepairAsync(string instance, string? licensePath, IStepReporter reporter, CancellationToken ct);
+
+    /// <summary>„Resetează accesul administratorului” (11.3): parola temporara noua.</summary>
+    Task<string> ResetAdministratorAsync(string instance, CancellationToken ct);
+
+    /// <summary>„Pachet de diagnostic” (11.5): calea ZIP-ului.</summary>
+    Task<string> DiagnoseAsync(string instance, CancellationToken ct);
+
+    /// <summary>„Dezinstalează” (11.6): ce s-a sters si ce a ramas.</summary>
+    Task<(IReadOnlyList<string> Removed, IReadOnlyList<string> Kept)> UninstallAsync(string instance, CancellationToken ct);
+
+    void ExportRecoveryKey(string instance, string pfxPath, string password);
+
+    RecoveryKeyCheck VerifyRecoveryKey(string instance, string pfxPath, string password);
 
     void WriteAnswers(string path, InstallRequest request);
 }
@@ -71,6 +97,8 @@ public interface ISetupDialogs
     string? AskSaveAnswers(string suggestedFileName);
 
     string? AskSaveRecoveryKey(string suggestedFileName);
+
+    string? AskOpenRecoveryKey();
 
     void CopyToClipboard(string text);
 

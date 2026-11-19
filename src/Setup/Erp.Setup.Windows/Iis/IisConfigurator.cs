@@ -54,6 +54,27 @@ public static class IisConfigurator
         }
     }
 
+    /// <summary>„Dezinstalează” (11.6): sterge site-ul si pool-ul instalarii; celelalte site-uri raman neatinse.</summary>
+    public static bool Remove(string siteName, string poolName)
+    {
+        using var manager = new ServerManager();
+        var removed = false;
+        if (manager.Sites[siteName] is { } site)
+        {
+            manager.Sites.Remove(site);
+            removed = true;
+        }
+
+        if (manager.ApplicationPools[poolName] is { } pool)
+        {
+            manager.ApplicationPools.Remove(pool);
+            removed = true;
+        }
+
+        manager.CommitChanges();
+        return removed;
+    }
+
     /// <summary>Opreste site-ul si pool-ul (I-06 la o instalare noua; actualizarea, 10.2).</summary>
     public static void Stop(IisSiteSpec spec)
     {

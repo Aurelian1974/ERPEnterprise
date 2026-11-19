@@ -13,4 +13,13 @@ public enum RecoveryKeyCheck
 public static class RecoveryKeyPolicy
 {
     public const int MinimumPasswordLength = 12;
+
+    public static string Message(RecoveryKeyCheck check) => check switch
+    {
+        RecoveryKeyCheck.WrongPassword => "Parola cheii de recuperare e greșită sau fișierul nu e o cheie de recuperare.",
+        RecoveryKeyCheck.NoPrivateKey => "Fișierul nu conține cheia privată.",
+        RecoveryKeyCheck.OtherInstallation => "Cheia de recuperare aparține altei instalări.",
+        RecoveryKeyCheck.Valid => "Cheia de recuperare e validă.",
+        _ => "Cheia de recuperare nu e validă.",
+    };
 }

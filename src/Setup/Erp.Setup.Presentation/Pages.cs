@@ -16,6 +16,20 @@ public enum WizardPage
     Checks,
     Install,
     Done,
+
+    /// <summary>Actiunile pe o instalare existenta (ecranul 0): actualizare, reparare, resetare, cheie, diagnostic, dezinstalare.</summary>
+    Action,
+}
+
+public enum ActionKind
+{
+    Upgrade,
+    Rollback,
+    Repair,
+    ResetAdministrator,
+    RecoveryKey,
+    Diagnose,
+    Uninstall,
 }
 
 /// <summary>Un rand din lista pasilor din stanga.</summary>
@@ -53,6 +67,12 @@ public sealed record InstallationItem(InstanceState State, string KitVersion)
     public string RecoveryKey => State.RecoveryKeyExportedAt is { } at ? $"exportată la {at.ToLocalTime():dd.MM.yyyy}" : "neexportată";
 
     public bool CanResume => State.State == InstanceLifecycle.Installing;
+
+    /// <summary>Actualizare intrerupta: singura actiune e „Revino la versiunea anterioară” (10.2, cod 73).</summary>
+    public bool IsUpgradeInterrupted => State.State is InstanceLifecycle.Upgrading or InstanceLifecycle.RollingBack;
+
+    /// <summary>Actiunile obisnuite (actualizare, reparare, cheie, diagnostic…) pe o instalare terminata sau in mentenanta.</summary>
+    public bool CanManage => State.State is InstanceLifecycle.Installed or InstanceLifecycle.Maintenance;
 
     public bool CanUpgrade => State.State == InstanceLifecycle.Installed && Version.TryParse(State.CurrentVersion, out var current)
         && Version.TryParse(KitVersion, out var kit) && kit > current;

@@ -60,9 +60,24 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial InstallationItem? SelectedInstallation { get; set; }
 
+    /// <summary>„Recuperează o instalare existentă” (11.2): baza ERP exista, instalarea de pe calculator nu.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrimaryActionText))]
+    public partial bool IsRecoverMode { get; set; }
+
+    public string PrimaryActionText => IsRecoverMode ? "Recuperează" : "Instalează";
+
+    [RelayCommand]
+    private void Recover()
+    {
+        IsRecoverMode = true;
+        CurrentPage = WizardPage.Database;
+    }
+
     [RelayCommand]
     private void NewInstallation()
     {
+        IsRecoverMode = false;
         Instance = Installations.Any(i => i.Instance == InstallRequest.DefaultInstance) ? "TEST" : InstallRequest.DefaultInstance;
         CurrentPage = WizardPage.Database;
     }
@@ -208,6 +223,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         try
         {
             SqlTest = await backend.TestSqlConnectionAsync(Server.Trim(), Database.Trim(), ct);
+            if (IsRecoverMode && SqlTest.Database is { IsErp: true, ErpInstance: { } instance })
+            {
+                Instance = instance;
+            }
         }
         finally
         {
@@ -331,6 +350,27 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         OnPropertyChanged(nameof(LicenseValidity));
     }
 
+    // ---- Ecranul 3 la „Recuperează”: cheia de recuperare (11.2, pasul 4) ----
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(NextCommand))]
+    public partial string? RecoveryKeyFile { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(NextCommand))]
+    public partial bool ContinueWithoutRecoveryKey { get; set; }
+
+    [RelayCommand]
+    private void ChooseRecoveryKey()
+    {
+        if (dialogs.AskOpenRecoveryKey() is { } path)
+        {
+            RecoveryKeyFile = path;
+        }
+    }
+
+    private bool HasRecoveryKey => RecoveryKeyFile is not null && RecoveryKeyPassword.Length > 0;
+
     // ---- Ecranul 4: Verificare ----
 
     public ObservableCollection<CheckRow> CheckResults { get; } = [];
@@ -368,7 +408,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         IsChecking = true;
         try
         {
-            report = await backend.CheckAsync(request, ct);
+            report = await backend.CheckAsync(request, IsRecoverMode ? CheckMode.Recover : CheckMode.Install, ct);
             foreach (var result in report.Results)
             {
                 CheckResults.Add(new CheckRow(result));
@@ -451,11 +491,21 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         try
         {
             var reporter = new ViewModelStepReporter(progressFactory(Apply));
-            var outcome = await backend.InstallAsync(request, report, reporter, ct);
+            var outcome = IsRecoverMode
+                ? await backend.RecoverAsync(request, report, HasRecoveryKey ? new RecoveryKeyInput(RecoveryKeyFile!, RecoveryKeyPassword) : null, reporter, ct)
+                : await backend.InstallAsync(request, report, reporter, ct);
             Outcome = outcome;
             if (outcome.ExitCode is ExitCodes.Success or ExitCodes.SuccessWithWarnings)
             {
                 installedRequest = request;
+                if (IsRecoverMode && HasRecoveryKey)
+                {
+                    // Certificatul a fost importat din cheia existenta; nu trebuie exportata alta.
+                    RecoveryKeyPath = RecoveryKeyFile;
+                    OnPropertyChanged(nameof(RecoveryKeySaved));
+                }
+
+                RecoveryKeyPassword = string.Empty;
                 CurrentPage = WizardPage.Done;
             }
             else
@@ -476,7 +526,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         var row = Steps.FirstOrDefault(s => s.Id == step.Id);
         if (row is null)
         {
-            return;
+            // Pasii de revenire (R-xx) apar doar daca actualizarea esueaza.
+            var title = Engine.UpgradeRunner.RollbackSteps.FirstOrDefault(r => r.Id == step.Id).Title ?? step.Id;
+            row = new StepRow(step.Id, title);
+            Steps.Add(row);
         }
 
         if (step.Result is null)
@@ -557,7 +610,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
         try
         {
-            backend.ExportRecoveryKey(installedRequest, path, RecoveryKeyPassword);
+            backend.ExportRecoveryKey(installedRequest.Instance, path, RecoveryKeyPassword);
             RecoveryKeyPath = path;
             OnPropertyChanged(nameof(RecoveryKeySaved));
         }
@@ -591,13 +644,306 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
     }
 
+    // ---- Actiunile pe o instalare existenta (ecranul 0) ----
+
+    [ObservableProperty]
+    public partial ActionKind Action { get; set; }
+
+    [ObservableProperty]
+    public partial string? ActionTitle { get; set; }
+
+    [ObservableProperty]
+    public partial string? ActionMessage { get; set; }
+
+    [ObservableProperty]
+    public partial string? ActionError { get; set; }
+
+    /// <summary>Parola noua dupa „Resetează accesul administratorului”, afisata o singura data.</summary>
+    [ObservableProperty]
+    public partial string? ActionPassword { get; set; }
+
+    public ObservableCollection<string> ActionLines { get; } = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConfirmUninstallCommand))]
+    public partial string UninstallConfirmation { get; set; } = string.Empty;
+
+    private string? ActionInstance => SelectedInstallation?.Instance;
+
+    private bool HasSelection() => SelectedInstallation is not null && !IsInstalling;
+
+    [RelayCommand]
+    private Task UpgradeInstallationAsync(CancellationToken ct) => RunUpgradeAsync(ActionKind.Upgrade, ct);
+
+    [RelayCommand]
+    private Task RollbackInstallationAsync(CancellationToken ct) => RunUpgradeAsync(ActionKind.Rollback, ct);
+
+    private async Task RunUpgradeAsync(ActionKind kind, CancellationToken ct)
+    {
+        if (ActionInstance is not { } instance)
+        {
+            return;
+        }
+
+        var from = SelectedInstallation!.State.CurrentVersion;
+        StartAction(kind, kind == ActionKind.Upgrade ? $"Actualizare {instance}: {from} → {KitVersion}" : $"Revenire {instance} la versiunea anterioară");
+        foreach (var (id, title) in kind == ActionKind.Upgrade ? Engine.UpgradeRunner.UpgradeSteps : Engine.UpgradeRunner.RollbackSteps)
+        {
+            Steps.Add(new StepRow(id, title));
+        }
+
+        await RunActionAsync(async () =>
+        {
+            var outcome = kind == ActionKind.Upgrade
+                ? await backend.UpgradeAsync(instance, new ViewModelStepReporter(progressFactory(Apply)), ct)
+                : await backend.RollbackAsync(instance, new ViewModelStepReporter(progressFactory(Apply)), ct);
+            switch (outcome.ExitCode)
+            {
+                case ExitCodes.Success or ExitCodes.SuccessWithWarnings:
+                    ActionMessage = $"Actualizare reușită: {KitVersion}.";
+                    break;
+                case ExitCodes.UpgradeFailedRolledBack:
+                    ActionError = kind == ActionKind.Upgrade
+                        ? $"Actualizarea nu a reușit ({outcome.FailedStep}: {outcome.Reason}); instalarea a revenit automat la versiunea {from} și funcționează (cod {outcome.ExitCode})."
+                        : $"Instalarea a revenit la versiunea anterioară și funcționează (cod {outcome.ExitCode}).";
+                    break;
+                case ExitCodes.UpgradeFailedRollbackFailed:
+                    ActionError = $"Actualizarea și revenirea au eșuat ({outcome.FailedStep}: {outcome.Reason}); instalarea e în mentenanță (cod {outcome.ExitCode}). Pași manuali:";
+                    foreach (var line in outcome.ManualSteps)
+                    {
+                        ActionLines.Add(line);
+                    }
+
+                    break;
+                default:
+                    ActionError = $"Actualizarea s-a oprit la {outcome.FailedStep}: {outcome.Reason} (cod {outcome.ExitCode}). Nu s-a modificat nimic.";
+                    break;
+            }
+        });
+    }
+
+    [RelayCommand]
+    private Task RepairInstallationAsync(CancellationToken ct) => RunRepairAsync(null, ct);
+
+    /// <summary>„Repară” cu „Încarcă altă licență…” (11.1).</summary>
+    [RelayCommand]
+    private Task RepairWithLicenseAsync(CancellationToken ct) => dialogs.AskOpenLicense() is { } license ? RunRepairAsync(license, ct) : Task.CompletedTask;
+
+    private async Task RunRepairAsync(string? license, CancellationToken ct)
+    {
+        if (ActionInstance is not { } instance)
+        {
+            return;
+        }
+
+        StartAction(ActionKind.Repair, $"Reparare {instance}");
+        foreach (var (id, title) in PlanBuilder.InstallSteps)
+        {
+            Steps.Add(new StepRow(id, title));
+        }
+
+        await RunActionAsync(async () =>
+        {
+            var outcome = await backend.RepairAsync(instance, license, new ViewModelStepReporter(progressFactory(Apply)), ct);
+            if (outcome.ExitCode is ExitCodes.Success or ExitCodes.SuccessWithWarnings)
+            {
+                ActionMessage = "Instalarea a fost reparată.";
+            }
+            else
+            {
+                ActionError = $"Pasul {outcome.FailedStep} a eșuat (cod {outcome.ExitCode}): {outcome.Message}";
+            }
+        });
+    }
+
+    [RelayCommand]
+    private Task ResetAdministratorAsync(CancellationToken ct)
+    {
+        if (ActionInstance is not { } instance)
+        {
+            return Task.CompletedTask;
+        }
+
+        StartAction(ActionKind.ResetAdministrator, $"Resetarea accesului administratorului ({instance})");
+        return RunActionAsync(async () =>
+        {
+            ActionPassword = await backend.ResetAdministratorAsync(instance, ct);
+            ActionMessage = $"Utilizator: {InstallRequest.AdministratorUserName}. Parola temporară e afișată o singură dată; la autentificare se cer o parolă nouă și activarea 2FA.";
+        });
+    }
+
+    [RelayCommand]
+    private void ManageRecoveryKey()
+    {
+        if (ActionInstance is { } instance)
+        {
+            StartAction(ActionKind.RecoveryKey, $"Cheia de recuperare ({instance})");
+            ActionMessage = SelectedInstallation!.RecoveryKey;
+        }
+    }
+
+    [RelayCommand]
+    private void ExportRecoveryKey()
+    {
+        ActionError = null;
+        if (ActionInstance is not { } instance)
+        {
+            return;
+        }
+
+        if (RecoveryKeyPassword.Length < RecoveryKeyPolicy.MinimumPasswordLength || RecoveryKeyPassword != RecoveryKeyPasswordConfirm)
+        {
+            ActionError = $"Parola are cel puțin {RecoveryKeyPolicy.MinimumPasswordLength} caractere și se introduce identic de două ori.";
+            return;
+        }
+
+        if (dialogs.AskSaveRecoveryKey($"ERP-{instance}-cheie-recuperare.pfx") is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            backend.ExportRecoveryKey(instance, path, RecoveryKeyPassword);
+            ActionMessage = $"Cheia de recuperare a fost salvată în {path}.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+            or InvalidOperationException or Windows.Services.WindowsSetupException)
+        {
+            ActionError = $"Cheia nu a putut fi salvată: {ex.Message} (cod {ExitCodes.RecoveryKeyInvalid})";
+        }
+        finally
+        {
+            RecoveryKeyPassword = string.Empty;
+            RecoveryKeyPasswordConfirm = string.Empty;
+        }
+    }
+
+    /// <summary>„Verifică o cheie existentă” (11.4): nu modifica nimic.</summary>
+    [RelayCommand]
+    private void VerifyRecoveryKey()
+    {
+        ActionError = null;
+        if (ActionInstance is not { } instance || dialogs.AskOpenRecoveryKey() is not { } path)
+        {
+            return;
+        }
+
+        var check = backend.VerifyRecoveryKey(instance, path, RecoveryKeyPassword);
+        RecoveryKeyPassword = string.Empty;
+        RecoveryKeyPasswordConfirm = string.Empty;
+        if (check == RecoveryKeyCheck.Valid)
+        {
+            ActionMessage = "Cheia de recuperare e validă și aparține acestei instalări.";
+        }
+        else
+        {
+            ActionError = $"{RecoveryKeyPolicy.Message(check)} (cod {ExitCodes.RecoveryKeyInvalid})";
+        }
+    }
+
+    [RelayCommand]
+    private Task DiagnoseAsync(CancellationToken ct)
+    {
+        if (ActionInstance is not { } instance)
+        {
+            return Task.CompletedTask;
+        }
+
+        StartAction(ActionKind.Diagnose, $"Pachet de diagnostic ({instance})");
+        return RunActionAsync(async () =>
+        {
+            var path = await backend.DiagnoseAsync(instance, ct);
+            ActionMessage = $"Pachetul a fost creat: {path}";
+        });
+    }
+
+    [RelayCommand]
+    private void Uninstall()
+    {
+        if (ActionInstance is { } instance)
+        {
+            StartAction(ActionKind.Uninstall, $"Dezinstalare {instance}");
+            ActionMessage = $"Se șterg serviciul, site-ul, pool-ul, regulile de firewall și programul. Baza, backup-urile și certificatul de protecție a datelor rămân. " +
+                $"Tastați numele instalării ({instance}) pentru confirmare.";
+        }
+    }
+
+    private bool CanConfirmUninstall() => ActionInstance is { } instance && UninstallConfirmation == instance && !IsInstalling;
+
+    [RelayCommand(CanExecute = nameof(CanConfirmUninstall))]
+    private Task ConfirmUninstallAsync(CancellationToken ct)
+    {
+        var instance = ActionInstance!;
+        return RunActionAsync(async () =>
+        {
+            var (removed, kept) = await backend.UninstallAsync(instance, ct);
+            ActionMessage = "Dezinstalarea s-a încheiat.";
+            ActionLines.Add("Șters:");
+            removed.ToList().ForEach(r => ActionLines.Add($"  {r}"));
+            ActionLines.Add("Păstrat (se șterge manual, dacă se dorește):");
+            kept.ToList().ForEach(k => ActionLines.Add($"  {k}"));
+        });
+    }
+
+    [RelayCommand]
+    private void BackToWelcome()
+    {
+        if (IsInstalling)
+        {
+            return;
+        }
+
+        Installations.Clear();
+        foreach (var state in backend.FindInstallations())
+        {
+            Installations.Add(new InstallationItem(state, backend.Manifest.Version));
+        }
+
+        SelectedInstallation = Installations.FirstOrDefault();
+        OnPropertyChanged(nameof(HasInstallations));
+        CurrentPage = WizardPage.Welcome;
+    }
+
+    private void StartAction(ActionKind kind, string title)
+    {
+        Action = kind;
+        ActionTitle = title;
+        ActionMessage = null;
+        ActionError = null;
+        ActionPassword = null;
+        ActionLines.Clear();
+        UninstallConfirmation = string.Empty;
+        Steps.Clear();
+        Progress = 0;
+        CurrentPage = WizardPage.Action;
+    }
+
+    private async Task RunActionAsync(Func<Task> action)
+    {
+        IsInstalling = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            var code = ex.GetType().GetProperty("ExitCode")?.GetValue(ex) is int value ? value : ExitCodes.IisServiceOrFileError;
+            ActionError = $"{ex.Message} (cod {code})";
+        }
+        finally
+        {
+            IsInstalling = false;
+        }
+    }
+
     // ---- Navigarea ----
 
     private bool CanGoNext() => CurrentPage switch
     {
         WizardPage.Database => CanLeaveDatabase,
         WizardPage.Site => Issues("instance", "site.").Count == 0 && (UseInternalCertificate || SelectedCertificate is not null),
-        WizardPage.License => LicenseIsValid,
+        WizardPage.License => IsRecoverMode ? HasRecoveryKey || ContinueWithoutRecoveryKey : LicenseIsValid,
         _ => false,
     };
 
@@ -646,7 +992,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     private IReadOnlyList<AnswersIssue> Issues(params string[] prefixes)
     {
-        var issues = AnswersValidator.Validate(BuildAnswers(), backend.DataRoot).Errors;
+        var issues = AnswersValidator.Validate(BuildAnswers(), backend.DataRoot, requireLicense: !IsRecoverMode).Errors;
         return [.. issues.Where(i => prefixes.Any(p => i.Field.StartsWith(p, StringComparison.Ordinal)))];
     }
 
@@ -691,7 +1037,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 },
                 InstallRoot = InstallRoot.Trim(),
             },
-            License = new AnswersFile.LicenseSection { File = LicensePath },
+            License = new AnswersFile.LicenseSection { File = IsRecoverMode ? null : LicensePath },
             AcceptedWarnings = accepted,
         };
     }
@@ -699,7 +1045,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>Acelasi InstallRequest ca la linia de comanda (R13): valorile trec prin AnswersValidator.</summary>
     public (InstallRequest? Request, string Errors) BuildRequest()
     {
-        var result = AnswersValidator.Validate(BuildAnswers(), backend.DataRoot);
+        var result = AnswersValidator.Validate(BuildAnswers(), backend.DataRoot, requireLicense: !IsRecoverMode);
         return (result.IsValid ? result.Request : null, string.Join(Environment.NewLine, result.Errors.Select(e => $"{e.Field}: {e.Message}")));
     }
 

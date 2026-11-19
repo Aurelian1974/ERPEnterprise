@@ -14,6 +14,13 @@ public sealed class AgentJobRunner(SqlOperator sql)
     public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(30);
 
+    /// <summary>Porneste jobul fara sa astepte (R-05: backup complet imediat dupa readucerea bazei).</summary>
+    public async Task StartAsync(string jobName, CancellationToken ct)
+    {
+        await using var msdb = await sql.OpenAsync("msdb", ct).ConfigureAwait(false);
+        await sql.ExecuteAsync(msdb, $"Pornire job {jobName}", "EXEC dbo.sp_start_job @job_name = @Name;", ct, Name(jobName)).ConfigureAwait(false);
+    }
+
     public async Task<AgentJobRun> RunAndWaitAsync(string jobName, CancellationToken ct, TimeSpan? pollInterval = null, TimeSpan? timeout = null)
     {
         await using var msdb = await sql.OpenAsync("msdb", ct).ConfigureAwait(false);

@@ -47,6 +47,7 @@ public static class PlanBuilder
     /// <summary>Identificatorii pasilor, in ordine; testul IA-13 compara planurile celor doua invelisuri.</summary>
     public static IReadOnlyList<string> InstallStepIds => [.. InstallSteps.Select(s => s.Id)];
 
+    /// <summary>Planul pentru instalare, reparare sau recuperare (dupa <see cref="InstallSession.Mode"/>).</summary>
     public static IReadOnlyList<PlannedStep> Install(InstallSession session, IWindowsSetup windows, ILicenseReader licenses, TimeProvider time) =>
     [
         Step("I-01", ExitCodes.IisServiceOrFileError, (_, _) => Prepare(session, windows)),
@@ -70,13 +71,7 @@ public static class PlanBuilder
             windows.WriteConfiguration(session.KitRoot, session.Request, session.Version, SettingsValues(session));
             return Task.FromResult(StepResult.Done(session.Paths.AppSettings));
         }),
-        Step("I-08", ExitCodes.IisServiceOrFileError, (_, _) =>
-        {
-            var thumbprint = windows.EnsureDataProtectionCertificate(session.Request, session.RequireState().DataProtectionCertificateThumbprint);
-            session.UpdateState(state => state with { DataProtectionCertificateThumbprint = thumbprint });
-            windows.WriteConfiguration(session.KitRoot, session.Request, session.Version, SettingsValues(session));
-            return Task.FromResult(StepResult.Done(thumbprint));
-        }),
+        Step("I-08", ExitCodes.IisServiceOrFileError, (_, _) => Task.FromResult(DataProtection(session, windows))),
         Step("I-09", ExitCodes.SqlInstallError, (_, ct) => CreateDatabaseAsync(session, ct)),
         Step("I-10", ExitCodes.SqlInstallError, async (_, ct) =>
         {
@@ -87,8 +82,15 @@ public static class PlanBuilder
         Step("I-11", ExitCodes.SqlInstallError, (_, ct) => CreateLoginsAsync(session, windows, ct)),
         Step("I-12", ExitCodes.SqlInstallError, (context, _) =>
             Task.FromResult(RunMigrations(session, context))),
-        Step("I-13", ExitCodes.InvalidLicense, (_, ct) => SaveLicenseAsync(session, licenses, ct)),
-        Step("I-14", ExitCodes.SqlInstallError, (_, ct) => CreateAdministratorAsync(session, ct)),
+        Step("I-13", ExitCodes.InvalidLicense, (_, ct) => session.Mode switch
+        {
+            SetupMode.Install => SaveLicenseAsync(session, licenses, session.Request.LicenseFile, checkKitRelease: true, ct),
+            SetupMode.Repair when session.LicenseOverride is { } file => SaveLicenseAsync(session, licenses, file, checkKitRelease: false, ct),
+            _ => Task.FromResult(StepResult.Skipped("licența e în bază")),
+        }),
+        Step("I-14", ExitCodes.SqlInstallError, (_, ct) => session.Mode == SetupMode.Install
+            ? CreateAdministratorAsync(session, ct)
+            : Task.FromResult(StepResult.Skipped("administratorul există; utilizatorii nu se modifică"))),
         Step("I-15", ExitCodes.IisServiceOrFileError, (_, _) =>
         {
             windows.ApplyFirewall(session.Request);
@@ -113,6 +115,45 @@ public static class PlanBuilder
         return new InstallationSettingsValues(request.Instance, session.Version,
             AppSettingsGenerator.PublicOrigin(request.Site.HostName, request.Site.HttpsPort), session.Paths.InstanceDirectory, request.Sql.Server,
             request.Sql.Database, state.TrustServerCertificate, state.DataProtectionCertificateThumbprint);
+    }
+
+    /// <summary>
+    /// I-08 (5.12): instalarea creeaza certificatul; „Repară” il cere existent (cod 80, altfel „Recuperează”); „Recuperează” il
+    /// importa din cheia de recuperare sau, fara ea, creeaza unul nou (datele criptate cu inelul vechi raman ilizibile).
+    /// </summary>
+    private static StepResult DataProtection(InstallSession session, IWindowsSetup windows)
+    {
+        var existing = session.RequireState().DataProtectionCertificateThumbprint;
+        string thumbprint;
+        var warning = false;
+        switch (session.Mode)
+        {
+            case SetupMode.Repair:
+                if (existing is null || !windows.DataProtectionCertificateExists(existing))
+                {
+                    return StepResult.Failed("Certificatul de protecție a datelor lipsește; un certificat nou nu poate citi inelul de chei existent. " +
+                        "Folosiți „Recuperează o instalare existentă” cu cheia de recuperare.", ExitCodes.RecoveryKeyInvalid);
+                }
+
+                thumbprint = windows.EnsureDataProtectionCertificate(session.Request, existing);
+                break;
+            case SetupMode.Recover when session.RecoveryKey is { } key:
+                thumbprint = windows.ImportDataProtectionCertificate(session.Request, key.PfxPath, key.Password);
+                break;
+            case SetupMode.Recover:
+                thumbprint = windows.EnsureDataProtectionCertificate(session.Request, null);
+                warning = true;
+                break;
+            default:
+                thumbprint = windows.EnsureDataProtectionCertificate(session.Request, existing);
+                break;
+        }
+
+        session.UpdateState(state => state with { DataProtectionCertificateThumbprint = thumbprint });
+        windows.WriteConfiguration(session.KitRoot, session.Request, session.Version, SettingsValues(session));
+        return warning
+            ? StepResult.Warning($"certificat nou {thumbprint}, fără cheia de recuperare: datele criptate anterior (2FA, secretele din Configurare) nu mai pot fi citite")
+            : StepResult.Done(thumbprint);
     }
 
     private static Task<StepResult> Prepare(InstallSession session, IWindowsSetup windows)
@@ -209,9 +250,13 @@ public static class PlanBuilder
         }
 
         var existing = session.RequireState().CertificateThumbprint;
-        if (existing is not null && windows.FindMachineCertificate(existing) is not null)
+        if (existing is not null && windows.FindMachineCertificate(existing) is { } current)
         {
-            return StepResult.Skipped($"certificatul intern există ({existing})");
+            // „Repară” (11.1) regenereaza certificatul intern cu cel putin 60 de zile inainte de expirare; trebuie redistribuit.
+            if (session.Mode != SetupMode.Repair || current.NotAfter > time.GetUtcNow().AddDays(60))
+            {
+                return StepResult.Skipped($"certificatul intern există ({existing})");
+            }
         }
 
         var created = windows.CreateInternalHttpsCertificate(session.Request);
@@ -223,12 +268,14 @@ public static class PlanBuilder
     {
         var request = session.Request;
         var outcome = await new DatabaseCreator(session.Sql).CreateAsync(
-            new DatabaseCreateOptions(request.Sql.Database, request.Instance, session.InstallId, request.Sql.DataFolder, request.Sql.LogFolder), ct)
+            new DatabaseCreateOptions(request.Sql.Database, request.Instance, session.InstallId, request.Sql.DataFolder, request.Sql.LogFolder,
+                Recover: session.Mode == SetupMode.Recover), ct)
             .ConfigureAwait(false);
         return outcome switch
         {
             DatabaseCreateOutcome.Created => StepResult.Done($"baza {request.Sql.Database} creată"),
             DatabaseCreateOutcome.AdoptedEmpty => StepResult.Done($"baza goală {request.Sql.Database} a fost preluată"),
+            DatabaseCreateOutcome.Recovered => StepResult.Done($"baza ERP {request.Sql.Database} a fost preluată"),
             _ => StepResult.Done($"baza {request.Sql.Database} verificată"),
         };
     }
@@ -266,11 +313,14 @@ public static class PlanBuilder
             $"{programmability.ScriptsExecuted} obiecte, {seed.ScriptsExecuted} scripturi de date");
     }
 
-    private static async Task<StepResult> SaveLicenseAsync(InstallSession session, ILicenseReader licenses, CancellationToken ct)
+    /// <summary>I-13; la „Repară --license” dreptul la actualizari nu se verifica (IA-15: codul 41 nu opreste repararea).</summary>
+    private static async Task<StepResult> SaveLicenseAsync(InstallSession session, ILicenseReader licenses, string file, bool checkKitRelease,
+        CancellationToken ct)
     {
         var installer = new LicenseInstaller(licenses, session.Sql);
-        var verified = installer.Verify(session.Request.LicenseFile,
-            DateOnly.ParseExact(session.Manifest.ReleaseDate, "yyyy-MM-dd", CultureInfo.InvariantCulture), session.Version);
+        var verified = checkKitRelease
+            ? installer.Verify(file, DateOnly.ParseExact(session.Manifest.ReleaseDate, "yyyy-MM-dd", CultureInfo.InvariantCulture), session.Version)
+            : installer.Verify(file);
         await using var connection = await session.Sql.OpenAsync(session.Database, ct).ConfigureAwait(false);
         await installer.SaveAsync(connection, verified, ct).ConfigureAwait(false);
         var result = verified.Result;
@@ -299,6 +349,11 @@ public static class PlanBuilder
 
         var folder = session.BackupFolder ?? throw new InvalidOperationException("Folderul de backup nu a fost stabilit (C-16).");
         var changes = await new AgentJobInstaller(session.Sql).EnsureAsync(BackupSettings(session.Request, folder), ct).ConfigureAwait(false);
+        if (session.Mode == SetupMode.Repair)
+        {
+            return StepResult.Done($"{changes.Count} joburi verificate");
+        }
+
         var run = await new AgentJobRunner(session.Sql).RunAndWaitAsync(AgentJobDefinitions.FullBackupJob(session.Database), ct).ConfigureAwait(false);
         return run.Succeeded
             ? StepResult.Done($"{changes.Count} joburi; primul backup: {run.Message}")
@@ -329,6 +384,13 @@ public static class PlanBuilder
             InstalledAt = state.InstalledAt ?? time.GetUtcNow(),
             LastMigration = session.Manifest.LastMigration ?? state.LastMigration,
         });
+        if (session.Mode != SetupMode.Install)
+        {
+            AnswersFile.Write(session.Paths.Answers, session.Request);
+            return StepResult.Done(session.Mode == SetupMode.Repair ? $"instalarea {session.Request.Instance} a fost reparată"
+                : $"instalarea {session.Request.Instance} a fost recuperată");
+        }
+
         AnswersFile.Write(session.Paths.Answers, session.Request);
 
         if (session.Unattended && session.Administrator is { Created: true, TemporaryPassword: not null } administrator)

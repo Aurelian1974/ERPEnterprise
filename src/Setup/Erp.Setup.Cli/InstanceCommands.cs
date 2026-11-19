@@ -51,7 +51,10 @@ internal static class InstanceCommands
         }
 
         var path = Path.GetFullPath(context.Invocation.OutPath!);
-        RecoveryKeys.Export(new WindowsSetup(context.Log, context.Time), StatePath(context), path, password, context.Time);
+        var state = InstanceStateStore.Read(StatePath(context))!;
+        var sql = new Erp.Setup.Sql.SqlOperator(new Core.Checks.SqlTarget(state.SqlServer!, state.DatabaseName!, state.Instance, state.TrustServerCertificate),
+            context.Log);
+        RecoveryKeys.Export(new WindowsSetup(context.Log, context.Time), StatePath(context), path, password, context.Time, sql);
         context.Console.Info($"Cheia de recuperare a fost salvată în {path}.");
         return ExitCodes.Success;
     }
@@ -76,7 +79,7 @@ internal static class InstanceCommands
             return ExitCodes.Success;
         }
 
-        context.Console.Error($"{new RecoveryKeyException(check).Message} (cod {ExitCodes.RecoveryKeyInvalid})");
+        context.Console.Error($"{RecoveryKeyPolicy.Message(check)} (cod {ExitCodes.RecoveryKeyInvalid})");
         return ExitCodes.RecoveryKeyInvalid;
     }
 
