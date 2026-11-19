@@ -1,6 +1,6 @@
 # ERP · 08 Instalare și actualizare
 
-19 noiembrie 2026 · Aurelian, Claude · **Validat de Aurelian (19.11.2026)** · Versiunea 3, rescrisă de Claude prin delegarea lui Aurelian; înlocuiește versiunea din 15.11.2026 și este sursa de adevăr pentru implementare; machetele ecranelor rămân de validat · Documente legate: [Ghidul operațional](GHID_INSTALARE_ACTUALIZARE.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md)
+19 noiembrie 2026 · Aurelian, Claude · **Validat de Aurelian (19.11.2026)** · Versiunea 3, rescrisă de Claude prin delegarea lui Aurelian; înlocuiește versiunea din 15.11.2026 și este sursa de adevăr pentru implementare, inclusiv machetele ecranelor · Documente legate: [Ghidul operațional](GHID_INSTALARE_ACTUALIZARE.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md), [schița](../00-schita/ARHITECTURA_ERP.md)
 
 Instalarea ERP-ului se face cu **două aplicații mici, cu ecrane simple**:
 
@@ -126,7 +126,7 @@ O singură fereastră:
 
 Butoane: **„Generează licența”** (dialogul de salvare cu numele propus `<Client>-<NumărLicență>.lic`), **„Deschide o licență”** (verifică și afișează conținutul unui `.lic` existent, cu aceleași verificări ca ERP-ul, 4.2), **„Chei”** (prima configurare și rotirea, 3.5).
 
-Macheta (de validat): ![Generator de licențe](ecrane/01-generator-licente.png)
+Macheta (validată de Aurelian, 19.11.2026): ![Generator de licențe](ecrane/01-generator-licente.png)
 
 ### 3.3 Conținutul licenței
 
@@ -328,7 +328,7 @@ Installer-ul e un asistent cu butoanele „Înapoi” / „Înainte” și pași
 
 Toate valorile alese (fără parole) se salvează în `instance.json` (5.7) și în `install\answers.json` (6.2) și se propun la o rulare ulterioară.
 
-**Machetele ecranelor** (WPF, de validat; sursa fiecăreia e fișierul HTML cu același nume din `ecrane/`, iar PNG-ul e randarea lui):
+**Machetele ecranelor** (WPF, validate de Aurelian, 19.11.2026; sursa fiecăreia e fișierul HTML cu același nume din `ecrane/`, iar PNG-ul e randarea lui):
 
 | Ecran | Machetă |
 | --- | --- |
