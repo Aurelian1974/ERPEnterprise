@@ -24,9 +24,10 @@ public sealed class LicenseKey
             throw new ArgumentException("Cheia publică trebuie să fie ECDSA P-256.", nameof(publicKey));
         }
 
+        // Copii proprii: apelantul poate sterge cheia lui (de exemplu LicenseSigningKey.Dispose) dupa ce a construit-o pe aceasta.
         KeyId = keyId;
-        PublicKey = publicKey;
-        AesKey = aesKey;
+        PublicKey = (byte[])publicKey.Clone();
+        AesKey = (byte[])aesKey.Clone();
     }
 
     public byte KeyId { get; }

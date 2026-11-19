@@ -191,7 +191,7 @@ Codul de criptare, decriptare și verificare stă într-o singură bibliotecă, 
 | Cheile publice ECDSA 1 și 2 | Constante în `Erp.Licensing/LicenseKeys.cs`, pe `KeyId` | ERP, installer, generator |
 | Cheile AES-256 1 și 2 | Constante în `LicenseKeys.cs`, mascate (XOR cu o a doua constantă), ca să nu apară în clar ca șir în binar | ERP, installer, generator |
 
-**Prima configurare.** Butonul „Chei” generează **ambele** perechi (1 și 2) și ambele chei AES, salvează cheia privată 1 ca mai sus, exportă cheile private 1 și 2 într-un fișier de siguranță protejat cu parolă (PKCS#8 criptat, AES-256), șterge cheia 2 din memorie și afișează textul C# pentru `LicenseKeys.cs`. Copia de siguranță se păstrează offline, în două locuri (de exemplu două stick-uri USB criptate, în locații diferite), cu parola separat.
+**Prima configurare.** Butonul „Chei” generează **ambele** perechi (1 și 2) și ambele chei AES, salvează cheia privată 1 ca mai sus, exportă cheile private 1 și 2 (PKCS#8) și cheile AES într-un fișier de siguranță `.erpkeys`, criptat AES-256-GCM cu o cheie derivată din parolă (PBKDF2-SHA256, 600 000 de iterații; parola are minimum 12 caractere), șterge cheia 2 din memorie și afișează textul C# pentru `LicenseKeys.cs`. Copia de siguranță se păstrează offline, în două locuri (de exemplu două stick-uri USB criptate, în locații diferite), cu parola separat.
 
 **De ce două chei de la început** (D16): o instalare acceptă numai cheile publice compilate în versiunea ei. Dacă se adaugă o cheie nouă abia când cea veche e pierdută sau compromisă, clienții care nu au actualizat nu pot primi licențe noi. Cu cheia 2 livrată de la prima versiune, rotirea nu cere actualizarea clienților.
 

@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup Label="Installer (INSTALARE_ACTUALIZARE.md, sectiunea 5)">
     <PackageVersion Include="System.CommandLine" Version="2.0.15" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="dbup-sqlserver" Version="7.2.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.2" />
     <PackageVersion Include="Dapper" Version="2.1.89" />

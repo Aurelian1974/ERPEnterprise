@@ -3,6 +3,11 @@
   <!-- Generatorul de licente, partea testabila (08, 3; T1, T2): scrierea licentei, cheile private, registrul, ViewModel-ul.
        Doar intern: nu se livreaza clientilor si nu e referit de ERP sau de installer. -->
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
   </ItemGroup>
 

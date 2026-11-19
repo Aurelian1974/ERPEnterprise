@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Generatorul de licente (08, 3), doar fereastra: logica e in Erp.LicenseGen.Core (R1, D12). Intern, nu se livreaza. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>ErpLicenseGen</AssemblyName>
+    <RootNamespace>Erp.LicenseGen</RootNamespace>
+  </PropertyGroup>
+
+  <!-- R2: self-contained, single-file, win-x64, fara trimming (numai la dotnet publish). -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.LicenseGen.Core\Erp.LicenseGen.Core.csproj" />
+  </ItemGroup>
+
+</Project>
