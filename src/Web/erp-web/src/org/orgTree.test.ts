@@ -18,6 +18,7 @@ const tree: OrgTree = {
     { id: 30, companyId: 10, branchId: 20, code: 'DEP-CJ', name: 'Depozit Brașov', locationType: 2, address: null, city: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: true, rowVersion: rv },
     { id: 31, companyId: 11, branchId: null, code: 'SH', name: 'Șantier Hala Bacău', locationType: 5, address: null, city: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: false, rowVersion: rv },
   ],
+  contacts: [],
 };
 
 const typeName = (type: number) => (type === 2 ? 'depozit' : 'șantier');

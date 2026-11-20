@@ -55,9 +55,10 @@ const lookups: OrgLookups = {
   ],
   precisionPolicies: [{ id: 1, code: 'STANDARD', name: 'Standard' }],
   documentTypes: [],
+  addressTypes: [],
 };
 
-const tree: OrgTree = { groups: [], companies: [], branches: [], locations: [] };
+const tree: OrgTree = { groups: [], companies: [], branches: [], locations: [], contacts: [] };
 
 const company = (changes: Partial<CompanyDetail> = {}): CompanyDetail => ({
   id: 7,
@@ -82,6 +83,10 @@ const company = (changes: Partial<CompanyDetail> = {}): CompanyDetail => ({
   lastChangedAt: '2026-11-12T10:24:00Z',
   rowVersion: 'AAAAAAAAB9E=',
   bankAccounts: [],
+  phone: null,
+  email: null,
+  addresses: [],
+  contacts: [],
   ...changes,
 });
 

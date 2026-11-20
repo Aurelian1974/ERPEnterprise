@@ -136,8 +136,8 @@ function DisableForm({ required: mandatory, onDone }: { readonly required: boole
     setError(undefined);
     try {
       const result = await api.POST('/api/account/two-factor/disable', { body: values });
-      if (result.error !== undefined) {
-        throw new ApiError(result.response.status, result.error);
+      if (!result.response.ok) {
+        throw new ApiError(result.response.status, (result as { error?: unknown }).error);
       }
       notify(t('twoFactor.disabledNotice'));
       form.reset();
