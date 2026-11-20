@@ -364,7 +364,7 @@ public sealed class UpgradeRunner(UpgradeSession session, IWindowsSetup windows,
         var db = session.Request.Sql.Database;
         await new BootstrapRunner(session.Sql).RunAsync(db, Path.Combine(session.DatabaseRoot, "bootstrap"), ct).ConfigureAwait(false);
         var scripts = KitScripts.Load(session.DatabaseRoot);
-        var runner = new MigrationRunner(context.Log);
+        var runner = new MigrationRunner(context.Log, session.Manifest.ScriptVersionsOf());
         var connection = session.Sql.ConnectionString(db);
         var migrations = runner.RunMigrations(connection, scripts);
         runner.RunProgrammability(connection, scripts);

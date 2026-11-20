@@ -4,9 +4,11 @@
     Creeaza sau actualizeaza baza de dezvoltare cu scripturile din depozit, fara installer.
 
 .DESCRIPTION
-    Aseaza scripturile SQL ca in kit (aceeasi functie ca package-kit.ps1), apoi ruleaza src/Tools/Erp.DevDatabase cu contul
-    Windows curent: creeaza baza case sensitive, bootstrap, migratii DbUp, obiecte programabile, date livrate si, optional,
-    administratorul initial. Se poate rula de oricate ori: aplica doar migratiile noi.
+    Ruleaza src/Tools/Erp.DevDatabase cu contul Windows curent si aceeasi sincronizare ca Erp.Host in Development
+    (07, „Mediul de dezvoltare”): creeaza baza case sensitive daca lipseste (cu administratorul si Grupul Exemplu), aplica
+    doar scripturile schimbate si o reface cand o migrare deja aplicata s-a modificat; optional administratorul initial,
+    utilizatorii E2E si reincarcarea datelor demonstrative. Se poate rula de oricate ori.
+    De obicei nu e nevoie de el: Erp.Host (Debug, Development) tine baza la zi singur, la pornire si la fiecare salvare.
     Numai pentru dezvoltare; o instalare reala se face cu ErpSetup.exe (Docs/arhitectura/08-instalare-actualizare).
 
 .EXAMPLE
@@ -30,22 +32,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot 'KitBuilder.psm1') -Force
 
+# Scripturile se citesc direct din depozit, cu aceeasi sincronizare ca Erp.Host in Development (Erp.DevDatabase.Sync).
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$staging = Join-Path ([IO.Path]::GetTempPath()) ("erp-devdb-" + [guid]::NewGuid().ToString('N'))
-try {
-    Copy-KitDatabaseScripts -RepoRoot $repoRoot -KitRoot $staging
-    $arguments = @('--server', $Server, '--database', $Database, '--instance', $Instance, '--scripts', (Join-Path $staging 'database'))
-    if ($CreateAdmin) { $arguments += '--create-admin' }
-    if ($SampleData) { $arguments += @('--sample-data', (Join-Path $PSScriptRoot 'dev-sample-data.sql')) }
-    if ($E2EUser) {
-        if (-not $PasswordFile) { throw 'Pentru -E2EUser este obligatoriu -PasswordFile.' }
-        $arguments += @('--e2e-user', $E2EUser, '--password-file', $PasswordFile, '--e2e-role', $E2ERole)
-    }
-    & dotnet run --project (Join-Path $repoRoot 'src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj') -- @arguments
-    if ($LASTEXITCODE -ne 0) { throw "Pregătirea bazei de dezvoltare a eșuat (cod $LASTEXITCODE)." }
+$arguments = @('--server', $Server, '--database', $Database, '--instance', $Instance, '--repo', $repoRoot)
+if ($CreateAdmin) { $arguments += '--create-admin' }
+if ($SampleData) { $arguments += @('--sample-data', (Join-Path $PSScriptRoot 'dev-sample-data.sql')) }
+if ($E2EUser) {
+    if (-not $PasswordFile) { throw 'Pentru -E2EUser este obligatoriu -PasswordFile.' }
+    $arguments += @('--e2e-user', $E2EUser, '--password-file', $PasswordFile, '--e2e-role', $E2ERole)
 }
-finally {
-    if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
-}
+& dotnet run --project (Join-Path $repoRoot 'src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj') -- @arguments
+if ($LASTEXITCODE -ne 0) { throw "Pregătirea bazei de dezvoltare a eșuat (cod $LASTEXITCODE)." }

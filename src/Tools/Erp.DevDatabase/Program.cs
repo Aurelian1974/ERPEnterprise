@@ -1,20 +1,21 @@
 using System.Text;
+using Erp.DevDatabase.Sync;
 using Erp.Setup.Core.Checks;
 using Erp.Setup.Sql;
 using Erp.Setup.Sql.Administrator;
-using Erp.Setup.Sql.Database;
 using Erp.Setup.Sql.Probes;
 using Microsoft.Data.SqlClient;
 using Serilog;
 
-// Baza de dezvoltare, fara installer: aceiasi pasi SQL ca la instalare (I-06, I-07, I-09…I-11, optional I-13), cu contul Windows
-// al dezvoltatorului. Doar pentru dezvoltare: nu creeaza loginurile aplicatiei, joburile SQL Agent si nu incarca licenta.
-// Pornire: build/dev-database.ps1 (aseaza scripturile din depozit ca in kit, apoi ruleaza acest program).
+// Baza de dezvoltare, fara installer, cu contul Windows al dezvoltatorului: aceeasi sincronizare ca Erp.Host in Development
+// (Erp.DevDatabase.Sync, 07 „Mediul de dezvoltare”) — creeaza baza daca lipseste, aplica scripturile schimbate, o reface cand
+// o migrare aplicata s-a modificat —, apoi optional administratorul, utilizatorii E2E si datele demonstrative. Doar pentru
+// dezvoltare: nu creeaza loginurile aplicatiei, joburile SQL Agent si nu incarca licenta. Pornire: build/dev-database.ps1.
 Console.OutputEncoding = Encoding.UTF8;
 var options = DevOptions.Parse(args);
 if (options is null)
 {
-    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --scripts <folder database> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier> [--e2e-role STANDARD|ADMIN]] [--sample-data <script>]");
+    Console.Error.WriteLine("Utilizare: Erp.DevDatabase --server <server> --database <bază> --repo <rădăcina depozitului> [--instance DEV] [--create-admin] [--e2e-user e2e.<nume> --password-file <fișier> [--e2e-role STANDARD|ADMIN]] [--sample-data <script>]");
     return 3;
 }
 
@@ -25,20 +26,16 @@ var sql = new SqlOperator(target, log);
 
 try
 {
-    var installId = await ReadInstallIdAsync(target, options.Database, ct) ?? Guid.NewGuid();
-    var outcome = await new DatabaseCreator(sql).CreateAsync(
-        new DatabaseCreateOptions(options.Database, options.Instance, installId, null, null, 256, 256), ct);
-    log.Information("Baza {Database}: {Outcome}", options.Database, outcome);
-
-    var bootstrap = await new BootstrapRunner(sql).RunAsync(options.Database, Path.Combine(options.Scripts, "bootstrap"), ct);
-    log.Information("Bootstrap: {Count} scripturi", bootstrap);
+    // Aceeasi sincronizare ca Erp.Host: o baza creata aici nu mai e refacuta la prima pornire a aplicatiei.
+    var sync = new DevDatabaseSync(sql, new DevSyncOptions(options.Database, options.Instance, options.Repo, AdminPassword: null,
+        Path.Combine(options.Repo, "build", "dev-sample-data.sql")));
+    var result = await sync.SyncAsync(ct);
+    if (!result.Succeeded)
+    {
+        return 30;
+    }
 
     var connection = SqlServerConnector.BuildOperatorConnectionString(target, options.Database);
-    var scripts = KitScripts.Load(options.Scripts);
-    var runner = new MigrationRunner(log);
-    log.Information("Migrații: {Count} noi", runner.RunMigrations(connection.ConnectionString, scripts).ScriptsExecuted);
-    log.Information("Obiecte programabile: {Count}", runner.RunProgrammability(connection.ConnectionString, scripts).ScriptsExecuted);
-    log.Information("Date livrate: {Count} scripturi", runner.RunSeed(connection.ConnectionString, scripts).ScriptsExecuted);
 
     if (options.CreateAdmin)
     {
@@ -87,24 +84,6 @@ catch (Exception ex) when (ex is SqlException or SqlSetupException or InvalidOpe
     return 30;
 }
 
-// Reluarea pe aceeasi baza: DatabaseCreator accepta doar baza creata cu acelasi ErpInstallId (8.1).
-static async Task<Guid?> ReadInstallIdAsync(SqlTarget target, string database, CancellationToken ct)
-{
-    await using var master = new SqlConnection(SqlServerConnector.BuildOperatorConnectionString(target).ConnectionString);
-    await master.OpenAsync(ct);
-    await using var exists = new SqlCommand("SELECT DB_ID(@name);", master);
-    exists.Parameters.AddWithValue("@name", database);
-    if (await exists.ExecuteScalarAsync(ct) is DBNull or null)
-    {
-        return null;
-    }
-
-    master.ChangeDatabase(database);
-    await using var read = new SqlCommand(
-        "SELECT CAST(value AS nvarchar(100)) FROM sys.extended_properties WHERE class = 0 AND name = N'ErpInstallId';", master);
-    return await read.ExecuteScalarAsync(ct) is string value && Guid.TryParse(value, out var id) ? id : null;
-}
-
 // Utilizatorul testelor E2E: cont de sistem (angajatii si externii vin in etapele 6 si 8, CK_User_Kind), rolul cerut (STANDARD sau
 // ADMIN, la nivel de instalare), parola temporara noua, schimbare obligatorie, fara 2FA (exceptie doar pentru baza de dezvoltare),
 // deblocat, sesiuni inchise.
@@ -143,7 +122,7 @@ static async Task ResetE2EUserAsync(SqlConnection database, string userName, str
     await command.ExecuteNonQueryAsync(ct);
 }
 
-internal sealed record DevOptions(string Server, string Database, string Scripts, string Instance, bool CreateAdmin, string? E2EUser, string? PasswordFile,
+internal sealed record DevOptions(string Server, string Database, string Repo, string Instance, bool CreateAdmin, string? E2EUser, string? PasswordFile,
     string E2ERole, string? SampleData)
 {
     public static DevOptions? Parse(string[] args)
@@ -156,7 +135,7 @@ internal sealed record DevOptions(string Server, string Database, string Scripts
 
         var server = Value("--server");
         var database = Value("--database");
-        var scripts = Value("--scripts");
+        var repo = Value("--repo");
         var e2eUser = Value("--e2e-user");
         var passwordFile = Value("--password-file");
         var e2eRole = Value("--e2e-role") ?? "STANDARD";
@@ -166,8 +145,8 @@ internal sealed record DevOptions(string Server, string Database, string Scripts
             return null;
         }
 
-        return server is null || database is null || scripts is null
+        return server is null || database is null || repo is null
             ? null
-            : new DevOptions(server, database, scripts, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile, e2eRole, Value("--sample-data"));
+            : new DevOptions(server, database, repo, Value("--instance") ?? "DEV", args.Contains("--create-admin"), e2eUser, passwordFile, e2eRole, Value("--sample-data"));
     }
 }

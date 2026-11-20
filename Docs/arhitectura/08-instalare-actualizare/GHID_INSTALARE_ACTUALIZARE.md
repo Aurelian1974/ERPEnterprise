@@ -491,9 +491,13 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
 
 1. **Baza**, pe serverul SQL de dezvoltare (implicit `Valeria`, baza `ERP_DEV`, cu contul Windows curent, care trebuie să fie `sysadmin` pe acea instanță):
 
+   **De obicei nu trebuie rulat nimic:** `Erp.Host` pornit în Debug, în mediul `Development`, creează baza dacă lipsește și o ține la zi la fiecare salvare a unui script SQL ([07, „Mediul de dezvoltare”](../07-stack-tehnologic/STACK_TEHNOLOGIC.md)). Parola administratorului după o reconstruire se pune o singură dată în user-secrets: `dotnet user-secrets set "DevDatabase:AdminPassword" "<parola>" --project src/Host/Erp.Host`.
+
+   Fără `Erp.Host`, aceeași sincronizare din linia de comandă:
+
    ```powershell
-   ./build/dev-database.ps1 -CreateAdmin            # prima dată; afișează o singură dată parola temporară a lui administrator
-   ./build/dev-database.ps1                         # după migrații noi: aplică doar ce lipsește
+   ./build/dev-database.ps1 -CreateAdmin            # afișează o singură dată parola temporară a lui administrator
+   ./build/dev-database.ps1                         # aplică doar scripturile schimbate; reface baza dacă o migrare aplicată s-a modificat
    ./build/dev-database.ps1 -Server <server> -Database <bază>
    ```
 

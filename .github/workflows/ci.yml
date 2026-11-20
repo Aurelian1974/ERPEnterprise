@@ -30,6 +30,11 @@ jobs:
       - name: Compilare (avertismente = erori)
         run: dotnet build Erp.slnx -c Release
 
+      # Sincronizarea bazei de dezvoltare e referita de Erp.Host doar in Debug (07, „Mediul de dezvoltare”): se compileaza
+      # si aici, ca ramura #if DEBUG sa nu se strice pe nevazute.
+      - name: Compilare Erp.Host în Debug
+        run: dotnet build src/Host/Erp.Host/Erp.Host.csproj -c Debug
+
       - name: Teste build kit (Pester)
         shell: pwsh
         run: |

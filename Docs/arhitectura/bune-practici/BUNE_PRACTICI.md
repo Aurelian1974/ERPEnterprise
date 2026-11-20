@@ -1,6 +1,6 @@
 # ERP · Bune practici (SQL și cod)
 
-14 noiembrie 2026 · Aurelian · **Validat (14.11.2026); completat pe 14.11.2026 cu regulile pentru baza case sensitive (`SQL-21`–`SQL-25`, `NET-21`, `TST-09`), validat 14.11.2026; completat pe 20.11.2026 cu regulile temei vizuale (`UI-13`–`UI-17`), validat 20.11.2026, și cu garda modificărilor nesalvate (`UI-18`), validată 20.11.2026** · Versiune editabilă: https://claude.ai/artifact/JP7yeX8cA7AP8PRRMJGiTA
+14 noiembrie 2026 · Aurelian · **Validat (14.11.2026); completat pe 14.11.2026 cu regulile pentru baza case sensitive (`SQL-21`–`SQL-25`, `NET-21`, `TST-09`), validat 14.11.2026; completat pe 20.11.2026 cu regulile temei vizuale (`UI-13`–`UI-17`), validat 20.11.2026, și cu garda modificărilor nesalvate (`UI-18`), validată 20.11.2026; precizări la `MIG-02` și `MIG-04` despre versionarea automată a scripturilor, 20.11.2026** · Versiune editabilă: https://claude.ai/artifact/JP7yeX8cA7AP8PRRMJGiTA
 
 Acest document strânge regulile de scriere pentru tot codul ERP-ului: baza de date SQL Server, backend-ul .NET, frontend-ul React, testele și fluxul de lucru Git. E un document transversal: nu aparține unei secțiuni, ci se aplică tuturor. Pornește de la principiile P1–P10 din [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md) și de la deciziile deja luate: Dapper și proceduri stocate fără ORM, SQL Server 2022, .NET 10, modular monolith, o bază de date per grup de client.
 
@@ -126,9 +126,9 @@ Decizia lui Aurelian (14.11.2026): baza de date a clientului este **case sensiti
 | ID | Nivel | Regulă |
 | --- | --- | --- |
 | `MIG-01` | O | Toate modificările de schemă sunt scripturi DbUp în proiectul modulului: `Migrations/<modul>/<AAAA.MM.NNN>_<Descriere>.sql` (de exemplu `2026.11.001_Create_Partner.sql`). Ordinea e dată de nume. |
-| `MIG-02` | O | Un script deja livrat la un client nu se modifică niciodată. O corectură e un script nou. |
+| `MIG-02` | O | Un script deja livrat la un client nu se modifică niciodată. O corectură e un script nou. Până la primul tag de versiune, o migrare încă nelivrată se poate corecta: baza de dezvoltare se reconstruiește singură ([07, „Mediul de dezvoltare”](../07-stack-tehnologic/STACK_TEHNOLOGIC.md)), iar verificarea din build (08, 5.9) o blochează după tag. |
 | `MIG-03` | O | Migrațiile merg doar înainte. Pentru fiecare livrare există un backup automat înainte de actualizare (secțiunea 08), nu scripturi de întoarcere. |
-| `MIG-04` | O | Obiectele programabile (proceduri, view-uri, funcții) stau în fișiere separate, rulate la fiecare actualizare cu `CREATE OR ALTER`, în folderul `Programmability/`; tabelele și datele, în scripturi de migrare rulate o singură dată. |
+| `MIG-04` | O | Obiectele programabile (proceduri, view-uri, funcții) stau în fișiere separate, rulate la fiecare actualizare cu `CREATE OR ALTER`, în folderul `Programmability/`; tabelele și datele, în scripturi de migrare rulate o singură dată. Un singur fișier per obiect, fără numere de versiune în nume: versiunea e automată (numărul de commituri care au schimbat fișierul) și se vede în `core.v_ScriptVersionCurrent` (08, 5.9). |
 | `MIG-05` | O | Modificările pe tabele mari sunt compatibile în urmă: coloană nouă nullable sau cu valoare implicită, apoi completare în loturi, apoi `NOT NULL` într-o versiune ulterioară. Fără redenumiri de coloane folosite; se adaugă coloana nouă și se retrage cea veche. |
 | `MIG-06` | O | Datele livrate cu produsul (cote TVA, UM, țări, județe, permisiuni) se încarcă idempotent cu `MERGE` pe cheia naturală (`Code`), ca rularea repetată să nu dubleze nimic. |
 | `MIG-07` | O | Fiecare migrare rulează în CI pe o bază goală și pe o copie cu date din versiunea anterioară (test de actualizare). |

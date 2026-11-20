@@ -107,6 +107,85 @@ Describe 'Test-KitScripts' {
     }
 }
 
+Describe 'Get-KitScriptVersions' {
+    BeforeEach {
+        $repo = New-FakeRepo
+        git -C $repo init -q
+        function Save-Commit { param([string]$Message) git -C $repo add -A; git -C $repo -c user.name=t -c user.email=t@t commit -q -m $Message }
+    }
+    AfterEach { Remove-Item $repo -Recurse -Force }
+
+    It 'numara schimbarile din Git: adaugare 1, modificare 2, cu numele din jurnal (5.9)' {
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_Add_Orice.sql" 'CREATE OR ALTER PROCEDURE core.usp_Add_Orice AS SELECT 1;'
+        Add-Sql $repo "$core/Migrations/2026.11.001_A.sql" 'SELECT 1;'
+        Add-Sql $repo "$core/Seed/01_Roles.sql" 'SELECT 1;'
+        Save-Commit 'adaug'
+
+        $versions = Get-KitScriptVersions -RepoRoot $repo
+        $versions['core/Procedures/core.usp_Add_Orice.sql'] | Should -Be 1
+        $versions['core/2026.11.001_A.sql'] | Should -Be 1
+        $versions['core/01_Roles.sql'] | Should -Be 1
+
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_Add_Orice.sql" 'CREATE OR ALTER PROCEDURE core.usp_Add_Orice AS SELECT 2;'
+        Save-Commit 'modific'
+
+        $versions = Get-KitScriptVersions -RepoRoot $repo
+        $versions['core/Procedures/core.usp_Add_Orice.sql'] | Should -Be 2
+        $versions['core/2026.11.001_A.sql'] | Should -Be 1
+    }
+
+    It 'o modificare necomisa numara ca versiunea urmatoare, iar un fisier nou necomis are versiunea 1' {
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_A.sql" 'CREATE OR ALTER PROCEDURE core.usp_A AS SELECT 1;'
+        Save-Commit 'adaug'
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_A.sql" 'CREATE OR ALTER PROCEDURE core.usp_A AS SELECT 2;'
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_B.sql" 'CREATE OR ALTER PROCEDURE core.usp_B AS SELECT 1;'
+
+        $versions = Get-KitScriptVersions -RepoRoot $repo
+        $versions['core/Procedures/core.usp_A.sql'] | Should -Be 2
+        $versions['core/Procedures/core.usp_B.sql'] | Should -Be 1
+    }
+
+    It 'intr-un depozit fara niciun commit, un fisier nou are versiunea 1 (git log nu are istoric)' {
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_A.sql" 'CREATE OR ALTER PROCEDURE core.usp_A AS SELECT 1;'
+
+        (Get-KitScriptVersions -RepoRoot $repo)['core/Procedures/core.usp_A.sql'] | Should -Be 1
+    }
+
+    It 'o redenumire continua numaratoarea fisierului vechi' {
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_Old.sql" 'CREATE OR ALTER PROCEDURE core.usp_Old AS SELECT 1; -- un text destul de lung ca Git sa recunoasca redenumirea'
+        Save-Commit 'adaug'
+        Add-Sql $repo "$core/Programmability/Procedures/core.usp_Old.sql" 'CREATE OR ALTER PROCEDURE core.usp_Old AS SELECT 2; -- un text destul de lung ca Git sa recunoasca redenumirea'
+        Save-Commit 'modific'
+        git -C $repo mv "$core/Programmability/Procedures/core.usp_Old.sql" "$core/Programmability/Procedures/core.usp_New.sql"
+        Save-Commit 'redenumesc'
+
+        (Get-KitScriptVersions -RepoRoot $repo)['core/Procedures/core.usp_New.sql'] | Should -Be 3
+    }
+}
+
+Describe 'New-KitManifest' {
+    BeforeEach { $kit = New-FakeRepo }
+    AfterEach { Remove-Item $kit -Recurse -Force }
+
+    It 'scrie versiunile scripturilor in manifest, sub semnatura (5.9, 7)' {
+        Add-Sql $kit 'database/programmability/core/Procedures/core.usp_A.sql' 'CREATE OR ALTER PROCEDURE core.usp_A AS SELECT 1;'
+        $key = [Security.Cryptography.ECDsa]::Create([Security.Cryptography.ECCurve+NamedCurves]::nistP256)
+        try {
+            New-KitManifest -KitRoot $kit -SigningKey $key -Metadata @{
+                Version = '2027.1.0'; ReleaseDate = '2027-01-15'; MinUpgradeFrom = '2027.1.0'; HostingBundleVersion = '10.0.0'
+                LastMigration = $null; ScriptVersions = [ordered]@{ 'core/Procedures/core.usp_A.sql' = 7 }
+            }
+            $bytes = [IO.File]::ReadAllBytes((Join-Path $kit 'manifest.json'))
+            $manifest = [Text.Encoding]::UTF8.GetString($bytes) | ConvertFrom-Json -AsHashtable
+            $manifest.scriptVersions['core/Procedures/core.usp_A.sql'] | Should -Be 7
+            $signature = [Convert]::FromBase64String((Get-Content -Raw (Join-Path $kit 'manifest.sig')))
+            $key.VerifyData($bytes, $signature, [Security.Cryptography.HashAlgorithmName]::SHA256,
+                [Security.Cryptography.DSASignatureFormat]::IeeeP1363FixedFieldConcatenation) | Should -BeTrue
+        }
+        finally { $key.Dispose() }
+    }
+}
+
 Describe 'Get-KitMigrations' {
     BeforeEach { $repo = New-FakeRepo }
     AfterEach { Remove-Item $repo -Recurse -Force }

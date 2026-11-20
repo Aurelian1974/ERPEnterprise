@@ -155,6 +155,8 @@ public sealed class DatabaseSetupIntegrationTests(SqlServerFixture sql)
               AND p.permission_name IN (N'SELECT', N'INSERT', N'UPDATE', N'DELETE', N'EXECUTE');
             """, database));
         Assert.Equal(0, await Scalar<int>("SELECT COUNT(*) FROM sys.objects WHERE is_ms_shipped = 0 AND SCHEMA_NAME(schema_id) = N'dbo';", database));
+        // Jurnalul versiunilor (5.9) exista inaintea primei migrari, ca si migratiile sa se noteze in el.
+        Assert.NotNull(await Scalar<int?>("SELECT OBJECT_ID(N'core.ScriptVersion', N'U');", database));
     }
 
     [Fact]

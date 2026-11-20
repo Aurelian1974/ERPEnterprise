@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Setup\Erp.Setup.Sql\Erp.Setup.Sql.csproj" />
+    <ProjectReference Include="..\Erp.DevDatabase.Sync\Erp.DevDatabase.Sync.csproj" />
   </ItemGroup>
 
 </Project>

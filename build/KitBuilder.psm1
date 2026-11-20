@@ -188,6 +188,40 @@ function Copy-KitDatabaseScripts {
     }
 }
 
+function Get-KitScriptVersions {
+    <#
+    Versiunea fiecarui script SQL din kit (INSTALARE_ACTUALIZARE.md 5.9): de cate ori s-a schimbat fisierul in istoricul Git,
+    urmarind redenumirile, plus 1 daca are modificari necomise (un fisier nou necomis are versiunea 1). Cheia e numele din
+    jurnal, ca in KitScripts: <schema>/<fisier> pentru migratii si date livrate, <schema>/<Folder>/<fisier> pentru obiectele
+    programabile. Aceeasi regula o aplica baza de dezvoltare (src/Tools/Erp.DevDatabase.Sync/GitScriptVersions.cs).
+    Cere istoricul complet (checkout cu fetch-depth: 0); intr-un depozit superficial versiunile ar fi prea mici.
+    #>
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $versions = [ordered]@{}
+    # Un depozit fara niciun commit nu are istoric: git log ar esua, deci toate fisierele au 0 commit-uri.
+    & git -C $RepoRoot rev-parse --verify -q HEAD 2>$null | Out-Null
+    $hasCommits = $LASTEXITCODE -eq 0
+    foreach ($source in (Get-KitDatabaseSources -RepoRoot $RepoRoot).Sources) {
+        foreach ($kind in 'Migrations', 'Programmability', 'Seed') {
+            $folder = Join-Path $source.Path $kind
+            if (-not (Test-Path $folder)) { continue }
+            foreach ($file in Get-ChildItem $folder -Filter *.sql -File -Recurse | Sort-Object FullName) {
+                $name = "$($source.Schema)/" + [IO.Path]::GetRelativePath($folder, $file.FullName).Replace('\', '/')
+                $path = [IO.Path]::GetRelativePath($RepoRoot, $file.FullName).Replace('\', '/')
+                $commits = @()
+                if ($hasCommits) {
+                    $commits = @(& git -C $RepoRoot log --follow --format=%H -- $path 2>$null | Where-Object { $_ })
+                    if ($LASTEXITCODE -ne 0) { throw "Istoricul Git al fișierului $path nu poate fi citit." }
+                }
+                $pending = @(& git -C $RepoRoot status --porcelain -- $path 2>$null | Where-Object { $_ })
+                $versions[$name] = $commits.Count + $(if ($pending.Count -gt 0) { 1 } else { 0 })
+            }
+        }
+    }
+    $versions
+}
+
 function Compare-ProductVersion {
     <# Comparatie semantica AAAA.L.patch (GIT-05). #>
     param([Parameter(Mandatory)][string]$Left, [Parameter(Mandatory)][string]$Right)
@@ -271,6 +305,7 @@ function New-KitManifest {
         hostingBundleVersion     = $Metadata.HostingBundleVersion
         lastMigration            = $Metadata.LastMigration
         kitKeyId                 = if ($Metadata.ContainsKey('KitKeyId')) { [int]$Metadata.KitKeyId } else { 1 }
+        scriptVersions           = if ($Metadata.ContainsKey('ScriptVersions')) { $Metadata.ScriptVersions } else { $null }
         files                    = @($files)
     }
 
@@ -282,4 +317,4 @@ function New-KitManifest {
 }
 
 Export-ModuleMember -Function Get-KitModuleOrder, Get-KitDatabaseSources, Test-KitScripts, Get-KitMigrations, Copy-KitDatabaseScripts,
-    Compare-ProductVersion, Get-KitVersionTags, Get-KitMinUpgradeFrom, Get-KitPreviousTag, Import-KitSigningKey, Assert-P256, New-KitManifest
+    Get-KitScriptVersions, Compare-ProductVersion, Get-KitVersionTags, Get-KitMinUpgradeFrom, Get-KitPreviousTag, Import-KitSigningKey, Assert-P256, New-KitManifest

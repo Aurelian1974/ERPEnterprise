@@ -89,3 +89,32 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Tabele mari în UI | Syncfusion DataGrid (din ST4), în locul AG Grid sau TanStack Table din schiță | Implicit în planul Nucleului aprobat de Aurelian pe 15.11.2026; se aplică la primele liste (etapa 4) |
 | Interfața POS | React în Electron sau WPF | Schița lasă ambele variante. ST1 se referă la interfața aplicației ERP; dacă se aplică și la POS, rămâne varianta React în Electron. Se decide în 02.10 |
 | Node.js 27 (aprilie 2027) | Ultima stabilă sau ultima LTS | ST3, secțiunea 1 |
+
+---
+
+## 6. Mediul de dezvoltare
+
+Adăugat pe 20.11.2026 (cererea lui Aurelian, plan aprobat în aceeași zi). **Baza de dezvoltare (`ERP_DEV`) se ține singură la zi**: un script SQL salvat ajunge în bază fără pași manuali și fără installer.
+
+**Când rulează.** La pornirea `Erp.Host`, înainte de prima cerere, și la fiecare salvare a unui `.sql` din folderele `Database/` ale modulelor sau din bootstrap (observator de fișiere, 500 ms pentru salvările în rafală, câte o sincronizare pe rând). Folosește aceiași pași SQL ca installer-ul (`Erp.Setup.Sql`) și jurnalul `core.ScriptVersion` (08, 5.9) ca să știe ce s-a aplicat.
+
+| Ce se schimbă | Ce face sincronizarea |
+| --- | --- |
+| Migrare **nouă** | O aplică, apoi rulează toate obiectele programabile și datele livrate, ca installer-ul |
+| Procedură, view, funcție — nouă sau modificată | Rulează **doar acel fișier**; jurnalul îi dă versiunea nouă |
+| Date livrate modificate | Rulează **doar acel fișier** |
+| Doar spații sau sfârșituri de rând | Nimic (amprenta e normalizată) |
+| Migrare **deja aplicată** modificată, ștearsă sau redenumită; bootstrap modificat | **Reconstruire automată**: baza se șterge și se creează din nou, apoi administratorul și Grupul Exemplu |
+| Fișierul unei proceduri, al unui view sau al unei funcții șters | **Avertisment** în consolă, fără `DROP`: obiectul retras se șterge printr-o migrare (08, 5.9), altfel ar rămâne la clienți. Avertismentul dispare când obiectul nu mai există în bază |
+
+- **Prima pornire** după introducerea sincronizării reconstruiește baza o dată, ca jurnalul să pornească de la scripturile actuale.
+- **Eroare într-un script:** apare în consolă (Error), cu fișierul și mesajul SQL; scriptul nu primește rând în jurnal, deci se reîncearcă la următoarea salvare; aplicația pornește totuși.
+- **După reconstruire:** conexiunile deschise se închid (`SINGLE_USER WITH ROLLBACK IMMEDIATE`) și sesiunea din browser se pierde. Administratorul `administrator` primește parola din user-secrets, fără schimbare obligatorie și fără 2FA (excepția de dezvoltare, ca la utilizatorii E2E):
+
+  ```powershell
+  dotnet user-secrets set "DevDatabase:AdminPassword" "<parola>" --project src/Host/Erp.Host
+  ```
+
+  Fără parolă configurată se generează una temporară, afișată o singură dată în consolă. Parola nu se scrie niciodată în Git sau în fișiere urmărite.
+- **Siguranța:** biblioteca `src/Tools/Erp.DevDatabase.Sync` e referită de `Erp.Host` **numai în Debug** (`#if DEBUG`; kitul se construiește în Release și nu o conține), pornește doar în mediul `Development`, fără `ERP_INSTANCE_DIR`, și doar cu `DevDatabase:AutoSync = true` (în `appsettings.Development.json`, care nu ajunge în kit). Ștergerea bazei e refuzată dacă baza nu aparține instanței configurate (proprietatea extinsă `ErpInstance`). CI-ul compilează `Erp.Host` și în Debug.
+- **Oprire:** `dotnet user-secrets set "DevDatabase:AutoSync" "false" --project src/Host/Erp.Host`. Fără `Erp.Host`, aceeași sincronizare rulează din `./build/dev-database.ps1` ([ghidul](../08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md), secțiunea 13).

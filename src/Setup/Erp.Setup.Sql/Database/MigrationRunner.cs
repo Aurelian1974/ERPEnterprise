@@ -1,17 +1,20 @@
 using DbUp;
 using DbUp.Engine;
 using DbUp.Engine.Output;
-using DbUp.Helpers;
+using DbUp.SqlServer;
 using Serilog;
 
 namespace Erp.Setup.Sql.Database;
 
 /// <summary>
-/// Pasii I-09…I-11 si U-10 (8.5, 8.6): migratiile cu jurnal in core.SchemaVersion, apoi obiectele programabile si datele
-/// livrate rulate la fiecare instalare/actualizare (NullJournal). Ruleaza cu loginul de migrare.
+/// Pasul I-12 si U-06 (08, 5.9): migratiile cu jurnal in core.SchemaVersion, apoi obiectele programabile si datele livrate,
+/// rulate toate la fiecare instalare/actualizare (MIG-04). Fiecare script aplicat al carui continut s-a schimbat primeste
+/// un rand in core.ScriptVersion, cu versiunea din manifest (ScriptVersions). Ruleaza cu contul operatorului.
 /// </summary>
-public sealed class MigrationRunner(ILogger log)
+public sealed class MigrationRunner(ILogger log, ScriptVersions? versions = null)
 {
+    private readonly ScriptVersions versions = versions ?? ScriptVersions.Development;
+
     public const string JournalSchema = "core";
     public const string JournalTable = "SchemaVersion";
 
@@ -19,7 +22,9 @@ public sealed class MigrationRunner(ILogger log)
         Run("Migrații", DeployChanges.To
             .SqlDatabase(migratorConnectionString)
             .WithScripts(scripts.Migrations)
-            .JournalToSqlTable(JournalSchema, JournalTable)
+            .JournalTo((connection, upgradeLog) => new VersionedMigrationJournal(
+                new SqlTableJournal(connection, upgradeLog, JournalSchema, JournalTable),
+                new ScriptVersionRecorder(ScriptKind.Migration, versions)))
             .WithTransactionPerScript()
             .WithExecutionTimeout(TimeSpan.FromMinutes(30))
             .WithVariablesDisabled()
@@ -27,16 +32,24 @@ public sealed class MigrationRunner(ILogger log)
             .Build());
 
     public MigrationSummary RunProgrammability(string migratorConnectionString, KitScripts scripts) =>
-        RunAlways("Obiecte programabile", migratorConnectionString, scripts.Programmability);
+        RunProgrammability(migratorConnectionString, scripts.Programmability);
+
+    /// <summary>Doar obiectele date, in ordinea primita (baza de dezvoltare: fisierele schimbate de la ultima sincronizare).</summary>
+    public MigrationSummary RunProgrammability(string migratorConnectionString, IEnumerable<SqlScript> scripts) =>
+        RunAlways("Obiecte programabile", ScriptKind.Programmability, migratorConnectionString, scripts);
 
     public MigrationSummary RunSeed(string migratorConnectionString, KitScripts scripts) =>
-        RunAlways("Date livrate", migratorConnectionString, scripts.Seed);
+        RunSeed(migratorConnectionString, scripts.Seed);
 
-    private MigrationSummary RunAlways(string what, string migratorConnectionString, IEnumerable<SqlScript> scripts) =>
+    /// <summary>Doar scripturile de date livrate date, in ordinea primita (baza de dezvoltare).</summary>
+    public MigrationSummary RunSeed(string migratorConnectionString, IEnumerable<SqlScript> scripts) =>
+        RunAlways("Date livrate", ScriptKind.Seed, migratorConnectionString, scripts);
+
+    private MigrationSummary RunAlways(string what, ScriptKind kind, string migratorConnectionString, IEnumerable<SqlScript> scripts) =>
         Run(what, DeployChanges.To
             .SqlDatabase(migratorConnectionString)
             .WithScripts(scripts)
-            .JournalTo(new NullJournal())
+            .JournalTo(new ScriptVersionJournal(new ScriptVersionRecorder(kind, versions)))
             .WithTransactionPerScript()
             .WithExecutionTimeout(TimeSpan.FromMinutes(10))
             .WithVariablesDisabled()

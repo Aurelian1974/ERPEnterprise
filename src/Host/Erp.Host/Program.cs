@@ -24,6 +24,18 @@ else if (!development)
     throw new InvalidOperationException($"Variabila {InstanceDataPaths.InstanceDirectoryVariable} lipsește (web.config).");
 }
 
+#if DEBUG
+// Baza de dezvoltare la zi (07, „Mediul de dezvoltare”): scripturile SQL schimbate ajung in baza inainte de prima cerere,
+// apoi la fiecare salvare. Doar in Debug (biblioteca nu exista in kitul Release), doar in Development, fara ERP_INSTANCE_DIR
+// si doar cu DevDatabase:AutoSync = true din appsettings.Development.json.
+if (development && instanceDirectory is null && Erp.DevDatabase.Sync.DevDatabaseHosting.Enabled(builder.Configuration))
+{
+    var (devSync, devWatcher) = Erp.DevDatabase.Sync.DevDatabaseHosting.Create(builder.Configuration, builder.Environment.ContentRootPath);
+    await devSync.SyncAsync(CancellationToken.None);
+    builder.Services.AddHostedService(_ => devWatcher);
+}
+#endif
+
 var build = ErpBuildInfo.From(typeof(Program).Assembly);
 var connectionString = InstallationConfiguration.ConnectionString(builder.Configuration, "Host");
 SqlConnection Connect() => new(connectionString);

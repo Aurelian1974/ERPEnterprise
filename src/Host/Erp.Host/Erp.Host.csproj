@@ -18,6 +18,12 @@
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Baza de dezvoltare care se tine singura la zi (07, „Mediul de dezvoltare”): numai in Debug. Kitul se publica in
+       Release (package-kit.ps1), deci biblioteca si dependentele ei de installer nu ajung niciodata la client. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="..\..\Tools\Erp.DevDatabase.Sync\Erp.DevDatabase.Sync.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>

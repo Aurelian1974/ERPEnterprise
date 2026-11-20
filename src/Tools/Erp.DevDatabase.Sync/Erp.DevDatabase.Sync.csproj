@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Baza de dezvoltare care se tine singura la zi (07, „Mediul de dezvoltare”): aceiasi pasi SQL ca installer-ul
+       (Erp.Setup.Sql), aplicati doar scripturilor schimbate, cu reconstruire cand o migrare aplicata s-a modificat.
+       Numai pentru dezvoltare: Erp.Host o refera doar in Debug, deci nu ajunge in kit (Release). -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Setup\Erp.Setup.Sql\Erp.Setup.Sql.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Security.Passwords\Erp.Security.Passwords.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Setup.Tests" />
+  </ItemGroup>
+
+</Project>

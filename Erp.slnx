@@ -38,6 +38,7 @@
   </Folder>
   <Folder Name="/src/Tools/">
     <Project Path="src/Tools/Erp.DevDatabase/Erp.DevDatabase.csproj" />
+    <Project Path="src/Tools/Erp.DevDatabase.Sync/Erp.DevDatabase.Sync.csproj" />
     <Project Path="src/Tools/Erp.LicenseGen/Erp.LicenseGen.csproj" />
     <Project Path="src/Tools/Erp.LicenseGen.Core/Erp.LicenseGen.Core.csproj" />
     <Project Path="src/Tools/Erp.LicenseGen.Tests/Erp.LicenseGen.Tests.csproj" />

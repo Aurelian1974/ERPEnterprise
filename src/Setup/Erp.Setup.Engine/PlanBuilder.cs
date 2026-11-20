@@ -302,7 +302,7 @@ public static class PlanBuilder
 
     private static StepResult RunMigrations(InstallSession session, SetupContext context)
     {
-        var runner = new MigrationRunner(context.Log);
+        var runner = new MigrationRunner(context.Log, session.Manifest.ScriptVersionsOf());
         var connection = session.Sql.ConnectionString(session.Database);
         var scripts = session.Scripts;
         var migrations = runner.RunMigrations(connection, scripts);

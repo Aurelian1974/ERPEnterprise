@@ -9,7 +9,7 @@
        Erp.Worker (framework-dependent, win-x64), ErpSetup.exe (fereastra WPF) si ErpSetup.Cli.exe (linia de comanda), ambele
        self-contained, single-file, cu cheile publice ale kitului incorporate (1 activa, 2 de rezerva, 08, 7).
     3. Copiaza scripturile, sabloanele si Hosting Bundle-ul; semneaza Authenticode binarele proprii (release).
-    4. Genereaza manifest.json (SHA-256 pentru fiecare fisier, releaseDate, kitKeyId) si manifest.sig (ECDSA P-256 / SHA-256),
+    4. Genereaza manifest.json (SHA-256 pentru fiecare fisier, releaseDate, kitKeyId, scriptVersions) si manifest.sig (ECDSA P-256 / SHA-256),
        apoi arhiveaza.
 
     -KitKeyId alege cheia de semnare: 1 (activa) sau 2 (de rezerva, dupa compromiterea cheii 1). -PublicKeyPath e cheia publica a
@@ -92,6 +92,10 @@ if ($scriptErrors.Count -gt 0) {
     $scriptErrors | ForEach-Object { Write-Host "  EROARE: $_" -ForegroundColor Red }
     throw "Verificarea scripturilor a eșuat ($($scriptErrors.Count) erori)."
 }
+
+# Versiunea fiecarui script (5.9), din istoricul Git; ajunge in manifest si apoi in core.ScriptVersion la fiecare client.
+$scriptVersions = Get-KitScriptVersions -RepoRoot $repoRoot
+Write-Host "  Versiunile scripturilor SQL: $($scriptVersions.Count) scripturi."
 
 $migrations = Get-KitMigrations -RepoRoot $repoRoot
 $lastMigration = if ($migrations.Count -gt 0) { $migrations[-1].Name } else { $null }
@@ -198,6 +202,7 @@ try {
         HostingBundleVersion = $HostingBundleVersion
         LastMigration        = $lastMigration
         KitKeyId             = $KitKeyId
+        ScriptVersions       = $scriptVersions
     }
 
     $zip = Join-Path $OutputDir "$kitName.zip"

@@ -27,6 +27,13 @@ public sealed record KitManifest
     /// <summary>Cheia cu care e semnat manifestul (08, 7): 1 = activa, 2 = de rezerva, ca la licente (3.5).</summary>
     public int KitKeyId { get; init; } = 1;
 
+    /// <summary>
+    /// Versiunea fiecarui script SQL din kit (08, 5.9): de cate ori s-a schimbat fisierul in istoricul Git, cheia fiind numele
+    /// din jurnal (<c>core/Procedures/core.usp_Company_Save.sql</c>). Scrisa in core.ScriptVersion la aplicare. Lipsa = kit
+    /// fara istoric (test); scripturile primesc atunci versiunea 0.
+    /// </summary>
+    public IReadOnlyDictionary<string, int>? ScriptVersions { get; init; }
+
     public required IReadOnlyList<KitFile> Files { get; init; }
 
     public static readonly JsonSerializerOptions JsonOptions = new()

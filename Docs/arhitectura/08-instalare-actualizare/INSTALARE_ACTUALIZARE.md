@@ -27,6 +27,8 @@ Documentul e scris ca specificație de implementare: un agent de cod (Claude Cod
 | Ordinea pașilor, preluarea unei baze pregătite de DBA, recuperarea pe alt calculator | D24, D25, D26 |
 | Windows 10 acceptat cu avertisment (fără actualizări de securitate din 14.10.2025) | D27 |
 
+**Modificare din 20.11.2026** (cerută de Aurelian, plan aprobat în aceeași zi): **jurnalul versiunilor scripturilor**, `core.ScriptVersion` (bootstrap `003_ScriptVersion.sql`, 5.6 și 5.9), cu versiunea fiecărui script calculată din istoricul Git la construirea kitului și scrisă în manifest (`scriptVersions`, secțiunea 7). Obiectele programabile rămân un fișier per obiect, `CREATE OR ALTER` (`MIG-04`); nu se numerotează fișiere.
+
 ---
 
 ## 0. Reguli pentru agentul de cod
@@ -503,6 +505,8 @@ IF SCHEMA_ID(N'crm')      IS NULL EXEC (N'CREATE SCHEMA crm AUTHORIZATION dbo;')
 IF SCHEMA_ID(N'rpt')      IS NULL EXEC (N'CREATE SCHEMA rpt AUTHORIZATION dbo;');
 ```
 
+`database/bootstrap/003_ScriptVersion.sql` creează (dacă lipsește) tabela `core.ScriptVersion`, jurnalul versiunilor scripturilor (5.9). Stă în bootstrap din același motiv ca schemele: trebuie să existe înaintea primei migrări, pentru că și migrațiile se notează în ea. Orice modificare ulterioară a structurii ei se face printr-o migrare a Nucleului.
+
 `database/bootstrap/002_Roles.sql` creează câte un rol de bază de date per schemă și dă drepturi la nivel de schemă (drepturile pe schemă acoperă și obiectele create mai târziu):
 
 ```sql
@@ -634,14 +638,16 @@ O migrare poate referi doar obiecte din schema modulului ei și din `core` (veri
 **Configurarea DbUp** (pachetul `dbup-sqlserver`):
 
 ```csharp
-public sealed class MigrationRunner(ILogger<MigrationRunner> logger)
+public sealed class MigrationRunner(ILogger<MigrationRunner> logger, ScriptVersions versions)   // versions: din manifest (7)
 {
     public DatabaseUpgradeResult RunMigrations(string setupConnectionString, KitScripts scripts)
     {
         var upgrader = DeployChanges.To
             .SqlDatabase(setupConnectionString)
             .WithScripts(scripts.Migrations)                     // deja ordonate (vezi mai sus)
-            .JournalToSqlTable("core", "SchemaVersion")          // exact așa scris: baza e case sensitive
+            .JournalTo((connection, log) => new VersionedMigrationJournal(   // jurnalul DbUp + core.ScriptVersion
+                new SqlTableJournal(connection, log, "core", "SchemaVersion"),  // exact așa scris: baza e case sensitive
+                new ScriptVersionRecorder(ScriptKind.Migration, versions)))
             .WithTransactionPerScript()
             .WithExecutionTimeout(TimeSpan.FromMinutes(30))
             .WithVariablesDisabled()                             // fără înlocuiri $var$ în scripturi
@@ -651,12 +657,12 @@ public sealed class MigrationRunner(ILogger<MigrationRunner> logger)
         return upgrader.PerformUpgrade();
     }
 
-    public DatabaseUpgradeResult RunAlways(string setupConnectionString, IEnumerable<SqlScript> scripts)
+    public DatabaseUpgradeResult RunAlways(string setupConnectionString, ScriptKind kind, IEnumerable<SqlScript> scripts)
     {
         var upgrader = DeployChanges.To
             .SqlDatabase(setupConnectionString)
             .WithScripts(scripts)
-            .JournalTo(new NullJournal())                        // rulate la fiecare instalare / actualizare
+            .JournalTo(new ScriptVersionJournal(new ScriptVersionRecorder(kind, versions)))   // rulate mereu; notează doar schimbările
             .WithTransactionPerScript()
             .WithExecutionTimeout(TimeSpan.FromMinutes(10))
             .WithVariablesDisabled()
@@ -670,6 +676,23 @@ public sealed class MigrationRunner(ILogger<MigrationRunner> logger)
 
 Dacă `PerformUpgrade()` întoarce `Successful = false`, pasul eșuează (cod 30); mesajul afișat conține numele scriptului (`result.ErrorScript.Name`) și eroarea SQL (fără date din tabele).
 
+**Jurnalul versiunilor** (`core.ScriptVersion`, modificare din 20.11.2026). Pe lângă `core.SchemaVersion` (jurnalul DbUp al migrațiilor, neschimbat), fiecare script aplicat — migrare, obiect programabil sau date livrate — primește un rând **doar dacă i s-a schimbat conținutul** față de ultimul lui rând, deci tabela e chiar istoricul modificărilor:
+
+| Coloană | Conținut |
+| --- | --- |
+| `ScriptName` | numele din jurnalul DbUp: `core/2026.11.001_Create_Company.sql`, `core/Procedures/core.usp_Company_Save.sql`, `core/01_Currencies.sql` |
+| `ScriptKind` | 1 migrare, 2 obiect programabil, 3 date livrate |
+| `Version` | versiunea scriptului din manifest (`scriptVersions`, secțiunea 7); 0 dacă manifestul nu o are |
+| `ContentHash` | SHA-256 (hex) pe conținut, fără BOM, cu sfârșiturile de rând unificate și spațiile de la capăt de rând eliminate: o reformatare a spațiilor nu dă versiune nouă |
+| `ProductVersion` | versiunea kitului (`2027.1.0`) sau `dev` |
+| `AppliedAt`, `AppliedBy` | data UTC și `ORIGINAL_LOGIN()` |
+
+- **Versiunea unui script = numărul de commituri Git care i-au schimbat fișierul** (`git log --follow`, deci redenumirea continuă numărătoarea), calculată de `package-kit.ps1` (`Get-KitScriptVersions`). Exemplu: `sales.usp_Order_Save` adăugat → 1; modificat într-un commit → 2. Același număr în toate bazele; `git log` pe fișier arată ce s-a schimbat la fiecare versiune. O modificare încă necomisă (kit de test, dezvoltare) numără ca versiunea următoare.
+- **Rândul se scrie de un jurnal DbUp propriu** (`ScriptVersionJournal`, `VersionedMigrationJournal` peste jurnalul `core.SchemaVersion`), cu SQL parametrizat, **în aceeași tranzacție cu scriptul** (`WithTransactionPerScript`): un script reușit are mereu rândul lui, unul eșuat nu-l are niciodată.
+- Obiectele programabile și datele livrate **rulează în continuare toate**, la fiecare instalare și actualizare; jurnalul doar notează care s-au schimbat.
+- `core.v_ScriptVersionCurrent` arată ultima versiune a fiecărui script, adică ce e instalat acum.
+- Protecția de versiune (10.4) rămâne pe `core.SchemaVersion`.
+
 **Obiectele programabile** (`MIG-04`): fiecare fișier conține un singur obiect, scris `CREATE OR ALTER`, urmat opțional de instrucțiuni `GRANT` pentru alte roluri de modul. Ordinea: pe module (lista de mai sus), apoi `Functions/` → `Views/` → `Procedures/`, apoi alfabetic; un prefix `NN_` în numele fișierului forțează ordinea când un obiect depinde de altul din același folder. Tipurile tabelă (`CREATE TYPE ... AS TABLE`) nu au `CREATE OR ALTER`: stau în migrații. Eliminarea unui obiect retras se face printr-o migrare (`DROP PROCEDURE IF EXISTS sales.usp_Old;`).
 
 **Verificări de build pentru scripturi** (în `package-kit.ps1` și ca test în CI):
@@ -678,7 +701,7 @@ Dacă `PerformUpgrade()` întoarce `Successful = false`, pasul eșuează (cod 30
 - nicio referință la `dbo.` în afara `msdb.dbo.` și `master.dbo.` (`SQL-01`);
 - niciun script deja livrat nu s-a modificat față de tag-ul versiunii anterioare (`MIG-02`; comparație `git diff --name-status <tag-anterior> -- '**/Migrations/*.sql'` fără `M` sau `D`).
 
-**Date livrate.** Scripturile din `database/seed/<modul>/` rulează cu `RunAlways` (`NullJournal`), în ordinea modulelor și apoi alfabetic (`01_Currencies.sql`, `02_VatRates.sql` ...). Fiecare script folosește `MERGE` pe cheia naturală (`MIG-06`) și nu șterge rânduri create de client.
+**Date livrate.** Scripturile din `database/seed/<modul>/` rulează cu `RunAlways` (`ScriptVersionJournal`: rulate de fiecare dată, notate doar la schimbare), în ordinea modulelor și apoi alfabetic (`01_Currencies.sql`, `02_VatRates.sql` ...). Fiecare script folosește `MERGE` pe cheia naturală (`MIG-06`) și nu șterge rânduri create de client.
 
 Datele livrate de Nucleu, relevante pentru installer:
 
@@ -1131,7 +1154,7 @@ ERP-2027.1.0-kit/
 │   ├── host/                            Erp.Host publicat (framework-dependent, net10.0, win-x64)
 │   └── worker/                          Erp.Worker publicat
 ├── database/
-│   ├── bootstrap/                       scheme și roluri (5.6)
+│   ├── bootstrap/                       scheme, roluri, jurnalul versiunilor (5.6)
 │   ├── migrations/<modul>/              rulate o singură dată (MIG-01)
 │   ├── programmability/<modul>/         CREATE OR ALTER, la fiecare instalare/actualizare (MIG-04)
 │   └── seed/<modul>/                    MERGE idempotent (MIG-06)
@@ -1142,7 +1165,7 @@ ERP-2027.1.0-kit/
 └── THIRD-PARTY-NOTICES.txt
 ```
 
-`manifest.json` conține: `version`, `releaseDate` (folosită la 4.5), `minUpgradeFrom` (versiunile livrate în ultimele 12 luni), `minSqlServerMajorVersion` (16), `databaseCollation` (`Latin1_General_100_CS_AS_SC_UTF8`), `hostingBundleVersion`, `lastMigration`, `kitKeyId` și lista `files` cu SHA-256. Generatorul de licențe **nu** face parte din kit.
+`manifest.json` conține: `version`, `releaseDate` (folosită la 4.5), `minUpgradeFrom` (versiunile livrate în ultimele 12 luni), `minSqlServerMajorVersion` (16), `databaseCollation` (`Latin1_General_100_CS_AS_SC_UTF8`), `hostingBundleVersion`, `lastMigration`, `kitKeyId`, lista `files` cu SHA-256 și, din 20.11.2026, `scriptVersions`: numele fiecărui script din `database/` (ca în jurnal, 5.9) → versiunea lui din istoricul Git. Câmpul e acoperit de semnătura manifestului; un manifest fără el e valid (versiunea 0). Generatorul de licențe **nu** face parte din kit.
 
 **Autenticitatea kitului** (D15, D16). Hash-urile singure nu ajung: cine modifică un script SQL poate rescrie și hash-ul din manifest. De aceea `manifest.json` e semnat cu cheia privată a kitului (ECDSA P-256, `kitKeyId`), iar installer-ul are încorporate cheile publice ale kitului (activă 1 și de rezervă 2, ca la licențe, 3.5). Cheia kitului e diferită de cheia licențelor și de certificatul Authenticode. Authenticode (SHA-256, cu marcă de timp RFC 3161, ca semnătura să rămână valabilă după expirarea certificatului) protejează executabilele la pornire, prin Windows și SmartScreen; manifestul semnat protejează restul kitului.
 
@@ -1154,7 +1177,8 @@ src/
 │   ├── Erp.LicenseGen/              aplicația 1, fereastra WPF (net10.0-windows) – doar intern
 │   ├── Erp.LicenseGen.Core/         LicenseWriter, registrul, cheile private (net10.0)
 │   ├── Erp.LicenseGen.Tests/        IA-01, IA-02 (net10.0)
-│   └── Erp.DevDatabase/             baza de dezvoltare (existent)
+│   ├── Erp.DevDatabase/             baza de dezvoltare, din linia de comandă (build/dev-database.ps1)
+│   └── Erp.DevDatabase.Sync/        sincronizarea bazei de dezvoltare (07, „Mediul de dezvoltare”); referită de Erp.Host doar în Debug, nu ajunge în kit
 ├── Setup/                           aplicația 2: Erp.Setup.Core, .Sql, .Windows, .Engine, .Presentation, Erp.Setup (WPF), Erp.Setup.Cli, .Tests (5.2)
 ├── Shared/
 │   ├── Erp.Licensing/               citire, decriptare, verificare licență; FiscalCode; LicenseKeys.cs (chei publice + AES mascat)
@@ -1514,6 +1538,7 @@ Aplicațiile și scripturile respectă [Bune practici](../bune-practici/BUNE_PRA
 
 - Abatere de la `SP-06`: comenzile DDL ale installer-ului (`CREATE DATABASE`, snapshot, `CREATE LOGIN ... FROM WINDOWS`, `BACKUP`/`RESTORE` cu căi, joburile SQL Agent) nu acceptă parametri, deci textul se construiește în C#: numele prin `QuoteName`, valorile text prin `SqlLiteral` după validare cu expresii regulate și liste permise (5.6). Permanentă, doar în `Erp.Setup.Sql`.
 - Abatere de la `SQL-02`, `SQL-04`, `SQL-19` pentru obiectele din schema `hangfire` (scriptul oficial Hangfire) și pentru jurnalul DbUp `core.SchemaVersion`. Motiv: obiecte ale unor biblioteci terțe. Permanentă.
+- Abatere de la `SQL-19` pentru `core.ScriptVersion` (5.9): jurnal tehnic, doar cu inserări; are `AppliedAt`/`AppliedBy` în locul coloanelor de audit, iar autorul e loginul SQL al operatorului, nu un utilizator ERP. Permanentă.
 - Proceduri extinse fără documentație oficială completă, folosite de Maintenance Plans: `xp_create_subdir` și `xp_delete_file`. Doar în `Erp.Setup.Sql` și în joburile generate. Permanentă.
 - `SP-19` se respectă astfel: migrațiile rulează cu contul Windows al operatorului (doar pe durata operației), aplicația cu identitățile ei Windows, fără `db_owner`. Nu există un login SQL separat pentru migrații.
 - `NET-17` se aplică prin Data Protection cu inelul în bază (5.12), nu prin DPAPI `LocalMachine` (D22).
