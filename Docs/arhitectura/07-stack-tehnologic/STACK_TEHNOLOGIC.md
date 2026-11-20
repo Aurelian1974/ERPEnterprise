@@ -1,6 +1,6 @@
 # ERP · 07 Stack tehnologic
 
-15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST4; **ST5 (tema vizuală) propus pe 20.11.2026, de validat**; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md)
+15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST4; **ST5 (tema vizuală) validat de Aurelian (20.11.2026)**; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md)
 
 Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu introduce alegeri noi în afara deciziilor ST1–ST4: fiecare rând trimite la documentul care l-a decis. La o contradicție, prevalează documentele validate (01, 08, Bune practici) față de schiță; o alegere doar „propusă” se validează înainte de folosire.
 
@@ -40,7 +40,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Client API | Generat din OpenAPI, nu scris de mână | `UI-03` | Validat. Implementat: documentul `Microsoft.AspNetCore.OpenApi` (`/openapi/v1.json`, numai în `Development`), salvat în `src/Web/erp-web/openapi/erp-api.json`; tipurile cu `openapi-typescript`, apelurile cu `openapi-fetch` (`npm run api`) |
 | Calcule zecimale în UI | Totaluri de la server sau `decimal.js` cu aceleași reguli; valorile circulă ca string | `UI-05` | Validat |
 | Componente UI | Syncfusion Essential JS 2 pentru React (grile, formulare, calendare, grafice etc.) | ST4 | Validat |
-| Tema vizuală | Albastru deschis pal, fără suprafețe albe; tokeni CSS unici, tema Syncfusion Tailwind 3 suprascrisă prin variabile | ST5; [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md); `UI-13`–`UI-17` | Propus (20.11.2026), de validat |
+| Tema vizuală | Albastru deschis pal, fără suprafețe albe; tokeni CSS unici, tema Syncfusion Tailwind 3 suprascrisă prin variabile | ST5; [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md); `UI-13`–`UI-17` | Validat (20.11.2026) |
 | Tabele mari | Syncfusion DataGrid (paginare și filtrare pe server, `UI-*`) | ST4; schița propunea AG Grid sau TanStack Table | Propus (decurge din ST4), de confirmat |
 | Livrarea UI | Fișiere statice în `wwwroot` al `Erp.Host`, același origin cu API-ul (cookie `SameSite=Strict`) | 08, secțiunile 1 și 8.7 | Validat. Implementat: `package-kit.ps1` rulează `npm ci` și `npm run build` înainte de publicare; `index.html` fără cache, `assets/` (nume cu hash) în cache un an și comprimate Brotli/gzip la servire |
 | Rapoarte și documente | QuestPDF pentru facturi și state; ClosedXML pentru Excel; BI: Power BI Report Server sau Metabase, on-premise | Schița | Aprobat în schiță |

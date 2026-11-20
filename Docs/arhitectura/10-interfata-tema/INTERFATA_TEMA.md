@@ -1,6 +1,6 @@
 # ERP · 10 Interfață și temă vizuală
 
-20 noiembrie 2026 · Aurelian · **Propus (20.11.2026), de validat** · Documente legate: [Bune practici](../bune-practici/BUNE_PRACTICI.md) (`UI-13`–`UI-17`), [07 Stack tehnologic](../07-stack-tehnologic/STACK_TEHNOLOGIC.md) (`ST4`, `ST5`), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md) (secțiunea 11, machetele de ecran)
+20 noiembrie 2026 · Aurelian · **Validat de Aurelian (20.11.2026)**, împreună cu machetele reculorate · Documente legate: [Bune practici](../bune-practici/BUNE_PRACTICI.md) (`UI-13`–`UI-17`), [07 Stack tehnologic](../07-stack-tehnologic/STACK_TEHNOLOGIC.md) (`ST4`, `ST5`), [02.01 Nucleu](../02-module-principale/01-nucleu/NUCLEU.md) (secțiunea 11, machetele de ecran)
 
 Acest document stabilește tema vizuală a aplicației: paleta, unde se folosește fiecare culoare și ce
 contraste sunt permise. Până acum tema nu era specificată nicăieri, iar culorile erau scrise de trei
@@ -140,10 +140,17 @@ Cele 27 de machete din [02.01 · ecrane](../02-module-principale/01-nucleu/ecran
 paletă ca aplicația. PNG-urile se regenerează din HTML cu `build/machete-png.mjs` (Playwright,
 1440×900 la `deviceScaleFactor: 2`), ca să nu se depărteze de HTML-ul lor.
 
-Machetele au fost validate pe 14.11.2026 cu paleta veche, pe fundal alb. După reculorare **sunt din
-nou de validat de Aurelian**.
+Machetele fuseseră validate pe 14.11.2026 cu paleta veche, pe fundal alb. După reculorare au fost
+**revalidate de Aurelian (20.11.2026)**.
 
-## 9. De făcut separat
+## 9. Ce rămâne în afara temei
+
+**Fereastra installer-ului** (`ErpSetup.exe`, `src/Setup/Erp.Setup/MainWindow.xaml`) rămâne pe fundal
+alb: decizia lui Aurelian din 20.11.2026. `T-02` se aplică interfeței ERP — paginile web și ecranele
+aplicației —, nu aplicației WPF de instalare, care rulează o singură dată, la administrator, înainte
+ca ERP-ul să existe. Cine o restilizează mai târziu să o facă intenționat, nu „ca să respecte `UI-14`”.
+
+Restul, de făcut separat:
 
 | Sarcină | De ce nu e aici |
 | --- | --- |

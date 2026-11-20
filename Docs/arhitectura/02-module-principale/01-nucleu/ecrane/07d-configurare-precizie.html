@@ -75,8 +75,9 @@
   .stats { display: flex; gap: 8px; margin-top: 8px; }
   .stat { font-size: 11.5px; background: var(--surface-card); border-radius: 6px; padding: 3px 8px; color: var(--ink); }
   .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
-  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
-  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .tab { padding: 9px 12px 10px; font-size: 13px; color: var(--muted); font-weight: 500; background: var(--surface-muted);
+         border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; margin-bottom: -1px; }
+  .tab.on { color: var(--action-hover); font-weight: 700; background: var(--surface-card); box-shadow: inset 0 3px 0 var(--accent-core); }
   .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
   .f label { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
   .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }

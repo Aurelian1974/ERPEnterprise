@@ -606,6 +606,25 @@ p {
   font-weight: 600;
 }
 
+/*
+ * Banda de tab-uri a unei fise (10, secțiunea 4): inactivele stau pe o treapta mai inchisa, activul
+ * pe suprafata fisei, cu care se uneste. Numai in „.tabs”; „.config-tabs” e un rand de legaturi.
+ */
+.tabs .tab {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  margin-bottom: -1px;
+  padding-bottom: 9px;
+}
+
+.tabs .tab.on,
+.tabs .tab.active {
+  background: var(--surface-card);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
 .config-tabs {
   background: var(--surface-card);
   border: 1px solid var(--line);

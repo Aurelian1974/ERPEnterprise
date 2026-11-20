@@ -23,7 +23,7 @@ arhitectura/
 │   │   ├── NUCLEU.md
 │   │   ├── model-domeniu.png
 │   │   ├── pipeline-comenzi.png
-│   │   └── ecrane/                   ✓ machete 01–10 validate (14.11.2026); reculorate 20.11.2026 (tema din 10), de revalidat
+│   │   └── ecrane/                   ✓ machete 01–10 validate (14.11.2026); reculorate pe tema din 10 și revalidate (20.11.2026)
 │   ├── 02-finante-contabilitate/      02.02
 │   ├── 03-vanzari/                    02.03
 │   ├── 04-achizitii/                  02.04
@@ -48,7 +48,7 @@ arhitectura/
 │   ├── GHID_INSTALARE_ACTUALIZARE.md  ghid operațional
 │   └── flux-actualizare.png
 ├── 09-roadmap/
-└── 10-interfata-tema/                 propus (20.11.2026) · tema vizuală: albastru pal, fără alb
+└── 10-interfata-tema/                 ✓ validat (20.11.2026) · tema vizuală: albastru pal, fără alb
     ├── INTERFATA_TEMA.md
     ├── paleta.html
     └── paleta.png
@@ -60,7 +60,7 @@ arhitectura/
 | 00 | Schița de arhitectură | Aprobată | [ARHITECTURA_ERP.md](00-schita/ARHITECTURA_ERP.md) | [Claude Docs](https://claude.ai/artifact/NNYXW6G9eaLaxHFHkCZAJQ) |
 | 01 | Scop și principii | Validat (14.11.2026) | [SCOP_SI_PRINCIPII.md](01-scop-si-principii/SCOP_SI_PRINCIPII.md) | [Claude Docs](https://claude.ai/artifact/TR4QjvsTBdvETfGgozK4we) |
 | 02 | Module principale | Validat (14.11.2026) | [MODULE_PRINCIPALE.md](02-module-principale/MODULE_PRINCIPALE.md) | [Claude Docs](https://claude.ai/artifact/6wZzKpXDTAbPBPmTwUZRSY) |
-| 02.01 | Nucleu (Platform) | Validat, inclusiv machetele de ecran (14.11.2026); inclusiv baza case sensitive, administratorul de la instalare și autentificarea cu cookie. Machetele au fost reculorate pe tema din 10 (20.11.2026) și **sunt de revalidat** | [NUCLEU.md](02-module-principale/01-nucleu/NUCLEU.md) | [Claude Docs](https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU) |
+| 02.01 | Nucleu (Platform) | Validat, inclusiv machetele de ecran (14.11.2026); inclusiv baza case sensitive, administratorul de la instalare și autentificarea cu cookie. Machetele au fost reculorate pe tema din 10 și **revalidate de Aurelian (20.11.2026)** | [NUCLEU.md](02-module-principale/01-nucleu/NUCLEU.md) | [Claude Docs](https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU) |
 | 03 | Bounded contexts și integrare | De făcut | — | — |
 | 04 | Stil arhitectural | De făcut | — | — |
 | 05 | Date și multi-tenancy | De făcut | — | — |
@@ -69,4 +69,4 @@ arhitectura/
 | 08 | Instalare și actualizare (installer) | Validat de Aurelian (19.11.2026), versiunea 3; D1–D11 ale lui Aurelian păstrate, D12–D32 propuse de Claude și validate; inclusiv machetele ecranelor | [INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/INSTALARE_ACTUALIZARE.md) | — |
 | 08 | Ghid operațional: construirea și livrarea kitului, instalarea, actualizarea | Validat de Aurelian (19.11.2026), aliniat la versiunea 3; descrie comportamentul țintă (implementarea pe T1–T13) | [GHID_INSTALARE_ACTUALIZARE.md](08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md) | — |
 | 09 | Roadmap pe faze | De făcut | — | — |
-| 10 | Interfață și temă vizuală | Propus (20.11.2026), de validat · tema albastru deschis pal, fără suprafețe albe; paleta, harta zonelor și contrastele | [INTERFATA_TEMA.md](10-interfata-tema/INTERFATA_TEMA.md) | — |
+| 10 | Interfață și temă vizuală | Validat de Aurelian (20.11.2026) · tema albastru deschis pal, fără suprafețe albe; paleta, harta zonelor și contrastele | [INTERFATA_TEMA.md](10-interfata-tema/INTERFATA_TEMA.md) | — |

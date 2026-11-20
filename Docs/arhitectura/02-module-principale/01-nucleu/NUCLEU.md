@@ -757,8 +757,10 @@ Machetele pentru autentificare și pagina de start (aprobată pe 14.11.2026):
 [10 Interfață și temă vizuală](../../10-interfata-tema/INTERFATA_TEMA.md): albastru deschis pal pe
 suprafețe, nicio suprafață albă, antetul și meniul lateral în bleumarin ca repere de orientare, câte
 un accent pe modul. Culorile vin dintr-un singur fișier de tokeni, folosit și de React și de Razor
-(`UI-13`–`UI-17`). Machetele 01–10 au fost reculorate cu aceeași paletă, deci **sunt din nou de
-validat**; PNG-urile se regenerează din HTML cu `build/machete-png.mjs`.
+(`UI-13`–`UI-17`). Machetele 01–10 au fost reculorate cu aceeași paletă și **revalidate de Aurelian
+(20.11.2026)**; PNG-urile se regenerează din HTML cu `build/machete-png.mjs`. Banda de tab-uri a unei
+fișe urmează harta zonelor: tab-urile inactive pe `--surface-muted`, cel activ pe suprafața fișei, cu
+care se unește.
 
 **Ecranul de autentificare, completări (20.11.2026):** pagina aduce acum elementele din macheta
 aprobată care lipseau — sigla clientului (fișierul din `Branding:LogoPath`, implicit
