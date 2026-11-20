@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run ERP Host",
+			"type": "shell",
+			"command": "dotnet run --project src/Host/Erp.Host/Erp.Host.csproj --launch-profile Erp.Host",
+			"isBackground": true,
+			"problemMatcher": [
+				"$msCompile"
+			]
+		}
+	]
+}
