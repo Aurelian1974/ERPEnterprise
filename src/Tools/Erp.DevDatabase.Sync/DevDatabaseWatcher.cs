@@ -9,19 +9,45 @@ namespace Erp.DevDatabase.Sync;
 /// folderele Database/ ale depozitului si bootstrap-ul; salvarile in rafala (editorul scrie de mai multe ori) se aduna
 /// 500 ms intr-o singura sincronizare, iar sincronizarile ruleaza una dupa alta.
 /// </summary>
-public sealed class DevDatabaseWatcher(DevDatabaseSync sync, string repoRoot, ILogger log) : BackgroundService
+public sealed class DevDatabaseWatcher : BackgroundService
 {
     public static readonly TimeSpan Debounce = TimeSpan.FromMilliseconds(500);
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private readonly Func<CancellationToken, Task> sync;
+    private readonly string repoRoot;
+    private readonly ILogger log;
+    private readonly Channel<bool> changes = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
+    private FileSystemWatcher[] watchers = [];
+
+    public DevDatabaseWatcher(DevDatabaseSync sync, string repoRoot, ILogger log)
+        : this(async ct => await sync.SyncAsync(ct).ConfigureAwait(false), repoRoot, log)
     {
-        var changes = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
+    }
+
+    internal DevDatabaseWatcher(Func<CancellationToken, Task> sync, string repoRoot, ILogger log)
+    {
+        this.sync = sync;
+        this.repoRoot = repoRoot;
+        this.log = log;
+    }
+
+    /// <summary>
+    /// Observatoarele pornesc aici, sincron, nu in ExecuteAsync: din .NET 10 ExecuteAsync ruleaza pe alt fir, dupa ce
+    /// StartAsync s-a intors, iar o salvare facuta imediat dupa pornire s-ar pierde.
+    /// </summary>
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
         var folders = RepositoryScripts.DatabaseFolders(repoRoot).Select(f => f.Folder)
             .Append(RepositoryScripts.BootstrapDirectory(repoRoot))
             .Where(Directory.Exists)
             .ToArray();
-        var watchers = folders.Select(folder => Watch(folder, () => changes.Writer.TryWrite(true))).ToArray();
+        watchers = folders.Select(folder => Watch(folder, () => changes.Writer.TryWrite(true))).ToArray();
         log.Information("Baza de dezvoltare: urmăresc scripturile SQL din {Count} foldere.", watchers.Length);
+        return base.StartAsync(cancellationToken);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
         try
         {
             await foreach (var _ in changes.Reader.ReadAllAsync(stoppingToken).ConfigureAwait(false))
@@ -31,18 +57,31 @@ public sealed class DevDatabaseWatcher(DevDatabaseSync sync, string repoRoot, IL
                 {
                 }
 
-                await sync.SyncAsync(stoppingToken).ConfigureAwait(false);
+                await sync(stoppingToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
         }
-        finally
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        DisposeWatchers();
+        await base.StopAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public override void Dispose()
+    {
+        DisposeWatchers();
+        base.Dispose();
+    }
+
+    private void DisposeWatchers()
+    {
+        foreach (var watcher in Interlocked.Exchange(ref watchers, []))
         {
-            foreach (var watcher in watchers)
-            {
-                watcher.Dispose();
-            }
+            watcher.Dispose();
         }
     }
 
