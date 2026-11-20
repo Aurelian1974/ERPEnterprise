@@ -144,6 +144,7 @@ public sealed class LoginScriptsTests
 
         Assert.Contains(@"CREATE USER [erp_app] FOR LOGIN [GRUPULEXEMPLU\erp-prod$] WITH DEFAULT_SCHEMA = [core];", script);
         Assert.Contains(@"ALTER USER [erp_app] WITH LOGIN = [GRUPULEXEMPLU\erp-prod$];", script);
+        Assert.Contains("N'[erp_app]'", script);
     }
 
     [Fact]

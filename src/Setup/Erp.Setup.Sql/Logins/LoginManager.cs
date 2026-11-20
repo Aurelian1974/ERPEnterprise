@@ -47,13 +47,26 @@ public static partial class LoginScripts
             ALTER LOGIN {SqlText.QuoteName(login)} DISABLE;
         """;
 
-    /// <summary>Utilizatorul din baza, legat de login; refacut daca legatura s-a pierdut (dupa o restaurare sau o recuperare).</summary>
+    /// <summary>
+    /// Utilizatorul din baza, legat de login; refacut daca legatura s-a pierdut (dupa o restaurare sau o recuperare).
+    /// Un utilizator existent al aceluiasi login, cu alt nume (o instalare anterioara), se redenumeste: un login are un singur utilizator pe baza.
+    /// </summary>
     public static string CreateOrRemapUser(string user, string login, string? defaultSchema)
     {
         var schema = defaultSchema is null ? string.Empty : $" WITH DEFAULT_SCHEMA = {SqlText.QuoteName(defaultSchema)}";
         return $"""
             IF DATABASE_PRINCIPAL_ID({SqlText.SqlLiteral(user)}) IS NULL
-                CREATE USER {SqlText.QuoteName(user)} FOR LOGIN {SqlText.QuoteName(login)}{schema};
+            BEGIN
+                DECLARE @existing sysname = (
+                    SELECT TOP (1) dp.name FROM sys.database_principals AS dp
+                    JOIN sys.server_principals AS sp ON sp.sid = dp.sid
+                    WHERE sp.name = {SqlText.SqlLiteral(login)} AND dp.type IN (N'U', N'G', N'S'));
+                DECLARE @rename nvarchar(max) = N'ALTER USER ' + QUOTENAME(@existing) + N' WITH NAME = ' + {SqlText.SqlLiteral(SqlText.QuoteName(user))};
+                IF @existing IS NOT NULL
+                    EXEC(@rename);
+                ELSE
+                    CREATE USER {SqlText.QuoteName(user)} FOR LOGIN {SqlText.QuoteName(login)}{schema};
+            END
             ELSE
                 ALTER USER {SqlText.QuoteName(user)} WITH LOGIN = {SqlText.QuoteName(login)};
             """;
