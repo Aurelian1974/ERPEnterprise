@@ -12,9 +12,15 @@
 
   <!-- Paleta temei (ST5) are o singura sursa: fisierul aplicatiei React. De aici ajunge activ static al
        bibliotecii si e servit paginilor /account/* ca _content/Erp.Auth/tokens.css, deci nu exista doua palete. -->
-  <ItemGroup>
-    <Content Include="..\..\Web\erp-web\src\theme\tokens.css" Link="wwwroot\tokens.css" />
-  </ItemGroup>
+  <!-- Un Content cu Link nu are fisier fizic in wwwroot, iar in dezvoltare Host-ul il serveste de acolo (404); de aceea se copiaza
+       fizic (wwwroot\tokens.css, ignorat de Git) inainte de descoperirea resurselor statice. -->
+  <Target Name="SyncThemeTokens" BeforeTargets="ResolveProjectStaticWebAssets;BeforeBuild">
+    <Copy SourceFiles="..\..\Web\erp-web\src\theme\tokens.css" DestinationFiles="wwwroot\tokens.css" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <Content Remove="wwwroot\tokens.css" />
+      <Content Include="wwwroot\tokens.css" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Dapper" />

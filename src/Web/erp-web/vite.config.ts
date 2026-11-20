@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // Erp.Host ruleaza pe https://localhost:7180 (launchSettings). In dezvoltare, Vite trimite catre el API-ul, paginile Razor
 // /account/* si health-check-ul; cookie-urile sunt pe localhost, deci aceeasi sesiune pe ambele porturi.
 const host = process.env.ERP_HOST_URL ?? 'https://localhost:7180';
-const proxied = ['/api', '/account', '/health', '/openapi'];
+const proxied = ['/api', '/account', '/health', '/openapi', '/_content'];
 
 export default defineConfig({
   plugins: [react()],
