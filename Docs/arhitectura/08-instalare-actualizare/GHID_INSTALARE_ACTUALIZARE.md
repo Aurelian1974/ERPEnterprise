@@ -532,4 +532,14 @@ Pentru dezvoltare, aplicația se leagă direct la o bază locală; installer-ul 
 
 4. **Ce e normal în dezvoltare:** licența se citește din bază (specificația 4.1); fără o licență validă, în `Development` toate modulele sunt active, iar `/health/ready` raportează `license: Unhealthy`. O licență se încarcă din Administrare › Configurare › Licență; ea trebuie semnată cu o cheie din `LicenseKeys.cs`, gol până la configurarea cheilor de producție (3.4). Până la T4, cheile Data Protection stau în profilul utilizatorului; după T4, în bază. Protecția de versiune acceptă în dezvoltare orice bază migrată, cu un avertisment în jurnal.
 
+5. **Porturi în dezvoltare** (fixe; `strictPort` la Vite, deci un conflict oprește pornirea în loc să schimbe portul):
+
+   | Serviciu | Adresă | Definit în |
+   | --- | --- | --- |
+   | Erp.Host (API, `/account/*`, copia construită a interfeței) | `https://localhost:7180` | `src/Host/Erp.Host/Properties/launchSettings.json` |
+   | Interfața React cu reîncărcare la salvare (proxy către Host) | `http://localhost:5173` | `src/Web/erp-web/vite.config.ts` |
+   | Erp.Worker | niciunul (nu ascultă pe rețea) | — |
+   | SQL Server | instanța implicită, TCP 1433 | `appsettings.Development.json` |
+
+   În dezvoltare se lucrează pe `5173`: `7180` servește interfața construită la ultimul `npm run build` și rămâne în urmă față de cod. Pornire/oprire manuală: `./build/dev-start-backend.ps1`, `./build/dev-stop-backend.ps1`, `./build/dev-start-frontend.ps1`, `./build/dev-stop-frontend.ps1`; ele refuză pornirea dacă portul e ocupat de alt proces. În producție portul HTTPS e cel ales în installer (implicit 443).
 Bazele `ERP_DEV` nu se folosesc pentru teste de instalare: o instalare reală se face cu `ErpSetup.exe`, pe o mașină virtuală Windows.

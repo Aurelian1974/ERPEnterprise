@@ -16,13 +16,18 @@ async function choose(page: Page, fieldId: string, text: string, typed = text.sl
     await page.waitForTimeout(300);
     await option.click();
     await expect(page.locator(`#${fieldId}`)).toHaveValue(text);
+    await expect(page.locator(`#${fieldId}_popup`)).toBeHidden();
     return;
   }
   await expect(filter).toBeFocused();
   await page.keyboard.type(typed, { delay: 30 });
-  await expect(page.locator(`#${fieldId}_popup li[role="option"]`).first()).toContainText(text);
+  const focused = page.locator(`#${fieldId}_popup li.e-item-focus`);
+  await expect(focused).toHaveCount(1);
+  await expect(focused).toContainText(text);
   await page.keyboard.press('Enter');
   await expect(page.locator(`#${fieldId}`)).toHaveValue(text);
+  // Lista inchisa complet inainte de urmatoarea: altfel inchiderea ei intarziata fura focusul listei deschise dupa ea.
+  await expect(page.locator(`#${fieldId}_popup`)).toBeHidden();
 }
 
 /** Un IBAN romanesc valid (mod 97), diferit la fiecare rulare. */
