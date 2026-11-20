@@ -144,7 +144,8 @@ public sealed class InstallResumeIntegrationTests(SqlServerFixture sql) : IDispo
         var answers = AnswersValidator.Load(again.Paths.Answers);
         Assert.True(answers.IsValid);
         Assert.Equal(request.Sql, answers.Request!.Sql);
-        Assert.Equal(2, windows.Calls.Count(c => c == "WriteConfiguration"));
+        // I-07 si I-08 scriu configurarea; la reluare pasii se reverifica (idempotenti, R10): 3 rulari x 2.
+        Assert.Equal(6, windows.Calls.Count(c => c == "WriteConfiguration"));
         Assert.Equal(1, windows.Calls.Count(c => c == "CreateInternalHttpsCertificate"));
     }
 
@@ -251,7 +252,12 @@ internal sealed class FakeWindowsSetup : IWindowsSetup
 
     public IReadOnlyList<string> ComponentLogTail(InstallRequest request) => ["(jurnal simulat)"];
 
-    public string WriteInitialAdminFile(InstallRequest request, string content) => throw new InvalidOperationException("Nu se apelează în acest test.");
+    /// <summary>Instalarea neasistata (5.10): fisierul nu se scrie in teste; se noteaza doar apelul.</summary>
+    public string WriteInitialAdminFile(InstallRequest request, string content)
+    {
+        Calls.Add(nameof(WriteInitialAdminFile));
+        return Path.Combine(request.InstanceDirectory, "install", "initial-admin.txt");
+    }
 
     public void ExportRecoveryKey(string thumbprint, string pfxPath, string password) => Calls.Add(nameof(ExportRecoveryKey));
 

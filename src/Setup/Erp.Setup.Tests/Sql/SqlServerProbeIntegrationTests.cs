@@ -81,7 +81,9 @@ public sealed class SqlServerProbeIntegrationTests(SqlServerFixture sql)
     {
         var report = await RunChecker("ERP_IT_NEW");
 
-        Assert.Equal(CheckStatus.Passed, Result(report, "C-10").Status);
+        // Certificatul SQL din container e autosemnat: conexiunea e criptata, dar serverul nu e verificat (C-10, avertisment).
+        Assert.Equal(CheckStatus.Warning, Result(report, "C-10").Status);
+        Assert.True(report.TrustServerCertificate);
         Assert.Equal(CheckStatus.Warning, Result(report, "C-11").Status); // imaginea ruleaza Developer
         Assert.Equal(CheckStatus.Passed, Result(report, "C-12").Status);
         Assert.Equal(CheckStatus.Passed, Result(report, "C-14").Status);

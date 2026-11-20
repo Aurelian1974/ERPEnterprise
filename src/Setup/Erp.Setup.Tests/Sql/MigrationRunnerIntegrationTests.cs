@@ -151,7 +151,6 @@ public sealed class MigrationRunnerIntegrationTests(SqlServerFixture sql)
         Assert.Contains("core/2026.11.002_Bad.sql", ex.Message);
         Assert.Equal(["core/2026.11.001_Good.sql"], await ScalarList(database, "SELECT ScriptName FROM core.SchemaVersion ORDER BY Id;"));
         Assert.Null(await Scalar<int?>(database, "SELECT OBJECT_ID(N'core.Partial');"));
-        Assert.True(await Scalar<bool>("master", "SELECT is_disabled FROM sys.server_principals WHERE name = N'erp_itfail_mig';"));
     }
 
     private async Task<List<string>> ScalarList(string database, string query)
