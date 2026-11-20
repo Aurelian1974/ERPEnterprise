@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>ERP · 10 Interfață și temă vizuală · paleta</title>
+<style>
+  :root {
+    /* Aceiasi tokeni ca src/Web/erp-web/src/theme/tokens.css. */
+    --navy-900: #0b1f3a; --navy-800: #102a4c; --navy-700: #16375f; --navy-600: #1d4a80;
+    --surface-input: #f4f8fd; --surface-card: #eaf1fb; --surface-app: #dde8f7; --surface-muted: #cfdcf0; --surface-sunken: #bcccea;
+    --ink: #14233b; --muted: #4a5a75; --on-dark: #fff; --on-dark-muted: #c8d6ee; --ok-on-dark: #6fd3a3; --warn-on-dark: #e0a21b;
+    --line: #bcccea; --line-strong: #566fa8;
+    --action: #2f6fed; --action-hover: #2459c9; --focus: #1d47a0;
+    --ok: #146b43; --ok-bg: #dcebe2; --warn: #8a5f00; --warn-bg: #f0e8d4; --error: #b3261e; --error-bg: #f4e0de;
+    --info: #2459c9; --info-bg: #dbe6fc; --surface-violet: #e6e2f7;
+    --accent-core: #2459c9; --accent-finance: #4b3fb8; --accent-sales: #0f6d78; --accent-purchasing: #8a5f00;
+    --accent-stock: #146b43; --accent-production: #8a2d6b; --accent-hr: #15607a; --accent-integrations: #a63a1f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1440px; background: var(--surface-app); color: var(--ink);
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif; font-size: 13px; }
+  .page { padding: 22px 26px; display: flex; flex-direction: column; gap: 14px; }
+  h1 { font-size: 20px; font-weight: 700; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 10px; }
+  h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 8px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .sw { border-radius: 10px; border: 1px solid var(--line); overflow: hidden; }
+  .sw .box { height: 54px; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .sw .cap { padding: 6px 8px; background: var(--surface-input); font-size: 10.5px; line-height: 1.35; }
+  .sw .cap b { display: block; font-size: 11px; }
+  .sw .cap span { color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+  .rows { display: flex; flex-direction: column; gap: 6px; }
+  .row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .chip { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); flex: none; }
+  .row b { min-width: 124px; }
+  .row code { font-family: ui-monospace, Consolas, monospace; color: var(--muted); min-width: 66px; }
+  .row em { font-style: normal; color: var(--muted); }
+  /* Harta zonelor, la scara mica */
+  .map { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; height: 232px; display: flex; flex-direction: column; }
+  .map .top { height: 34px; background: var(--navy-700); color: var(--on-dark); display: flex; align-items: center;
+    padding: 0 12px; font-weight: 700; font-size: 12px; border-bottom: 3px solid var(--accent-core); }
+  .map .body { flex: 1; display: flex; background: var(--surface-app); }
+  .map .side { width: 132px; background: var(--navy-800); color: var(--on-dark-muted); padding: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+  .map .side .on { background: var(--navy-700); color: var(--on-dark); border-radius: 6px; padding: 3px 6px; box-shadow: inset 3px 0 0 var(--accent-core); }
+  .map .side span { padding: 3px 6px; }
+  .map .work { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .map .fisa { background: var(--surface-card); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .map .filtre { background: var(--surface-muted); border-radius: 6px; padding: 4px 6px; font-size: 10.5px; color: var(--muted); }
+  .map .camp { background: var(--surface-input); border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 7px; font-size: 11px; }
+  .map .antet-grila { background: var(--surface-muted); border-radius: 6px 6px 0 0; padding: 4px 7px; font-size: 10.5px; font-weight: 700; color: var(--muted); }
+  .states { display: flex; gap: 8px; }
+  .state { flex: 1; border-radius: 8px; padding: 7px 9px; font-size: 11px; font-weight: 600; }
+  .state.ok { background: var(--ok-bg); color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
+  .state.warn { background: var(--warn-bg); color: var(--warn); box-shadow: inset 3px 0 0 var(--warn); }
+  .state.err { background: var(--error-bg); color: var(--error); box-shadow: inset 3px 0 0 var(--error); }
+  .state.info { background: var(--info-bg); color: var(--info); box-shadow: inset 3px 0 0 var(--info); }
+  .accents { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .acc { border-radius: 8px; padding: 7px 9px; font-size: 11px; font-weight: 700; background: var(--surface-input); }
+  .foot { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Paleta ERP · albastru deschis pal<small>Docs/arhitectura/10-interfata-tema · tokenii din src/Web/erp-web/src/theme/tokens.css</small></h1>
+
+  <div class="card">
+    <h2>Suprafețe pale · cu cât elementul e mai aproape de utilizator, cu atât e mai deschis</h2>
+    <div class="swatches">
+      <div class="sw"><div class="box" style="background:var(--surface-input)">Aa</div><div class="cap"><b>--surface-input</b><span>#f4f8fd</span> câmpuri</div></div>
+      <div class="sw"><div class="box" style="background:var(--surface-card)">Aa</div><div class="cap"><b>--surface-card</b><span>#eaf1fb</span> fișe, carduri</div></div>
+      <div class="sw"><div class="box" style="background:var(--surface-app)">Aa</div><div class="cap"><b>--surface-app</b><span>#dde8f7</span> canvas</div></div>
+      <div class="sw"><div class="box" style="background:var(--surface-muted)">Aa</div><div class="cap"><b>--surface-muted</b><span>#cfdcf0</span> filtre, antet grilă</div></div>
+      <div class="sw"><div class="box" style="background:var(--surface-sunken)">Aa</div><div class="cap"><b>--surface-sunken</b><span>#bcccea</span> zone adâncite</div></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>Zone închise · albul rămâne doar text pe ele</h2>
+      <div class="swatches" style="grid-template-columns:repeat(4,1fr)">
+        <div class="sw"><div class="box" style="background:var(--navy-900);color:var(--on-dark)">16,5</div><div class="cap"><b>--navy-900</b><span>#0b1f3a</span> panou brand</div></div>
+        <div class="sw"><div class="box" style="background:var(--navy-800);color:var(--on-dark)">14,4</div><div class="cap"><b>--navy-800</b><span>#102a4c</span> meniu lateral</div></div>
+        <div class="sw"><div class="box" style="background:var(--navy-700);color:var(--on-dark)">12,0</div><div class="cap"><b>--navy-700</b><span>#16375f</span> antet</div></div>
+        <div class="sw"><div class="box" style="background:var(--navy-600);color:var(--on-dark)">9,0</div><div class="cap"><b>--navy-600</b><span>#1d4a80</span> degrade, avatar</div></div>
+      </div>
+
+      <h2 style="margin-top:14px">Text, linii, acțiuni</h2>
+      <div class="rows">
+        <div class="row"><i class="chip" style="background:var(--ink)"></i><b>--ink</b><code>#14233b</code><em>text principal · 9,7–14,8 pe suprafețe</em></div>
+        <div class="row"><i class="chip" style="background:var(--muted)"></i><b>--muted</b><code>#4a5a75</code><em>text secundar · nu pe --surface-sunken (4,3)</em></div>
+        <div class="row"><i class="chip" style="background:var(--line)"></i><b>--line</b><code>#bcccea</code><em>linii decorative</em></div>
+        <div class="row"><i class="chip" style="background:var(--line-strong)"></i><b>--line-strong</b><code>#566fa8</code><em>conturul controalelor · ≥3:1 peste tot</em></div>
+        <div class="row"><i class="chip" style="background:var(--action)"></i><b>--action</b><code>#2f6fed</code><em>buton primar · alb pe el 4,6</em></div>
+        <div class="row"><i class="chip" style="background:var(--action-hover)"></i><b>--action-hover</b><code>#2459c9</code><em>hover, linkuri</em></div>
+        <div class="row"><i class="chip" style="background:var(--focus)"></i><b>--focus</b><code>#1d47a0</code><em>inel de focalizare · ≥5,3</em></div>
+      </div>
+
+      <h2 style="margin-top:14px">Stări · fundalul singur nu ajunge, de aceea banda</h2>
+      <div class="states">
+        <div class="state ok">Succes</div>
+        <div class="state warn">Avertizare</div>
+        <div class="state err">Eroare</div>
+        <div class="state info">Informație</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Harta zonelor</h2>
+      <div class="map">
+        <div class="top">ERP · antet --navy-700 + bandă de accent</div>
+        <div class="body">
+          <div class="side">
+            <span>Acasă</span>
+            <div class="on">Firme și structură</div>
+            <span>Configurare</span>
+            <span style="margin-top:auto;color:var(--on-dark-muted)">meniu --navy-800</span>
+          </div>
+          <div class="work">
+            <div class="fisa">
+              <div class="filtre">bară de filtre · --surface-muted</div>
+              <div class="camp">câmp de introducere · --surface-input</div>
+              <div class="antet-grila">antet de grilă · --surface-muted</div>
+              <div style="font-size:10.5px;color:var(--muted)">fișă · --surface-card, pe canvasul --surface-app</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:14px">Accentele pe module</h2>
+      <div class="accents">
+        <div class="acc" style="color:var(--accent-core);box-shadow:inset 3px 0 0 var(--accent-core)">Administrare</div>
+        <div class="acc" style="color:var(--accent-finance);box-shadow:inset 3px 0 0 var(--accent-finance)">Finanțe</div>
+        <div class="acc" style="color:var(--accent-sales);box-shadow:inset 3px 0 0 var(--accent-sales)">Vânzări</div>
+        <div class="acc" style="color:var(--accent-purchasing);box-shadow:inset 3px 0 0 var(--accent-purchasing)">Achiziții</div>
+        <div class="acc" style="color:var(--accent-stock);box-shadow:inset 3px 0 0 var(--accent-stock)">Stocuri</div>
+        <div class="acc" style="color:var(--accent-production);box-shadow:inset 3px 0 0 var(--accent-production)">Producție</div>
+        <div class="acc" style="color:var(--accent-hr);box-shadow:inset 3px 0 0 var(--accent-hr)">Salarizare</div>
+        <div class="acc" style="color:var(--accent-integrations);box-shadow:inset 3px 0 0 var(--accent-integrations)">Integrări</div>
+      </div>
+
+      <p class="foot" style="margin-top:12px">Contrastele scrise aici sunt calculate (WCAG 2.1), nu estimate. Imaginea se regenerează cu <code>node build/machete-png.mjs</code> pentru machete și din acest fișier pentru paletă.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

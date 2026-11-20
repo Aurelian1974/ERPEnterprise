@@ -1,6 +1,6 @@
 # ERP · 07 Stack tehnologic
 
-15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST4; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md)
+15 noiembrie 2026 · Aurelian · **Validat (15.11.2026)** pentru deciziile ST1–ST4; **ST5 (tema vizuală) propus pe 20.11.2026, de validat**; restul tabelelor consolidează sursele indicate, cu starea lor · Documente legate: [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md), [schița](../00-schita/ARHITECTURA_ERP.md), [Bune practici](../bune-practici/BUNE_PRACTICI.md), [08 Instalare și actualizare](../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md)
 
 Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu introduce alegeri noi în afara deciziilor ST1–ST4: fiecare rând trimite la documentul care l-a decis. La o contradicție, prevalează documentele validate (01, 08, Bune practici) față de schiță; o alegere doar „propusă” se validează înainte de folosire.
 
@@ -14,6 +14,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | ST2 | **Aplicația React stă în `src/Web/erp-web`** | Construcția ei produce fișiere statice copiate în `wwwroot` al `Erp.Host` la construirea kitului (08, secțiunea 1) |
 | ST3 | **Node.js: ultima versiune stabilă** (nu alpha, beta sau RC) | La 15.11.2026: **Node.js 26** (v26.13.1, linia LTS „Lithium”, publicată 10.11.2026, sursa: [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json)). Versiunea se fixează în depozit (`.nvmrc` și `engines` în `package.json`) și se actualizează la verificarea lunară a dependențelor (`SEC-04`) |
 | ST4 | **Componentele de interfață se iau din Syncfusion Essential JS 2 pentru React** (pachetele `@syncfusion/ej2-react-*`; licență comercială deținută de Aurelian) | Numai pachetele React, niciodată cele Blazor (ST1). Componentele Syncfusion se folosesc prin componente comune proprii (de exemplu o listă standard peste DataGrid), ca ecranele să păstreze același tipar și regulile `UI-*`. Cheia de licență nu stă în Git (secțiunea 4) |
+| ST5 | **Tema vizuală e albastru deschis pal, fără nicio suprafață albă** (Aurelian, 20.11.2026) | Paleta, harta zonelor și contrastele sunt în [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md); regulile obligatorii în Bune practici, `UI-13`–`UI-17`. Tokenii se scriu o singură dată, în `src/Web/erp-web/src/theme/tokens.css`, folosit și de paginile Razor `/account/*`. Tema Syncfusion Tailwind 3 se suprascrie prin variabilele ei în `theme/syncfusion.css`; nu se compilează o temă SCSS proprie |
 
 **De reverificat la ST3:** în aprilie 2027 va apărea Node.js 27, versiune „Current”, fără suport pe termen lung (doar liniile pare devin LTS). Atunci „ultima stabilă” și „ultima LTS” nu vor mai coincide; Aurelian confirmă care se urmează.
 
@@ -39,6 +40,7 @@ Acest document strânge într-un singur loc tehnologiile folosite de ERP. Nu int
 | Client API | Generat din OpenAPI, nu scris de mână | `UI-03` | Validat. Implementat: documentul `Microsoft.AspNetCore.OpenApi` (`/openapi/v1.json`, numai în `Development`), salvat în `src/Web/erp-web/openapi/erp-api.json`; tipurile cu `openapi-typescript`, apelurile cu `openapi-fetch` (`npm run api`) |
 | Calcule zecimale în UI | Totaluri de la server sau `decimal.js` cu aceleași reguli; valorile circulă ca string | `UI-05` | Validat |
 | Componente UI | Syncfusion Essential JS 2 pentru React (grile, formulare, calendare, grafice etc.) | ST4 | Validat |
+| Tema vizuală | Albastru deschis pal, fără suprafețe albe; tokeni CSS unici, tema Syncfusion Tailwind 3 suprascrisă prin variabile | ST5; [10 Interfață și temă vizuală](../10-interfata-tema/INTERFATA_TEMA.md); `UI-13`–`UI-17` | Propus (20.11.2026), de validat |
 | Tabele mari | Syncfusion DataGrid (paginare și filtrare pe server, `UI-*`) | ST4; schița propunea AG Grid sau TanStack Table | Propus (decurge din ST4), de confirmat |
 | Livrarea UI | Fișiere statice în `wwwroot` al `Erp.Host`, același origin cu API-ul (cookie `SameSite=Strict`) | 08, secțiunile 1 și 8.7 | Validat. Implementat: `package-kit.ps1` rulează `npm ci` și `npm run build` înainte de publicare; `index.html` fără cache, `assets/` (nume cu hash) în cache un an și comprimate Brotli/gzip la servire |
 | Rapoarte și documente | QuestPDF pentru facturi și state; ClosedXML pentru Excel; BI: Power BI Report Server sau Metabase, on-premise | Schița | Aprobat în schiță |

@@ -753,6 +753,23 @@ Machetele pentru autentificare și pagina de start (aprobată pe 14.11.2026):
 
 **Detalii de implementare (etapa 3, 15.11.2026):** interfața React din `src/Web/erp-web` (07, ST1–ST4) are antetul (firma curentă — dezactivată până la firme, etapa 4; notificările — dezactivate până la etapa 10; meniul utilizatorului cu Schimbă parola, Autentificare în doi pași, Ieșire), meniul lateral și pagina Acasă. Meniul arată un ecran numai dacă modulul e activ în licență și rolul are permisiunea; `GET /api/core/me` întoarce pentru asta și `modules` (modulele active) și `licenseState`. Pagina Acasă arată salutul, data (Europe/Bucharest), avertismentul de licență (expiră curând, grație, doar consultare) și modulele active; indicatorii, sarcinile „De rezolvat”, graficele și documentele recente din machetă vin cu modulele care dețin datele (Finanțe, Vânzări, Integrări). Fără sesiune, orice răspuns 401 trimite la `/account/login?returnUrl=…`, iar `IDS_PASSWORD_CHANGE_REQUIRED`/`IDS_TWO_FACTOR_SETUP_REQUIRED` la paginile de cont. `Erp.Host` servește `index.html` pe `/` și pe rutele aplicației (200 HTML, cerința 8.14); `/api/*` necunoscut răspunde 404 ProblemDetails.
 
+**Tema vizuală (20.11.2026):** toate ecranele, inclusiv paginile `/account/*`, folosesc paleta din
+[10 Interfață și temă vizuală](../../10-interfata-tema/INTERFATA_TEMA.md): albastru deschis pal pe
+suprafețe, nicio suprafață albă, antetul și meniul lateral în bleumarin ca repere de orientare, câte
+un accent pe modul. Culorile vin dintr-un singur fișier de tokeni, folosit și de React și de Razor
+(`UI-13`–`UI-17`). Machetele 01–10 au fost reculorate cu aceeași paletă, deci **sunt din nou de
+validat**; PNG-urile se regenerează din HTML cu `build/machete-png.mjs`.
+
+**Ecranul de autentificare, completări (20.11.2026):** pagina aduce acum elementele din macheta
+aprobată care lipseau — sigla clientului (fișierul din `Branding:LogoPath`, implicit
+`wwwroot/brand/logo.svg|png`; fără fișier, inițiala numelui din licență) și ilustrația decorativă din
+panoul de brand. În plus: avertisment „Caps Lock este activ” la câmpul parolă, butonul se dezactivează
+la trimitere (un dublu clic consuma două din cele 5 încercări), mesajul de blocare spune minutele
+rămase din `LockoutEnd` în loc de durata configurată, iar pe ecrane înguste panoul ascuns e înlocuit
+cu o bandă compactă de brand. Butonul „Autentificare cu contul Windows” din machetă **nu e
+implementat**: autentificarea AD rămâne o sarcină separată (10, secțiunea 9), iar până atunci butonul
+nu apare nici în machetă.
+
 **Date de exemplu comune tuturor machetelor** (verificate pe 14.11.2026): instalarea „Grupul Exemplu” are 4 firme (Exemplu Holding SA, Exemplu Distribuție SRL, Exemplu Producție SRL, Exemplu Construct SRL), licență pentru 11 din 14 module (fără WMS, TMS, CRM), 100 de utilizatori din care 86 activi. Meniul Administrare are trei intrări: Utilizatori, Firme și structură, Configurare. Politica de precizie STANDARD are preț 4, cantitate 3, valoare 2 zecimale.
 
 ### 11.1 Ecranul comun „Configurare” (adăugat pe 14.11.2026)
