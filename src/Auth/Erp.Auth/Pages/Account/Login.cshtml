@@ -3,6 +3,40 @@
 @{
     ViewData["Title"] = T["Login.PageTitle"];
 }
+
+@* Ilustratia decorativa a panoului de brand (macheta 01); panoul e deja aria-hidden. *@
+@section Left {
+    <div class="illustration">
+        <div class="ill-card ill-kpi">
+            <h3>@T["Ill.Sales"]</h3>
+            <div class="value">@T["Ill.SalesValue"]<small>@T["Ill.SalesTrend"]</small></div>
+            <div class="bars">
+                <i style="height:38%"></i><i style="height:52%"></i><i style="height:46%"></i><i style="height:61%"></i>
+                <i style="height:55%"></i><i style="height:69%"></i><i style="height:74%"></i><i class="hi" style="height:92%"></i>
+            </div>
+        </div>
+        <div class="ill-card ill-stock">
+            <h3>@T["Ill.Stock"]</h3>
+            <div class="ill-ring"><span>@T["Ill.StockValue"]</span></div>
+        </div>
+        <div class="ill-card ill-docs">
+            <h3>@T["Ill.Invoices"]</h3>
+            <div class="row"><span>FCT-2026-01245</span><span class="pill ok">@T["Ill.InvoiceValidated"]</span></div>
+            <div class="row"><span>FCT-2026-01246</span><span class="pill ok">@T["Ill.InvoiceValidated"]</span></div>
+            <div class="row"><span>FCT-2026-01247</span><span class="pill">@T["Ill.InvoicePending"]</span></div>
+        </div>
+        <div class="ill-card ill-modules">
+            <h3>@T["Ill.Modules"]</h3>
+            <div class="chips"><span>Contabilitate</span><span>Vânzări</span><span>Stocuri</span><span>Producție</span><span>Salarizare</span></div>
+        </div>
+    </div>
+    <div class="message">
+        <p class="headline">@T["Left.Headline1"]<br>@T["Left.Headline2"]</p>
+        <p>@T["Left.Text"]</p>
+        <div class="badges"><span>@T["Left.Badge1"]</span><span>@T["Left.Badge2"]</span><span>@T["Left.Badge3"]</span></div>
+    </div>
+}
+
 <h1>@T["Login.Title"]</h1>
 <p class="sub">@T["Login.Subtitle"]</p>
 
@@ -15,7 +49,7 @@ else if (Model.Info is not null)
     <div class="alert info" role="status">@Model.Info</div>
 }
 
-<form method="post" novalidate>
+<form method="post" novalidate data-single-submit>
     <input type="hidden" asp-for="ReturnUrl">
     <div class="field">
         <label for="UserName">@T["Field.UserName"]</label>
@@ -27,11 +61,12 @@ else if (Model.Info is not null)
             <input asp-for="Password" id="Password" type="password" value="" autocomplete="current-password" required>
             <button type="button" class="eye" data-toggle-password="Password" data-show="@T["Common.Show"]" data-hide="@T["Common.Hide"]">@T["Common.Show"]</button>
         </div>
+        <p class="caps" data-caps-for="Password" role="status">@T["Login.CapsLock"]</p>
     </div>
     <div class="between">
         <label class="check"><input asp-for="RememberMe" type="checkbox">@T["Login.RememberMe"]</label>
         <a href="/account/forgot">@T["Login.Forgot"]</a>
     </div>
-    <button type="submit" class="btn primary">@T["Login.Submit"]</button>
+    <button type="submit" class="btn primary" data-busy="@T["Login.Submitting"]">@T["Login.Submit"]</button>
 </form>
 <p class="help">@T["Login.Help"]</p>

@@ -41,6 +41,48 @@ export const menuGroups: readonly MenuGroup[] = [
   },
 ];
 
+/**
+ * Accentul fiecarui modul (10 Interfata si tema vizuala, secțiunea 5): banda de sub antet si marcajul
+ * intrarii active din meniu. Modulele fara accent propriu il iau pe cel al familiei lor.
+ */
+const moduleAccents: Readonly<Record<string, string>> = {
+  Core: '--accent-core',
+  Finance: '--accent-finance',
+  Reporting: '--accent-finance',
+  Sales: '--accent-sales',
+  Pos: '--accent-sales',
+  Crm: '--accent-sales',
+  Purchasing: '--accent-purchasing',
+  Inventory: '--accent-stock',
+  Wms: '--accent-stock',
+  Tms: '--accent-stock',
+  Manufacturing: '--accent-production',
+  Construction: '--accent-production',
+  Hr: '--accent-hr',
+  Integrations: '--accent-integrations',
+};
+
+/** Tokenul de accent al modulului; un modul necunoscut primeste accentul Nucleului. */
+export function moduleAccent(module: string): string {
+  return moduleAccents[module] ?? '--accent-core';
+}
+
+/** Modulul ecranului deschis, pentru banda de accent din antet. Potrivirea cea mai lunga castiga. */
+export function moduleForPath(groups: readonly MenuGroup[], pathname: string): string {
+  let bestModule: string | undefined;
+  let bestLength = -1;
+  for (const group of groups) {
+    for (const item of group.items) {
+      const matches = pathname === item.path || pathname.startsWith(`${item.path}/`);
+      if (matches && item.path.length > bestLength) {
+        bestModule = item.module ?? group.module;
+        bestLength = item.path.length;
+      }
+    }
+  }
+  return bestModule ?? 'Core';
+}
+
 export function canSee(item: MenuItem, access: MenuAccess): boolean {
   return (
     (item.module === undefined || access.modules.includes(item.module)) &&

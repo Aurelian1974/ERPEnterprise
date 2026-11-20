@@ -1,0 +1,24 @@
+@using Erp.Core.Contracts
+@inject ILicenseInfo License
+@inject ClientBranding Branding
+@*
+    Sigla si numele clientului, deasupra formularului (macheta 01). Fara fisier de siglă apare
+    initiala numelui din licenta; fara nume si fara utilizator nu apare nimic.
+*@
+@{
+    var userName = ViewData["UserName"] as string;
+    var customer = License.CustomerName;
+    var hasName = !string.IsNullOrEmpty(customer) || userName is not null;
+}
+@if (Branding.LogoUrl is { } logo)
+{
+    <div class="client-logo"><img src="@logo" alt="@T["Brand.LogoAlt", customer ?? string.Empty]"></div>
+}
+else if (!string.IsNullOrEmpty(customer))
+{
+    <div class="client-logo" aria-hidden="true"><span class="initial">@ClientBranding.Initial(customer)</span></div>
+}
+@if (hasName)
+{
+    <div class="client-name">@customer@(userName is not null ? (string.IsNullOrEmpty(customer) ? userName : " · " + userName) : "")</div>
+}

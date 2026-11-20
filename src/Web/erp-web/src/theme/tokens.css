@@ -1,0 +1,76 @@
+/*
+ * Tema vizuala a ERP-ului: albastru deschis pal, fara nicio suprafata alba (ST5, UI-13...UI-17).
+ * SURSA UNICA DE ADEVAR pentru culori. Specificatia, harta zonelor si contrastele calculate:
+ * Docs/arhitectura/10-interfata-tema/INTERFATA_TEMA.md
+ *
+ * Acelasi fisier e legat in Erp.Auth\wwwroot\tokens.css (Erp.Auth.csproj) si servit paginilor
+ * Razor /account/* ca _content/Erp.Auth/tokens.css, ca sa nu existe doua palete.
+ *
+ * Reguli: in restul codului numai var(--...). Alb (#fff) exclusiv ca text sau iconita pe zonele
+ * inchise --navy-600...--navy-900. Tokeni noi: intai in documentul 10, apoi aici.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Suprafete pale: cu cat elementul e mai aproape de utilizator, cu atat e mai deschis (10, 2) */
+  --surface-input: #f4f8fd;
+  --surface-card: #eaf1fb;
+  --surface-app: #dde8f7;
+  --surface-muted: #cfdcf0;
+  --surface-sunken: #bcccea;
+
+  /* Zone inchise: reperele de orientare (10, 3) */
+  --navy-900: #0b1f3a;
+  --navy-800: #102a4c;
+  --navy-700: #16375f;
+  --navy-600: #1d4a80;
+
+  /* Text */
+  --ink: #14233b;
+  --muted: #4a5a75;
+  --on-dark: #fff;
+  --on-dark-muted: #c8d6ee;
+  --ok-on-dark: #6fd3a3;
+  --warn-on-dark: #e0a21b;
+
+  /* Linii: --line decorativ, --line-strong conturul controalelor (>=3:1 pe orice suprafata) */
+  --line: #bcccea;
+  --line-strong: #566fa8;
+
+  /* Actiuni */
+  --action: #2f6fed;
+  --action-hover: #2459c9;
+  --focus: #1d47a0;
+
+  /* Stari. Fundalurile au aceeasi luminanta ca suprafetele, deci starea cere si banda si text. */
+  --ok: #146b43;
+  --ok-bg: #dcebe2;
+  --warn: #8a5f00;
+  --warn-bg: #f0e8d4;
+  --error: #b3261e;
+  --error-bg: #f4e0de;
+  --info: #2459c9;
+  --info-bg: #dbe6fc;
+
+  /* Pastile de clasificare (grup / firma / punct de lucru / locatie, macheta 03) */
+  --surface-violet: #e6e2f7;
+
+  /* Accentele pe module (10, 5); ca text numai pe --surface-card si --surface-app */
+  --accent-core: #2459c9;
+  --accent-finance: #4b3fb8;
+  --accent-sales: #0f6d78;
+  --accent-purchasing: #8a5f00;
+  --accent-stock: #146b43;
+  --accent-production: #8a2d6b;
+  --accent-hr: #15607a;
+  --accent-integrations: #a63a1f;
+
+  /* Accentul ecranului curent; fiecare ecran il pune pe al modulului sau */
+  --accent: var(--accent-core);
+
+  /* Umbra: numai pentru ce pluteste (popup, meniu derulant, toast) */
+  --shadow-float: 0 10px 28px rgb(11 31 58 / 18%);
+  --radius: 10px;
+  --radius-sm: 8px;
+}

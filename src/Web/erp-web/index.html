@@ -3,7 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#16375f" />
     <title>ERP</title>
+    <!--
+      Fundalul temei (ST5) inainte de incarcarea foilor de stil: altfel pagina ar clipi alb.
+      Valorile sunt --surface-app si --ink din src/theme/tokens.css; se schimba o data cu ele.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #dde8f7;
+        color: #14233b;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

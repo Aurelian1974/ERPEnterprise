@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Brand" xml:space="preserve"><value>ERP</value></data>
+  <data name="Brand.LogoAlt" xml:space="preserve"><value>Sigla {0}</value></data>
   <data name="Language" xml:space="preserve"><value>Română</value></data>
   <data name="Footer.Version" xml:space="preserve"><value>© {0} ERP · versiunea {1}</value></data>
   <data name="Common.Show" xml:space="preserve"><value>Arată</value></data>
@@ -24,12 +25,23 @@
   <data name="Left.Badge1" xml:space="preserve"><value>e-Factura și SAF-T</value></data>
   <data name="Left.Badge2" xml:space="preserve"><value>Date în timp real</value></data>
   <data name="Left.Badge3" xml:space="preserve"><value>Instalat la tine</value></data>
+  <data name="Ill.Sales" xml:space="preserve"><value>Vânzări · ultimele 8 luni</value></data>
+  <data name="Ill.SalesValue" xml:space="preserve"><value>4,82 mil. RON</value></data>
+  <data name="Ill.SalesTrend" xml:space="preserve"><value>▲ 12,4%</value></data>
+  <data name="Ill.Stock" xml:space="preserve"><value>Ocupare depozit</value></data>
+  <data name="Ill.StockValue" xml:space="preserve"><value>86%</value></data>
+  <data name="Ill.Invoices" xml:space="preserve"><value>Facturi trimise la ANAF</value></data>
+  <data name="Ill.InvoiceValidated" xml:space="preserve"><value>Validată</value></data>
+  <data name="Ill.InvoicePending" xml:space="preserve"><value>În procesare</value></data>
+  <data name="Ill.Modules" xml:space="preserve"><value>Module active</value></data>
   <data name="Login.PageTitle" xml:space="preserve"><value>Autentificare · ERP</value></data>
   <data name="Login.Title" xml:space="preserve"><value>Autentificare</value></data>
   <data name="Login.Subtitle" xml:space="preserve"><value>Introdu datele contului pentru a continua.</value></data>
   <data name="Login.RememberMe" xml:space="preserve"><value>Ține-mă minte</value></data>
   <data name="Login.Forgot" xml:space="preserve"><value>Am uitat parola</value></data>
   <data name="Login.Submit" xml:space="preserve"><value>Autentificare</value></data>
+  <data name="Login.Submitting" xml:space="preserve"><value>Se verifică…</value></data>
+  <data name="Login.CapsLock" xml:space="preserve"><value>Caps Lock este activ: parola se scrie cu majuscule.</value></data>
   <data name="Login.Help" xml:space="preserve"><value>Probleme la autentificare? Contactează administratorul sistemului.</value></data>
   <data name="Login.Required" xml:space="preserve"><value>Completați utilizatorul și parola.</value></data>
   <data name="Login.Invalid" xml:space="preserve"><value>Utilizatorul sau parola nu sunt corecte.</value></data>

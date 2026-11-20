@@ -1,22 +1,12 @@
-/* Culorile si dimensiunile din macheta 02 (Docs/.../01-nucleu/ecrane/02-acasa.html); aspect fluid, nu 1440 x 900 fix. */
+/*
+ * Dimensiunile din macheta 02 (Docs/.../01-nucleu/ecrane/02-acasa.html); aspect fluid, nu 1440 x 900 fix.
+ * Culorile vin numai din theme/tokens.css (ST5, UI-13); aici nu se scrie nicio culoare directa (UI-14).
+ */
 :root {
-  --navy-900: #0b1f3a;
-  --blue-500: #2f6fed;
-  --blue-600: #2459c9;
-  --blue-50: #eef3fd;
-  --ink: #1a2433;
-  --muted: #5b6676;
-  --line: #e3e7ee;
-  --bg: #f5f7fa;
-  --card: #fff;
-  --red: #d14343;
-  --red-50: #fbe9e9;
-  --amber: #8a5f00;
-  --amber-50: #fbf1dc;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   font-size: 13px;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--surface-app);
 }
 
 * {
@@ -41,7 +31,7 @@ p {
 }
 
 :focus-visible {
-  outline: 2px solid var(--blue-500);
+  outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 
@@ -59,7 +49,7 @@ p {
   left: -9999px;
   top: 8px;
   z-index: 10;
-  background: #fff;
+  background: var(--surface-card);
   padding: 8px 12px;
   border-radius: 8px;
 }
@@ -81,12 +71,22 @@ p {
 .top {
   height: 56px;
   flex: 0 0 56px;
-  background: var(--navy-900);
-  color: #fff;
+  background: var(--navy-700);
+  color: var(--on-dark);
   display: flex;
   align-items: center;
   padding: 0 20px;
   gap: 18px;
+  position: relative;
+}
+
+/* Banda de accent a modulului deschis: separa antetul de zona de lucru (UI-15). */
+.top::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--accent);
 }
 
 .brand {
@@ -95,7 +95,7 @@ p {
   gap: 10px;
   font-weight: 700;
   font-size: 17px;
-  color: #fff;
+  color: var(--on-dark);
   text-decoration: none;
 }
 
@@ -103,7 +103,7 @@ p {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #4f8cff, var(--blue-500));
+  background: linear-gradient(135deg, var(--action), var(--action-hover));
   display: grid;
   place-items: center;
   font-size: 13px;
@@ -124,7 +124,7 @@ p {
 
 .company-label {
   font-size: 10px;
-  color: #9fb2d1;
+  color: var(--on-dark-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -135,7 +135,7 @@ p {
   border-radius: 8px;
   border: 0;
   background: transparent;
-  color: #d6e0f0;
+  color: var(--on-dark-muted);
   font-size: 16px;
   display: grid;
   place-items: center;
@@ -148,7 +148,7 @@ p {
 .e-dropdown-btn.user,
 .e-dropdown-btn.user:hover,
 .e-dropdown-btn.user:focus {
-  color: #fff;
+  color: var(--on-dark);
   background: transparent;
   display: flex;
   align-items: center;
@@ -159,8 +159,8 @@ p {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #3b5f92;
-  color: #fff;
+  background: var(--navy-600);
+  color: var(--on-dark);
   display: inline-grid;
   place-items: center;
   font-weight: 700;
@@ -181,8 +181,8 @@ p {
 .side {
   width: 240px;
   flex: 0 0 240px;
-  background: #fff;
-  border-right: 1px solid var(--line);
+  background: var(--navy-800);
+  border-right: 1px solid var(--navy-900);
   padding: 14px 10px;
   display: flex;
   flex-direction: column;
@@ -202,7 +202,7 @@ p {
 .sec {
   font-size: 10.5px;
   font-weight: 700;
-  color: #6b7585;
+  color: var(--on-dark-muted);
   text-transform: uppercase;
   letter-spacing: 0.7px;
   padding: 10px 10px 6px;
@@ -214,29 +214,36 @@ p {
   gap: 10px;
   padding: 7px 10px;
   border-radius: 8px;
-  color: #334155;
+  color: var(--on-dark-muted);
   text-decoration: none;
+}
+
+.item:hover {
+  background: var(--navy-700);
+  color: var(--on-dark);
 }
 
 .item .ic {
   width: 18px;
   text-align: center;
-  color: #7b8698;
+  color: var(--on-dark-muted);
 }
 
 .item.active {
-  background: var(--blue-50);
-  color: var(--blue-600);
+  background: var(--navy-700);
+  color: var(--on-dark);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.item.active .ic {
-  color: var(--blue-600);
+.item.active .ic,
+.item:hover .ic {
+  color: var(--on-dark);
 }
 
 .item.open {
   font-weight: 600;
-  color: var(--ink);
+  color: var(--on-dark);
 }
 
 .item.sub {
@@ -247,11 +254,11 @@ p {
 .side-foot {
   margin-top: auto;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--navy-900);
   background: transparent;
   padding: 10px;
   text-align: left;
-  color: #6b7585;
+  color: var(--on-dark-muted);
   font: inherit;
   cursor: pointer;
 }
@@ -272,7 +279,7 @@ p {
 
 .crumb {
   font-size: 12px;
-  color: #6b7585;
+  color: var(--muted);
 }
 
 .head h1,
@@ -297,7 +304,7 @@ p {
 }
 
 .btn.ghost {
-  background: #fff;
+  background: var(--surface-card);
   border: 1px solid var(--line);
   color: var(--ink);
 }
@@ -309,17 +316,19 @@ p {
 }
 
 .banner.warn {
-  background: var(--amber-50);
-  color: var(--amber);
+  background: var(--warn-bg);
+  color: var(--warn);
+  box-shadow: inset 3px 0 0 var(--warn);
 }
 
 .banner.error {
-  background: var(--red-50);
-  color: var(--red);
+  background: var(--error-bg);
+  color: var(--error);
+  box-shadow: inset 3px 0 0 var(--error);
 }
 
 .card {
-  background: var(--card);
+  background: var(--surface-card);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px 16px;
@@ -349,8 +358,8 @@ p {
 }
 
 .chips li {
-  background: var(--blue-50);
-  color: var(--blue-600);
+  background: var(--info-bg);
+  color: var(--action-hover);
   border-radius: 999px;
   padding: 3px 10px;
   font-weight: 600;
@@ -395,9 +404,9 @@ p {
 }
 
 .btn.primary {
-  background: var(--blue-500);
-  border: 1px solid var(--blue-500);
-  color: #fff;
+  background: var(--action);
+  border: 1px solid var(--action);
+  color: var(--on-dark);
 }
 
 .btn.primary:disabled {
@@ -424,11 +433,14 @@ p {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
 }
 
 .chip {
-  border: 1px solid var(--line);
-  background: #fff;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-input);
   border-radius: 999px;
   padding: 3px 10px;
   font: inherit;
@@ -438,16 +450,16 @@ p {
 }
 
 .chip.on {
-  background: var(--blue-50);
-  border-color: var(--blue-50);
-  color: var(--blue-600);
+  background: var(--info-bg);
+  border-color: var(--action);
+  color: var(--action-hover);
   font-weight: 600;
 }
 
 .chip.static {
   cursor: default;
-  background: #f1f3f6;
-  border-color: #f1f3f6;
+  background: var(--surface-card);
+  border-color: var(--line);
 }
 
 .tree-node {
@@ -485,30 +497,30 @@ p {
 }
 
 .kind-group {
-  background: #ece8fb;
-  color: #5b3fc4;
+  background: var(--surface-violet);
+  color: var(--accent-finance);
 }
 
 .kind-company {
-  background: var(--blue-50);
-  color: var(--blue-600);
+  background: var(--info-bg);
+  color: var(--action-hover);
 }
 
 .kind-branch {
-  background: #e3f5ec;
-  color: #1a7f50;
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .kind-location {
-  background: #f1f3f6;
-  color: #4b5565;
+  background: var(--surface-muted);
+  color: var(--muted);
 }
 
 .tag {
   font-size: 10px;
   font-weight: 700;
-  background: var(--amber-50);
-  color: var(--amber);
+  background: var(--warn-bg);
+  color: var(--warn);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -561,12 +573,12 @@ p {
 }
 
 .pill.ok {
-  background: #e3f5ec;
-  color: #1a7f50;
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .pill.off {
-  background: #eef1f5;
+  background: var(--surface-muted);
   color: var(--muted);
 }
 
@@ -589,13 +601,13 @@ p {
 
 .tab.on,
 .tab.active {
-  color: var(--blue-600);
-  border-bottom-color: var(--blue-600);
+  color: var(--action-hover);
+  border-bottom-color: var(--action-hover);
   font-weight: 600;
 }
 
 .config-tabs {
-  background: #fff;
+  background: var(--surface-card);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 8px 14px;
@@ -612,7 +624,7 @@ p {
 .family-name {
   font-size: 10.5px;
   font-weight: 700;
-  color: #6b7585;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.7px;
 }
@@ -650,7 +662,7 @@ p {
 .section {
   font-size: 11px;
   font-weight: 700;
-  color: #6b7585;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.7px;
   border-top: 1px solid var(--line);
@@ -695,7 +707,7 @@ p {
 }
 
 .field-error {
-  color: var(--red);
+  color: var(--error);
   font-size: 12px;
 }
 
@@ -714,7 +726,7 @@ p {
 }
 
 .example {
-  color: var(--blue-600);
+  color: var(--action-hover);
   font-weight: 600;
 }
 
@@ -752,17 +764,17 @@ p {
 /* Nodul selectat din arbore (macheta 03): fundal albastru deschis, contur, denumirea in albastru. */
 .tree-card .e-treeview .e-list-item.e-active > .e-fullrow,
 .tree-card .e-treeview .e-list-item.e-active.e-hover > .e-fullrow {
-  background-color: var(--blue-50);
-  border: 1px solid #c9d8fb;
+  background-color: var(--info-bg);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
 }
 
 .tree-card .e-treeview .e-list-item.e-active > .e-text-content .tree-name {
-  color: var(--blue-600);
+  color: var(--action-hover);
 }
 
 .tree-card .e-treeview .e-list-item.e-hover:not(.e-active) > .e-fullrow {
-  background-color: #f5f7fa;
+  background-color: var(--surface-muted);
   border-radius: 8px;
 }
 
@@ -778,11 +790,11 @@ p {
 
 .module-list li::before {
   content: '✓ ';
-  color: var(--green, #1f9d63);
+  color: var(--ok);
 }
 
 .module-list li.off {
-  color: var(--muted, #8a94a3);
+  color: var(--muted);
 }
 
 .module-list li.off::before {
@@ -800,9 +812,10 @@ table.simple th,
 table.simple td {
   text-align: left;
   padding: 6px 8px;
-  border-bottom: 1px solid var(--line, #e3e7ee);
+  border-bottom: 1px solid var(--line);
 }
 
 table.simple tr.current td {
   font-weight: 600;
 }
+

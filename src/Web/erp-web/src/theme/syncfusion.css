@@ -1,0 +1,122 @@
+/*
+ * Tema componentelor Syncfusion (ST4) adusa pe paleta ERP (ST5, UI-17).
+ *
+ * Tema Tailwind 3 isi defineste culorile ca variabile CSS in :root (varianta deschisa) si in
+ * .e-dark-mode (varianta intunecata, nefolosita aici). Fisierul acesta se incarca dupa ea si ii
+ * rescrie numai variabilele, deci nu suprascrie clase .e-* si nu are nevoie de !important.
+ *
+ * Singurul loc din aplicatie unde se temizeaza Syncfusion. Variabilele de tip *-text-* care erau
+ * albe raman albe: sunt text pe fundal colorat, nu suprafete.
+ *
+ * Selectorul e „html:root”, nu „:root”: tema Syncfusion ajunge intr-un fisier separat la construire,
+ * iar ordinea fisierelor o decide impartirea in bucati din vite.config.ts. Cu specificitate mai mare,
+ * suprascrierea tine oricare ar fi ordinea.
+ */
+
+html:root {
+  /* Suprafetele de continut: card, camp, antet de grila, zona adancita */
+  --color-sf-content-bg-color: var(--surface-card);
+  --color-sf-content-bg-color-alt1: var(--surface-input);
+  --color-sf-content-bg-color-alt2: var(--surface-muted);
+  --color-sf-content-bg-color-alt3: var(--surface-sunken);
+  --color-sf-content-bg-color-hover: var(--surface-muted);
+  --color-sf-content-bg-color-focus: var(--surface-input);
+  --color-sf-content-bg-color-pressed: var(--surface-sunken);
+  --color-sf-content-bg-color-selected: var(--info-bg);
+  --color-sf-content-bg-color-dragged: var(--surface-muted);
+  --color-sf-content-bg-color-disabled: var(--surface-muted);
+
+  /* Textul de pe suprafete */
+  --color-sf-content-text-color: var(--ink);
+  --color-sf-content-text-color-hover: var(--ink);
+  --color-sf-content-text-color-focus: var(--ink);
+  --color-sf-content-text-color-pressed: var(--ink);
+  --color-sf-content-text-color-selected: var(--ink);
+  --color-sf-content-text-color-dragged: var(--ink);
+  --color-sf-content-text-color-disabled: var(--muted);
+
+  /* Camp de introducere */
+  --color-sf-text-input-bg-color: var(--surface-input);
+
+  /* Ce pluteste: popup, meniu derulant, lista de selectie */
+  --color-sf-flyout-bg-color: var(--surface-card);
+  --color-sf-flyout-bg-color-hover: var(--surface-muted);
+  --color-sf-flyout-bg-color-focus: var(--surface-input);
+  --color-sf-flyout-bg-color-pressed: var(--surface-sunken);
+  --color-sf-flyout-bg-color-selected: var(--info-bg);
+  --color-sf-flyout-bg-color-disabled: var(--surface-muted);
+
+  /* Grila */
+  --color-sf-table-bg-color-hover: var(--surface-muted);
+  --color-sf-table-bg-color-pressed: var(--surface-sunken);
+
+  /* Contururi: --line decorativ, --line-strong pentru controale (>=3:1), accent pe stare */
+  --color-sf-border: var(--line-strong);
+  --color-sf-border-light: var(--line);
+  --color-sf-border-dark: var(--line-strong);
+  --color-sf-border-hover: var(--line-strong);
+  --color-sf-border-focus: var(--focus);
+  --color-sf-border-pressed: var(--action-hover);
+  --color-sf-border-selected: var(--action);
+  --color-sf-border-disabled: var(--line);
+  --color-sf-border-dragged: var(--line);
+  --color-sf-border-error: var(--error);
+  --color-sf-border-success: var(--ok);
+  --color-sf-border-warning: var(--warn);
+
+  /* Actiunea primara: indigo-ul temei devine albastrul ERP */
+  --color-sf-primary: 47, 111, 237;
+  --color-sf-primary-bg-color: var(--action);
+  --color-sf-primary-bg-color-hover: var(--action-hover);
+  --color-sf-primary-bg-color-focus: var(--action-hover);
+  --color-sf-primary-bg-color-pressed: var(--focus);
+  --color-sf-primary-bg-color-disabled: var(--surface-sunken);
+  --color-sf-primary-border-color: var(--action);
+  --color-sf-primary-border-color-hover: var(--action-hover);
+  --color-sf-primary-border-color-focus: var(--action-hover);
+  --color-sf-primary-border-color-pressed: var(--focus);
+  --color-sf-primary-border-color-disabled: var(--surface-sunken);
+  --color-sf-primary-text-disabled: var(--muted);
+  --color-sf-primary-light: var(--line-strong);
+  --color-sf-primary-lighter: var(--info-bg);
+  --color-sf-primary-dark: var(--action-hover);
+  --color-sf-primary-darker: var(--focus);
+  --color-sf-primary-outline: var(--focus);
+
+  /* Actiunea secundara: butonul cu contur, pe suprafata de card */
+  --color-sf-secondary: var(--surface-card);
+  --color-sf-secondary-bg-color: var(--surface-card);
+  --color-sf-secondary-bg-color-hover: var(--surface-muted);
+  --color-sf-secondary-bg-color-focus: var(--surface-muted);
+  --color-sf-secondary-bg-color-pressed: var(--surface-sunken);
+  --color-sf-secondary-bg-color-disabled: var(--surface-muted);
+  --color-sf-secondary-text-color: var(--ink);
+  --color-sf-secondary-border-color: var(--line-strong);
+  --color-sf-secondary-outline: var(--line-strong);
+
+  /* Stari */
+  --color-sf-success: var(--ok);
+  --color-sf-warning: var(--warn);
+  --color-sf-danger: var(--error);
+  --color-sf-info: var(--info);
+
+  /* Mesaje si notificari (Toast, UI-11): banda si textul dau starea, nu doar fundalul */
+  --color-sf-msg-bg-color: var(--surface-card);
+  --color-sf-msg-bg-color-alt2: var(--surface-muted);
+  --color-sf-msg-success-bg-color: var(--ok-bg);
+  --color-sf-msg-success-bg-color-alt2: var(--ok-bg);
+  --color-sf-msg-warning-bg-color: var(--warn-bg);
+  --color-sf-msg-warning-bg-color-alt2: var(--warn-bg);
+  --color-sf-msg-danger-bg-color: var(--error-bg);
+  --color-sf-msg-danger-bg-color-alt2: var(--error-bg);
+  --color-sf-msg-info-bg-color: var(--info-bg);
+  --color-sf-msg-info-bg-color-alt2: var(--info-bg);
+
+  /* Pastile secundare (chip) */
+  --color-sf-chip-secondary-bg-color: var(--surface-input);
+  --color-sf-chip-secondary-bg-color-hover: var(--surface-muted);
+  --color-sf-chip-secondary-bg-color-pressed: var(--surface-sunken);
+  --color-sf-chip-secondary-bg-color-disabled: var(--surface-muted);
+  --color-sf-chip-secondary-border-color: var(--line);
+  --color-sf-chip-secondary-border-color-disabled: var(--line);
+}

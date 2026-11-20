@@ -34,6 +34,21 @@ public sealed class AccountRulesTests
     }
 
     [Fact]
+    public void Lockout_message_counts_the_minutes_left_not_the_configured_duration()
+    {
+        var now = new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.Zero);
+
+        // Blocarea a inceput acum 26 de minute din 30: au mai rămas 4, nu 30.
+        Assert.Equal(4, AccountFlow.RemainingLockoutMinutes(now.AddMinutes(4), now, 30));
+        // Rotunjire in sus, ca 3 minute si 10 secunde sa nu apara ca 3.
+        Assert.Equal(4, AccountFlow.RemainingLockoutMinutes(now.AddMinutes(3).AddSeconds(10), now, 30));
+        // Niciodata „0 de minute”, nici la blocare deja expirata.
+        Assert.Equal(1, AccountFlow.RemainingLockoutMinutes(now.AddSeconds(-5), now, 30));
+        // Fara moment de deblocare cunoscut: durata configurata.
+        Assert.Equal(30, AccountFlow.RemainingLockoutMinutes(null, now, 30));
+    }
+
+    [Fact]
     public void Recovery_codes_match_regardless_of_case_spaces_and_dashes()
     {
         Assert.Equal(UserAccountStore.HashRecoveryCode("ABCDE-12345"), UserAccountStore.HashRecoveryCode(" abcde 12345 "));

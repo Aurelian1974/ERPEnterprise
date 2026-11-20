@@ -29,6 +29,15 @@ public sealed class AccountFlow(AuthSessionStore sessions, ICurrentContext conte
         : user.TwoFactorRequired && !user.TwoFactorEnabled ? "/account/2fa"
         : SafeReturnUrl(returnUrl, url);
 
+    /// <summary>
+    /// Minutele rămase până la deblocarea contului, rotunjite în sus; cel puțin 1, ca mesajul să nu spună
+    /// „0 minute”. Fără un moment de deblocare cunoscut, se arată durata configurată.
+    /// </summary>
+    internal static int RemainingLockoutMinutes(DateTimeOffset? lockoutEnd, DateTimeOffset now, int configuredMinutes) =>
+        lockoutEnd is null
+            ? configuredMinutes
+            : (int)Math.Max(1, Math.Ceiling((lockoutEnd.Value - now).TotalMinutes));
+
     public static string SafeReturnUrl(string? returnUrl, IUrlHelper url) =>
         !string.IsNullOrEmpty(returnUrl) && url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/account", StringComparison.OrdinalIgnoreCase)
             ? returnUrl

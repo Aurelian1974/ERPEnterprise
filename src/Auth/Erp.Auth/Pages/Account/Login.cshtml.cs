@@ -21,6 +21,7 @@ public sealed class LoginModel(
     UserManager<UserAccount> users,
     AccountFlow flow,
     IOptions<AuthOptions> options,
+    TimeProvider clock,
     IStringLocalizer<AccountText> text) : PageModel
 {
     [BindProperty]
@@ -81,7 +82,9 @@ public sealed class LoginModel(
         if (result.IsLockedOut)
         {
             await flow.RecordAsync(userName, user, success: false, LoginFailures.LockedOut, lockedOut: !wasLocked);
-            Error = text["Login.LockedOut", options.Value.LockoutMinutes];
+            // Minutele rămase, nu durata configurată: blocarea poate fi început mai devreme.
+            var lockoutEnd = user is null ? null : await users.GetLockoutEndDateAsync(user);
+            Error = text["Login.LockedOut", AccountFlow.RemainingLockoutMinutes(lockoutEnd, clock.GetUtcNow(), options.Value.LockoutMinutes)];
         }
         else if (result.IsNotAllowed)
         {

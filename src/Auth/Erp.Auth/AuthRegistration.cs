@@ -36,6 +36,8 @@ public static class AuthRegistration
             }
         });
         services.AddScoped<Web.AccountFlow>();
+        // Sigla clientului se caută o singură dată pe disc, la pornire (02.01, 11).
+        services.TryAddSingleton<ClientBranding>();
         services.AddLocalization();
         services.AddHttpContextAccessor();
         services.TryAddSingleton(TimeProvider.System);

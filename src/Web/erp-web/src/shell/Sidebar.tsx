@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { NavLink } from 'react-router';
 import type { CurrentUser } from '../api/session';
 import { moduleName, t } from '../i18n';
-import { homeItem, menuGroups, visibleGroups, type MenuGroup } from './menu';
+import { homeItem, menuGroups, moduleAccent, visibleGroups, type MenuGroup } from './menu';
+
+/** Accentul modulului, pus pe grup: intrarea activa il arata ca banda (10, secțiunea 5). */
+function accentStyle(module: string): CSSProperties {
+  return { '--accent': `var(${moduleAccent(module)})` } as CSSProperties;
+}
 
 /** Meniul lateral (macheta 02): Acasa, apoi modulele active cu ecranele permise. */
 export function Sidebar({ user, groups = menuGroups }: { readonly user: CurrentUser; readonly groups?: readonly MenuGroup[] }) {
@@ -18,7 +23,13 @@ export function Sidebar({ user, groups = menuGroups }: { readonly user: CurrentU
 
       {visible.length > 0 && <div className="sec">{t('menu.modules')}</div>}
       {visible.map((group) => (
-        <div key={group.module} className="group" role="group" aria-label={group.label === undefined ? moduleName(group.module) : t(group.label)}>
+        <div
+          key={group.module}
+          className="group"
+          role="group"
+          style={accentStyle(group.module)}
+          aria-label={group.label === undefined ? moduleName(group.module) : t(group.label)}
+        >
           <div className="item open">
             <span className="ic" aria-hidden="true">{group.icon}</span>
             <span className="text">{group.label === undefined ? moduleName(group.module) : t(group.label)}</span>

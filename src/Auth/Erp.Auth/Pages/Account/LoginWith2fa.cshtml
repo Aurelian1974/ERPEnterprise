@@ -19,7 +19,7 @@
     <div class="alert error" role="alert">@Model.Error</div>
 }
 
-<form method="post" novalidate>
+<form method="post" novalidate data-single-submit>
     <input type="hidden" asp-for="ReturnUrl">
     <input type="hidden" asp-for="RememberMe">
     <input type="hidden" asp-for="UseRecoveryCode">

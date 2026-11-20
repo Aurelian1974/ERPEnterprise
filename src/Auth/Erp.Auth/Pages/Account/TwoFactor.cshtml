@@ -47,7 +47,7 @@ else
         <div class="qr" role="img" aria-label="@T["Setup2fa.Step1"]">@Html.Raw(Model.QrSvg)</div>
         <div class="small">@T["Setup2fa.ScanHelp"]<div class="key">@Model.SharedKey</div></div>
     </div>
-    <form method="post" novalidate>
+    <form method="post" novalidate data-single-submit>
         <div class="stp"><label for="Code" style="margin:0">@T["Setup2fa.Step2"]</label></div>
         <div class="field">
             <div class="input"><input asp-for="Code" id="Code" value="" class="code-input" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required></div>

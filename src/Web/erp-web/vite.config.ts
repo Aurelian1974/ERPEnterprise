@@ -37,7 +37,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    // tests/ pastreaza verificarile care citesc fisiere (tema, UI-14): au nevoie de API-ul Node, nu de DOM.
+    include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
     css: false,
   },
 });

@@ -10,6 +10,12 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Paleta temei (ST5) are o singura sursa: fisierul aplicatiei React. De aici ajunge activ static al
+       bibliotecii si e servit paginilor /account/* ca _content/Erp.Auth/tokens.css, deci nu exista doua palete. -->
+  <ItemGroup>
+    <Content Include="..\..\Web\erp-web\src\theme\tokens.css" Link="wwwroot\tokens.css" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.Data.SqlClient" />

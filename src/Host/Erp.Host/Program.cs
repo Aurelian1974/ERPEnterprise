@@ -121,7 +121,10 @@ internal static class PlaceholderPage
     public static string RedirectToLogin() => """
         <!DOCTYPE html>
         <html lang="ro">
-        <head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/account/login"><title>ERP</title></head>
+        <head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/account/login"><title>ERP</title>
+        <meta name="color-scheme" content="light">
+        <style>body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#dde8f7;color:#14233b}a{color:#2459c9}</style>
+        </head>
         <body><main><h1>ERP</h1><p><a href="/account/login">Autentificare</a></p></main></body>
         </html>
         """;
@@ -134,7 +137,8 @@ internal static class PlaceholderPage
             <!DOCTYPE html>
             <html lang="ro">
             <head><meta charset="utf-8"><title>ERP</title>
-            <style>body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#f4f6f9;color:#1f2937}main{max-width:640px;margin:10vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px}a,button{font:inherit}nav{display:flex;gap:16px;align-items:center;margin-top:24px}button{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px 16px;cursor:pointer}</style>
+            <meta name="color-scheme" content="light">
+            <style>body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#dde8f7;color:#14233b}main{max-width:640px;margin:10vh auto;background:#eaf1fb;border:1px solid #bcccea;border-radius:12px;padding:32px}a{color:#2459c9}a,button{font:inherit}nav{display:flex;gap:16px;align-items:center;margin-top:24px}button{border:1px solid #566fa8;background:#f4f8fd;color:#14233b;border-radius:8px;padding:8px 16px;cursor:pointer}</style>
             </head>
             <body><main>
             <h1>Bun venit, {{name}}</h1>

@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useRef, useSyncExternalStore, type CSSProperties } from 'react';
+import { useLocation } from 'react-router';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import { useQueryClient } from '@tanstack/react-query';
 import { companyStore } from '../app/company';
@@ -6,6 +7,7 @@ import { DropDownButtonComponent, type MenuEventArgs } from '@syncfusion/ej2-rea
 import type { CurrentUser } from '../api/session';
 import { t } from '../i18n';
 import { browser } from '../app/browser';
+import { menuGroups, moduleAccent, moduleForPath } from './menu';
 import { signOut } from './signOut';
 
 const companyFields = { text: 'text', value: 'value' };
@@ -65,6 +67,12 @@ function afterPopupRemoved(popupId: string, action: () => void): void {
 /** Antetul (macheta 02): firma curenta, notificari, utilizatorul. Firmele vin in etapa 4, notificarile in etapa 10. */
 export function Header({ user }: { readonly user: CurrentUser }) {
   const queryClient = useQueryClient();
+  // Banda de sub antet poarta accentul modulului ecranului deschis (10, secțiunea 5).
+  const { pathname } = useLocation();
+  const accent = useMemo(
+    () => ({ '--accent': `var(${moduleAccent(moduleForPath(menuGroups, pathname))})` }) as CSSProperties,
+    [pathname],
+  );
   // Lista stabila (TanStack Query pastreaza referinta cand datele nu se schimba): fara relegarea selectorului la randare (UI-12).
   const companyOptions = useMemo(() => user.companies.map((c) => ({ value: c.id, text: c.name })), [user.companies]);
   // Firma aleasa se afiseaza imediat (din companyStore), nu abia dupa raspunsul /me: altfel selectorul ar primi valoarea
@@ -106,7 +114,7 @@ export function Header({ user }: { readonly user: CurrentUser }) {
     afterPopupRemoved('company_popup', applyPendingCompany);
   }, [applyPendingCompany]);
   return (
-    <header className="top">
+    <header className="top" style={accent}>
       <a className="brand" href="/">
         <span className="mark" aria-hidden="true">E</span>
         {t('app.name')}
