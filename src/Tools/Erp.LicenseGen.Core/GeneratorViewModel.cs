@@ -221,7 +221,18 @@ public sealed partial class GeneratorViewModel : ObservableObject
             return;
         }
 
-        using var key = keys.LoadActive();
+        LicenseSigningKey? key;
+        try
+        {
+            key = keys.LoadActive();
+        }
+        catch (KeyStoreException ex)
+        {
+            dialogs.ShowError("Cheia nu se poate citi", ex.Message + Environment.NewLine + "Restaurați cheia cu „Chei” → „Importă din copia de siguranță”.");
+            return;
+        }
+
+        using var _ = key;
         if (key is null)
         {
             dialogs.ShowError("Lipsește cheia", "Configurați cheile cu butonul „Chei”.");
@@ -323,10 +334,22 @@ public sealed partial class GeneratorViewModel : ObservableObject
             all[id] = LicenseKeys.Embedded.Find(id)!;
         }
 
-        using var local = keys.LoadActive();
-        if (local is not null)
+        LicenseSigningKey? local = null;
+        try
         {
-            all[local.KeyId] = local.ToPublicKey();
+            local = keys.LoadActive();
+        }
+        catch (KeyStoreException)
+        {
+            // Cheia locala nu se poate citi: se folosesc doar cheile publice incorporate.
+        }
+
+        using (local)
+        {
+            if (local is not null)
+            {
+                all[local.KeyId] = local.ToPublicKey();
+            }
         }
 
         return new LicenseKeyRing(all.Values);

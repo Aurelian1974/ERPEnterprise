@@ -26,13 +26,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ClearPasswords(object sender, RoutedEventArgs e)
-    {
-        foreach (var box in FindPasswordBoxes(this))
+    // Click se ridica inainte de comanda: stergerea trebuie amanata, altfel ViewModel-ul primeste parole goale.
+    private void ClearPasswords(object sender, RoutedEventArgs e) =>
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () =>
         {
-            box.Clear();
-        }
-    }
+            foreach (var box in FindPasswordBoxes(this))
+            {
+                box.Clear();
+            }
+        });
 
     private static IEnumerable<System.Windows.Controls.PasswordBox> FindPasswordBoxes(DependencyObject parent)
     {

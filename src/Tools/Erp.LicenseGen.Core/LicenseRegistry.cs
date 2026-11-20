@@ -29,15 +29,32 @@ public sealed class LicenseRegistry(string path)
             return [];
         }
 
-        return File.ReadAllLines(Path, Encoding.UTF8).Skip(1).Where(l => l.Length > 0).Select(Parse).ToList();
+        // Randurile intr-un format vechi sau deteriorat sunt ignorate; un registru ilizibil nu trebuie sa opreasca aplicatia la pornire.
+        return DataLines().Select(TryParse).OfType<IssuedLicense>().ToList();
     }
 
     /// <summary>LIC-&lt;AAAA&gt;-&lt;NNNNNN&gt;: anul emiterii si urmatorul numar de ordine din registru (unic pe toti anii).</summary>
     public string NextLicenseId(DateOnly today)
     {
-        var last = ReadAll().Select(l => int.TryParse(l.LicenseId.AsSpan(l.LicenseId.Length - 6), CultureInfo.InvariantCulture, out var n) ? n : 0)
+        // Numarul se citeste din prima coloana si pentru randurile nerecunoscute, ca sa nu se reutilizeze un numar deja emis.
+        var last = DataLines().Select(l => Split(l)[0]).Select(id => id.Length >= 6 && int.TryParse(id.AsSpan(id.Length - 6), NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : 0)
             .DefaultIfEmpty(0).Max();
         return $"LIC-{today.Year:D4}-{last + 1:D6}";
+    }
+
+    private IEnumerable<string> DataLines() =>
+        File.Exists(Path) ? File.ReadAllLines(Path, Encoding.UTF8).Skip(1).Where(l => l.Length > 0) : [];
+
+    private static IssuedLicense? TryParse(string line)
+    {
+        try
+        {
+            return Parse(line);
+        }
+        catch (Exception ex) when (ex is FormatException or IndexOutOfRangeException or ArgumentOutOfRangeException or OverflowException)
+        {
+            return null;
+        }
     }
 
     public void Append(License license, byte keyId, string fileName)

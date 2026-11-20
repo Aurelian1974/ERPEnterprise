@@ -59,7 +59,8 @@ public static class LicenseKeys
 {
     private static readonly EmbeddedKey[] Entries =
     [
-        // ErpLicenseGen › Chei: new(KeyId, "<cheia publica, Base64>", "<cheia AES mascata, Base64>", "<masca, Base64>"),
+        new(1, "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEd/oaommCxObNNIBql47l8MT8jEkgr3LJmp6TRphM5NaHc5ElBIqHsuAhRVf4G6nEIrI2b8UFujD+YKrd+ZGzzw==", "0FyhT0QAs56dlfYLga3R9maxWlJ8vM+iOdrYZNbprB4=", "GrwT1e+U2ksecBJkwiz323dPZeIfAB9ln7W1H7XMge8="),
+        new(2, "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeS0QasyWzJEBGGLWrqiFL8NEyBpCTpV5tzLnoXrlyXHDZ3Lkee9bSumVq5jquFveXdG2zQ/pRi9rlWOkgUHlGA==", "6J+7ZYrB5Ps/ckXvZGvclf3z3vD/H/2Oq26c5mT8+qw=", "n9yrqXheg0zPGS99svZF8JOE/14H36ErWqfiWQ+jsZg="),
     ];
 
     public static LicenseKeyRing Embedded { get; } = new(Entries.Select(e => e.ToKey()));
