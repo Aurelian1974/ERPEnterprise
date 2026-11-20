@@ -27,6 +27,7 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Settings.ISettingsStore, SettingsStore>();
         services.AddScoped<Application.Properties.IPropertyDefinitionStore, PropertyDefinitionStore>();
         services.AddScoped<Application.Partners.IImportJobStore, ImportJobStore>();
+        services.AddScoped<Application.Items.IItemStore, Items.ItemStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));
         services.AddScoped<Application.Anaf.IAnafVatRegistry, Anaf.AnafVatRegistry>();
         services.AddSingleton<ITransientFailureDetector, SqlServerTransientFailures>();

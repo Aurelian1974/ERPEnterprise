@@ -43,7 +43,7 @@ public sealed record ExistingPartner(int Id, string Code, string? FiscalCode, st
 
 public interface IImportJobStore
 {
-    Task<SavedEntity> CreateAsync(string entityType, int companyId, PartnerImportAnalysis analysis, string report, string payload, int userId, CancellationToken ct);
+    Task<SavedEntity> CreateAsync(NewImportJob job, int userId, CancellationToken ct);
 
     Task<ImportJobRecord?> GetAsync(int id, bool forUpdate, bool withData, CancellationToken ct);
 
@@ -53,6 +53,10 @@ public interface IImportJobStore
 
     Task<IReadOnlyList<ExistingPartner>> FindPartnersAsync(IReadOnlyList<(int Row, string? Code, string? FiscalCode)> keys, CancellationToken ct);
 }
+
+/// <summary>Un import validat, de salvat ca job (orice entitate).</summary>
+public sealed record NewImportJob(string EntityType, int CompanyId, string FileName, bool AnafCheck, int TotalRows, int ValidRows, int ErrorRows,
+    int WarningRows, string Report, string Payload);
 
 public static class ImportStatus
 {
@@ -467,8 +471,9 @@ internal sealed class CreatePartnerImportJobHandler(IImportJobStore jobs, ICurre
     public async Task<ImportJobDto> Handle(CreatePartnerImportJob request, CancellationToken cancellationToken)
     {
         var analysis = request.Analysis;
-        var saved = await jobs.CreateAsync("Partner", context.CompanyId, analysis, JsonSerializer.Serialize(analysis.Report, ImportJson.Options),
-            JsonSerializer.Serialize(analysis.ValidRows, ImportJson.Options), context.UserId, cancellationToken).ConfigureAwait(false);
+        var saved = await jobs.CreateAsync(new NewImportJob("Partner", context.CompanyId, analysis.FileName, analysis.AnafCheck, analysis.TotalRows,
+            analysis.ValidRows.Count, analysis.Report.ErrorRows.Count, analysis.WarningRows, JsonSerializer.Serialize(analysis.Report, ImportJson.Options),
+            JsonSerializer.Serialize(analysis.ValidRows, ImportJson.Options)), context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Core.ImportJob", saved.Id, new
         {
             EntityType = "Partner", analysis.FileName, analysis.TotalRows, ValidRows = analysis.ValidRows.Count,
@@ -583,16 +588,19 @@ internal sealed class ListImportJobsHandler(IImportJobStore jobs) : IQueryHandle
         jobs.ListAsync(request.EntityType, cancellationToken);
 }
 
-internal sealed class DownloadImportErrorsHandler(IImportJobStore jobs, IPartnerSpreadsheet spreadsheet, PartnerSheetListsProvider lists)
-    : IQueryHandler<DownloadImportErrors, FileDto>
+internal sealed class DownloadImportErrorsHandler(IImportJobStore jobs, IPartnerSpreadsheet spreadsheet, PartnerSheetListsProvider lists,
+    Items.IItemStore items, ICurrentContext context) : IQueryHandler<DownloadImportErrors, FileDto>
 {
     public async Task<FileDto> Handle(DownloadImportErrors request, CancellationToken cancellationToken)
     {
         var record = await jobs.GetAsync(request.JobId, forUpdate: false, withData: true, cancellationToken).ConfigureAwait(false) ?? throw ImportJson.NotFound();
         var report = record.ErrorReport is null ? null : JsonSerializer.Deserialize<ImportReport>(record.ErrorReport, ImportJson.Options);
         var rows = report?.ErrorRows ?? [];
-        var content = spreadsheet.Write([.. rows.Select(r => r.Values)], await lists.GetAsync(cancellationToken).ConfigureAwait(false),
-            [.. rows.Select(r => $"Rândul {r.RowNumber}: {r.Message}")]);
+        IReadOnlyList<string> messages = [.. rows.Select(r => $"Rândul {r.RowNumber}: {r.Message}")];
+        var content = record.Job.EntityType == "Item"
+            ? spreadsheet.Write(Items.ItemSheet.Definition, [.. rows.Select(r => r.Values)],
+                Items.ItemSheet.Lists(await items.GetLookupsAsync(context.CompanyId, cancellationToken).ConfigureAwait(false)), messages)
+            : spreadsheet.Write([.. rows.Select(r => r.Values)], await lists.GetAsync(cancellationToken).ConfigureAwait(false), messages);
         var name = Path.GetFileNameWithoutExtension(record.Job.FileName);
         return new FileDto($"{name}-erori.xlsx", FileDto.Xlsx, content);
     }

@@ -9,12 +9,11 @@ namespace Erp.Core.Infrastructure.Data;
 /// <summary>Joburile de import si cautarea partenerilor existenti prin core.usp_ImportJob_* si core.usp_Partner_FindForImport (NET-06).</summary>
 public sealed class ImportJobStore(IDbSession session) : IImportJobStore
 {
-    public Task<SavedEntity> CreateAsync(string entityType, int companyId, PartnerImportAnalysis analysis, string report, string payload, int userId,
-        CancellationToken ct) => session.Connection.QuerySingleAsync<SavedEntity>(Command("core.usp_ImportJob_Create", new
+    public Task<SavedEntity> CreateAsync(NewImportJob job, int userId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<SavedEntity>(Command("core.usp_ImportJob_Create", new
         {
-            EntityType = Ansi(entityType), CompanyId = companyId, analysis.FileName, analysis.AnafCheck, analysis.TotalRows,
-            ValidRows = analysis.ValidRows.Count, ErrorRows = analysis.Report.ErrorRows.Count, analysis.WarningRows,
-            ErrorReport = report, Payload = payload, UserId = userId,
+            EntityType = Ansi(job.EntityType), job.CompanyId, job.FileName, job.AnafCheck, job.TotalRows, job.ValidRows, job.ErrorRows,
+            job.WarningRows, ErrorReport = job.Report, Payload = job.Payload, UserId = userId,
         }, ct));
 
     public async Task<ImportJobRecord?> GetAsync(int id, bool forUpdate, bool withData, CancellationToken ct)

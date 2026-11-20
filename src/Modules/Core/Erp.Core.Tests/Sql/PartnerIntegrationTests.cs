@@ -79,7 +79,7 @@ public sealed partial class PartnerIntegrationTests(PartnerDatabase database) : 
         var context = new FakeContext { UserId = database.AdminId, CompanyId = companyId ?? database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.PartnerView, CorePermissions.PartnerManage, CorePermissions.PartnerViewPersonalData,
             CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage, CorePermissions.SettingsManage, CorePermissions.PropertyManage,
-            CorePermissions.ImportRun]);
+            CorePermissions.ImportRun, CorePermissions.ItemView, CorePermissions.ItemManage]);
         context.Permissions.ExceptWith(without);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);

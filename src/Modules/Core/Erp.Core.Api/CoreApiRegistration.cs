@@ -6,6 +6,7 @@ using Erp.Core.Application.Partners;
 using Erp.Core.Application.Anaf;
 using Erp.Core.Application.Settings;
 using Erp.Core.Application.Properties;
+using Erp.Core.Application.Items;
 using Erp.Core.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -50,6 +51,7 @@ public static class CoreApiRegistration
         MapOrganization(core);
         MapPartners(core);
         MapSettings(core);
+        MapItems(core);
         MapLicense(core);
         return endpoints;
     }
@@ -223,6 +225,46 @@ public static class CoreApiRegistration
             .WithName("UpdatePartnerGroup").Saves();
     }
 
+    // Articole (macheta 05/05b) si nomenclatoarele lor (Configurare › Nomenclatoare, macheta 07).
+    private static void MapItems(RouteGroupBuilder core)
+    {
+        core.MapGet("/items", ([AsParameters] SearchItems query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchItems").Produces<ItemPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/items/export", async ([AsParameters] ExportItems query, ISender sender, CancellationToken ct) => File(await sender.Send(query, ct)))
+            .WithName("ExportItems").Produces<byte[]>(StatusCodes.Status200OK, FileDto.Xlsx).ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/items/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetItemLookups(), ct))
+            .WithName("GetItemLookups").Produces<ItemLookupsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/items/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItem(id), ct))
+            .WithName("GetItem").Produces<ItemDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/items/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemHistory(id), ct))
+            .WithName("GetItemHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/items", (SaveItem body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateItem").Saves();
+        core.MapPut("/items/{id:int}", (int id, SaveItem body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateItem").Saves();
+        core.MapPost("/items/{itemId:int}/barcodes", (int itemId, SaveItemBarcode body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ItemId = itemId }, ct))
+            .WithName("CreateItemBarcode").Saves();
+        core.MapPut("/items/{itemId:int}/barcodes/{id:int}", (int itemId, int id, SaveItemBarcode body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id, ItemId = itemId }, ct))
+            .WithName("UpdateItemBarcode").Saves();
+
+        core.MapPut("/vat-rates", (SaveVatRates body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveVatRates").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapPut("/units-of-measure", (SaveUnitsOfMeasure body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveUnitsOfMeasure").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapPost("/uom-sets", (SaveUomSet body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateUomSet").Saves();
+        core.MapPut("/uom-sets/{id:int}", (int id, SaveUomSet body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateUomSet").Saves();
+        core.MapPost("/item-groups", (SaveItemGroup body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateItemGroup").Saves();
+        core.MapPut("/item-groups/{id:int}", (int id, SaveItemGroup body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateItemGroup").Saves();
+    }
+
     // Configurare › Import (macheta 07g; fluxul 02.01, 4.8): sablon, incarcare si validare, confirmare in loturi, randuri cu erori.
     private static void MapImport(RouteGroupBuilder core)
     {
@@ -239,12 +281,26 @@ public static class CoreApiRegistration
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        core.MapGet("/import/items/template", async (ISender sender, CancellationToken ct) => File(await sender.Send(new GetItemImportTemplate(), ct)))
+            .WithName("GetItemImportTemplate").Produces<byte[]>(StatusCodes.Status200OK, FileDto.Xlsx).ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/import/items", async (UploadItemImport body, ISender sender, CancellationToken ct) =>
+            {
+                var analysis = await sender.Send(new AnalyzeItemImport(body.FileName, body.FileBase64), ct);
+                return await sender.Send(new CreateItemImportJob(analysis), ct);
+            })
+            .WithName("UploadItemImport").Produces<ImportJobDto>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden);
+
         // Confirmarea: loturi de cate 500 de randuri, fiecare in tranzactia lui (4.8 pasul 4). Un lot esuat lasa importul partial.
         core.MapPost("/import/{id:int}/confirm", async (int id, ISender sender, CancellationToken ct) =>
             {
                 try
                 {
-                    while (!(await sender.Send(new ImportPartnerBatch(id), ct)).Done)
+                    var entityType = (await sender.Send(new GetImportJob(id), ct)).EntityType;
+                    while (!(entityType == "Item"
+                        ? await sender.Send(new ImportItemBatch(id), ct)
+                        : await sender.Send(new ImportPartnerBatch(id), ct)).Done)
                     {
                     }
                 }
@@ -283,6 +339,9 @@ public static class CoreApiRegistration
 
 /// <summary>Fisierul de import: numele si continutul .xlsx in Base64; AnafCheck = completarea datelor dupa CUI de la ANAF.</summary>
 public sealed record UploadPartnerImport(string FileName, string FileBase64, bool AnafCheck);
+
+/// <summary>Fisierul de import articole: numele si continutul .xlsx in Base64.</summary>
+public sealed record UploadItemImport(string FileName, string FileBase64);
 
 /// <summary>Corpul cererii de inchidere a unei serii: versiunea vazuta de utilizator.</summary>
 public sealed record CloseNumberSeriesBody(byte[] RowVersion);

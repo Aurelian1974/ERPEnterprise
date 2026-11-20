@@ -215,11 +215,14 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
 /// <summary>Valorile proprietatilor se valideaza dupa tipul definitiei (02.01, 3.2); cea obligatorie se cere doar daca se aplica rolului.</summary>
 internal static class PartnerPropertyRules
 {
-    public static void Validate(SavePartner request, PartnerLookupsDto lookups)
+    public static void Validate(SavePartner request, PartnerLookupsDto lookups) =>
+        Validate(request.Properties!, lookups, d => PartnerRules.Applies(d.AppliesTo, request.IsCustomer, request.IsSupplier));
+
+    /// <summary>Aceleasi reguli pentru orice entitate cu proprietati (parteneri, articole); applies = proprietatea obligatorie se cere.</summary>
+    public static void Validate(IReadOnlyList<PartnerPropertyValue> values, PartnerLookupsDto lookups, Func<PropertyDefinitionDto, bool> applies)
     {
         var errors = new Dictionary<string, string[]>();
         var definitions = lookups.Properties.ToDictionary(d => d.Id);
-        var values = request.Properties!;
         foreach (var group in values.GroupBy(v => v.PropertyDefinitionId))
         {
             if (!definitions.TryGetValue(group.Key, out var definition))
@@ -235,7 +238,7 @@ internal static class PartnerPropertyRules
             }
         }
 
-        foreach (var definition in lookups.Properties.Where(d => d.IsRequired && PartnerRules.Applies(d.AppliesTo, request.IsCustomer, request.IsSupplier)))
+        foreach (var definition in lookups.Properties.Where(d => d.IsRequired && applies(d)))
         {
             if (values.All(v => v.PropertyDefinitionId != definition.Id))
             {

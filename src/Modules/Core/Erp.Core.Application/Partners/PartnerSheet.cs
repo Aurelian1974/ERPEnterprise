@@ -13,10 +13,36 @@ public sealed record FileDto(string FileName, string ContentType, byte[] Content
 /// <summary>O coloana a foii de parteneri: cheia tehnica, antetul din Excel si un exemplu pentru sablon.</summary>
 public sealed record PartnerSheetColumn(string Key, string Header, bool Required, string Example);
 
-/// <summary>Un rand citit din Excel: numarul randului din foaie si valorile, in ordinea coloanelor <see cref="PartnerSheet.Columns"/>.</summary>
-public sealed record PartnerSheetRow(int RowNumber, IReadOnlyList<string?> Values)
+/// <summary>Un rand citit din Excel: numarul randului din foaie si valorile, in ordinea coloanelor foii (implicit cea de parteneri).</summary>
+public sealed record PartnerSheetRow(int RowNumber, IReadOnlyList<string?> Values, SheetDefinition? Sheet = null)
 {
-    public string? this[string key] => Values[PartnerSheet.IndexOf(key)];
+    public string? this[string key] => Values[(Sheet ?? PartnerSheet.Definition).IndexOf(key)];
+}
+
+/// <summary>O lista de valori permise (foaia „Liste”), legata de coloanele care o folosesc ca lista derulanta.</summary>
+public sealed record SheetList(string Header, IReadOnlyList<string> Values, IReadOnlyList<string> ColumnKeys);
+
+/// <summary>Foaia Excel a unei entitati (parteneri, articole): numele foii si coloanele, in ordine.</summary>
+public sealed class SheetDefinition(string name, IReadOnlyList<PartnerSheetColumn> columns)
+{
+    public string Name { get; } = name;
+
+    public IReadOnlyList<PartnerSheetColumn> Columns { get; } = columns;
+
+    public int IndexOf(string key)
+    {
+        for (var i = 0; i < Columns.Count; i++)
+        {
+            if (Columns[i].Key == key)
+            {
+                return i;
+            }
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(key), key, "Coloana nu există.");
+    }
+
+    public string Header(string key) => Columns[IndexOf(key)].Header;
 }
 
 /// <summary>Listele de valori puse in sablon (foaia „Liste”) si folosite la validarea listelor derulante din Excel.</summary>
@@ -25,6 +51,11 @@ public sealed record PartnerSheetLists(IReadOnlyList<string> Groups, IReadOnlyLi
 /// <summary>Citirea si scrierea foilor Excel de parteneri (ClosedXML, in Infrastructure).</summary>
 public interface IPartnerSpreadsheet
 {
+    /// <summary>Foaia unei entitati oarecare, cu listele ei de valori; errors adauga coloana „Eroare”.</summary>
+    byte[] Write(SheetDefinition sheet, IReadOnlyList<IReadOnlyList<string?>> rows, IReadOnlyList<SheetList> lists, IReadOnlyList<string>? errors = null);
+
+    IReadOnlyList<PartnerSheetRow> Read(SheetDefinition sheet, byte[] content);
+
     /// <summary>Foaia „Parteneri” cu antetul coloanelor si randurile date; errorColumn adauga la final coloana „Eroare”.</summary>
     byte[] Write(IReadOnlyList<IReadOnlyList<string?>> rows, PartnerSheetLists lists, IReadOnlyList<string>? errors = null);
 
@@ -67,20 +98,21 @@ public static class PartnerSheet
 
     public static readonly IReadOnlyList<string> TypeNames = ["Juridică RO", "Juridică UE", "Juridică non-UE", "Persoană fizică"];
 
-    public static int IndexOf(string key)
-    {
-        for (var i = 0; i < Columns.Count; i++)
-        {
-            if (Columns[i].Key == key)
-            {
-                return i;
-            }
-        }
+    public static readonly SheetDefinition Definition = new(SheetName, Columns);
 
-        throw new ArgumentOutOfRangeException(nameof(key), key, "Coloana nu există.");
-    }
+    public static int IndexOf(string key) => Definition.IndexOf(key);
 
-    public static string Header(string key) => Columns[IndexOf(key)].Header;
+    public static string Header(string key) => Definition.Header(key);
+
+    /// <summary>Listele foii de parteneri: tipurile, Da/Nu, grupele, judetele si tarile.</summary>
+    public static IReadOnlyList<SheetList> Lists(PartnerSheetLists lists) =>
+    [
+        new(Header("PartnerType"), TypeNames, ["PartnerType"]),
+        new("Da / Nu", ["Da", "Nu"], ["IsCustomer", "IsSupplier", "VatPayer", "VatOnCollection", "AnafInactive", "IsActive"]),
+        new(Header("PartnerGroup"), lists.Groups, ["PartnerGroup"]),
+        new(Header("County"), lists.Counties, ["County"]),
+        new(Header("Country"), lists.Countries, ["Country"]),
+    ];
 
     /// <summary>Textul fara diacritice, cu litere mici si fara spatii la capete (compararea valorilor din Excel).</summary>
     public static string Fold(string value)

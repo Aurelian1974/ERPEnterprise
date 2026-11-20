@@ -285,6 +285,7 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Partners.IPartnerSpreadsheet>(new Erp.Core.Infrastructure.Partners.PartnerSpreadsheet());
         services.AddSingleton<Erp.Core.Application.Properties.IPropertyDefinitionStore>(new FakePropertyStore());
         services.AddSingleton<Erp.Core.Application.Partners.IImportJobStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.Items.IItemStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Anaf.IAnafVatRegistry>(new FakeAnafRegistry());
         services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
             new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));

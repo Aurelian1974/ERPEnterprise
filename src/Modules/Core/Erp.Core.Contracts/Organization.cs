@@ -21,3 +21,10 @@ public sealed record FirmaModificata(string FiscalCode, string Name, bool VatPay
 /// </summary>
 public sealed record PartenerModificat(int PartnerId, string Code, string Name, string? FiscalCode, bool VatPayer, bool VatOnCollection,
     bool AnafInactive, bool IsActive) : IntegrationEvent;
+
+/// <summary>Crearea sau modificarea unui articol (02.01, 5): POS (sincronizare), Stocuri, Productie.</summary>
+public sealed record ArticolModificat(int ItemId, string Code, string Name, byte ItemType, string BaseUomCode, string VatRateCode, int? DepositItemId,
+    bool IsActive) : IntegrationEvent;
+
+/// <summary>Adaugarea sau modificarea unei cote TVA ori a unei UM (02.01, 5). Kind: VatRate sau Uom; ValidFrom doar la cote.</summary>
+public sealed record NomenclatorFiscalModificat(string Kind, string Code, DateOnly? ValidFrom) : IntegrationEvent;
