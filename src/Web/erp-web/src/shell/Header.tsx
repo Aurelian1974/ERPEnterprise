@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useSyncExternalStore, type CSSProperties } from 'react';
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { useLocation } from 'react-router';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import { useQueryClient } from '@tanstack/react-query';
 import { companyStore } from '../app/company';
+import { unsavedChanges } from '../components/UnsavedChanges';
 import { DropDownButtonComponent, type MenuEventArgs } from '@syncfusion/ej2-react-splitbuttons';
 import type { CurrentUser } from '../api/session';
 import { t } from '../i18n';
@@ -85,10 +86,18 @@ export function Header({ user }: { readonly user: CurrentUser }) {
   // alegere ramane fara efect. Fara lista deschisa (alegere cu tastatura) se aplica direct la „change”.
   const pendingCompany = useRef<number | null>(null);
   const popupOpen = useRef(false);
-  const applyPendingCompany = useCallback(() => {
+  // La „Raman” in confirmarea modificarilor nesalvate, selectorul se recreeaza ca sa arate iar firma curenta.
+  const [revision, setRevision] = useState(0);
+  const applyPendingCompany = useCallback(async () => {
     const companyId = pendingCompany.current;
     pendingCompany.current = null;
     if (companyId !== null && companyId !== companyStore.get()) {
+      // UI-18: schimbarea firmei curente nu e o navigare, deci o intreaba explicit; altfel fisa deschisa ar ramane pe
+      // firma veche cu modificarile pierdute, iar antetul ar arata deja firma noua.
+      if (!(await unsavedChanges.confirmDiscard())) {
+        setRevision((r) => r + 1);
+        return;
+      }
       companyStore.set(companyId);
       // Datele tuturor ecranelor depind de firma curenta (antetul X-Company-Id): se reincarca pe loc, fara golirea
       // ecranului (UI-12); /me intai, ca ecranele sa primeasca noua firma si permisiunile ei, apoi restul.
@@ -103,7 +112,7 @@ export function Header({ user }: { readonly user: CurrentUser }) {
   }, []);
   const onCompanyChange = useCallback(() => {
     if (!popupOpen.current) {
-      applyPendingCompany();
+      void applyPendingCompany();
     }
   }, [applyPendingCompany]);
   const onCompanyOpen = useCallback(() => {
@@ -111,7 +120,7 @@ export function Header({ user }: { readonly user: CurrentUser }) {
   }, []);
   const onCompanyClose = useCallback(() => {
     popupOpen.current = false;
-    afterPopupRemoved('company_popup', applyPendingCompany);
+    afterPopupRemoved('company_popup', () => void applyPendingCompany());
   }, [applyPendingCompany]);
   return (
     <header className="top" style={accent}>
@@ -124,7 +133,7 @@ export function Header({ user }: { readonly user: CurrentUser }) {
           <span className="company-label" aria-hidden="true">{t('header.company')}</span>
           <DropDownListComponent
             // Syncfusion nu mai proceseaza alegerea dupa relegarea listei; o lista noua (firma adaugata) recreeaza selectorul.
-            key={companyOptions.map((c) => c.value).join(',')}
+            key={`${companyOptions.map((c) => c.value).join(',')}#${revision}`}
             id="company"
             htmlAttributes={companyAttributes}
             dataSource={companyOptions}

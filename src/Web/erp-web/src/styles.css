@@ -838,3 +838,39 @@ table.simple tr.current td {
   font-weight: 600;
 }
 
+
+/*
+ * Confirmarea modificarilor nesalvate (UI-18). <dialog> are implicit fundalul alb al browserului (Canvas), deci
+ * suprafata se da explicit (UI-14); fundalul din spate e bleumarinul temei, atenuat.
+ */
+.confirm-dialog {
+  width: min(440px, calc(100vw - 32px));
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-float), inset 0 3px 0 var(--warn);
+  padding: 20px 22px 18px;
+}
+
+.confirm-dialog::backdrop {
+  background: var(--navy-900);
+  opacity: 0.55;
+}
+
+.confirm-dialog h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.confirm-dialog p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.confirm-dialog .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

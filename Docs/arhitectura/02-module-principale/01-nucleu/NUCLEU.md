@@ -99,6 +99,15 @@ Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; u
 - Acces: arborele arată firmele cu `Core.Company.View` (pe firmă sau la nivelul instalării) și grupurile care le conțin. Firma curentă vine din antetul `X-Company-Id`, acceptat numai dacă utilizatorul are un rol pe acea firmă (altfel firma efectivă devine 0). `X-Company-Id: 0` înseamnă nivelul instalării: numai rolurile fără firmă (ADMIN). Grupurile și firmele noi se creează doar la acest nivel; punctele de lucru, locațiile, conturile bancare și seriile, numai pe firma lor.
 - Ecranul: arbore (Syncfusion TreeView) cu căutare fără diacritice, filtrele „Toate”, „Doar firme”, „Arată inactive”, „Extinde tot”; fișa cu tab-urile Date generale, Conturi bancare și Serii (doar citire, cu legătură spre Configurare › Serii). Tab-urile Structură, Setări, Certificat ANAF și Istoric, precum și Export/Import, vin cu etapele care le dețin (Istoric cu auditul, etapa 10; certificatul cu Integrări). Fără `Core.Company.Manage`, fișele sunt doar pentru citire.
 
+**Îmbunătățiri după verificare (20.11.2026):**
+
+- Schimbarea țării golește județul dacă nu aparține țării noi (Firmă, Punct de lucru, Locație). Înainte județul vechi rămânea ascuns în formular, iar salvarea pica pe server cu „Țara sau județul nu există în nomenclator”.
+- Oprirea „Plătitor de TVA” oprește și „TVA la încasare”. Înainte acesta rămânea pornit pe un comutator dezactivat, iar serverul respingea salvarea pe un câmp pe care utilizatorul nu-l mai putea schimba.
+- Județul obligatoriu pentru România se verifică și în formular, cu mesajul „Alegeți județul.” pe câmp (la locație, doar dacă s-a ales România), nu doar ca eroare generică de pe server.
+- Modificările nesalvate nu se mai pierd (`UI-18`): tab-urile fișei se montează la prima vizită și apoi doar se ascund, iar alegerea altui nod, butoanele „+ Adaugă”, meniul, firma curentă din antet și închiderea paginii trec prin garda comună cu „Rămân” / „Renunț la modificări”. Formularul contului bancar are prefixul de id-uri `bank-`, pentru că fișa firmei rămâne montată alături și ar fi repetat id-ul `f-isActive`.
+- Accesibilitate (`UI-09`): tab-urile urmează tiparul WAI-ARIA (săgeți, Home, End, un singur tab în ordinea Tab); panoul de detaliu nu mai e regiune `aria-live`, care făcea cititorul de ecran să citească tot formularul la fiecare nod ales.
+- Grila conturilor bancare primește handler-e stabile (`UI-12`), mesajele de validare stau în fișierul de traduceri (`UI-06`), iar tab-ul Serii arată eroarea de încărcare cu „Reîncearcă”, în loc să rămână gol.
+
 ### 3.2 Partener (`Partner`)
 
 Un singur nomenclator pentru clienți și furnizori, la nivel de instalare; rolul de bază (client, furnizor sau ambele) e pe partener și e obligatoriu (cel puțin unul bifat, CHECK în bază), iar condițiile comerciale se țin per firmă în Vânzări și Achiziții. Un partener marcat doar client nu apare la căutare pe documentele de achiziție, și invers.

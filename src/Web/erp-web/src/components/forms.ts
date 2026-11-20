@@ -24,15 +24,28 @@ export function applyServerErrors<T extends FieldValues>(error: unknown, setErro
 
 export const required = z.string().trim().min(1, t('common.required'));
 export const optionalText = z.string().trim().nullable().transform((v) => (v === null || v === '' ? null : v));
-export const code = required.max(20).regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/, 'Codul are 1–20 caractere: litere, cifre, „.”, „_” sau „-”.');
+export const code = required.max(20).regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/, t('validation.code'));
 
 /** Suma introdusa in format romanesc (200,00 sau 200.00) -> sir zecimal invariant pentru API (UI-05). */
 export const money = z
   .string()
   .trim()
   .nullable()
-  .refine((v) => v === null || v === '' || /^\d{1,17}([.,]\d{1,2})?$/.test(v), 'Suma are cel mult 2 zecimale, de exemplu 200,00.')
+  .refine((v) => v === null || v === '' || /^\d{1,17}([.,]\d{1,2})?$/.test(v), t('validation.money'))
   .transform((v) => (v === null || v === '' ? null : v.replace(',', '.')));
 
 /** Afisarea unei sume invariante in format romanesc, fara separator de mii (camp editabil). */
 export const moneyForInput = (value: string | null) => (value === null ? '' : value.replace('.', ','));
+
+/** Codul ISO al Romaniei: acolo judetul e obligatoriu (serverul il cere, usp_Company_Save / usp_Branch_Save / usp_Location_Save). */
+export const ROMANIA = 'RO';
+
+/**
+ * Regula judetului din adresa (A3): pentru Romania se cere pe camp, inainte de trimitere, nu ca eroare generica de pe
+ * server („Tara sau judetul nu exista in nomenclator”), care nu spune ce camp lipseste.
+ */
+export function requireCountyForRomania(values: { countryCode: string | null; countyCode: string | null }, ctx: z.RefinementCtx): void {
+  if (values.countryCode === ROMANIA && (values.countyCode === null || values.countyCode === '')) {
+    ctx.addIssue({ code: 'custom', path: ['countyCode'], message: t('validation.countyRequired') });
+  }
+}

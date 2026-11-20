@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { NumericTextBoxComponent, TextBoxComponent } from '@syncfusion/ej2-react-inputs';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
@@ -37,10 +37,20 @@ function Shell({ id, label, error, className, children }: { id: string; label: s
   );
 }
 
-const fieldId = (name: string) => `f-${name.replace(/[^A-Za-z0-9]/g, '-')}`;
+/**
+ * Prefixul id-urilor campurilor. Doua formulare montate deodata (fisa firmei, pastrata montata intre tab-uri, si
+ * contul bancar) au campuri cu acelasi nume (isActive): fara prefix diferit, id-urile s-ar repeta, iar eticheta si
+ * listele Syncfusion (construite din id) ar ajunge la campul gresit. Implicit „f”.
+ */
+export const FieldIdPrefix = createContext('f');
+
+function useFieldId(name: string): string {
+  const prefix = useContext(FieldIdPrefix);
+  return `${prefix}-${name.replace(/[^A-Za-z0-9]/g, '-')}`;
+}
 
 export function TextField<T extends FieldValues>({ control, name, label, disabled, className, upper, hint }: FieldProps<T> & { readonly upper?: boolean; readonly hint?: ReactNode }) {
-  const id = fieldId(name);
+  const id = useFieldId(name);
   return (
     <Controller
       control={control}
@@ -76,7 +86,7 @@ export function NumberField<T extends FieldValues>({ control, name, label, disab
   /** Separatorul de mii; fara el pentru ani si coduri numerice. */
   readonly grouping?: boolean;
 }) {
-  const id = fieldId(name);
+  const id = useFieldId(name);
   return (
     <Controller
       control={control}
@@ -108,7 +118,7 @@ export function SelectField<T extends FieldValues>({ control, name, label, disab
   readonly allowEmpty?: string;
   readonly numeric?: boolean;
 }) {
-  const id = fieldId(name);
+  const id = useFieldId(name);
   // Lista stabila intre randari (aceeasi referinta cat timp continutul nu se schimba): o lista noua face DropDownList sa
   // se relege si sa piarda valoarea aleasa in aceeasi randare.
   const key = JSON.stringify([allowEmpty, options]);
@@ -146,7 +156,7 @@ export function SelectField<T extends FieldValues>({ control, name, label, disab
 }
 
 export function SwitchField<T extends FieldValues>({ control, name, label, disabled, className, onText }: FieldProps<T> & { readonly onText?: string }) {
-  const id = fieldId(name);
+  const id = useFieldId(name);
   return (
     <Controller
       control={control}

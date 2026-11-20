@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useForm, useWatch, type DefaultValues, type FieldValues, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type DefaultValues, type FieldValues, type Path, type PathValue, type Resolver, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ErrorBanner, SelectField, SwitchField, TextField, type Option } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
-import { applyServerErrors, code, money, moneyForInput, optionalText, required } from '../components/forms';
+import { useUnsavedChanges } from '../components/UnsavedChanges';
+import { applyServerErrors, code, money, moneyForInput, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { orgApi, orgKeys, type CompanyDetail, type OrgLookups, type Saved } from './orgApi';
@@ -17,19 +18,53 @@ const countryOptions = (lookups: Lookups): Option[] => lookups.countries.map((c)
 const countyOptions = (lookups: Lookups, country: string | null): Option[] =>
   lookups.counties.filter((c) => c.countryCode === country).map((c) => ({ value: c.code, text: c.name }));
 
-/** Salvarea comuna: erorile pe camp merg la campuri, restul in banner; dupa salvare se reincarca arborele si fisa. */
-function useSave<T extends FieldValues>(fields: readonly string[], save: (values: T) => Promise<Saved>, onSaved: (saved: Saved) => void, companyId?: number) {
+/** Judetul ales apartine tarii? Un judet gol e mereu in regula (obligativitatea e regula separata, A3). */
+export function countyBelongsTo(lookups: Pick<Lookups, 'counties'>, country: string | null, county: string | null): boolean {
+  return county === null || county === '' || lookups.counties.some((c) => c.code === county && c.countryCode === country);
+}
+
+/**
+ * Judetul urmeaza tara (A1): la schimbarea tarii, un judet care nu mai e in lista ei se goleste. Lista de selectie isi
+ * schimba doar valoarea la alegerea utilizatorului, deci altfel judetul vechi ramanea ascuns in formular si salvarea
+ * pica pe server cu un mesaj fara legatura cu ce facuse utilizatorul.
+ */
+function useCountyFollowsCountry<T extends FieldValues & { countryCode: string | null; countyCode: string | null }>(form: UseFormReturn<T, unknown, unknown>, lookups: Lookups) {
+  const country = useWatch({ control: form.control, name: 'countryCode' as Path<T> }) as string | null;
+  const county = useWatch({ control: form.control, name: 'countyCode' as Path<T> }) as string | null;
+  useEffect(() => {
+    if (!countyBelongsTo(lookups, country, county)) {
+      form.setValue('countyCode' as Path<T>, null as PathValue<T, Path<T>>, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+    }
+  }, [form, lookups, country, county]);
+  return country;
+}
+
+/**
+ * Salvarea comuna: erorile pe camp merg la campuri, restul in banner; dupa salvare se reincarca arborele si fisa.
+ * Dupa o salvare reusita formularul se marcheaza curat inainte de onSaved, care navigheaza spre inregistrarea salvata:
+ * altfel garda modificarilor nesalvate (UI-18) ar opri chiar navigarea de dupa salvare.
+ */
+function useSave<TInput extends FieldValues, TOutput>(
+  form: UseFormReturn<TInput, unknown, TOutput>,
+  fields: readonly string[],
+  save: (values: TOutput) => Promise<Saved>,
+  onSaved: (saved: Saved) => void,
+  companyId?: number,
+) {
   const queryClient = useQueryClient();
   const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
+  const guard = useUnsavedChanges(form.formState.isDirty);
   return {
     error,
     /** Validarea din browser a esuat: campurile sunt marcate, iar mesajul confirma ca nu s-a salvat nimic. */
     invalid: () => notify(t('common.notSaved'), 'error'),
-    async submit(values: T, setFieldError: Parameters<typeof applyServerErrors<T>>[1]) {
+    async submit(values: TOutput) {
       setError(undefined);
       try {
         const saved = await save(values);
+        form.reset(form.getValues());
+        guard.markClean();
         await queryClient.invalidateQueries({ queryKey: orgKeys.tree });
         await queryClient.invalidateQueries({ queryKey: ['core', 'me'] });
         if (companyId !== undefined) {
@@ -38,7 +73,7 @@ function useSave<T extends FieldValues>(fields: readonly string[], save: (values
         notify(t('common.saved'));
         onSaved(saved);
       } catch (e) {
-        const message = applyServerErrors(e, setFieldError, fields);
+        const message = applyServerErrors(e, form.setError, fields);
         setError(message);
         notify(message ?? t('common.notSaved'), 'error');
       }
@@ -110,7 +145,7 @@ export function GroupForm({ tree, groupId, parentGroupId, onSaved, onCancel }: {
     : { code: group.code, name: group.name, parentGroupId: group.parentGroupId, parentCompanyId: group.parentCompanyId, isActive: group.isActive };
   const form = useForm<GroupValues>({ resolver: zodResolver(groupSchema), defaultValues: defaults });
   useEffect(() => form.reset(defaults), [groupId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const save = useSave<GroupValues>(Object.keys(defaults), (v) => orgApi.saveGroup({ ...v, id: group?.id ?? null, rowVersion: group?.rowVersion ?? null }), onSaved);
+  const save = useSave(form, Object.keys(defaults), (v) => orgApi.saveGroup({ ...v, id: group?.id ?? null, rowVersion: group?.rowVersion ?? null }), onSaved);
 
   const groups = tree.groups.filter((g) => g.id !== groupId).map((g) => ({ value: String(g.id), text: g.name }));
   const companies = tree.companies.filter((c) => c.groupId === groupId).map((c) => ({ value: String(c.id), text: c.name }));
@@ -119,7 +154,7 @@ export function GroupForm({ tree, groupId, parentGroupId, onSaved, onCancel }: {
     <FormShell
       title={<h2 className="form-title">{group?.name ?? t('org.newGroup')}</h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v, form.setError), save.invalid)}
+      onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer onCancel={() => (group === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">
@@ -136,24 +171,26 @@ export function GroupForm({ tree, groupId, parentGroupId, onSaved, onCancel }: {
 
 // ---------- Firma ----------
 
-const companySchema = z.object({
-  code,
-  name: required.max(200),
-  fiscalCode: required.max(20),
-  tradeRegisterNo: required.max(30),
-  shareCapital: money,
-  groupId: z.number().nullable(),
-  vatPayer: z.boolean(),
-  vatOnCollection: z.boolean(),
-  address: required.max(300),
-  countryCode: required,
-  countyCode: optionalText,
-  city: required.max(100),
-  postalCode: optionalText,
-  defaultPrecisionPolicyId: z.number({ message: t('common.required') }),
-  includeInConsolidation: z.boolean(),
-  isActive: z.boolean(),
-});
+export const companySchema = z
+  .object({
+    code,
+    name: required.max(200),
+    fiscalCode: required.max(20),
+    tradeRegisterNo: required.max(30),
+    shareCapital: money,
+    groupId: z.number().nullable(),
+    vatPayer: z.boolean(),
+    vatOnCollection: z.boolean(),
+    address: required.max(300),
+    countryCode: required,
+    countyCode: optionalText,
+    city: required.max(100),
+    postalCode: optionalText,
+    defaultPrecisionPolicyId: z.number({ message: t('common.required') }),
+    includeInConsolidation: z.boolean(),
+    isActive: z.boolean(),
+  })
+  .superRefine(requireCountyForRomania);
 type CompanyInput = z.input<typeof companySchema>;
 type CompanyValues = z.output<typeof companySchema>;
 
@@ -168,7 +205,7 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
   const defaults: CompanyInput = company === undefined
     ? {
         code: '', name: '', fiscalCode: '', tradeRegisterNo: '', shareCapital: '', groupId: groupId ?? null, vatPayer: true, vatOnCollection: false,
-        address: '', countryCode: 'RO', countyCode: null, city: '', postalCode: null,
+        address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null,
         defaultPrecisionPolicyId: lookups.precisionPolicies[0]?.id ?? 0, includeInConsolidation: true, isActive: true,
       }
     : {
@@ -182,11 +219,19 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
     defaultValues: defaults as DefaultValues<CompanyInput>,
   });
   useEffect(() => form.reset(defaults), [company?.id, company?.rowVersion]); // eslint-disable-line react-hooks/exhaustive-deps
-  const country = useWatch({ control: form.control, name: 'countryCode' });
+  const country = useCountyFollowsCountry(form, lookups);
   const vatPayer = useWatch({ control: form.control, name: 'vatPayer' });
-  const save = useSave<CompanyInput>(
+  // TVA la incasare se aplica doar platitorilor (A2): oprirea platitorului il opreste si pe el. Altfel ramanea pornit
+  // pe un comutator dezactivat, iar serverul respingea salvarea pe un camp pe care utilizatorul nu-l mai putea schimba.
+  useEffect(() => {
+    if (!vatPayer && form.getValues('vatOnCollection')) {
+      form.setValue('vatOnCollection', false, { shouldDirty: true });
+    }
+  }, [form, vatPayer]);
+  const save = useSave(
+    form,
     Object.keys(defaults),
-    (v) => orgApi.saveCompany({ ...(v as CompanyValues), id: company?.id ?? null, rowVersion: company?.rowVersion ?? null }),
+    (v) => orgApi.saveCompany({ ...v, id: company?.id ?? null, rowVersion: company?.rowVersion ?? null }),
     onSaved,
     company?.id,
   );
@@ -197,7 +242,7 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
   return (
     <FormShell
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as CompanyInput, form.setError), save.invalid)}
+      onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer info={info} onCancel={() => (company === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       {company === undefined && <h2 className="form-title">{t('org.newCompany')}</h2>}
@@ -236,16 +281,18 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
 
 // ---------- Punct de lucru ----------
 
-const branchSchema = z.object({
-  code,
-  name: required.max(200),
-  address: required.max(300),
-  countryCode: required,
-  countyCode: optionalText,
-  city: required.max(100),
-  postalCode: optionalText,
-  isActive: z.boolean(),
-});
+export const branchSchema = z
+  .object({
+    code,
+    name: required.max(200),
+    address: required.max(300),
+    countryCode: required,
+    countyCode: optionalText,
+    city: required.max(100),
+    postalCode: optionalText,
+    isActive: z.boolean(),
+  })
+  .superRefine(requireCountyForRomania);
 type BranchInput = z.input<typeof branchSchema>;
 type BranchValues = z.output<typeof branchSchema>;
 
@@ -259,7 +306,7 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
 }) {
   const branch = tree.branches.find((b) => b.id === branchId);
   const defaults: BranchInput = branch === undefined
-    ? { code: '', name: '', address: '', countryCode: 'RO', countyCode: null, city: '', postalCode: null, isActive: true }
+    ? { code: '', name: '', address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null, isActive: true }
     : { code: branch.code, name: branch.name, address: branch.address, countryCode: branch.countryCode, countyCode: branch.countyCode, city: branch.city,
         postalCode: branch.postalCode, isActive: branch.isActive };
   const form = useForm<BranchInput, unknown, BranchValues>({
@@ -267,10 +314,11 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
     defaultValues: defaults as DefaultValues<BranchInput>,
   });
   useEffect(() => form.reset(defaults), [branchId, branch?.rowVersion]); // eslint-disable-line react-hooks/exhaustive-deps
-  const country = useWatch({ control: form.control, name: 'countryCode' });
-  const save = useSave<BranchInput>(
+  const country = useCountyFollowsCountry(form, lookups);
+  const save = useSave(
+    form,
     Object.keys(defaults),
-    (v) => orgApi.saveBranch({ ...(v as BranchValues), id: branch?.id ?? null, companyId, rowVersion: branch?.rowVersion ?? null }),
+    (v) => orgApi.saveBranch({ ...v, id: branch?.id ?? null, companyId, rowVersion: branch?.rowVersion ?? null }),
     onSaved,
   );
   const company = tree.companies.find((c) => c.id === companyId);
@@ -279,7 +327,7 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
     <FormShell
       title={<h2 className="form-title">{branch?.name ?? t('org.newBranch')} <span className="muted">· {company?.name}</span></h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as BranchInput, form.setError), save.invalid)}
+      onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer onCancel={() => (branch === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">
@@ -298,18 +346,21 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
 
 // ---------- Locatie ----------
 
-const locationSchema = z.object({
-  code,
-  name: required.max(200),
-  branchId: z.number().nullable(),
-  locationType: z.number({ message: t('common.required') }).int().min(1).max(6),
-  address: optionalText,
-  countryCode: optionalText,
-  countyCode: optionalText,
-  city: optionalText,
-  postalCode: optionalText,
-  isActive: z.boolean(),
-});
+export const locationSchema = z
+  .object({
+    code,
+    name: required.max(200),
+    branchId: z.number().nullable(),
+    locationType: z.number({ message: t('common.required') }).int().min(1).max(6),
+    address: optionalText,
+    countryCode: optionalText,
+    countyCode: optionalText,
+    city: optionalText,
+    postalCode: optionalText,
+    isActive: z.boolean(),
+  })
+  // Adresa locatiei e optionala; daca s-a ales Romania, judetul se cere ca la firma si la punctul de lucru.
+  .superRefine(requireCountyForRomania);
 type LocationInput = z.input<typeof locationSchema>;
 type LocationValues = z.output<typeof locationSchema>;
 
@@ -334,10 +385,11 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
     defaultValues: defaults as DefaultValues<LocationInput>,
   });
   useEffect(() => form.reset(defaults), [locationId, location?.rowVersion]); // eslint-disable-line react-hooks/exhaustive-deps
-  const country = useWatch({ control: form.control, name: 'countryCode' });
-  const save = useSave<LocationInput>(
+  const country = useCountyFollowsCountry(form, lookups);
+  const save = useSave(
+    form,
     Object.keys(defaults),
-    (v) => orgApi.saveLocation({ ...(v as LocationValues), id: location?.id ?? null, companyId, rowVersion: location?.rowVersion ?? null }),
+    (v) => orgApi.saveLocation({ ...v, id: location?.id ?? null, companyId, rowVersion: location?.rowVersion ?? null }),
     onSaved,
   );
   const branches = tree.branches.filter((b) => b.companyId === companyId && (b.isActive || b.id === location?.branchId)).map((b) => ({ value: String(b.id), text: b.name }));
@@ -346,7 +398,7 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
     <FormShell
       title={<h2 className="form-title">{location?.name ?? t('org.newLocation')}</h2>}
       error={save.error}
-      onSubmit={form.handleSubmit((v) => save.submit(v as unknown as LocationInput, form.setError), save.invalid)}
+      onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer onCancel={() => (location === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       <div className="grid g3">

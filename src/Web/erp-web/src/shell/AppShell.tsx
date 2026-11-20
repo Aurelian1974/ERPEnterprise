@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { antiforgeryToken } from '../api/client';
 import { useCurrentUser } from '../api/session';
+import { UnsavedChangesGuard } from '../components/UnsavedChanges';
 import { t } from '../i18n';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -48,6 +49,8 @@ export function AppShell() {
           <Outlet context={user.data} />
         </main>
       </div>
+      {/* Un singur blocker pentru toata aplicatia (UI-18): formularele isi anunta doar starea. */}
+      <UnsavedChangesGuard />
     </>
   );
 }

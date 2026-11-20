@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
 import { TextBoxComponent } from '@syncfusion/ej2-react-inputs';
 import type { CurrentUser } from '../api/session';
 import { companyStore } from '../app/company';
+import { tabKeyTarget } from '../components/tabs';
 import { t } from '../i18n';
 import { BankAccountsTab, CompanySeriesTab } from './CompanyTabs';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
@@ -124,7 +125,8 @@ export function OrgPage() {
           </div>
         </section>
 
-        <section className="card detail-card" aria-live="polite">
+        {/* Fara aria-live aici: cititorul de ecran ar citi tot formularul la fiecare nod ales; salvarile le anunta Notifier. */}
+        <section className="card detail-card">
           <OrgReadOnly.Provider value={!canManage}>
             <Detail tree={tree.data} lookups={lookups.data} selection={selection} canManage={canManage} />
           </OrgReadOnly.Provider>
@@ -205,6 +207,9 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
 }) {
   const company = useCompany(companyId);
   const [tab, setTab] = useState<CompanyTab>('general');
+  // Un panou se monteaza la prima vizita si apoi doar se ascunde (UI-18): schimbarea tab-ului nu pierde editarea.
+  const [visited, setVisited] = useState<ReadonlySet<CompanyTab>>(() => new Set<CompanyTab>(['general']));
+  const tabButtons = useRef(new Map<CompanyTab, HTMLButtonElement>());
   const user = useOutletContext<CurrentUser>();
   const canSeeSeries = user.permissions.includes('Core.NumberSeries.Manage');
 
@@ -220,6 +225,19 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
     ['bank', t('org.tab.bank')],
     ...(canSeeSeries ? [['series', t('org.tab.series')] as [CompanyTab, string]] : []),
   ];
+  const open = (next: CompanyTab, focus = false) => {
+    setTab(next);
+    setVisited((current) => (current.has(next) ? current : new Set([...current, next])));
+    if (focus) {
+      tabButtons.current.get(next)?.focus();
+    }
+  };
+  const panel = (key: CompanyTab, content: ReactNode) =>
+    visited.has(key) && (
+      <div role="tabpanel" id={`panel-${key}`} aria-labelledby={`tab-${key}`} hidden={tab !== key}>
+        {content}
+      </div>
+    );
 
   return (
     <div className="company-panel">
@@ -249,21 +267,43 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
           </div>
         )}
       </div>
-      <div className="tabs" role="tablist">
-        {tabs.map(([key, label]) => (
-          <button key={key} type="button" role="tab" id={`tab-${key}`} aria-selected={tab === key} aria-controls={`panel-${key}`}
-            className={tab === key ? 'tab on' : 'tab'} onClick={() => setTab(key)}>
+      {/* Tiparul WAI-ARIA (UI-09): un singur tab in ordinea Tab, sagetile si Home/End trec intre ele. */}
+      <div className="tabs" role="tablist" aria-label={data.name}>
+        {tabs.map(([key, label], index) => (
+          <button
+            key={key}
+            ref={(button) => {
+              if (button === null) {
+                tabButtons.current.delete(key);
+              } else {
+                tabButtons.current.set(key, button);
+              }
+            }}
+            type="button"
+            role="tab"
+            id={`tab-${key}`}
+            aria-selected={tab === key}
+            // Un panou nevizitat inca nu exista in pagina: o referinta spre el ar fi invalida.
+            aria-controls={visited.has(key) ? `panel-${key}` : undefined}
+            tabIndex={tab === key ? 0 : -1}
+            className={tab === key ? 'tab on' : 'tab'}
+            onClick={() => open(key)}
+            onKeyDown={(event) => {
+              const target = tabKeyTarget(index, event.key, tabs.length);
+              const next = target === undefined ? undefined : tabs[target]?.[0];
+              if (next !== undefined) {
+                event.preventDefault();
+                open(next, true);
+              }
+            }}
+          >
             {label}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'general' && (
-          <CompanyForm company={data} lookups={lookups} tree={tree} onSaved={() => undefined} onCancel={() => undefined} />
-        )}
-        {tab === 'bank' && <BankAccountsTab company={data} canManage={canManage} />}
-        {tab === 'series' && <CompanySeriesTab companyId={companyId} canManage={canSeeSeries} />}
-      </div>
+      {panel('general', <CompanyForm company={data} lookups={lookups} tree={tree} onSaved={() => undefined} onCancel={() => undefined} />)}
+      {panel('bank', <BankAccountsTab company={data} canManage={canManage} />)}
+      {canSeeSeries && panel('series', <CompanySeriesTab companyId={companyId} canManage={canSeeSeries} />)}
     </div>
   );
 }

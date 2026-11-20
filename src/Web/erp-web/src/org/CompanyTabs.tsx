@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { ColumnDirective, ColumnsDirective, GridComponent } from '@syncfusion/ej2-react-grids';
 import { Link } from 'react-router';
 import { z } from 'zod';
-import { ErrorBanner, SwitchField, TextField } from '../components/Field';
+import { ErrorBanner, FieldIdPrefix, SwitchField, TextField } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
+import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, required } from '../components/forms';
 import { t } from '../i18n';
 import { orgApi, orgKeys, useNumberSeries, type BankAccount, type CompanyDetail } from './orgApi';
@@ -14,7 +15,7 @@ import { orgApi, orgKeys, useNumberSeries, type BankAccount, type CompanyDetail 
 const bankSchema = z.object({
   iban: required.max(42),
   bankName: required.max(100),
-  currency: required.regex(/^[A-Z]{3}$/, 'Moneda are 3 litere, de exemplu RON.'),
+  currency: required.regex(/^[A-Z]{3}$/, t('validation.currency')),
   isDefault: z.boolean(),
   isActive: z.boolean(),
 });
@@ -32,11 +33,21 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
     : { iban: account.iban, bankName: account.bankName, currency: account.currency, isDefault: account.isDefault, isActive: account.isActive };
   const form = useForm<BankValues>({ resolver: zodResolver(bankSchema) as Resolver<BankValues>, defaultValues: defaults });
   useEffect(() => form.reset(defaults), [selected]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Contul deschis in editare intra in garda modificarilor nesalvate (UI-18) cat timp formularul exista.
+  const guard = useUnsavedChanges(selected !== undefined && form.formState.isDirty);
+  // Handler stabil (UI-12): o functie noua la fiecare randare face grila sa se relege.
+  const onRowSelected = useCallback((args: { data: BankAccount }) => {
+    if (canManage) {
+      setSelected(args.data);
+    }
+  }, [canManage]);
 
   const submit = form.handleSubmit(async (values) => {
     setError(undefined);
     try {
       await orgApi.saveBankAccount({ ...values, id: account?.id ?? null, companyId: company.id, rowVersion: account?.rowVersion ?? null });
+      form.reset(form.getValues());
+      guard.markClean();
       await queryClient.invalidateQueries({ queryKey: orgKeys.company(company.id) });
       notify(t('common.saved'));
       setSelected(undefined);
@@ -61,7 +72,7 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
       ) : (
         <GridComponent
           dataSource={company.bankAccounts}
-          rowSelected={(args: { data: BankAccount }) => canManage && setSelected(args.data)}
+          rowSelected={onRowSelected}
           allowSorting
           height="auto"
         >
@@ -75,24 +86,27 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
         </GridComponent>
       )}
       {selected !== undefined && (
-        <form className="subform" noValidate onSubmit={(e) => void submit(e)} aria-label={t('bank.edit')}>
-          <ErrorBanner message={error} />
-          <div className="grid g3">
-            <TextField control={form.control} name="iban" label={t('field.iban')} upper className="span2" />
-            <TextField control={form.control} name="currency" label={t('field.currency')} upper />
-            <TextField control={form.control} name="bankName" label={t('field.bank')} className="span2" />
-            <SwitchField control={form.control} name="isDefault" label={t('field.isDefault')} />
-            <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
-          </div>
-          <div className="actions end">
-            <button type="button" className="btn ghost" onClick={() => setSelected(undefined)}>
-              {t('common.cancel')}
-            </button>
-            <button type="submit" className="btn primary" disabled={form.formState.isSubmitting}>
-              {t('common.save')}
-            </button>
-          </div>
-        </form>
+        // Prefix propriu de id-uri: fisa firmei ramane montata alaturi si are si ea un camp isActive.
+        <FieldIdPrefix.Provider value="bank">
+          <form className="subform" noValidate onSubmit={(e) => void submit(e)} aria-label={t('bank.edit')}>
+            <ErrorBanner message={error} />
+            <div className="grid g3">
+              <TextField control={form.control} name="iban" label={t('field.iban')} upper className="span2" />
+              <TextField control={form.control} name="currency" label={t('field.currency')} upper />
+              <TextField control={form.control} name="bankName" label={t('field.bank')} className="span2" />
+              <SwitchField control={form.control} name="isDefault" label={t('field.isDefault')} />
+              <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
+            </div>
+            <div className="actions end">
+              <button type="button" className="btn ghost" onClick={() => setSelected(undefined)}>
+                {t('common.cancel')}
+              </button>
+              <button type="submit" className="btn primary" disabled={form.formState.isSubmitting}>
+                {t('common.save')}
+              </button>
+            </div>
+          </form>
+        </FieldIdPrefix.Provider>
       )}
     </div>
   );
@@ -109,6 +123,15 @@ export function CompanySeriesTab({ companyId, canManage }: { readonly companyId:
       <div className="toolbar">
         <Link to={`/admin/config/serii?firma=${companyId}`}>{t('series.goToConfig')}</Link>
       </div>
+      {/* Eroarea de incarcare se arata, nu se inghite (AGENTS.md). */}
+      {series.isError && series.data === undefined && (
+        <div className="banner error" role="alert">
+          {t('app.loadError')}{' '}
+          <button type="button" className="btn ghost" onClick={() => void series.refetch()}>
+            {t('app.retry')}
+          </button>
+        </div>
+      )}
       {series.data !== undefined && series.data.length === 0 && <p className="muted">{t('series.empty')}</p>}
       {series.data !== undefined && series.data.length > 0 && (
         <GridComponent dataSource={series.data} allowSorting height="auto">

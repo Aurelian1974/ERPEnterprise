@@ -1,6 +1,6 @@
 # ERP · Bune practici (SQL și cod)
 
-14 noiembrie 2026 · Aurelian · **Validat (14.11.2026); completat pe 14.11.2026 cu regulile pentru baza case sensitive (`SQL-21`–`SQL-25`, `NET-21`, `TST-09`), validat 14.11.2026; completat pe 20.11.2026 cu regulile temei vizuale (`UI-13`–`UI-17`), validat 20.11.2026** · Versiune editabilă: https://claude.ai/artifact/JP7yeX8cA7AP8PRRMJGiTA
+14 noiembrie 2026 · Aurelian · **Validat (14.11.2026); completat pe 14.11.2026 cu regulile pentru baza case sensitive (`SQL-21`–`SQL-25`, `NET-21`, `TST-09`), validat 14.11.2026; completat pe 20.11.2026 cu regulile temei vizuale (`UI-13`–`UI-17`), validat 20.11.2026, și cu garda modificărilor nesalvate (`UI-18`), validată 20.11.2026** · Versiune editabilă: https://claude.ai/artifact/JP7yeX8cA7AP8PRRMJGiTA
 
 Acest document strânge regulile de scriere pentru tot codul ERP-ului: baza de date SQL Server, backend-ul .NET, frontend-ul React, testele și fluxul de lucru Git. E un document transversal: nu aparține unei secțiuni, ci se aplică tuturor. Pornește de la principiile P1–P10 din [01 Scop și principii](../01-scop-si-principii/SCOP_SI_PRINCIPII.md) și de la deciziile deja luate: Dapper și proceduri stocate fără ORM, SQL Server 2022, .NET 10, modular monolith, o bază de date per grup de client.
 
@@ -295,6 +295,7 @@ app.MapPost("/api/sales/invoices/{id:int}/validate",
 | `UI-15` | O | Zonele aplicației se diferențiază vizual după harta din 10, secțiunea 4: antet și meniu lateral închise, canvas pal, fișă mai deschisă decât canvasul, câmp mai deschis decât fișa, bară de filtre și antet de grilă mai închise. Fiecare modul își poartă accentul (10, secțiunea 5); două suprafețe vecine nu au niciodată aceeași treaptă fără o linie între ele. |
 | `UI-16` | O | Contrast WCAG 2.1 AA, verificat prin calcul, nu din ochi: text ≥4,5:1, conturul controalelor și limitele componentelor ≥3:1. Se folosesc numai combinațiile permise din 10, secțiunile 5 și 6. O stare (succes, avertizare, eroare) nu se transmite niciodată numai prin fundal: are obligatoriu bandă colorată și text sau iconiță în culoarea stării (WCAG 1.4.1). |
 | `UI-17` | O | Componentele Syncfusion se temizează într-un singur fișier, `theme/syncfusion.css`, prin variabilele temei. În ecrane nu se suprascriu clase `.e-*` și nu se folosește `!important`. |
+| `UI-18` | O | Modificările nesalvate dintr-o fișă nu se pierd fără confirmare (decizia lui Aurelian, 20.11.2026): nici la schimbarea tab-ului, a înregistrării alese, a ecranului sau a firmei curente, nici la reîmprospătarea sau închiderea paginii. Tab-urile unei fișe nu se demontează la schimbare, iar orice altă ieșire trece prin garda comună `UnsavedChanges` („Rămân” e alegerea implicită). După o salvare reușită formularul nu mai are modificări, deci garda nu se declanșează. |
 
 ## 6. Teste
 
@@ -346,6 +347,7 @@ app.MapPost("/api/sales/invoices/{id:int}/validate",
 - [ ] Există teste pentru drumul bun, pentru fiecare eroare și pentru criteriile de acceptare atinse (`TST-01`, `TST-03`).
 - [ ] Nicio dată personală sau secret în jurnale, cod sau mesaje de eroare (`NET-18`, `SEC-02`).
 - [ ] Culorile vin din tokeni, nicio suprafață nu e albă, zonele se diferențiază și contrastul e calculat (`UI-13`–`UI-17`).
+- [ ] Fișele nu pierd modificările nesalvate fără confirmare (`UI-18`).
 
 ### 8.2 Pentru fiecare document de arhitectură
 

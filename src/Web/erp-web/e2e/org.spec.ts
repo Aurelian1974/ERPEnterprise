@@ -63,6 +63,14 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await page.locator('#f-shareCapital').fill('200,00');
   await page.locator('#f-address').fill('Str. Exemplului nr. 10');
   await choose(page, 'f-countyCode', 'București');
+  // A1: schimbarea tarii goleste judetul (altfel ramanea ascuns si salvarea pica pe server).
+  await choose(page, 'f-countryCode', 'Germania', 'Germ');
+  await expect(page.locator('#f-countyCode')).toHaveValue('');
+  // A3: pentru Romania judetul se cere pe camp, inainte de trimitere.
+  await choose(page, 'f-countryCode', 'România', 'Rom');
+  await page.getByRole('button', { name: 'Salvează' }).click();
+  await expect(page.locator('#f-countyCode-error')).toHaveText('Alegeți județul.');
+  await choose(page, 'f-countyCode', 'București');
   await page.locator('#f-city').fill('Sector 1');
   await page.getByRole('button', { name: 'Salvează' }).click();
   await expect(page.locator('#f-fiscalCode-error')).toContainText('CUI');
@@ -75,12 +83,34 @@ test('administratorul creează un grup, o firmă cu cont bancar și o serie de f
   await expect(page.locator('.e-treeview li.e-list-item.e-active > .e-text-content .tree-name')).toHaveText(`Firma E2E ${suffix} SRL`);
   await expect(page.locator('#f-shareCapital')).toHaveValue('200,00');
 
+  // UI-18: editarea din Date generale supravietuieste schimbarii tab-ului.
+  await page.locator('#f-city').fill('Sector 2');
+  await page.getByRole('tab', { name: 'Conturi bancare' }).click();
+  await page.getByRole('tab', { name: 'Date generale' }).click();
+  await expect(page.locator('#f-city')).toHaveValue('Sector 2');
+  // Tastatura tab-urilor (WAI-ARIA): sageata dreapta trece la tab-ul urmator si il activeaza.
+  await page.getByRole('tab', { name: 'Date generale' }).press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Conturi bancare' })).toBeFocused();
+  await expect(page.getByRole('tab', { name: 'Conturi bancare' })).toHaveAttribute('aria-selected', 'true');
+  // Plecarea cu modificari nesalvate cere confirmare; „Rămân” pastreaza fisa si editarea.
+  await page.getByRole('button', { name: '+ Grup' }).click();
+  const unsaved = page.getByRole('dialog', { name: 'Aveți modificări nesalvate' });
+  await expect(unsaved).toBeVisible();
+  await unsaved.getByRole('button', { name: 'Rămân' }).click();
+  await expect(unsaved).toBeHidden();
+  await expect(page).toHaveURL(/nod=c-\d+/);
+  await page.getByRole('tab', { name: 'Date generale' }).click();
+  await expect(page.locator('#f-city')).toHaveValue('Sector 2');
+  // „Anulează” readuce valorile salvate, deci fisa nu mai are modificari.
+  await page.getByRole('button', { name: 'Anulează' }).click();
+  await expect(page.locator('#f-city')).toHaveValue('Sector 1');
+
   // Cont bancar implicit
   await page.getByRole('tab', { name: 'Conturi bancare' }).click();
   await page.getByRole('button', { name: '+ Cont bancar' }).click();
   const iban = newIban();
-  await page.locator('#f-iban').fill(iban);
-  await page.locator('#f-bankName').fill('Banca E2E');
+  await page.locator('#bank-iban').fill(iban);
+  await page.locator('#bank-bankName').fill('Banca E2E');
   await page.getByRole('form', { name: 'Cont bancar' }).getByRole('button', { name: 'Salvează' }).click();
   await expect(page.locator('.e-grid')).toContainText(iban);
 
