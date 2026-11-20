@@ -334,4 +334,4 @@ function New-KitManifest {
 }
 
 Export-ModuleMember -Function Get-KitModuleOrder, Get-KitDatabaseSources, Test-KitScripts, Get-KitMigrations, Copy-KitDatabaseScripts,
-    Get-KitScriptVersions, Compare-ProductVersion, Get-KitVersionTags, Get-KitMinUpgradeFrom, Get-KitPreviousTag, Import-KitSigningKey, Assert-P256, New-KitManifest
+    Get-KitScriptVersions, Compare-ProductVersion, Get-VersionSortKey, Get-KitVersionTags, Get-KitMinUpgradeFrom, Get-KitPreviousTag, Import-KitSigningKey, Assert-P256, New-KitManifest
