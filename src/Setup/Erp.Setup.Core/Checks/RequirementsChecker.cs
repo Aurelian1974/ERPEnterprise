@@ -421,9 +421,15 @@ public sealed class RequirementsChecker(
     private async Task NetworkCheckAsync(Run run, CancellationToken ct)
     {
         var timeout = TimeSpan.FromSeconds(10);
-        var anaf = await network.CanReachAsync(HttpMethod.Head, new Uri("https://api.anaf.ro/"), timeout, ct).ConfigureAwait(false);
-        var bnr = await network.CanReachAsync(HttpMethod.Get, new Uri("https://www.bnr.ro/nbrfxrates.xml"), timeout, ct).ConfigureAwait(false);
-        var down = new[] { (anaf, "api.anaf.ro"), (bnr, "www.bnr.ro") }.Where(x => !x.Item1).Select(x => x.Item2).ToList();
+        // webservicesp.anaf.ro: serviciul web sincron TVA folosit la preluarea partenerului (02.01, 3.2).
+        (HttpMethod Method, Uri Uri)[] targets =
+        [
+            (HttpMethod.Head, new Uri("https://api.anaf.ro/")),
+            (HttpMethod.Head, new Uri("https://webservicesp.anaf.ro/")),
+            (HttpMethod.Get, new Uri("https://www.bnr.ro/nbrfxrates.xml")),
+        ];
+        var reachable = await Task.WhenAll(targets.Select(t => network.CanReachAsync(t.Method, t.Uri, timeout, ct))).ConfigureAwait(false);
+        var down = targets.Where((_, i) => !reachable[i]).Select(t => t.Uri.Host).ToList();
         run.Add("C-19", "Ieșire spre ANAF și BNR", down.Count == 0
             ? (CheckStatus.Passed, "ANAF și BNR răspund.", null)
             : (CheckStatus.Warning, $"Nu răspund: {string.Join(", ", down)}. Integrările ANAF și BNR nu vor funcționa până la deschiderea ieșirii HTTPS (443).", null));

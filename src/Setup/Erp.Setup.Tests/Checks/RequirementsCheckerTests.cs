@@ -313,6 +313,38 @@ public sealed class RequirementsCheckerTests : IDisposable
     }
 
     [Fact]
+    public async Task C19_probes_ANAF_including_the_VAT_web_service_and_BNR()
+    {
+        var report = await Run();
+
+        Assert.Equal(CheckStatus.Passed, Result(report, "C-19").Status);
+        Assert.Equal(
+            new[]
+            {
+                (HttpMethod.Head, "https://api.anaf.ro/"),
+                (HttpMethod.Head, "https://webservicesp.anaf.ro/"),
+                (HttpMethod.Get, "https://www.bnr.ro/nbrfxrates.xml"),
+            },
+            network.Requests.Select(r => (r.Method, r.Uri.AbsoluteUri)).OrderBy(r => r.AbsoluteUri, StringComparer.Ordinal));
+        Assert.All(network.Requests, r => Assert.Equal(TimeSpan.FromSeconds(10), r.Timeout));
+    }
+
+    [Fact]
+    public async Task C19_warns_and_names_the_VAT_web_service_when_only_it_is_unreachable()
+    {
+        network.Unreachable.Add("webservicesp.anaf.ro");
+
+        var report = await Run();
+
+        var c19 = Result(report, "C-19");
+        Assert.Equal(CheckStatus.Warning, c19.Status);
+        Assert.Contains("webservicesp.anaf.ro", c19.Message);
+        Assert.DoesNotContain("api.anaf.ro", c19.Message);
+        Assert.DoesNotContain("www.bnr.ro", c19.Message);
+        Assert.Equal(ExitCodes.SuccessWithWarnings, report.ExitCode);
+    }
+
+    [Fact]
     public async Task Upgrade_requires_the_ERP_database_and_does_not_read_the_license_file()
     {
         var missing = await Run(mode: CheckMode.Upgrade, licensePath: "nu-exista.lic");
