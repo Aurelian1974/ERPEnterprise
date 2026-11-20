@@ -7,12 +7,12 @@ SET XACT_ABORT ON;
 MERGE core.PropertyDefinition AS target
 USING (VALUES
     ('Partner', N'SEGMENT',         N'Segment',                       5, 1, N'Comercial', 10, 1, 1),
-    ('Partner', N'SALES_AGENT',     N'Agent de vânzări',              7, 1, N'Comercial', 20, 0, 1),
+    ('Partner', N'SALES_AGENT',     N'Agent de vânzări',              7, 1, N'Comercial', 20, 0, 0),
     ('Partner', N'DELIVERY_ZONE',   N'Zonă de livrare',               5, 1, N'Comercial', 30, 0, 1),
     ('Partner', N'DELIVERY_DAYS',   N'Zile de livrare',               6, 1, N'Comercial', 40, 0, 0),
     ('Partner', N'SALES_CHANNEL',   N'Canal de vânzare',              5, 1, N'Comercial', 50, 0, 1),
     ('Partner', N'GDPR_MARKETING',  N'Acord marketing (GDPR)',        4, 1, N'Comercial', 60, 0, 1),
-    ('Partner', N'SUPPLIER_RATING', N'Rating furnizor',               2, 2, N'Calitate',  10, 0, 1),
+    ('Partner', N'SUPPLIER_RATING', N'Rating furnizor',               2, 2, N'Calitate',  10, 0, 0),
     ('Partner', N'ISO_9001',        N'Certificat ISO 9001',           4, 2, N'Calitate',  20, 0, 1),
     ('Partner', N'ISO_9001_UNTIL',  N'ISO 9001 valabil până la',      3, 2, N'Calitate',  30, 0, 0),
     ('Partner', N'CUSTOMER_CODE',   N'Cod client la furnizor',        1, 2, N'Calitate',  40, 0, 0),

@@ -17,6 +17,9 @@ public interface IAnafVatRegistry
 {
     /// <summary>null = CUI-ul nu figureaza in registre. ErpException Unavailable daca serviciul nu raspunde corect.</summary>
     Task<AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct);
+
+    /// <summary>Mai multe CUI-uri (importul): loturi de cel mult 100 (limita ANAF), o cerere pe secunda; lipsesc din rezultat cele negasite.</summary>
+    Task<IReadOnlyDictionary<string, AnafCompanyDto>> LookupManyAsync(IReadOnlyCollection<string> fiscalCodes, DateOnly date, CancellationToken ct);
 }
 
 public static class AnafErrorCodes

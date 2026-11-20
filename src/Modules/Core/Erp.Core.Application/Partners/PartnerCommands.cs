@@ -76,6 +76,32 @@ internal static class PartnerRules
         appliesTo == 3 || (appliesTo == 1 && isCustomer) || (appliesTo == 2 && isSupplier);
 }
 
+/// <summary>
+/// Codul nou al unui partener din seria „Core.Partner” a firmei. Codul partenerului nu e numerotare fiscala: fara serie se creeaza
+/// cea implicita, iar un numar deja folosit (de alta firma cu acelasi prefix sau introdus manual) se sare.
+/// </summary>
+internal static class PartnerCodes
+{
+    public const int MaxSkips = 1000;
+
+    public static async Task<(string Code, bool SeriesCreated)> NextAsync(IPartnerStore store, INumberSeriesService series, int companyId, DateOnly today,
+        int userId, CancellationToken ct)
+    {
+        var created = await store.EnsureCodeSeriesAsync(companyId, (short)today.Year, userId, ct).ConfigureAwait(false);
+        for (var attempt = 0; attempt < MaxSkips; attempt++)
+        {
+            var code = (await series.NextAsync(companyId, PartnerRules.DocumentType, today, ct).ConfigureAwait(false)).Formatted;
+            if (!await store.CodeExistsAsync(code, ct).ConfigureAwait(false))
+            {
+                return (code, created);
+            }
+        }
+
+        throw ErpException.Conflict("CORE_DUPLICATE_CODE",
+            "Seria „Cod partener” produce doar coduri deja folosite; schimbați prefixul seriei în Configurare › Serii sau introduceți codul.");
+    }
+}
+
 internal sealed class SavePartnerValidator : AbstractValidator<SavePartner>
 {
     public SavePartnerValidator()
@@ -135,10 +161,10 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
                 throw Field("Code", "Alegeți firma curentă (seria de coduri a partenerilor e pe firmă) sau introduceți codul.");
             }
 
-            var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-            // Codul partenerului nu e numerotare fiscala: fara serie configurata, se creeaza una implicita, in aceeasi tranzactie.
-            seriesCreated = await store.EnsureCodeSeriesAsync(context.CompanyId, (short)today.Year, context.UserId, cancellationToken).ConfigureAwait(false);
-            code = (await series.NextAsync(context.CompanyId, PartnerRules.DocumentType, today, cancellationToken).ConfigureAwait(false)).Formatted;
+            var allocated = await PartnerCodes.NextAsync(store, series, context.CompanyId, DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime),
+                context.UserId, cancellationToken).ConfigureAwait(false);
+            code = allocated.Code;
+            seriesCreated = allocated.SeriesCreated;
         }
 
         var individual = request.PartnerType == (byte)PartnerType.Individual;

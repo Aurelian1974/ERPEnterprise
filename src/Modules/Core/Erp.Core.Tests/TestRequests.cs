@@ -244,6 +244,9 @@ public sealed class FakePartnerStore : Erp.Core.Application.Partners.IPartnerSto
 
     public Task<Erp.Core.Application.Partners.PartnerDetailDto?> GetAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
+    public Task<IReadOnlyList<Erp.Core.Application.Partners.PartnerExportRow>> ExportAsync(Erp.Core.Application.Partners.PartnerSearchCriteria criteria,
+        CancellationToken ct) => throw new NotSupportedException();
+
     public Task<Erp.Core.Application.Partners.PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<IReadOnlyList<Erp.Core.Application.Partners.PartnerHistoryEntryDto>> GetHistoryAsync(int id, CancellationToken ct) =>
@@ -252,6 +255,8 @@ public sealed class FakePartnerStore : Erp.Core.Application.Partners.IPartnerSto
     public Task<byte[]?> GetPersonalIdAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<bool> EnsureCodeSeriesAsync(int companyId, short year, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<bool> CodeExistsAsync(string code, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<Erp.Core.Application.Organization.SavedEntity> SaveAsync(Erp.Core.Application.Partners.PartnerRecord partner, int userId, CancellationToken ct) =>
         throw new NotSupportedException();
@@ -277,6 +282,9 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Partners.IPartnerStore>(new FakePartnerStore());
         services.AddSingleton<INumberSeriesService>(new FakeNumberSeries());
         services.AddSingleton<Erp.Core.Application.Settings.ISettingsStore>(new FakeSettingsStore());
+        services.AddSingleton<Erp.Core.Application.Partners.IPartnerSpreadsheet>(new Erp.Core.Infrastructure.Partners.PartnerSpreadsheet());
+        services.AddSingleton<Erp.Core.Application.Properties.IPropertyDefinitionStore>(new FakePropertyStore());
+        services.AddSingleton<Erp.Core.Application.Partners.IImportJobStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Anaf.IAnafVatRegistry>(new FakeAnafRegistry());
         services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
             new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
@@ -291,10 +299,22 @@ public static class FakePartnerServices
             throw new NotSupportedException();
     }
 
+    private sealed class FakePropertyStore : Erp.Core.Application.Properties.IPropertyDefinitionStore
+    {
+        public Task<IReadOnlyList<Erp.Core.Application.Properties.PropertyDefinitionAdminDto>> ListAsync(string entityType, CancellationToken ct) =>
+            throw new NotSupportedException();
+
+        public Task<Erp.Core.Application.Organization.SavedEntity> SaveAsync(Erp.Core.Application.Properties.SavePropertyDefinition command, int userId,
+            CancellationToken ct) => throw new NotSupportedException();
+    }
+
     private sealed class FakeAnafRegistry : Erp.Core.Application.Anaf.IAnafVatRegistry
     {
         public Task<Erp.Core.Application.Anaf.AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct) =>
             throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<string, Erp.Core.Application.Anaf.AnafCompanyDto>> LookupManyAsync(IReadOnlyCollection<string> fiscalCodes,
+            DateOnly date, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private sealed class FakeNumberSeries : INumberSeriesService

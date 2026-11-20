@@ -6,6 +6,7 @@ using Erp.Core.Application.Anaf;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
 using Erp.Core.Application.Partners;
+using Erp.Core.Application.Properties;
 using Erp.Core.Application.Settings;
 using Erp.Core.Contracts;
 using Erp.Core.Infrastructure;
@@ -59,7 +60,7 @@ public sealed class PartnerDatabase(SqlServerFixture sql) : IAsyncLifetime
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFixture<PartnerDatabase>
+public sealed partial class PartnerIntegrationTests(PartnerDatabase database) : IClassFixture<PartnerDatabase>
 {
     private const string Cnp = "1800101221144";
 
@@ -77,7 +78,8 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
         services.AddSingleton<IAnafVatRegistry>(anaf);
         var context = new FakeContext { UserId = database.AdminId, CompanyId = companyId ?? database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.PartnerView, CorePermissions.PartnerManage, CorePermissions.PartnerViewPersonalData,
-            CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage, CorePermissions.SettingsManage]);
+            CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage, CorePermissions.SettingsManage, CorePermissions.PropertyManage,
+            CorePermissions.ImportRun]);
         context.Permissions.ExceptWith(without);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
@@ -177,13 +179,37 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
         var first = await Send(Legal(null, "Primul fara cod", NewFiscalCode(), customer: false, supplier: true), companyId);
         var second = await Send(Legal(null, "Al doilea fara cod", NewFiscalCode(), customer: false, supplier: true), companyId);
 
-        Assert.Equal($"P-{year}-000001", (await Send(new GetPartner(first.Id), companyId)).Code);
-        Assert.Equal($"P-{year}-000002", (await Send(new GetPartner(second.Id), companyId)).Code);
+        // Codurile sunt unice in instalare, seriile pe firma: un numar luat deja (de alta firma cu seria „P” sau manual) se sare.
+        var codes = new[] { (await Send(new GetPartner(first.Id), companyId)).Code, (await Send(new GetPartner(second.Id), companyId)).Code };
+        Assert.All(codes, c => Assert.Matches($"^P-{year}-[0-9]{{6}}$", c));
+        Assert.NotEqual(codes[0], codes[1]);
         var series = Assert.Single(await Send(new ListNumberSeries(companyId, (short)year), companyId));
         Assert.Equal(("Core.Partner", false, true, true), (series.DocumentTypeCode, series.IsFiscal, series.IsDefault, series.AutoRollover));
         var audit = await connection.ExecuteScalarAsync<string>(
             "SELECT Changes FROM core.AuditEntry WHERE EntityType = N'Core.Partner' AND EntityId = @Id;", new { first.Id });
         Assert.Contains("\"codeSeriesCreated\":true", audit, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_code_already_taken_is_skipped_when_allocating_from_the_series()
+    {
+        await using var connection = new SqlConnection(database.ConnectionString);
+        var year = DateTime.UtcNow.Year;
+        var companyId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO core.Company (Code, Name, FiscalCode, VatPayer, VatOnCollection, TradeRegisterNo, Address, City, CountyCode, CountryCode,
+                DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
+            SELECT N'COLIZIUNE', N'Firma coliziune', N'2816464', 1, 0, N'J40/2/2015', N'Str. 2', N'București', N'B', 'RO', Id, 1, 1, 1
+            FROM core.PrecisionPolicy WHERE Code = N'STANDARD';
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """);
+        // Primul numar al seriei noi a firmei e deja folosit (de alta firma sau introdus manual).
+        if (!await connection.ExecuteScalarAsync<bool>("SELECT CAST(COUNT(*) AS bit) FROM core.Partner WHERE Code = @Code;", new { Code = $"P-{year}-000001" }))
+        {
+            await Send(Legal($"P-{year}-000001", "Cod luat", NewFiscalCode(), customer: false, supplier: true));
+        }
+
+        var saved = await Send(Legal(null, "Cod sărit", NewFiscalCode(), customer: false, supplier: true), companyId);
+        Assert.NotEqual($"P-{year}-000001", (await Send(new GetPartner(saved.Id), companyId)).Code);
     }
 
     [Fact]
@@ -397,11 +423,57 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
         Assert.True((await Send(new GetPartner(saved.Id))).AnafCheckedAt <= DateTime.UtcNow.AddMinutes(1));
     }
 
+    [Fact]
+    public async Task Property_definitions_keep_code_and_used_type_and_their_options_feed_the_partner_card()
+    {
+        var code = "P" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var definition = new SavePropertyDefinition(null, PropertyEntityTypes.Partner, code, "Regiune", 5, 3, "Comercial", 70, false, true, null, true,
+            [new(null, "nord", "Nord", 10, true), new(null, "SUD", "Sud", 20, true)], null);
+        var saved = await Send(definition);
+
+        var duplicate = await Assert.ThrowsAsync<ErpException>(() => Send(definition with { Options = [new(null, "X", "X", 1, true)] }));
+        Assert.Equal("CORE_DUPLICATE_CODE", duplicate.Code);
+        var noOptions = await Assert.ThrowsAsync<ErpValidationException>(() => Send(definition with { Code = code + "X", Options = [] }));
+        Assert.Contains("options", noOptions.Errors.Keys);
+
+        var listed = (await Send(new ListPropertyDefinitions(PropertyEntityTypes.Partner))).Single(d => d.Id == saved.Id);
+        Assert.Equal(["NORD", "SUD"], listed.Options.Select(o => o.Code));
+        var north = listed.Options[0];
+
+        // Folosita pe un partener: tipul nu se mai schimba; codul nu se schimba niciodata.
+        await Send(Legal(Code(), "Cu regiune", NewFiscalCode(), customer: false, supplier: true, properties: [new(saved.Id, ValueOptionId: north.Id)]));
+        var used = (await Send(new ListPropertyDefinitions(PropertyEntityTypes.Partner))).Single(d => d.Id == saved.Id);
+        Assert.Equal(1, used.UsageCount);
+        var typeChange = await Assert.ThrowsAsync<ErpException>(() => Send(definition with
+        {
+            Id = saved.Id, DataType = 1, IsFilterable = false, Options = [], RowVersion = used.RowVersion,
+        }));
+        Assert.Equal("CORE_ENTITY_IN_USE", typeChange.Code);
+        var codeChange = await Assert.ThrowsAsync<ErpException>(() => Send(definition with { Id = saved.Id, Code = code + "Y", RowVersion = used.RowVersion }));
+        Assert.Equal("CORE_INVALID_REFERENCE", codeChange.Code);
+
+        // O optiune dezactivata si una noua; definitia dezactivata dispare din fisa partenerului.
+        var updated = await Send(definition with
+        {
+            Id = saved.Id, Name = "Regiune comercială", RowVersion = used.RowVersion,
+            Options = [new(north.Id, north.Code, north.Label, north.SortOrder, false), new(used.Options[1].Id, "SUD", "Sud", 20, true), new(null, "EST", "Est", 30, true)],
+        });
+        var after = (await Send(new ListPropertyDefinitions(PropertyEntityTypes.Partner))).Single(d => d.Id == saved.Id);
+        Assert.Equal(("Regiune comercială", 3, 2), (after.Name, after.Options.Count, after.Options.Count(o => o.IsActive)));
+        Assert.Contains((await Lookups()).Properties, p => p.Id == saved.Id);
+
+        await Send(definition with { Id = saved.Id, IsActive = false, RowVersion = updated.RowVersion, Options = [.. after.Options.Select(o => new PropertyOptionInput(o.Id, o.Code, o.Label, o.SortOrder, o.IsActive))] });
+        Assert.DoesNotContain((await Lookups()).Properties, p => p.Id == saved.Id);
+    }
+
     private sealed class FakeAnaf : IAnafVatRegistry
     {
         public Dictionary<string, AnafCompanyDto> Companies { get; } = [];
 
         public Task<AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct) =>
             Task.FromResult(Companies.GetValueOrDefault(fiscalCode));
+
+        public Task<IReadOnlyDictionary<string, AnafCompanyDto>> LookupManyAsync(IReadOnlyCollection<string> fiscalCodes, DateOnly date, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyDictionary<string, AnafCompanyDto>>(fiscalCodes.Where(Companies.ContainsKey).ToDictionary(c => c, c => Companies[c]));
     }
 }

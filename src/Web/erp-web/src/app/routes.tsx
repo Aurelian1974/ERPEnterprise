@@ -20,6 +20,8 @@ export const routes = [
       { path: 'admin/config/tipuri-adrese', element: <ConfigPage /> },
       { path: 'admin/config/grupe-parteneri', element: <ConfigPage /> },
       { path: 'admin/config/setari', element: <ConfigPage /> },
+      { path: 'admin/config/proprietati', element: <ConfigPage /> },
+      { path: 'admin/config/import', element: <ConfigPage /> },
       { path: 'nomenclatoare/parteneri', element: <PartnersPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },

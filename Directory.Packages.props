@@ -34,6 +34,8 @@
   <ItemGroup Label="Module (Nucleu 4.1, 07 Stack tehnologic)">
     <!-- MediatR 12.5.0 = ultima versiune Apache-2.0; 13+ are licenta comerciala Lucky Penny si nu se foloseste (07, decizie 15.11.2026). -->
     <PackageVersion Include="MediatR" Version="12.5.0" />
+    <!-- Excel pentru export si import (07 Stack tehnologic: „ClosedXML pentru Excel”), licenta MIT. -->
+    <PackageVersion Include="ClosedXML" Version="0.105.1" />
     <PackageVersion Include="FluentValidation" Version="12.2.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />

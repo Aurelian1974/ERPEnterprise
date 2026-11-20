@@ -5,6 +5,7 @@ using Erp.Core.Application.Organization;
 using Erp.Core.Application.Partners;
 using Erp.Core.Application.Anaf;
 using Erp.Core.Application.Settings;
+using Erp.Core.Application.Properties;
 using Erp.Core.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -155,6 +156,14 @@ public static class CoreApiRegistration
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapGet("/property-definitions", (string entityType, ISender sender, CancellationToken ct) => sender.Send(new ListPropertyDefinitions(entityType), ct))
+            .WithName("ListPropertyDefinitions").Produces<IReadOnlyList<PropertyDefinitionAdminDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/property-definitions", (SavePropertyDefinition body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePropertyDefinition").Saves();
+        core.MapPut("/property-definitions/{id:int}", (int id, SavePropertyDefinition body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePropertyDefinition").Saves();
+        MapImport(core);
         core.MapGet("/anaf/companies/{fiscalCode}", (string fiscalCode, ISender sender, CancellationToken ct) => sender.Send(new LookupAnafCompany(fiscalCode), ct))
             .WithName("LookupAnafCompany").Produces<AnafCompanyDto>()
             .ProducesValidationProblem()
@@ -168,6 +177,9 @@ public static class CoreApiRegistration
     {
         core.MapGet("/partners", ([AsParameters] SearchPartners query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("SearchPartners").Produces<PartnerPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/partners/export", async ([AsParameters] ExportPartners query, ISender sender, CancellationToken ct) =>
+                File(await sender.Send(query, ct)))
+            .WithName("ExportPartners").Produces<byte[]>(StatusCodes.Status200OK, FileDto.Xlsx).ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/partners/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetPartnerLookups(), ct))
             .WithName("GetPartnerLookups").Produces<PartnerLookupsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/partners/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartner(id), ct))
@@ -211,6 +223,56 @@ public static class CoreApiRegistration
             .WithName("UpdatePartnerGroup").Saves();
     }
 
+    // Configurare › Import (macheta 07g; fluxul 02.01, 4.8): sablon, incarcare si validare, confirmare in loturi, randuri cu erori.
+    private static void MapImport(RouteGroupBuilder core)
+    {
+        core.MapGet("/import/partners/template", async (ISender sender, CancellationToken ct) => File(await sender.Send(new GetPartnerImportTemplate(), ct)))
+            .WithName("GetPartnerImportTemplate").Produces<byte[]>(StatusCodes.Status200OK, FileDto.Xlsx).ProducesProblem(StatusCodes.Status403Forbidden);
+
+        // Analiza (cu verificarea ANAF optionala) ruleaza in afara tranzactiei; jobul se salveaza apoi, in tranzactia lui.
+        core.MapPost("/import/partners", async (UploadPartnerImport body, ISender sender, CancellationToken ct) =>
+            {
+                var analysis = await sender.Send(new AnalyzePartnerImport(body.FileName, body.FileBase64, body.AnafCheck), ct);
+                return await sender.Send(new CreatePartnerImportJob(analysis), ct);
+            })
+            .WithName("UploadPartnerImport").Produces<ImportJobDto>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden);
+
+        // Confirmarea: loturi de cate 500 de randuri, fiecare in tranzactia lui (4.8 pasul 4). Un lot esuat lasa importul partial.
+        core.MapPost("/import/{id:int}/confirm", async (int id, ISender sender, CancellationToken ct) =>
+            {
+                try
+                {
+                    while (!(await sender.Send(new ImportPartnerBatch(id), ct)).Done)
+                    {
+                    }
+                }
+                catch (ErpException ex) when (ex.Code is not ("CORE_IMPORT_NOT_PENDING" or "CORE_ENTITY_NOT_FOUND" or CoreErrorCodes.Forbidden))
+                {
+                    return await sender.Send(new FailImportJob(id, ex.Message), CancellationToken.None);
+                }
+
+                return await sender.Send(new GetImportJob(id), ct);
+            })
+            .WithName("ConfirmImport").Produces<ImportJobDto>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapPost("/import/{id:int}/cancel", (int id, ISender sender, CancellationToken ct) => sender.Send(new CancelImportJob(id), ct))
+            .WithName("CancelImport").Produces<ImportJobDto>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapGet("/import/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetImportJob(id), ct))
+            .WithName("GetImport").Produces<ImportJobDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/import", (string? entityType, ISender sender, CancellationToken ct) => sender.Send(new ListImportJobs(entityType), ct))
+            .WithName("ListImports").Produces<IReadOnlyList<ImportJobDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/import/{id:int}/errors", async (int id, ISender sender, CancellationToken ct) => File(await sender.Send(new DownloadImportErrors(id), ct)))
+            .WithName("DownloadImportErrors").Produces<byte[]>(StatusCodes.Status200OK, FileDto.Xlsx).ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    private static IResult File(FileDto file) => Results.File(file.Content, file.ContentType, file.FileName);
+
     private static RouteHandlerBuilder Saves(this RouteHandlerBuilder builder) => builder
         .Produces<SavedEntity>()
         .ProducesValidationProblem()
@@ -218,6 +280,9 @@ public static class CoreApiRegistration
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict);
 }
+
+/// <summary>Fisierul de import: numele si continutul .xlsx in Base64; AnafCheck = completarea datelor dupa CUI de la ANAF.</summary>
+public sealed record UploadPartnerImport(string FileName, string FileBase64, bool AnafCheck);
 
 /// <summary>Corpul cererii de inchidere a unei serii: versiunea vazuta de utilizator.</summary>
 public sealed record CloseNumberSeriesBody(byte[] RowVersion);

@@ -16,6 +16,8 @@ import { LicenseTab } from './LicenseTab';
 import { AddressTypesTab } from './AddressTypesTab';
 import { PartnerGroupsTab } from './PartnerGroupsTab';
 import { SettingsTab } from './SettingsTab';
+import { ImportTab } from './ImportTab';
+import { PropertiesTab } from './PropertiesTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -25,13 +27,18 @@ export function ConfigPage() {
   const canAddressTypes = user.permissions.includes('Core.Company.Manage');
   const canPartnerGroups = user.permissions.includes('Core.Nomenclature.Manage');
   const canSettings = user.permissions.includes('Core.Settings.Manage');
+  const canProperties = user.permissions.includes('Core.Property.Manage');
+  const canImport = user.permissions.includes('Core.Import.Run');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
       : path.endsWith('/grupe-parteneri') && canPartnerGroups ? 'partnerGroups'
-        : path.endsWith('/setari') && canSettings ? 'settings' : 'series';
+        : path.endsWith('/setari') && canSettings ? 'settings'
+          : path.endsWith('/proprietati') && canProperties ? 'properties'
+            : path.endsWith('/import') && canImport ? 'import' : 'series';
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
-    : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings') : t('config.tab.series');
+    : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings')
+      : tab === 'properties' ? t('config.tab.properties') : tab === 'import' ? t('config.tab.import') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -50,7 +57,7 @@ export function ConfigPage() {
             </NavLink>
           )}
         </div>
-        {(canAddressTypes || canPartnerGroups) && (
+        {(canAddressTypes || canPartnerGroups || canProperties) && (
           <div className="family">
             <span className="family-name">{t('config.family.nomenclature')}</span>
             {canAddressTypes && (
@@ -63,14 +70,24 @@ export function ConfigPage() {
                 ◉ {t('config.tab.partnerGroups')}
               </NavLink>
             )}
+            {canProperties && (
+              <NavLink to="/admin/config/proprietati" className="tab">
+                ≡ {t('config.tab.properties')}
+              </NavLink>
+            )}
           </div>
         )}
-        {(canSettings || canLicense) && (
+        {(canSettings || canImport || canLicense) && (
           <div className="family">
             <span className="family-name">{t('config.family.system')}</span>
             {canSettings && (
               <NavLink to="/admin/config/setari" className="tab">
                 ⚙ {t('config.tab.settings')}
+              </NavLink>
+            )}
+            {canImport && (
+              <NavLink to="/admin/config/import" className="tab">
+                ⇧ {t('config.tab.import')}
               </NavLink>
             )}
             {canLicense && (
@@ -82,7 +99,7 @@ export function ConfigPage() {
         )}
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
-        : tab === 'settings' ? <SettingsTab />
+        : tab === 'settings' ? <SettingsTab /> : tab === 'properties' ? <PropertiesTab /> : tab === 'import' ? <ImportTab />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

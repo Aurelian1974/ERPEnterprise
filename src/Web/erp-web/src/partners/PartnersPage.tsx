@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router';
+import { Link, useOutletContext, useSearchParams } from 'react-router';
+import { downloadFile } from '../api/download';
+import { useNotifier } from '../components/Notifier';
 import { TextBoxComponent } from '@syncfusion/ej2-react-inputs';
 import type { CurrentUser } from '../api/session';
 import { tabKeyTarget } from '../components/tabs';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { useOrgLookups, type OrgLookups } from '../org/orgApi';
-import { DataType, PAGE_SIZE, PartnerType, usePartner, usePartnerLookups, usePartners, type PartnerCriteria, type PartnerLookups } from './partnerApi';
+import { DataType, PAGE_SIZE, PartnerType, searchQuery, usePartner, usePartnerLookups, usePartners, type PartnerCriteria, type PartnerLookups } from './partnerApi';
 import { PartnerForm, type PartnerSection } from './PartnerForm';
 import { anafBadge, displayFiscalCode } from './partnerModel';
 import { PartnerAddressesTab, PartnerBankAccountsTab, PartnerContactsTab, PartnerHistoryTab } from './PartnerTabs';
@@ -54,6 +56,9 @@ export function PartnersPage() {
   const page = paging.key === filterKey ? paging.page : 1;
   const setPage = (next: number) => setPaging({ key: filterKey, page: next });
   const canManage = user.permissions.includes('Core.Partner.Manage');
+  const canImport = user.permissions.includes('Core.Import.Run');
+  const { notify } = useNotifier();
+  const [exporting, setExporting] = useState(false);
 
   const property = lookups.data?.properties.find((p) => p.id === propertyId);
   const criteria: PartnerCriteria = {
@@ -68,6 +73,20 @@ export function PartnersPage() {
     page,
   };
   const list = usePartners(criteria);
+
+  /** Exportul Excel al listei filtrate (toate paginile), cu coloanele sablonului de import. */
+  async function exportExcel() {
+    setExporting(true);
+    try {
+      const query = Object.fromEntries(Object.entries(searchQuery(criteria)).filter(([key]) => key !== 'Page' && key !== 'PageSize'));
+      await downloadFile('/api/core/partners/export', query, 'parteneri.xlsx');
+      notify(t('partner.exportDone'));
+    } catch (e) {
+      notify(e instanceof Error ? e.message : t('app.loadError'), 'error');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (lookups.data === undefined || orgLookups.data === undefined) {
     return <div className="page" role="status">{lookups.isError || orgLookups.isError ? t('app.loadError') : t('app.loading')}</div>;
@@ -90,13 +109,21 @@ export function PartnersPage() {
           <h1>{t('partner.title')}</h1>
           <div className="sub2">{t('partner.subtitle', { count: (data?.activeCount ?? 0).toLocaleString('ro-RO') })}</div>
         </div>
-        {canManage && (
-          <div className="actions">
+        <div className="actions">
+          <button type="button" className="btn ghost" disabled={exporting} onClick={() => void exportExcel()}>
+            {t('partner.export')}
+          </button>
+          {canImport && (
+            <Link to="/admin/config/import" className="btn ghost">
+              {t('partner.import')}
+            </Link>
+          )}
+          {canManage && (
             <button type="button" className="btn primary" onClick={selection.startCreate}>
               {t('partner.new')}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="split partners">

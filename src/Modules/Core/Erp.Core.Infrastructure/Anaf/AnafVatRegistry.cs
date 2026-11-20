@@ -64,37 +64,63 @@ public sealed class AnafHttp(HttpMessageHandler handler, TimeProvider clock) : I
 /// </summary>
 public sealed class AnafVatRegistry(AnafHttp http, ISettingsStore settings, TimeProvider clock, ILogger<AnafVatRegistry> log) : IAnafVatRegistry
 {
-    public async Task<AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct)
+    /// <summary>Limita ANAF de CUI-uri intr-o cerere.</summary>
+    public const int MaxCodesPerRequest = 100;
+
+    public async Task<AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct) =>
+        (await LookupManyAsync([fiscalCode], date, ct).ConfigureAwait(false)).GetValueOrDefault(fiscalCode);
+
+    public async Task<IReadOnlyDictionary<string, AnafCompanyDto>> LookupManyAsync(IReadOnlyCollection<string> fiscalCodes, DateOnly date, CancellationToken ct)
     {
+        var result = new Dictionary<string, AnafCompanyDto>(StringComparer.Ordinal);
+        if (fiscalCodes.Count == 0)
+        {
+            return result;
+        }
+
         var configured = (await settings.GetInstallationAsync(SettingKeys.AnafVatRegistryUrl, ct).ConfigureAwait(false)).Value;
         var url = new Uri(string.IsNullOrWhiteSpace(configured) ? SettingKeys.DefaultAnafVatRegistryUrl : configured);
-        var body = new[] { new { cui = long.Parse(fiscalCode, CultureInfo.InvariantCulture), data = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) } };
-        string json;
+        var day = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        foreach (var chunk in fiscalCodes.Distinct(StringComparer.Ordinal).Chunk(MaxCodesPerRequest))
+        {
+            var body = chunk.Select(code => new { cui = long.Parse(code, CultureInfo.InvariantCulture), data = day }).ToArray();
+            var json = await PostAsync(url, body, ct).ConfigureAwait(false);
+            try
+            {
+                foreach (var company in AnafVatResponse.ParseAll(json, clock.GetUtcNow().UtcDateTime))
+                {
+                    result[company.FiscalCode] = company;
+                }
+            }
+            catch (JsonException ex)
+            {
+                log.LogWarning(ex, "Răspuns ANAF neașteptat de la {Url}", url);
+                throw Unavailable("Răspunsul ANAF nu are forma așteptată. Verificați adresa serviciului din Configurare › Setări (versiunea curentă publicată de ANAF).");
+            }
+        }
+
+        return result;
+    }
+
+    private async Task<string> PostAsync(Uri url, object body, CancellationToken ct)
+    {
         try
         {
             using var response = await http.PostAsync(url, body, ct).ConfigureAwait(false);
-            json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            // Serviciul v9 raspunde 404 cu {"found":[],"notFound":[]} la o cerere fara rezultate; alte coduri sunt erori.
+            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            // Serviciul v9 raspunde 404 cu {"found":[],"notFound":[...]} cand niciun CUI nu e gasit; alte coduri sunt erori.
             if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NotFound)
             {
                 log.LogWarning("ANAF a răspuns {Status} la {Url}", (int)response.StatusCode, url);
                 throw Unavailable($"Serviciul ANAF a răspuns cu eroarea {(int)response.StatusCode}. Reîncercați mai târziu sau verificați adresa din Configurare › Setări.");
             }
+
+            return json;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
             log.LogWarning(ex, "ANAF nu răspunde la {Url}", url);
             throw Unavailable("Serviciul ANAF nu răspunde. Reîncercați mai târziu; dacă problema persistă, verificați accesul serverului la internet.");
-        }
-
-        try
-        {
-            return AnafVatResponse.Parse(json, fiscalCode, clock.GetUtcNow().UtcDateTime);
-        }
-        catch (JsonException ex)
-        {
-            log.LogWarning(ex, "Răspuns ANAF neașteptat de la {Url}", url);
-            throw Unavailable("Răspunsul ANAF nu are forma așteptată. Verificați adresa serviciului din Configurare › Setări (versiunea curentă publicată de ANAF).");
         }
     }
 
@@ -108,8 +134,14 @@ public sealed class AnafVatRegistry(AnafHttp http, ISettingsStore settings, Time
 public static class AnafVatResponse
 {
     /// <exception cref="JsonException">Raspunsul nu are forma serviciului.</exception>
-    public static AnafCompanyDto? Parse(string json, string fiscalCode, DateTime checkedAtUtc)
+    public static AnafCompanyDto? Parse(string json, string fiscalCode, DateTime checkedAtUtc) =>
+        ParseAll(json, checkedAtUtc).FirstOrDefault(c => c.FiscalCode == fiscalCode);
+
+    /// <summary>Toti contribuabilii gasiti din raspuns.</summary>
+    /// <exception cref="JsonException">Raspunsul nu are forma serviciului.</exception>
+    public static IReadOnlyList<AnafCompanyDto> ParseAll(string json, DateTime checkedAtUtc)
     {
+        var result = new List<AnafCompanyDto>();
         using var document = JsonDocument.Parse(json);
         if (!document.RootElement.TryGetProperty("found", out var found) || found.ValueKind != JsonValueKind.Array)
         {
@@ -119,7 +151,8 @@ public static class AnafVatResponse
         foreach (var item in found.EnumerateArray())
         {
             var general = Object(item, "date_generale");
-            if (Text(general, "cui") != fiscalCode)
+            var fiscalCode = Text(general, "cui");
+            if (fiscalCode is null)
             {
                 continue;
             }
@@ -131,7 +164,7 @@ public static class AnafVatResponse
             var address = street is null
                 ? Text(general, "adresa")
                 : string.Join(", ", new[] { number is null ? street : $"{street} nr. {number}", details }.Where(p => p is not null));
-            return new AnafCompanyDto(
+            result.Add(new AnafCompanyDto(
                 fiscalCode,
                 Text(general, "denumire") ?? throw new JsonException("Lipsește denumirea."),
                 Text(general, "nrRegCom"),
@@ -146,10 +179,10 @@ public static class AnafVatResponse
                 Text(office, "scod_JudetAuto"),
                 PostalCode(Text(office, "scod_Postal") ?? Text(general, "codPostal")),
                 Text(general, "telefon"),
-                DateTime.SpecifyKind(checkedAtUtc, DateTimeKind.Utc));
+                DateTime.SpecifyKind(checkedAtUtc, DateTimeKind.Utc)));
         }
 
-        return null;
+        return result;
     }
 
     /// <summary>Codul postal romanesc are 6 cifre; ANAF il trimite ca numar (010987 → „10987”).</summary>

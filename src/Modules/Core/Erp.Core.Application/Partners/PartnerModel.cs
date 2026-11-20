@@ -50,6 +50,11 @@ public sealed record PartnerHistoryEntryDto(long Id, DateTime OccurredAt, string
 
 public sealed record PartnerPersonalIdDto(string? PersonalId);
 
+/// <summary>Un partener in exportul Excel (coloanele sablonului de import).</summary>
+public sealed record PartnerExportRow(string Code, string Name, byte PartnerType, bool IsCustomer, bool IsSupplier, string? FiscalCode,
+    string? TradeRegisterNo, bool VatPayer, bool VatOnCollection, bool AnafInactive, string? GroupCode, string Address, string City,
+    string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsActive);
+
 public sealed record PartnerSearchCriteria(string? Search, string? FiscalSearch, byte? Role, byte? PartnerType, bool? IsActive, bool? AnafInactive,
     int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize);
 
@@ -59,6 +64,9 @@ public interface IPartnerStore
     Task<PartnerPageDto> SearchAsync(PartnerSearchCriteria criteria, CancellationToken ct);
 
     Task<PartnerDetailDto?> GetAsync(int id, CancellationToken ct);
+
+    /// <summary>Toti partenerii filtrului (Offset/PageSize ignorate), pentru exportul Excel.</summary>
+    Task<IReadOnlyList<PartnerExportRow>> ExportAsync(PartnerSearchCriteria criteria, CancellationToken ct);
 
     Task<PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct);
 
@@ -71,6 +79,8 @@ public interface IPartnerStore
 
     /// <summary>Creeaza seria implicita nefiscala a codurilor de partener daca firma nu are una pentru anul dat; true = creata acum.</summary>
     Task<bool> EnsureCodeSeriesAsync(int companyId, short year, int userId, CancellationToken ct);
+
+    Task<bool> CodeExistsAsync(string code, CancellationToken ct);
 
     Task<SavedEntity> SaveAddressAsync(SavePartnerAddress command, int userId, CancellationToken ct);
 

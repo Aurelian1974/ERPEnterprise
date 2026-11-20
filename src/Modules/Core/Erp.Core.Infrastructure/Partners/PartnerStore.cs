@@ -51,6 +51,13 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             row.RowVersion, addresses, accounts, contacts, properties);
     }
 
+    public async Task<IReadOnlyList<PartnerExportRow>> ExportAsync(PartnerSearchCriteria criteria, CancellationToken ct) =>
+        [.. await session.Connection.QueryAsync<PartnerExportRow>(new CommandDefinition("core.usp_Partner_Export", new
+        {
+            criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
+            criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool,
+        }, session.Transaction, commandType: CommandType.StoredProcedure, commandTimeout: 300, cancellationToken: ct)).ConfigureAwait(false)];
+
     public async Task<PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct)
     {
         using var grid = await session.Connection.QueryMultipleAsync(Command("core.usp_PartnerLookups_Get", new { CompanyId = companyId }, ct))
@@ -92,6 +99,9 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             CompanyId = companyId, DocumentTypeCode = PartnerCodeSeries.DocumentType, Year = year, Prefix = PartnerCodeSeries.DefaultPrefix,
             Padding = PartnerCodeSeries.DefaultPadding, UserId = userId,
         }, ct));
+
+    public Task<bool> CodeExistsAsync(string code, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<bool>(Command("core.usp_Partner_CodeExists", new { Code = code }, ct));
 
     public Task<SavedEntity> SaveAddressAsync(SavePartnerAddress command, int userId, CancellationToken ct) => Save("core.usp_PartnerAddress_Save", new
     {

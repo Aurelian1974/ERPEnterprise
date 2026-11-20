@@ -1092,3 +1092,273 @@ table.simple.history td:first-child {
 .anaf-fetch {
   white-space: nowrap;
 }
+
+/* ---------- Configurare › Import (macheta 07g) ---------- */
+
+.steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  flex: 1 1 auto;
+}
+
+.step:not(:last-child)::after {
+  content: '';
+  flex: 1 1 24px;
+  border-top: 1px solid var(--line-strong);
+  margin: 0 8px;
+}
+
+.step.done {
+  color: var(--ink);
+}
+
+.step.current {
+  color: var(--action);
+  font-weight: 600;
+}
+
+.step-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  background: var(--surface-muted);
+}
+
+.step.done .step-mark {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.step.current .step-mark {
+  background: var(--action);
+  color: var(--on-dark);
+}
+
+.import-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+}
+
+.check-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.import-report {
+  display: grid;
+  grid-template-columns: 3fr minmax(260px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.import-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: var(--surface-card);
+}
+
+.tile strong {
+  font-size: 26px;
+}
+
+.tile.ok strong {
+  color: var(--ok);
+}
+
+.tile.bad strong {
+  color: var(--error);
+}
+
+.tile.warn strong {
+  color: var(--warn);
+}
+
+.tile-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.issues-table td.num {
+  text-align: right;
+  width: 60px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.problem.bad {
+  color: var(--error);
+}
+
+.problem.warn {
+  color: var(--warn);
+}
+
+.import-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.btn.wide {
+  width: 100%;
+}
+
+.import-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+/* ---------- Configurare › Proprietăți (macheta 07l) ---------- */
+
+.segmented.small {
+  grid-template-columns: repeat(1, auto);
+}
+
+input.search {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font: inherit;
+  background: var(--surface-input);
+  color: var(--ink);
+}
+
+.properties-table tr.section-row th {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: var(--surface-muted);
+}
+
+.properties-table tbody tr:not(.section-row) {
+  cursor: pointer;
+}
+
+.properties-table tr.current td {
+  background: var(--info-bg);
+}
+
+.properties-table tr.inactive td {
+  color: var(--muted);
+}
+
+.tag.type {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.options-table td {
+  padding: 4px 6px;
+}
+
+.options-table td.order {
+  white-space: nowrap;
+  width: 48px;
+}
+
+.cell-input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font: inherit;
+  background: var(--surface-input);
+  color: var(--ink);
+}
+
+.cell-input[aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.cell-input[readonly] {
+  background: var(--surface-muted);
+}
+
+.icon-link {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0 2px;
+}
+
+.icon-link:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.banner.dashed {
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+}
+
+@media (max-width: 1100px) {
+  .import-report,
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+a.btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
