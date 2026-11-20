@@ -229,6 +229,12 @@ public sealed class SetupWizardViewModelTests : IDisposable
 
         wizard.RecoveryKeyPassword = "Parola-Cheie-2026!";
         wizard.RecoveryKeyPasswordConfirm = "Parola-Cheie-2026!";
+        // PasswordBox-urile se golesc cat timp dialogul modal e deschis (ClearPasswords): parola exportata ramane cea introdusa.
+        dialogs.WhileSaveDialogOpen = () =>
+        {
+            wizard.RecoveryKeyPassword = string.Empty;
+            wizard.RecoveryKeyPasswordConfirm = string.Empty;
+        };
         wizard.SaveRecoveryKeyCommand.Execute(null);
 
         Assert.Equal(@"E:\ERP-PROD-cheie-recuperare.pfx", wizard.RecoveryKeyPath);
@@ -361,7 +367,13 @@ public sealed class SetupWizardViewModelTests : IDisposable
 
         public string? AskSaveAnswers(string suggestedFileName) => null;
 
-        public string? AskSaveRecoveryKey(string suggestedFileName) => @"E:\" + suggestedFileName;
+        public Action? WhileSaveDialogOpen { get; set; }
+
+        public string? AskSaveRecoveryKey(string suggestedFileName)
+        {
+            WhileSaveDialogOpen?.Invoke();
+            return @"E:\" + suggestedFileName;
+        }
 
         public string? AskOpenRecoveryKey() => @"E:\cheie.pfx";
 

@@ -603,19 +603,26 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
 
-        if (installedRequest is null || dialogs.AskSaveRecoveryKey($"ERP-{installedRequest.Instance}-cheie-recuperare.pfx") is not { } path)
+        if (installedRequest is null)
+        {
+            return;
+        }
+
+        // Dialogul modal ruleaza bucla de mesaje si lasa ClearPasswords (Click) sa goleasca casetele: parola se retine inainte.
+        var password = RecoveryKeyPassword;
+        if (dialogs.AskSaveRecoveryKey($"ERP-{installedRequest.Instance}-cheie-recuperare.pfx") is not { } path)
         {
             return;
         }
 
         try
         {
-            backend.ExportRecoveryKey(installedRequest.Instance, path, RecoveryKeyPassword);
+            backend.ExportRecoveryKey(installedRequest.Instance, path, password);
             RecoveryKeyPath = path;
             OnPropertyChanged(nameof(RecoveryKeySaved));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
-            or InvalidOperationException or Windows.Services.WindowsSetupException)
+            or InvalidOperationException or ArgumentException or Windows.Services.WindowsSetupException)
         {
             RecoveryKeyError = $"Cheia nu a putut fi salvată: {ex.Message} (cod {ExitCodes.RecoveryKeyInvalid})";
         }
@@ -797,6 +804,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
 
+        var password = RecoveryKeyPassword;
         if (dialogs.AskSaveRecoveryKey($"ERP-{instance}-cheie-recuperare.pfx") is not { } path)
         {
             return;
@@ -804,11 +812,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
         try
         {
-            backend.ExportRecoveryKey(instance, path, RecoveryKeyPassword);
+            backend.ExportRecoveryKey(instance, path, password);
             ActionMessage = $"Cheia de recuperare a fost salvată în {path}.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
-            or InvalidOperationException or Windows.Services.WindowsSetupException)
+            or InvalidOperationException or ArgumentException or Windows.Services.WindowsSetupException)
         {
             ActionError = $"Cheia nu a putut fi salvată: {ex.Message} (cod {ExitCodes.RecoveryKeyInvalid})";
         }
@@ -824,12 +832,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     private void VerifyRecoveryKey()
     {
         ActionError = null;
+        var password = RecoveryKeyPassword;
         if (ActionInstance is not { } instance || dialogs.AskOpenRecoveryKey() is not { } path)
         {
             return;
         }
 
-        var check = backend.VerifyRecoveryKey(instance, path, RecoveryKeyPassword);
+        var check = backend.VerifyRecoveryKey(instance, path, password);
         RecoveryKeyPassword = string.Empty;
         RecoveryKeyPasswordConfirm = string.Empty;
         if (check == RecoveryKeyCheck.Valid)
