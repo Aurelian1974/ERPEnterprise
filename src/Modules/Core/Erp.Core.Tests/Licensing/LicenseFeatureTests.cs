@@ -51,6 +51,7 @@ public sealed class LicenseFeatureTests : IDisposable
         services.AddSingleton<ILicenseRefresh>(feature);
         services.AddSingleton<ILicenseReader>(new LicenseReader(new LicenseKeyRing([key.ToPublicKey()]), TimeProvider.System));
         services.AddSingleton<Application.Organization.IOrganizationStore>(new FakeOrganizationStore());
+        services.AddFakePartnerServices();
         services.AddSingleton<IPeriodLock>(new FakePeriods());
         services.AddSingleton<IUnitOfWork>(unitOfWork);
         services.AddSingleton<IIdempotencyStore>(unitOfWork);

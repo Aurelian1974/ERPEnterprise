@@ -14,3 +14,10 @@ public sealed record DocumentNumber(string Prefix, int Year, long Number, string
 
 /// <summary>Modificarea datelor unei firme (02.01, 5): Integrari (emitentul e-Factura), Finante. CompanyId e in anvelopa.</summary>
 public sealed record FirmaModificata(string FiscalCode, string Name, bool VatPayer, bool VatOnCollection) : IntegrationEvent;
+
+/// <summary>
+/// Crearea sau modificarea unui partener (02.01, 5): CRM, Vanzari, Achizitii (cache-uri locale), POS. Partenerii sunt la
+/// nivelul instalarii; CompanyId din anvelopa e firma din care s-a facut modificarea (0 = nivelul instalarii).
+/// </summary>
+public sealed record PartenerModificat(int PartnerId, string Code, string Name, string? FiscalCode, bool VatPayer, bool VatOnCollection,
+    bool AnafInactive, bool IsActive) : IntegrationEvent;

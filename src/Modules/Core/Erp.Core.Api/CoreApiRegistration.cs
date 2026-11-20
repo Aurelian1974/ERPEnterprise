@@ -2,6 +2,7 @@ using Erp.Core.Application.Licensing;
 using Erp.Core.Application.Me;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
+using Erp.Core.Application.Partners;
 using Erp.Core.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -19,6 +20,7 @@ public static class CoreApiRegistration
         services.AddScoped<HttpCurrentContext>();
         services.AddScoped<ICurrentContext>(sp => sp.GetRequiredService<HttpCurrentContext>());
         services.AddScoped<ICurrentUserProfile>(sp => sp.GetRequiredService<HttpCurrentContext>());
+        services.AddSingleton<IPersonalDataProtector, PersonalDataProtector>();
         services.AddProblemDetails();
         services.AddExceptionHandler<ErpExceptionHandler>();
         // Numerele JSON stricte: contractul OpenAPI are tipuri exacte; sumele si cantitatile circula ca siruri (UI, bani).
@@ -43,6 +45,7 @@ public static class CoreApiRegistration
             .Produces<CurrentUserDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         MapOrganization(core);
+        MapPartners(core);
         MapLicense(core);
         return endpoints;
     }
@@ -137,6 +140,54 @@ public static class CoreApiRegistration
                 (int companyId, int id, CloseNumberSeriesBody body, ISender sender, CancellationToken ct) =>
                     sender.Send(new CloseNumberSeries(id, companyId, body.RowVersion), ct))
             .WithName("CloseNumberSeries").Saves();
+    }
+
+    // Parteneri (macheta 04): nomenclator la nivelul instalarii; permisiunile se verifica pe firma curenta (X-Company-Id).
+    private static void MapPartners(RouteGroupBuilder core)
+    {
+        core.MapGet("/partners", ([AsParameters] SearchPartners query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchPartners").Produces<PartnerPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/partners/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetPartnerLookups(), ct))
+            .WithName("GetPartnerLookups").Produces<PartnerLookupsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/partners/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartner(id), ct))
+            .WithName("GetPartner").Produces<PartnerDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/partners/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartnerHistory(id), ct))
+            .WithName("GetPartnerHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/partners/{id:int}/personal-id", (int id, ISender sender, CancellationToken ct) => sender.Send(new RevealPartnerPersonalId(id), ct))
+            .WithName("RevealPartnerPersonalId").Produces<PartnerPersonalIdDto>()
+            .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+
+        core.MapPost("/partners", (SavePartner body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePartner").Saves();
+        core.MapPut("/partners/{id:int}", (int id, SavePartner body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePartner").Saves();
+
+        core.MapPost("/partners/{partnerId:int}/addresses", (int partnerId, SavePartnerAddress body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, PartnerId = partnerId }, ct))
+            .WithName("CreatePartnerAddress").Saves();
+        core.MapPut("/partners/{partnerId:int}/addresses/{id:int}", (int partnerId, int id, SavePartnerAddress body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id, PartnerId = partnerId }, ct))
+            .WithName("UpdatePartnerAddress").Saves();
+
+        core.MapPost("/partners/{partnerId:int}/bank-accounts", (int partnerId, SavePartnerBankAccount body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, PartnerId = partnerId }, ct))
+            .WithName("CreatePartnerBankAccount").Saves();
+        core.MapPut("/partners/{partnerId:int}/bank-accounts/{id:int}",
+                (int partnerId, int id, SavePartnerBankAccount body, ISender sender, CancellationToken ct) =>
+                    sender.Send(body with { Id = id, PartnerId = partnerId }, ct))
+            .WithName("UpdatePartnerBankAccount").Saves();
+
+        core.MapPost("/partners/{partnerId:int}/contacts", (int partnerId, SavePartnerContact body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, PartnerId = partnerId }, ct))
+            .WithName("CreatePartnerContact").Saves();
+        core.MapPut("/partners/{partnerId:int}/contacts/{id:int}", (int partnerId, int id, SavePartnerContact body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id, PartnerId = partnerId }, ct))
+            .WithName("UpdatePartnerContact").Saves();
+
+        core.MapPost("/partner-groups", (SavePartnerGroup body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePartnerGroup").Saves();
+        core.MapPut("/partner-groups/{id:int}", (int id, SavePartnerGroup body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePartnerGroup").Saves();
     }
 
     private static RouteHandlerBuilder Saves(this RouteHandlerBuilder builder) => builder

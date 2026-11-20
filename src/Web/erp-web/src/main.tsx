@@ -13,6 +13,7 @@ import '@syncfusion/ej2-tailwind3-theme/styles/popup/popup.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/list-view/list-view.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/drop-down-base/drop-down-base.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/drop-down-list/drop-down-list.css';
+import '@syncfusion/ej2-tailwind3-theme/styles/multi-select/multi-select.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/drop-down-button/drop-down-button.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/textbox/textbox.css';
 import '@syncfusion/ej2-tailwind3-theme/styles/numerictextbox/numerictextbox.css';

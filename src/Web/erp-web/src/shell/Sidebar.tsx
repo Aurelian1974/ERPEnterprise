@@ -24,7 +24,7 @@ export function Sidebar({ user, groups = menuGroups }: { readonly user: CurrentU
       {visible.length > 0 && <div className="sec">{t('menu.modules')}</div>}
       {visible.map((group) => (
         <div
-          key={group.module}
+          key={`${group.module}-${group.label ?? ''}`}
           className="group"
           role="group"
           style={accentStyle(group.module)}

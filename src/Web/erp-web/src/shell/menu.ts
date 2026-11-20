@@ -32,6 +32,14 @@ export const homeItem: MenuItem = { id: 'home', label: 'menu.home', path: '/', i
 export const menuGroups: readonly MenuGroup[] = [
   {
     module: 'Core',
+    label: 'menu.nomenclatures',
+    icon: '▤',
+    items: [
+      { id: 'partners', label: 'menu.partners', path: '/nomenclatoare/parteneri', icon: '', module: 'Core', permission: 'Core.Partner.View' },
+    ],
+  },
+  {
+    module: 'Core',
     label: 'menu.admin',
     icon: '⛭',
     items: [

@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { NumericTextBoxComponent, TextBoxComponent } from '@syncfusion/ej2-react-inputs';
-import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
+import { DropDownListComponent, MultiSelectComponent } from '@syncfusion/ej2-react-dropdowns';
 import { SwitchComponent } from '@syncfusion/ej2-react-buttons';
 import { t } from '../i18n';
 
@@ -146,6 +146,37 @@ export function SelectField<T extends FieldValues>({ control, name, label, disab
               const value = raw === undefined || raw === null || raw === '' ? null : String(raw);
               field.onChange(numeric === true && value !== null ? Number(value) : value);
             }}
+            enabled={disabled !== true}
+            cssClass={fieldState.error === undefined ? '' : 'e-error'}
+            htmlAttributes={{ 'aria-label': label }}
+          />
+        </Shell>
+      )}
+    />
+  );
+}
+
+/** Alegere multipla dintr-o lista (de exemplu zilele de livrare); valoarea formularului e lista de valori alese. */
+export function MultiSelectField<T extends FieldValues>({ control, name, label, disabled, className, options }: FieldProps<T> & {
+  readonly options: readonly Option[];
+}) {
+  const id = useFieldId(name);
+  const key = JSON.stringify(options);
+  const data = useMemo(() => JSON.parse(key) as Option[], [key]);
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => (
+        <Shell id={id} label={label} error={fieldState.error?.message} className={className}>
+          <MultiSelectComponent
+            id={id}
+            dataSource={data as unknown as { [key: string]: object }[]}
+            fields={{ text: 'text', value: 'value' }}
+            value={(field.value as string[] | null | undefined) ?? []}
+            mode="Box"
+            placeholder={t('common.select')}
+            change={(args: { value: unknown }) => field.onChange(Array.isArray(args.value) ? args.value.map(String) : [])}
             enabled={disabled !== true}
             cssClass={fieldState.error === undefined ? '' : 'e-error'}
             htmlAttributes={{ 'aria-label': label }}

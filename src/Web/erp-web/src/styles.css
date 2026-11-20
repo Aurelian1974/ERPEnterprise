@@ -874,3 +874,217 @@ table.simple tr.current td {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ---------- Parteneri (macheta 04 / 04b) ---------- */
+
+.split.partners {
+  grid-template-columns: minmax(340px, 5fr) 6fr;
+}
+
+.list-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 520px;
+}
+
+table.partner-list {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+table.partner-list th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+table.partner-list td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+table.partner-list tr:hover td {
+  background: var(--surface-muted);
+}
+
+table.partner-list tr.current td {
+  background: var(--info-bg);
+}
+
+table.partner-list tr.current td:first-child {
+  box-shadow: inset 3px 0 0 var(--action);
+}
+
+table.partner-list tr.inactive .row-link {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+table.partner-list[aria-busy='true'] {
+  opacity: 0.85;
+}
+
+.row-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.tag.customer {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.tag.supplier {
+  background: var(--surface-violet);
+  color: var(--ink);
+}
+
+.pill.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.pill.bad {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.small {
+  font-size: 11.5px;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.banner.info {
+  background: var(--info-bg);
+  color: var(--ink);
+}
+
+/* .form-body e flex; atributul hidden trebuie sa castige (sectiunile ascunse ale fisei raman montate, UI-18). */
+fieldset.plain[hidden],
+.partner-form[hidden] {
+  display: none;
+}
+
+fieldset.plain {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.btn.small {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface-input);
+  padding: 8px 6px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.segmented button:first-child {
+  border-left: 0;
+}
+
+.segmented button.on {
+  background: var(--action);
+  color: var(--on-dark);
+  font-weight: 600;
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.role-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.role-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.role-toggle.on {
+  border-color: var(--action);
+  background: var(--info-bg);
+  color: var(--action);
+}
+
+.anaf-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.anaf-box .switches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+table.simple.history td:first-child {
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .split.partners {
+    grid-template-columns: 1fr;
+  }
+}

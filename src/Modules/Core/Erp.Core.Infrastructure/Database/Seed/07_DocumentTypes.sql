@@ -15,7 +15,8 @@ USING (VALUES
     (N'Finance.Receipt',          N'Finance',    N'Chitanță',            1),
     (N'Finance.Payment',          N'Finance',    N'Dispoziție de plată', 0),
     (N'Finance.JournalEntry',     N'Finance',    N'Notă contabilă',      0),
-    (N'Purchasing.Order',         N'Purchasing', N'Comandă furnizor',    0)
+    (N'Purchasing.Order',         N'Purchasing', N'Comandă furnizor',    0),
+    (N'Core.Partner',             N'Core',       N'Cod partener',        0)
 ) AS source (Code, ModuleCode, Name, IsFiscalDefault)
 ON target.Code = source.Code
 WHEN MATCHED AND (target.Name <> source.Name OR target.IsFiscalDefault <> source.IsFiscalDefault) THEN

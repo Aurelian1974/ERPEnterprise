@@ -33,6 +33,7 @@ public sealed class PipelineTests
         services.AddSingleton<Erp.Core.Application.Licensing.ILicenseRefresh>(licenseFeature);
         services.AddSingleton<Erp.Licensing.ILicenseReader>(new Erp.Licensing.LicenseReader(new Erp.Licensing.LicenseKeyRing([]), TimeProvider.System));
         services.AddSingleton<Erp.Core.Application.Organization.IOrganizationStore>(new FakeOrganizationStore());
+        services.AddFakePartnerServices();
         services.AddSingleton<IPeriodLock>(periods);
         services.AddSingleton<IUnitOfWork>(unitOfWork);
         services.AddSingleton<IIdempotencyStore>(unitOfWork);

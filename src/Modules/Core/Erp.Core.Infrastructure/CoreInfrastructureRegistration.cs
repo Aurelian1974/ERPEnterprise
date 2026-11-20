@@ -22,6 +22,7 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<IUserContextLoader, UserContextLoader>();
         services.AddScoped<Application.Organization.IOrganizationStore, Organization.OrganizationStore>();
         services.AddScoped<INumberSeriesService, Organization.NumberSeriesService>();
+        services.AddScoped<Application.Partners.IPartnerStore, Partners.PartnerStore>();
         services.AddSingleton<ITransientFailureDetector, SqlServerTransientFailures>();
         services.AddSingleton<ISqlErrorMap, CoreSqlErrors>();
         services.AddSingleton<ISqlErrorTranslator, SqlErrorTranslator>();

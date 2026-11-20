@@ -1,6 +1,7 @@
 using Erp.Core.Application.Abstractions;
 using Erp.Core.Contracts;
 using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Erp.Core.Tests;
 
@@ -233,4 +234,54 @@ public sealed class FakeLicenseFeature : Erp.Core.Application.Licensing.ILicense
         Task.FromResult<IReadOnlyList<Erp.Core.Application.Licensing.LicenseHistoryItem>>([]);
 
     public void RequestRefresh() => RefreshRequests++;
+}
+
+/// <summary>Store-ul partenerilor pentru testele fara baza: pipeline-ul il cere la validarea containerului, nu il apeleaza.</summary>
+public sealed class FakePartnerStore : Erp.Core.Application.Partners.IPartnerStore
+{
+    public Task<Erp.Core.Application.Partners.PartnerPageDto> SearchAsync(Erp.Core.Application.Partners.PartnerSearchCriteria criteria, CancellationToken ct) =>
+        throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Partners.PartnerDetailDto?> GetAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Partners.PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<Erp.Core.Application.Partners.PartnerHistoryEntryDto>> GetHistoryAsync(int id, CancellationToken ct) =>
+        throw new NotSupportedException();
+
+    public Task<byte[]?> GetPersonalIdAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveAsync(Erp.Core.Application.Partners.PartnerRecord partner, int userId, CancellationToken ct) =>
+        throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveAddressAsync(Erp.Core.Application.Partners.SavePartnerAddress command, int userId,
+        CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveBankAccountAsync(Erp.Core.Application.Partners.SavePartnerBankAccount command, int userId,
+        CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveContactAsync(Erp.Core.Application.Partners.SavePartnerContact command, int userId,
+        CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveGroupAsync(Erp.Core.Application.Partners.SavePartnerGroup command, int userId,
+        CancellationToken ct) => throw new NotSupportedException();
+}
+
+/// <summary>Serviciile partenerilor pentru containerele de test fara baza (ValidateOnBuild).</summary>
+public static class FakePartnerServices
+{
+    public static IServiceCollection AddFakePartnerServices(this IServiceCollection services)
+    {
+        services.AddSingleton<Erp.Core.Application.Partners.IPartnerStore>(new FakePartnerStore());
+        services.AddSingleton<INumberSeriesService>(new FakeNumberSeries());
+        services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
+            new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
+        return services;
+    }
+
+    private sealed class FakeNumberSeries : INumberSeriesService
+    {
+        public Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null) =>
+            throw new NotSupportedException();
+    }
 }
