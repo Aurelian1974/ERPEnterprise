@@ -68,7 +68,7 @@ public sealed class ScriptVersionIntegrationTests(SqlServerFixture sql)
     {
         await using var connection = new SqlConnection(sql.ConnectionString(database));
         await connection.OpenAsync(Ct);
-        await using var command = new SqlCommand("SELECT Version FROM core.v_ScriptVersionCurrent WHERE ScriptName = @Name;", connection);
+        await using var command = new SqlCommand("SELECT TOP (1) Version FROM core.ScriptVersion WHERE ScriptName = @Name ORDER BY Id DESC;", connection);
         command.Parameters.AddWithValue("@Name", script);
         return await command.ExecuteScalarAsync(Ct) as int?;
     }

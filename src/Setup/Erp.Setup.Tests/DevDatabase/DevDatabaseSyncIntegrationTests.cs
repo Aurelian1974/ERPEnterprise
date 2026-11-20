@@ -48,8 +48,14 @@ public sealed class DevDatabaseSyncIntegrationTests(SqlServerFixture sql) : IDis
             }
         }
 
+        // Scriptul datelor demonstrative refuza orice baza care nu e ERP_DEV*, iar bazele de test sunt ERP_IT_* (singurele pe care
+        // fixture-ul le poate sterge): in copia de test garda accepta bazele acestor teste, ERP_IT_DEVSYNC*.
+        const string guard = "IF DB_NAME() NOT LIKE N'ERP[_]DEV%'";
+        var sampleData = File.ReadAllText(Path.Combine(source, "build", "dev-sample-data.sql"));
+        Assert.Contains(guard, sampleData, StringComparison.Ordinal);
         Directory.CreateDirectory(Path.Combine(target, "build"));
-        File.Copy(Path.Combine(source, "build", "dev-sample-data.sql"), Path.Combine(target, "build", "dev-sample-data.sql"));
+        File.WriteAllText(Path.Combine(target, "build", "dev-sample-data.sql"),
+            sampleData.Replace(guard, "IF DB_NAME() NOT LIKE N'ERP[_]IT[_]DEVSYNC%'", StringComparison.Ordinal), new UTF8Encoding(false));
         return target;
     }
 

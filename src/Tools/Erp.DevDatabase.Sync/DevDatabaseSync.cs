@@ -116,7 +116,7 @@ public sealed partial class DevDatabaseSync(SqlOperator sql, DevSyncOptions opti
     {
         await using (var master = await sql.OpenAsync("master", ct).ConfigureAwait(false))
         {
-            var id = await SqlOperator.ScalarAsync<int?>(master, "SELECT DB_ID(@Name);", ct, new SqlParameter("@Name", options.Database)).ConfigureAwait(false);
+            var id = await SqlOperator.ScalarAsync<int?>(master, "SELECT CAST(DB_ID(@Name) AS int);", ct, new SqlParameter("@Name", options.Database)).ConfigureAwait(false);
             if (id is null)
             {
                 return DatabaseState.Missing;
@@ -272,10 +272,19 @@ public sealed partial class DevDatabaseSync(SqlOperator sql, DevSyncOptions opti
             return;
         }
 
-        await using var connection = await sql.OpenAsync(options.Database, ct).ConfigureAwait(false);
-        await using var command = new SqlCommand(await File.ReadAllTextAsync(options.SampleDataPath, ct).ConfigureAwait(false), connection) { CommandTimeout = 120 };
-        await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-        Log.Information("Datele demonstrative (Grupul Exemplu) au fost reîncărcate.");
+        // Datele demonstrative nu sunt structura bazei: daca nu se pot incarca (scriptul refuza orice baza care nu e ERP_DEV*),
+        // baza ramane construita si marcata la zi; altfel fiecare sincronizare ar reface-o din nou, fara capat.
+        try
+        {
+            await using var connection = await sql.OpenAsync(options.Database, ct).ConfigureAwait(false);
+            await using var command = new SqlCommand(await File.ReadAllTextAsync(options.SampleDataPath, ct).ConfigureAwait(false), connection) { CommandTimeout = 120 };
+            await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            Log.Information("Datele demonstrative (Grupul Exemplu) au fost reîncărcate.");
+        }
+        catch (SqlException ex)
+        {
+            Log.Warning("Datele demonstrative nu s-au încărcat în {Database}: {Message}", options.Database, ex.Message);
+        }
     }
 
     private async Task SetBootstrapHashAsync(string hash, CancellationToken ct)
