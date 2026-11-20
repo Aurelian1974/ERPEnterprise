@@ -26,4 +26,9 @@
     <ProjectReference Include="..\..\..\Tools\Erp.LicenseGen.Core\Erp.LicenseGen.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Raspunsuri reale ale serviciului ANAF v9 (20.11.2026), fisiere de referinta pentru interpretare. -->
+    <None Update="Anaf\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

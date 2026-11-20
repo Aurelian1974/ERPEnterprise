@@ -9,7 +9,8 @@ namespace Erp.Core.Application.Partners;
 /// <summary>
 /// Creare sau modificare de partener (02.01, 3.2). Codul gol la creare se aloca din seria „Core.Partner” a firmei curente.
 /// PersonalId (CNP, doar persoana fizica) se trimite numai cu ChangePersonalId = true; altfel CNP-ul existent ramane.
-/// Properties = null lasa proprietatile neschimbate; altfel le inlocuieste pe toate.
+/// Properties = null lasa proprietatile neschimbate; altfel le inlocuieste pe toate. AnafCheckedAt = momentul interogarii ANAF
+/// din care s-au preluat datele („Preia de la ANAF”); null pastreaza data ultimei verificari.
 /// </summary>
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
@@ -17,8 +18,8 @@ namespace Erp.Core.Application.Partners;
 public sealed record SavePartner(int? Id, string? Code, string Name, byte PartnerType, string? FiscalCode, bool IsCustomer, bool IsSupplier,
     int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, string? TradeRegisterNo, string Address, string City,
     string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId, bool IsActive,
-    byte[]? RowVersion, bool ChangePersonalId = false, string? PersonalId = null, IReadOnlyList<PartnerPropertyValue>? Properties = null)
-    : ICommand<SavedEntity>;
+    byte[]? RowVersion, bool ChangePersonalId = false, string? PersonalId = null, IReadOnlyList<PartnerPropertyValue>? Properties = null,
+    DateTime? AnafCheckedAt = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
@@ -145,7 +146,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             request.IsCustomer, request.IsSupplier, request.PartnerGroupId, request.VatPayer, request.VatOnCollection, request.AnafInactive,
             PartnerRules.Clean(request.TradeRegisterNo), request.Address.Trim(), request.City.Trim(), PartnerRules.Clean(request.CountyCode),
             request.CountryCode, PartnerRules.Clean(request.PostalCode), PartnerRules.Clean(request.Phone), PartnerRules.Clean(request.Email),
-            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion);
+            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt));
         var saved = await store.SaveAsync(partner, context.UserId, cancellationToken).ConfigureAwait(false);
 
         // Fara date personale in audit (NET-18): numele unei persoane fizice si CNP-ul nu se scriu, doar faptul ca s-a schimbat.
@@ -155,12 +156,26 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             Name = individual ? null : partner.Name,
             partner.PartnerType, partner.FiscalCode, partner.IsCustomer, partner.IsSupplier, partner.PartnerGroupId, partner.VatPayer,
             partner.VatOnCollection, partner.AnafInactive, partner.CountryCode, partner.CountyCode, partner.IntraGroupCompanyId, partner.IsActive,
+            partner.AnafCheckedAt,
             PersonalIdChanged = partner.PersonalIdChange ? true : (bool?)null,
             PropertiesChanged = partner.Properties is null ? (bool?)null : true,
         });
         await outbox.EnqueueAsync(new PartenerModificat(saved.Id, partner.Code, partner.Name, partner.FiscalCode, partner.VatPayer,
             partner.VatOnCollection, partner.AnafInactive, partner.IsActive) { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
         return saved;
+    }
+
+    // Momentul vine de la client (din raspunsul ANAF); nu poate fi in viitor.
+    private DateTime? CheckedAt(DateTime? value)
+    {
+        if (value is not { } checkedAt)
+        {
+            return null;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var utc = checkedAt.Kind == DateTimeKind.Local ? checkedAt.ToUniversalTime() : DateTime.SpecifyKind(checkedAt, DateTimeKind.Utc);
+        return utc > now ? now : utc;
     }
 
     private static ErpValidationException Field(string field, string message) =>

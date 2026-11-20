@@ -66,6 +66,7 @@ public sealed class ErpExceptionHandler(
         ErpErrorKind.Unauthenticated => StatusCodes.Status401Unauthorized,
         ErpErrorKind.Forbidden => StatusCodes.Status403Forbidden,
         ErpErrorKind.NotFound => StatusCodes.Status404NotFound,
+        ErpErrorKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
         _ => StatusCodes.Status409Conflict,
     };
 }

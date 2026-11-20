@@ -79,7 +79,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             partner.IsCustomer, partner.IsSupplier, partner.PartnerGroupId, partner.VatPayer, partner.VatOnCollection,
             partner.AnafInactive, partner.TradeRegisterNo, partner.Address, partner.City, partner.CountyCode, CountryCode = Ansi(partner.CountryCode, 2),
             partner.PostalCode, partner.Phone, partner.Email, partner.IntraGroupCompanyId, partner.IsActive,
-            SaveProperties = partner.Properties is not null, partner.RowVersion, UserId = userId,
+            SaveProperties = partner.Properties is not null, partner.RowVersion, partner.AnafCheckedAt, UserId = userId,
         });
         parameters.Add("PersonalIdEncrypted", partner.PersonalIdEncrypted, DbType.Binary, size: 256);
         parameters.Add("Properties", PropertyTable(partner.Properties ?? []).AsTableValuedParameter("core.PropertyValueList"));

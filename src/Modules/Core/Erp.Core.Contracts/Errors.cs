@@ -7,11 +7,14 @@ public enum ErpErrorKind
     Forbidden,
     NotFound,
     Conflict,
+
+    /// <summary>Un serviciu extern (de exemplu ANAF) nu raspunde sau raspunde cu eroare: 503, se poate reincerca.</summary>
+    Unavailable,
 }
 
 /// <summary>
 /// Eroare de business cu cod stabil MODUL_EROARE si mesaj in romana (NET-09). API-ul o intoarce ca ProblemDetails (NET-10):
-/// 400 validare, 401 neautentificat, 403 drepturi sau licenta, 404 inexistent, 409 conflict.
+/// 400 validare, 401 neautentificat, 403 drepturi sau licenta, 404 inexistent, 409 conflict, 503 serviciu extern indisponibil.
 /// </summary>
 public class ErpException(ErpErrorKind kind, string code, string message, Exception? inner = null) : Exception(message, inner)
 {

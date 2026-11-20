@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { DataType, PartnerType, type PartnerListItem, type PropertyDefinition, type PropertyValue } from './partnerApi';
+import { DataType, PartnerType, type AnafCompany, type PartnerListItem, type PropertyDefinition, type PropertyValue } from './partnerApi';
 
 /**
  * Valoarea unei proprietati in formular: text (text, numar in format romanesc, data zz.ll.aaaa), da/nu, optiunea sau
@@ -139,4 +139,39 @@ export function anafBadge(partner: Pick<PartnerListItem, 'partnerType' | 'anafIn
     return { text: t('partner.anaf.inactive'), kind: 'bad' };
   }
   return partner.vatOnCollection ? { text: t('partner.anaf.vatOnCollection'), kind: 'warn' } : { text: t('partner.anaf.active'), kind: 'ok' };
+}
+
+/**
+ * Campurile fisei completate din raspunsul ANAF. Judetul se ia doar daca exista in nomenclator (codul auto ANAF, de exemplu
+ * „SV”, „B”); telefonul doar daca ANAF il are. Momentul verificarii se salveaza odata cu fisa.
+ */
+export function anafToForm(company: AnafCompany, counties: readonly { code: string; countryCode: string }[]): Record<string, string | boolean | null> {
+  const values: Record<string, string | boolean | null> = {
+    fiscalCode: company.fiscalCode,
+    name: company.name,
+    countryCode: 'RO',
+    vatPayer: company.vatPayer,
+    vatOnCollection: company.vatPayer && company.vatOnCollection,
+    anafInactive: company.anafInactive,
+    anafCheckedAt: company.checkedAt,
+  };
+  if (company.tradeRegisterNo != null) {
+    values.tradeRegisterNo = company.tradeRegisterNo;
+  }
+  if (company.address != null) {
+    values.address = company.address;
+  }
+  if (company.city != null) {
+    values.city = company.city;
+  }
+  if (company.postalCode != null) {
+    values.postalCode = company.postalCode;
+  }
+  if (company.countyCode != null && counties.some((c) => c.countryCode === 'RO' && c.code === company.countyCode)) {
+    values.countyCode = company.countyCode;
+  }
+  if (company.phone != null) {
+    values.phone = company.phone;
+  }
+  return values;
 }

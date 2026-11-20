@@ -80,12 +80,12 @@ public interface IPartnerStore
 
 /// <summary>
 /// Partenerul pregatit pentru salvare: codul alocat, CUI-ul normalizat, CNP-ul deja criptat. PersonalIdChange = false pastreaza
-/// CNP-ul existent; Properties = null pastreaza valorile proprietatilor.
+/// CNP-ul existent; Properties = null pastreaza valorile proprietatilor; AnafCheckedAt = null pastreaza data ultimei verificari ANAF.
 /// </summary>
 public sealed record PartnerRecord(int? Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool PersonalIdChange,
     byte[]? PersonalIdEncrypted, bool IsCustomer, bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive,
     string? TradeRegisterNo, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email,
-    int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion);
+    int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, DateTime? AnafCheckedAt = null);
 
 /// <summary>Criptarea datelor personale ale partenerilor (CNP, GDPR; 02.01, 9), cu cheile Data Protection ale instalarii.</summary>
 public interface IPersonalDataProtector

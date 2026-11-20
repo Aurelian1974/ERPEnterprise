@@ -19,6 +19,7 @@ export const routes = [
       { path: 'admin/config/licenta', element: <ConfigPage /> },
       { path: 'admin/config/tipuri-adrese', element: <ConfigPage /> },
       { path: 'admin/config/grupe-parteneri', element: <ConfigPage /> },
+      { path: 'admin/config/setari', element: <ConfigPage /> },
       { path: 'nomenclatoare/parteneri', element: <PartnersPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },

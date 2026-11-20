@@ -9,10 +9,15 @@ import { PartnerForm, type PartnerSection } from './PartnerForm';
 
 const save = vi.fn();
 const revealPersonalId = vi.fn();
+const lookupAnaf = vi.fn();
 
 vi.mock('./partnerApi', async (original) => ({
   ...(await original<typeof import('./partnerApi')>()),
-  partnerApi: { save: (body: unknown) => save(body), revealPersonalId: (id: number) => revealPersonalId(id) },
+  partnerApi: {
+    save: (body: unknown) => save(body),
+    revealPersonalId: (id: number) => revealPersonalId(id),
+    lookupAnaf: (fiscalCode: string) => lookupAnaf(fiscalCode),
+  },
 }));
 
 vi.mock('@syncfusion/ej2-react-notifications', () => ({ ToastComponent: () => null }));
@@ -20,7 +25,7 @@ vi.mock('@syncfusion/ej2-react-notifications', () => ({ ToastComponent: () => nu
 // Ca in OrgForms.test.tsx: campurile Syncfusion devin echivalente HTML legate prin acelasi Controller.
 vi.mock('../components/Field', async () => {
   const { Controller } = await import('react-hook-form');
-  type Props = { control: never; name: string; label: string; disabled?: boolean };
+  type Props = { control: never; name: string; label: string; disabled?: boolean; hint?: import('react').ReactNode };
   const Error = ({ message }: { message: string | undefined }) => (message === undefined ? null : <span role="alert">{message}</span>);
   const select = ({ control, name, label }: Props) => (
     <Controller control={control} name={name} render={({ field, fieldState }) => (
@@ -30,10 +35,10 @@ vi.mock('../components/Field', async () => {
   );
   return {
     ErrorBanner: ({ message }: { message: string | undefined }) => (message === undefined ? null : <div role="alert">{message}</div>),
-    TextField: ({ control, name, label }: Props) => (
+    TextField: ({ control, name, label, hint }: Props) => (
       <Controller control={control} name={name} render={({ field, fieldState }) => (
-        <label>{label}<input aria-label={label} value={(field.value as string | null) ?? ''} onChange={(e) => field.onChange(e.target.value)} />
-          <Error message={fieldState.error?.message} /></label>
+        <div><label>{label}<input aria-label={label} value={(field.value as string | null) ?? ''} onChange={(e) => field.onChange(e.target.value)} />
+          <Error message={fieldState.error?.message} /></label>{hint}</div>
       )} />
     ),
     SelectField: select,
@@ -90,6 +95,7 @@ describe('fișa partenerului', () => {
     save.mockReset();
     save.mockResolvedValue({ id: 5, rowVersion: 'AAAAAAAAB9F=' });
     revealPersonalId.mockReset();
+    lookupAnaf.mockReset();
     unsavedChanges.clear();
   });
 
@@ -155,5 +161,28 @@ describe('fișa partenerului', () => {
   it('fără permisiunea de date personale nu există butonul de afișare a CNP-ului', () => {
     renderForm(partner({ partnerType: 4, fiscalCode: null, hasPersonalId: true }), 'general', false);
     expect(screen.queryByRole('button', { name: 'Afișează' })).not.toBeInTheDocument();
+  });
+
+  it('„Preia de la ANAF” completează formularul, iar data verificării se salvează cu fișa', async () => {
+    lookupAnaf.mockResolvedValue({
+      fiscalCode: '33445566', name: 'AGRO NORD DISTRIBUȚIE SRL', tradeRegisterNo: 'J33/567/2012', vatPayer: true, vatOnCollection: true,
+      anafInactive: false, splitVat: false, eInvoiceRegistered: true, registrationState: 'INREGISTRAT din data 03.02.2012',
+      address: 'Str. Gării nr. 21', city: 'Mun. Suceava', countyCode: 'SV', postalCode: '720004', phone: null, checkedAt: '2026-11-20T08:30:00Z',
+    });
+    renderForm(partner({ vatOnCollection: false, address: 'Veche', city: 'Veche' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preia de la ANAF' }));
+
+    expect(await screen.findByText('e-Factura: înregistrat')).toBeInTheDocument();
+    expect(lookupAnaf).toHaveBeenCalledWith('33445566');
+    expect(save).not.toHaveBeenCalled();
+    expect(unsavedChanges.any()).toBe(true);
+
+    submit();
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0]?.[0]).toMatchObject({
+      name: 'AGRO NORD DISTRIBUȚIE SRL', vatOnCollection: true, address: 'Str. Gării nr. 21', city: 'Mun. Suceava', countyCode: 'SV',
+      anafCheckedAt: '2026-11-20T08:30:00Z',
+    });
   });
 });

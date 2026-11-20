@@ -274,9 +274,25 @@ public static class FakePartnerServices
     {
         services.AddSingleton<Erp.Core.Application.Partners.IPartnerStore>(new FakePartnerStore());
         services.AddSingleton<INumberSeriesService>(new FakeNumberSeries());
+        services.AddSingleton<Erp.Core.Application.Settings.ISettingsStore>(new FakeSettingsStore());
+        services.AddSingleton<Erp.Core.Application.Anaf.IAnafVatRegistry>(new FakeAnafRegistry());
         services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
             new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
         return services;
+    }
+
+    private sealed class FakeSettingsStore : Erp.Core.Application.Settings.ISettingsStore
+    {
+        public Task<Erp.Core.Application.Settings.SettingValue> GetInstallationAsync(string key, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<byte[]> SaveInstallationAsync(string key, string? value, byte[]? rowVersion, int userId, CancellationToken ct) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class FakeAnafRegistry : Erp.Core.Application.Anaf.IAnafVatRegistry
+    {
+        public Task<Erp.Core.Application.Anaf.AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeNumberSeries : INumberSeriesService

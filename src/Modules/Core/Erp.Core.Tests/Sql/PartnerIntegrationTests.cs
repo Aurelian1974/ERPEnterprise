@@ -2,9 +2,11 @@ using System.Text;
 using Dapper;
 using Erp.Core.Api;
 using Erp.Core.Application;
+using Erp.Core.Application.Anaf;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
 using Erp.Core.Application.Partners;
+using Erp.Core.Application.Settings;
 using Erp.Core.Contracts;
 using Erp.Core.Infrastructure;
 using Erp.Core.Infrastructure.Licensing;
@@ -61,6 +63,8 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
 {
     private const string Cnp = "1800101221144";
 
+    private readonly FakeAnaf anaf = new();
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private async Task<T> Send<T>(IRequest<T> request, int? companyId = null, params string[] without)
@@ -70,9 +74,10 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
         services.AddErpMediator(typeof(PartnerIntegrationTests).Assembly);
         services.AddCoreInfrastructure(database.ConnectionString, new LicenseOptions(Development: true));
         services.AddSingleton<IPersonalDataProtector>(new PersonalDataProtector(database.DataProtection));
+        services.AddSingleton<IAnafVatRegistry>(anaf);
         var context = new FakeContext { UserId = database.AdminId, CompanyId = companyId ?? database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.PartnerView, CorePermissions.PartnerManage, CorePermissions.PartnerViewPersonalData,
-            CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage]);
+            CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage, CorePermissions.SettingsManage]);
         context.Permissions.ExceptWith(without);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
@@ -313,5 +318,65 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
         var saved = lookups.Groups.Single(g => g.Id == group.Id);
         var inUse = await Assert.ThrowsAsync<ErpException>(() => Send(new SavePartnerGroup(group.Id, code, "Distribuitori", 10, false, saved.RowVersion)));
         Assert.Equal("CORE_ENTITY_IN_USE", inUse.Code);
+    }
+
+    [Fact]
+    public async Task Anaf_address_is_an_installation_setting_with_the_v9_default_and_optimistic_concurrency()
+    {
+        var current = await Send(new GetInstallationSettings());
+        Assert.Equal(SettingKeys.DefaultAnafVatRegistryUrl, current.AnafVatRegistryUrl);
+        Assert.NotNull(current.RowVersion); // livrata de seed-ul 04_Settings
+
+        var invalid = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new SaveInstallationSettings("http://webservicesp.anaf.ro/tva", current.RowVersion)));
+        Assert.Contains("anafVatRegistryUrl", invalid.Errors.Keys);
+
+        var saved = await Send(new SaveInstallationSettings(" https://webservicesp.anaf.ro/api/PlatitorTvaRest/v10/tva ", current.RowVersion));
+        Assert.Equal("https://webservicesp.anaf.ro/api/PlatitorTvaRest/v10/tva", (await Send(new GetInstallationSettings())).AnafVatRegistryUrl);
+
+        var stale = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveInstallationSettings(SettingKeys.DefaultAnafVatRegistryUrl, current.RowVersion)));
+        Assert.Equal(CoreErrorCodes.ConcurrencyConflict, stale.Code);
+
+        await Send(new SaveInstallationSettings(SettingKeys.DefaultAnafVatRegistryUrl, saved.RowVersion));
+        var forbidden = await Assert.ThrowsAsync<ErpException>(() => Send(new GetInstallationSettings(), without: CorePermissions.SettingsManage));
+        Assert.Equal(ErpErrorKind.Forbidden, forbidden.Kind);
+    }
+
+    [Fact]
+    public async Task Anaf_lookup_checks_the_cui_reports_unknown_cuis_and_the_check_time_is_saved_with_the_partner()
+    {
+        var invalid = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new LookupAnafCompany("RO12345679")));
+        Assert.Contains("fiscalCode", invalid.Errors.Keys);
+
+        var unknown = await Assert.ThrowsAsync<ErpException>(() => Send(new LookupAnafCompany(NewFiscalCode())));
+        Assert.Equal((ErpErrorKind.NotFound, AnafErrorCodes.NotFound), (unknown.Kind, unknown.Code));
+
+        var cui = NewFiscalCode();
+        var checkedAt = new DateTime(2026, 11, 20, 8, 30, 0, DateTimeKind.Utc);
+        anaf.Companies[cui] = new AnafCompanyDto(cui, "Agro Nord Distribuție SRL", "J33/567/2012", true, true, false, false, true, null,
+            "Str. Gării nr. 21", "Mun. Suceava", "SV", "720004", null, checkedAt);
+        var company = await Send(new LookupAnafCompany("RO " + cui));
+        Assert.Equal(cui, company.FiscalCode);
+
+        var saved = await Send(Legal(Code(), company.Name, company.FiscalCode, properties: await Segment()) with
+        {
+            VatPayer = company.VatPayer, VatOnCollection = company.VatOnCollection, AnafCheckedAt = company.CheckedAt,
+        });
+        var detail = await Send(new GetPartner(saved.Id));
+        Assert.Equal(checkedAt, detail.AnafCheckedAt);
+
+        // O salvare fara date ANAF pastreaza data verificarii; una din viitor e adusa la momentul salvarii.
+        var kept = await Send(Legal(detail.Code, detail.Name, cui) with { Id = saved.Id, RowVersion = detail.RowVersion, VatPayer = true, VatOnCollection = true });
+        var reloaded = await Send(new GetPartner(kept.Id));
+        Assert.Equal(checkedAt, reloaded.AnafCheckedAt);
+        await Send(Legal(detail.Code, detail.Name, cui) with { Id = saved.Id, RowVersion = reloaded.RowVersion, VatPayer = true, AnafCheckedAt = DateTime.UtcNow.AddDays(3) });
+        Assert.True((await Send(new GetPartner(saved.Id))).AnafCheckedAt <= DateTime.UtcNow.AddMinutes(1));
+    }
+
+    private sealed class FakeAnaf : IAnafVatRegistry
+    {
+        public Dictionary<string, AnafCompanyDto> Companies { get; } = [];
+
+        public Task<AnafCompanyDto?> LookupAsync(string fiscalCode, DateOnly date, CancellationToken ct) =>
+            Task.FromResult(Companies.GetValueOrDefault(fiscalCode));
     }
 }

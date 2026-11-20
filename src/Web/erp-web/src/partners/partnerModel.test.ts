@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PropertyDefinition } from './partnerApi';
 import { searchQuery } from './partnerApi';
-import { anafBadge, applies, displayFiscalCode, fromFormProps, propError, roToIso, toFormProps } from './partnerModel';
+import { anafBadge, anafToForm, applies, displayFiscalCode, fromFormProps, propError, roToIso, toFormProps } from './partnerModel';
 
 const definition = (id: number, dataType: number, changes: Partial<PropertyDefinition> = {}): PropertyDefinition => ({
   id, code: `P${id}`, name: `Proprietatea ${id}`, dataType, appliesTo: 3, section: 'Comercial', sortOrder: id, isRequired: false, isFilterable: false, ...changes,
@@ -60,5 +60,20 @@ describe('lista partenerilor', () => {
   it('cererea de căutare omite filtrele necompletate și arată implicit doar partenerii activi', () => {
     expect(searchQuery({ search: '  agro ', showInactive: false, page: 2 })).toEqual({ Search: 'agro', IsActive: true, Page: 2, PageSize: 50 });
     expect(searchQuery({ search: '', role: 2, showInactive: true, page: 1 })).toEqual({ Role: 2, Page: 1, PageSize: 50 });
+  });
+});
+
+describe('datele ANAF în fișă', () => {
+  const company = {
+    fiscalCode: '14080700', name: 'REALITATEA MEDIA SA', tradeRegisterNo: 'J40/6736/2001', vatPayer: false, vatOnCollection: true, anafInactive: true,
+    splitVat: false, eInvoiceRegistered: false, registrationState: null, address: 'Str. Frumoasă nr. 20', city: 'Sector 1 Mun. București',
+    countyCode: 'B', postalCode: '010987', phone: null, checkedAt: '2026-11-20T08:30:00Z',
+  };
+
+  it('TVA la încasare cere plătitor; județul se ia doar dacă există în nomenclator; câmpurile goale ANAF nu șterg datele', () => {
+    const values = anafToForm(company, [{ code: 'B', countryCode: 'RO' }]);
+    expect(values).toMatchObject({ vatPayer: false, vatOnCollection: false, anafInactive: true, countyCode: 'B', countryCode: 'RO' });
+    expect('phone' in values).toBe(false);
+    expect('countyCode' in anafToForm(company, [{ code: 'CJ', countryCode: 'RO' }])).toBe(false);
   });
 });

@@ -4,7 +4,10 @@ SET XACT_ABORT ON;
 
 MERGE core.Setting AS target
 USING (VALUES
-    ('Installation.SetupCompleted', N'false')
+    ('Installation.SetupCompleted', N'false'),
+    -- Serviciul web ANAF de verificare a contribuabililor, versiunea sincrona v9 (instructiuni ANAF din 04.02.2025);
+    -- se schimba din Configurare › Setari cand ANAF publica o versiune noua.
+    ('Anaf.VatRegistryUrl', N'https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva')
 ) AS source ([Key], Value)
 ON target.Scope = 'Installation' AND target.ScopeId IS NULL AND target.[Key] = source.[Key]
 WHEN NOT MATCHED BY TARGET THEN

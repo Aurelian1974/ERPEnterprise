@@ -12,8 +12,8 @@ import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
 import { countryOptions, countyOptions, useCountyFollowsCountry } from '../org/OrgForms';
 import type { OrgLookups } from '../org/orgApi';
-import { DataType, PartnerType, partnerApi, partnerKeys, type PartnerDetail, type PartnerLookups, type PropertyDefinition, type Saved } from './partnerApi';
-import { applies, fromFormProps, propError, propKey, toFormProps, type PropInput } from './partnerModel';
+import { DataType, PartnerType, partnerApi, partnerKeys, type AnafCompany, type PartnerDetail, type PartnerLookups, type PropertyDefinition, type Saved } from './partnerApi';
+import { anafToForm, applies, fromFormProps, propError, propKey, toFormProps, type PropInput } from './partnerModel';
 
 const propValue = z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]);
 
@@ -42,6 +42,7 @@ function partnerSchema(definitions: readonly PropertyDefinition[], isNew: boolea
       isActive: z.boolean(),
       changePersonalId: z.boolean(),
       personalId: optionalText,
+      anafCheckedAt: z.string().nullable(),
       props: z.record(z.string(), propValue),
     })
     .superRefine((v, ctx) => {
@@ -81,7 +82,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
       code: null, name: '', partnerType: PartnerType.LegalRomania, fiscalCode: null, isCustomer: true, isSupplier: false, partnerGroupId: null,
       vatPayer: false, vatOnCollection: false, anafInactive: false, tradeRegisterNo: null, address: '', countryCode: ROMANIA, countyCode: null,
       city: '', postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, changePersonalId: true, personalId: null,
-      props: toFormProps(definitions, []),
+      anafCheckedAt: null, props: toFormProps(definitions, []),
     };
   }
   return {
@@ -90,7 +91,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
     anafInactive: partner.anafInactive, tradeRegisterNo: partner.tradeRegisterNo ?? null, address: partner.address, countryCode: partner.countryCode,
     countyCode: partner.countyCode ?? null, city: partner.city, postalCode: partner.postalCode ?? null, phone: partner.phone ?? null,
     email: partner.email ?? null, intraGroupCompanyId: partner.intraGroupCompanyId ?? null, isActive: partner.isActive,
-    changePersonalId: !partner.hasPersonalId, personalId: null, props: toFormProps(definitions, partner.properties),
+    changePersonalId: !partner.hasPersonalId, personalId: null, anafCheckedAt: null, props: toFormProps(definitions, partner.properties),
   };
 }
 
@@ -135,6 +136,8 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
   const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
   const [revealed, setRevealed] = useState<string | null | undefined>();
+  const [anaf, setAnaf] = useState<AnafCompany | undefined>();
+  const [anafBusy, setAnafBusy] = useState(false);
   const guard = useUnsavedChanges(form.formState.isDirty);
   const country = useCountyFollowsCountry(form as never, orgLookups);
   const [partnerType, vatPayer, isCustomer, isSupplier, changePersonalId] = useWatch({
@@ -178,6 +181,7 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
       form.reset(form.getValues());
       guard.markClean();
       setRevealed(undefined);
+      setAnaf(undefined);
       await queryClient.invalidateQueries({ queryKey: partnerKeys.all });
       notify(t('common.saved'));
       onSaved(saved);
@@ -188,6 +192,32 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
       notify(message ?? t('common.notSaved'), 'error');
     }
   }, () => notify(t('common.notSaved'), 'error'));
+
+  /** „Preia de la ANAF” (02.01, 11): completeaza formularul cu datele ANAF; utilizatorul le verifica si salveaza fisa. */
+  async function fetchAnaf() {
+    const fiscalCode = form.getValues('fiscalCode');
+    if (fiscalCode === null || fiscalCode.trim() === '') {
+      form.setError('fiscalCode', { type: 'manual', message: t('partner.anaf.needCui') });
+      return;
+    }
+    setAnafBusy(true);
+    setError(undefined);
+    try {
+      const company = await partnerApi.lookupAnaf(fiscalCode.trim());
+      for (const [field, value] of Object.entries(anafToForm(company, orgLookups.counties))) {
+        form.setValue(field as keyof PartnerInput, value as never, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+      }
+      form.clearErrors('fiscalCode');
+      setAnaf(company);
+      notify(t('partner.anaf.filled'));
+    } catch (e) {
+      const message = applyServerErrors(e, form.setError, ['fiscalCode']);
+      setError(message);
+      notify(message ?? t('common.notSaved'), 'error');
+    } finally {
+      setAnafBusy(false);
+    }
+  }
 
   async function reveal() {
     if (partner === undefined) {
@@ -239,7 +269,13 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
             <PersonalIdField form={form} partner={partner} change={changePersonalId} revealed={revealed} readOnly={readOnly}
               canView={canViewPersonalData} onReveal={() => void reveal()} />
           ) : (
-            <TextField control={form.control} name="fiscalCode" label={`${t(`partner.field.fiscalCode.${partnerType as 1 | 2 | 3}`)} *`} upper />
+            <TextField control={form.control} name="fiscalCode" label={`${t(`partner.field.fiscalCode.${partnerType as 1 | 2 | 3}`)} *`} upper
+              hint={partnerType === PartnerType.LegalRomania && canManage ? (
+                <button type="button" className="btn ghost small anaf-fetch" disabled={anafBusy} onClick={() => void fetchAnaf()}
+                  title={t('partner.anaf.fetch')} aria-label={t('partner.anaf.fetch')}>
+                  {anafBusy ? '…' : 'ANAF ⟳'}
+                </button>
+              ) : undefined} />
           )}
           <TextField control={form.control} name="name" label={`${t(individual ? 'partner.field.individualName' : 'partner.field.name')} *`} className="span2" />
           <TextField control={form.control} name="code" label={isNew ? t('partner.field.codeAuto') : `${t('partner.field.code')} *`} upper />
@@ -253,8 +289,17 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
               <SwitchField control={form.control} name="vatOnCollection" label={t('field.vatOnCollection')} disabled={!vatPayer} />
               <SwitchField control={form.control} name="anafInactive" label={t('partner.field.anafInactive')} />
             </div>
+            {anaf !== undefined && (
+              <div className="chips-row" aria-live="polite">
+                <span className={anaf.eInvoiceRegistered ? 'pill ok' : 'pill off'}>{t(anaf.eInvoiceRegistered ? 'partner.anaf.eInvoice' : 'partner.anaf.noEInvoice')}</span>
+                {anaf.splitVat && <span className="pill warn">{t('partner.anaf.splitVat')}</span>}
+                {anaf.registrationState != null && <span className="pill off">{t('partner.anaf.state', { state: anaf.registrationState })}</span>}
+              </div>
+            )}
             <p className="muted small">
-              {partner?.anafCheckedAt == null ? t('partner.section.anafHint') : t('partner.section.anafChecked', { date: formatDate(new Date(partner.anafCheckedAt)) })}
+              {anaf !== undefined ? t('partner.anaf.pendingCheck')
+                : partner?.anafCheckedAt == null ? t('partner.section.anafHint')
+                  : t('partner.section.anafChecked', { date: formatDate(new Date(partner.anafCheckedAt)) })}
             </p>
           </div>
         )}

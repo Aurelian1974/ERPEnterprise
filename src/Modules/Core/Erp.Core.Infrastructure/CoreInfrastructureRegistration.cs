@@ -23,6 +23,9 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Organization.IOrganizationStore, Organization.OrganizationStore>();
         services.AddScoped<INumberSeriesService, Organization.NumberSeriesService>();
         services.AddScoped<Application.Partners.IPartnerStore, Partners.PartnerStore>();
+        services.AddScoped<Application.Settings.ISettingsStore, SettingsStore>();
+        services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));
+        services.AddScoped<Application.Anaf.IAnafVatRegistry, Anaf.AnafVatRegistry>();
         services.AddSingleton<ITransientFailureDetector, SqlServerTransientFailures>();
         services.AddSingleton<ISqlErrorMap, CoreSqlErrors>();
         services.AddSingleton<ISqlErrorTranslator, SqlErrorTranslator>();

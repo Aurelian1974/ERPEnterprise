@@ -2992,6 +2992,164 @@
           }
         }
       }
+    },
+    "/api/core/settings": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetInstallationSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallationSettingsDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "SaveInstallationSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveInstallationSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallationSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/anaf/companies/{fiscalCode}": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "LookupAnafCompany",
+        "parameters": [
+          {
+            "name": "fiscalCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnafCompanyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5839,6 +5997,13 @@
             "items": {
               "$ref": "#/components/schemas/PartnerPropertyValue"
             }
+          },
+          "anafCheckedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -6095,6 +6260,137 @@
           },
           "displayName": {
             "type": "string"
+          }
+        }
+      },
+      "AnafCompanyDto": {
+        "required": [
+          "fiscalCode",
+          "name",
+          "tradeRegisterNo",
+          "vatPayer",
+          "vatOnCollection",
+          "anafInactive",
+          "splitVat",
+          "eInvoiceRegistered",
+          "registrationState",
+          "address",
+          "city",
+          "countyCode",
+          "postalCode",
+          "phone",
+          "checkedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "fiscalCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tradeRegisterNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatPayer": {
+            "type": "boolean"
+          },
+          "vatOnCollection": {
+            "type": "boolean"
+          },
+          "anafInactive": {
+            "type": "boolean"
+          },
+          "splitVat": {
+            "type": "boolean"
+          },
+          "eInvoiceRegistered": {
+            "type": "boolean"
+          },
+          "registrationState": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InstallationSettingsDto": {
+        "required": [
+          "anafVatRegistryUrl",
+          "defaultAnafVatRegistryUrl",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "anafVatRegistryUrl": {
+            "type": "string"
+          },
+          "defaultAnafVatRegistryUrl": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "SaveInstallationSettings": {
+        "required": [
+          "anafVatRegistryUrl",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "anafVatRegistryUrl": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
           }
         }
       }

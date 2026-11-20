@@ -3,6 +3,8 @@ using Erp.Core.Application.Me;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
 using Erp.Core.Application.Partners;
+using Erp.Core.Application.Anaf;
+using Erp.Core.Application.Settings;
 using Erp.Core.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -46,6 +48,7 @@ public static class CoreApiRegistration
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         MapOrganization(core);
         MapPartners(core);
+        MapSettings(core);
         MapLicense(core);
         return endpoints;
     }
@@ -140,6 +143,24 @@ public static class CoreApiRegistration
                 (int companyId, int id, CloseNumberSeriesBody body, ISender sender, CancellationToken ct) =>
                     sender.Send(new CloseNumberSeries(id, companyId, body.RowVersion), ct))
             .WithName("CloseNumberSeries").Saves();
+    }
+
+    // Configurare › Setari (macheta 07f) si interogarea ANAF a unui CUI („Preia de la ANAF” pe fisa partenerului).
+    private static void MapSettings(RouteGroupBuilder core)
+    {
+        core.MapGet("/settings", (ISender sender, CancellationToken ct) => sender.Send(new GetInstallationSettings(), ct))
+            .WithName("GetInstallationSettings").Produces<InstallationSettingsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPut("/settings", (SaveInstallationSettings body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveInstallationSettings").Produces<InstallationSettingsDto>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapGet("/anaf/companies/{fiscalCode}", (string fiscalCode, ISender sender, CancellationToken ct) => sender.Send(new LookupAnafCompany(fiscalCode), ct))
+            .WithName("LookupAnafCompany").Produces<AnafCompanyDto>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 
     // Parteneri (macheta 04): nomenclator la nivelul instalarii; permisiunile se verifica pe firma curenta (X-Company-Id).

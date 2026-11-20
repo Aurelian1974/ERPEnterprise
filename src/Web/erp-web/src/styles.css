@@ -1088,3 +1088,7 @@ table.simple.history td:first-child {
     grid-template-columns: 1fr;
   }
 }
+
+.anaf-fetch {
+  white-space: nowrap;
+}

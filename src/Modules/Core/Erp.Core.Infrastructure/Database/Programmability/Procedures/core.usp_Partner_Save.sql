@@ -12,6 +12,7 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Save
     @VatPayer            bit,
     @VatOnCollection     bit,
     @AnafInactive        bit,
+    @AnafCheckedAt       datetime2(3) = NULL,
     @TradeRegisterNo     nvarchar(30) = NULL,
     @Address             nvarchar(300),
     @City                nvarchar(100),
@@ -31,7 +32,8 @@ BEGIN
     -- Partenerul (02.01, 3.2): cod unic fara diferenta de majuscule, un CUI o singura data in nomenclator, adresa din
     -- nomenclatoare. Cu @SaveProperties = 1, valorile proprietatilor partenerului se inlocuiesc cu @Properties (validate dupa
     -- tip in aplicatie; aici: definitia apartine partenerilor, e activa, iar optiunea ii apartine). Ruleaza in tranzactia comenzii.
-    -- @PersonalIdChange = 0 pastreaza CNP-ul criptat existent (fisa nu il primeste inapoi in clar).
+    -- @PersonalIdChange = 0 pastreaza CNP-ul criptat existent (fisa nu il primeste inapoi in clar). @AnafCheckedAt NULL pastreaza
+    -- data ultimei verificari ANAF; altfel e momentul interogarii din care s-au preluat datele.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -67,10 +69,10 @@ BEGIN
     IF @Id IS NULL
     BEGIN
         INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, PersonalIdEncrypted, IsCustomer, IsSupplier, PartnerGroupId,
-            VatPayer, VatOnCollection, AnafInactive, TradeRegisterNo, Address, City, CountyCode, CountryCode, PostalCode, Phone, Email,
+            VatPayer, VatOnCollection, AnafInactive, AnafCheckedAt, TradeRegisterNo, Address, City, CountyCode, CountryCode, PostalCode, Phone, Email,
             IntraGroupCompanyId, IsActive, CreatedBy)
         VALUES (@Code, @Name, @PartnerType, @FiscalCode, @PersonalIdEncrypted, @IsCustomer, @IsSupplier, @PartnerGroupId,
-            @VatPayer, @VatOnCollection, @AnafInactive, @TradeRegisterNo, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
+            @VatPayer, @VatOnCollection, @AnafInactive, @AnafCheckedAt, @TradeRegisterNo, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
             @IntraGroupCompanyId, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
@@ -80,7 +82,7 @@ BEGIN
         SET Code = @Code, Name = @Name, PartnerType = @PartnerType, FiscalCode = @FiscalCode,
             PersonalIdEncrypted = CASE WHEN @PartnerType <> 4 THEN NULL WHEN @PersonalIdChange = 1 THEN @PersonalIdEncrypted ELSE PersonalIdEncrypted END,
             IsCustomer = @IsCustomer, IsSupplier = @IsSupplier, PartnerGroupId = @PartnerGroupId, VatPayer = @VatPayer,
-            VatOnCollection = @VatOnCollection, AnafInactive = @AnafInactive, TradeRegisterNo = @TradeRegisterNo, Address = @Address,
+            VatOnCollection = @VatOnCollection, AnafInactive = @AnafInactive, AnafCheckedAt = COALESCE(@AnafCheckedAt, AnafCheckedAt), TradeRegisterNo = @TradeRegisterNo, Address = @Address,
             City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email,
             IntraGroupCompanyId = @IntraGroupCompanyId, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND RowVersion = @RowVersion;

@@ -15,6 +15,7 @@ import { orgApi, orgKeys, useNumberSeries, useOrgLookups, useOrgTree, type Numbe
 import { LicenseTab } from './LicenseTab';
 import { AddressTypesTab } from './AddressTypesTab';
 import { PartnerGroupsTab } from './PartnerGroupsTab';
+import { SettingsTab } from './SettingsTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -23,12 +24,14 @@ export function ConfigPage() {
   const canLicense = user.permissions.includes('Core.License.Manage');
   const canAddressTypes = user.permissions.includes('Core.Company.Manage');
   const canPartnerGroups = user.permissions.includes('Core.Nomenclature.Manage');
+  const canSettings = user.permissions.includes('Core.Settings.Manage');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
-      : path.endsWith('/grupe-parteneri') && canPartnerGroups ? 'partnerGroups' : 'series';
+      : path.endsWith('/grupe-parteneri') && canPartnerGroups ? 'partnerGroups'
+        : path.endsWith('/setari') && canSettings ? 'settings' : 'series';
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
-    : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : t('config.tab.series');
+    : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -62,16 +65,24 @@ export function ConfigPage() {
             )}
           </div>
         )}
-        {canLicense && (
+        {(canSettings || canLicense) && (
           <div className="family">
             <span className="family-name">{t('config.family.system')}</span>
-            <NavLink to="/admin/config/licenta" className="tab">
-              ✓ {t('config.tab.license')}
-            </NavLink>
+            {canSettings && (
+              <NavLink to="/admin/config/setari" className="tab">
+                ⚙ {t('config.tab.settings')}
+              </NavLink>
+            )}
+            {canLicense && (
+              <NavLink to="/admin/config/licenta" className="tab">
+                ✓ {t('config.tab.license')}
+              </NavLink>
+            )}
           </div>
         )}
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
+        : tab === 'settings' ? <SettingsTab />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

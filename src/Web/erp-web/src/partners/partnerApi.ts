@@ -21,6 +21,7 @@ export type SavePartnerBankAccount = Schemas['SavePartnerBankAccount'];
 export type SavePartnerContact = Schemas['SavePartnerContact'];
 export type SavePartnerGroup = Schemas['SavePartnerGroup'];
 export type Saved = Schemas['SavedEntity'];
+export type AnafCompany = Schemas['AnafCompanyDto'];
 
 /** Tipul partenerului (02.01, 3.2). */
 export const PartnerType = { LegalRomania: 1, LegalEu: 2, LegalNonEu: 3, Individual: 4 } as const;
@@ -117,6 +118,10 @@ export const partnerApi = {
     return body.id === null
       ? unwrap(await api.POST('/api/core/partners', { body }))
       : unwrap(await api.PUT('/api/core/partners/{id}', { params: { path: { id: body.id } }, body }));
+  },
+  /** „Preia de la ANAF”: datele contribuabilului din registrele ANAF, la data de azi (nu salveaza nimic). */
+  async lookupAnaf(fiscalCode: string): Promise<AnafCompany> {
+    return unwrap(await api.GET('/api/core/anaf/companies/{fiscalCode}', { params: { path: { fiscalCode } } }));
   },
   async revealPersonalId(id: number): Promise<string | null> {
     return unwrap(await api.POST('/api/core/partners/{id}/personal-id', { params: { path: { id } } })).personalId ?? null;
