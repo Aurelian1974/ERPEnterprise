@@ -1,6 +1,6 @@
 namespace Erp.Setup.Core.Checks;
 
-/// <summary>C-20: cereri HTTPS prin proxy-ul sistemului; orice raspuns HTTP inseamna ca adresa e accesibila.</summary>
+/// <summary>C-19: cereri HTTPS prin proxy-ul sistemului; orice raspuns HTTP inseamna ca adresa e accesibila.</summary>
 public sealed class HttpNetworkProbe : INetworkProbe, IDisposable
 {
     private readonly HttpClient client = new(new SocketsHttpHandler { UseProxy = true }) { Timeout = Timeout.InfiniteTimeSpan };

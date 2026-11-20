@@ -122,8 +122,13 @@ internal sealed class FakeNetwork : INetworkProbe
 {
     public HashSet<string> Unreachable { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public Task<bool> CanReachAsync(HttpMethod method, Uri uri, TimeSpan timeout, CancellationToken ct) =>
-        Task.FromResult(!Unreachable.Contains(uri.Host));
+    public System.Collections.Concurrent.ConcurrentQueue<(HttpMethod Method, Uri Uri, TimeSpan Timeout)> Requests { get; } = new();
+
+    public Task<bool> CanReachAsync(HttpMethod method, Uri uri, TimeSpan timeout, CancellationToken ct)
+    {
+        Requests.Enqueue((method, uri, timeout));
+        return Task.FromResult(!Unreachable.Contains(uri.Host));
+    }
 }
 
 /// <summary>Licente de test in formatul binar (08, 3.4), scrise cu o cheie generata in test (KeyId 1).</summary>
