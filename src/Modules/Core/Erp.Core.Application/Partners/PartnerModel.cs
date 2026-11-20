@@ -69,6 +69,9 @@ public interface IPartnerStore
 
     Task<SavedEntity> SaveAsync(PartnerRecord partner, int userId, CancellationToken ct);
 
+    /// <summary>Creeaza seria implicita nefiscala a codurilor de partener daca firma nu are una pentru anul dat; true = creata acum.</summary>
+    Task<bool> EnsureCodeSeriesAsync(int companyId, short year, int userId, CancellationToken ct);
+
     Task<SavedEntity> SaveAddressAsync(SavePartnerAddress command, int userId, CancellationToken ct);
 
     Task<SavedEntity> SaveBankAccountAsync(SavePartnerBankAccount command, int userId, CancellationToken ct);
@@ -93,4 +96,15 @@ public interface IPersonalDataProtector
     byte[] Protect(string value);
 
     string Unprotect(byte[] value);
+}
+
+/// <summary>
+/// Seria codurilor de partener: tipul de document „Core.Partner” (nefiscal). Fara serie configurata, primul partener fara cod
+/// creeaza seria implicita P-{An}-{Numar din 6 cifre}, cu trecere automata la anul urmator; se poate schimba in Configurare › Serii.
+/// </summary>
+public static class PartnerCodeSeries
+{
+    public const string DocumentType = "Core.Partner";
+    public const string DefaultPrefix = "P";
+    public const byte DefaultPadding = 6;
 }

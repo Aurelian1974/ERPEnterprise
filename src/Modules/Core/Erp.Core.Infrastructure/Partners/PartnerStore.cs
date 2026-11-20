@@ -86,6 +86,13 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         return session.Connection.QuerySingleAsync<SavedEntity>(Command("core.usp_Partner_Save", parameters, ct));
     }
 
+    public Task<bool> EnsureCodeSeriesAsync(int companyId, short year, int userId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<bool>(Command("core.usp_NumberSeries_EnsureDefault", new
+        {
+            CompanyId = companyId, DocumentTypeCode = PartnerCodeSeries.DocumentType, Year = year, Prefix = PartnerCodeSeries.DefaultPrefix,
+            Padding = PartnerCodeSeries.DefaultPadding, UserId = userId,
+        }, ct));
+
     public Task<SavedEntity> SaveAddressAsync(SavePartnerAddress command, int userId, CancellationToken ct) => Save("core.usp_PartnerAddress_Save", new
     {
         command.Id, command.PartnerId, command.AddressType, command.Name, command.Address, command.City, command.CountyCode,

@@ -57,7 +57,7 @@ public sealed record RevealPartnerPersonalId(int Id) : ICommand<PartnerPersonalI
 
 internal static class PartnerRules
 {
-    public const string DocumentType = "Core.Partner";
+    public const string DocumentType = PartnerCodeSeries.DocumentType;
     public const string CodePattern = "^[A-Za-z0-9][A-Za-z0-9._/-]{0,29}$";
 
     public static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -127,6 +127,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
         }
 
         var code = PartnerRules.Clean(request.Code);
+        var seriesCreated = false;
         if (code is null)
         {
             if (context.CompanyId == 0)
@@ -135,6 +136,8 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             }
 
             var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+            // Codul partenerului nu e numerotare fiscala: fara serie configurata, se creeaza una implicita, in aceeasi tranzactie.
+            seriesCreated = await store.EnsureCodeSeriesAsync(context.CompanyId, (short)today.Year, context.UserId, cancellationToken).ConfigureAwait(false);
             code = (await series.NextAsync(context.CompanyId, PartnerRules.DocumentType, today, cancellationToken).ConfigureAwait(false)).Formatted;
         }
 
@@ -159,6 +162,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             partner.AnafCheckedAt,
             PersonalIdChanged = partner.PersonalIdChange ? true : (bool?)null,
             PropertiesChanged = partner.Properties is null ? (bool?)null : true,
+            CodeSeriesCreated = seriesCreated ? true : (bool?)null,
         });
         await outbox.EnqueueAsync(new PartenerModificat(saved.Id, partner.Code, partner.Name, partner.FiscalCode, partner.VatPayer,
             partner.VatOnCollection, partner.AnafInactive, partner.IsActive) { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);

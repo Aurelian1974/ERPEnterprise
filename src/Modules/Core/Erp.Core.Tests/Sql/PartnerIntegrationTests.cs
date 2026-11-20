@@ -162,6 +162,31 @@ public sealed class PartnerIntegrationTests(PartnerDatabase database) : IClassFi
     }
 
     [Fact]
+    public async Task Without_a_partner_series_the_first_partner_without_code_creates_the_default_series()
+    {
+        await using var connection = new SqlConnection(database.ConnectionString);
+        var companyId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO core.Company (Code, Name, FiscalCode, VatPayer, VatOnCollection, TradeRegisterNo, Address, City, CountyCode, CountryCode,
+                DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
+            SELECT N'FARASERIE', N'Firma fara serie', N'14080700', 1, 0, N'J40/1/2015', N'Str. 1', N'București', N'B', 'RO', Id, 1, 1, 1
+            FROM core.PrecisionPolicy WHERE Code = N'STANDARD';
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """);
+        var year = DateTime.UtcNow.Year;
+
+        var first = await Send(Legal(null, "Primul fara cod", NewFiscalCode(), customer: false, supplier: true), companyId);
+        var second = await Send(Legal(null, "Al doilea fara cod", NewFiscalCode(), customer: false, supplier: true), companyId);
+
+        Assert.Equal($"P-{year}-000001", (await Send(new GetPartner(first.Id), companyId)).Code);
+        Assert.Equal($"P-{year}-000002", (await Send(new GetPartner(second.Id), companyId)).Code);
+        var series = Assert.Single(await Send(new ListNumberSeries(companyId, (short)year), companyId));
+        Assert.Equal(("Core.Partner", false, true, true), (series.DocumentTypeCode, series.IsFiscal, series.IsDefault, series.AutoRollover));
+        var audit = await connection.ExecuteScalarAsync<string>(
+            "SELECT Changes FROM core.AuditEntry WHERE EntityType = N'Core.Partner' AND EntityId = @Id;", new { first.Id });
+        Assert.Contains("\"codeSeriesCreated\":true", audit, StringComparison.Ordinal);
+    }
+
+    [Fact]
     [Trait("Criteriu", "02.01-A13")]
     public async Task Personal_id_is_encrypted_kept_on_update_and_revealed_only_with_permission_and_audited()
     {

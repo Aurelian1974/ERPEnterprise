@@ -251,6 +251,8 @@ public sealed class FakePartnerStore : Erp.Core.Application.Partners.IPartnerSto
 
     public Task<byte[]?> GetPersonalIdAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
+    public Task<bool> EnsureCodeSeriesAsync(int companyId, short year, int userId, CancellationToken ct) => throw new NotSupportedException();
+
     public Task<Erp.Core.Application.Organization.SavedEntity> SaveAsync(Erp.Core.Application.Partners.PartnerRecord partner, int userId, CancellationToken ct) =>
         throw new NotSupportedException();
 
