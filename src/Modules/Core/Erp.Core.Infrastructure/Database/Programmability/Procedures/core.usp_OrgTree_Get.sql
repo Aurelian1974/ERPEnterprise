@@ -41,14 +41,20 @@ BEGIN
     JOIN #Companies AS v ON v.Id = c.Id
     ORDER BY c.Name, c.Id;
 
-    SELECT b.Id, b.CompanyId, b.Code, b.Name, b.Address, b.City, b.CountyCode, b.CountryCode, b.PostalCode, b.IsActive, b.RowVersion
+    SELECT b.Id, b.CompanyId, b.Code, b.Name, b.Address, b.City, b.CountyCode, b.CountryCode, b.PostalCode, b.IsActive, b.RowVersion, b.Phone, b.Email
     FROM core.Branch AS b
     JOIN #Companies AS v ON v.Id = b.CompanyId
     ORDER BY b.Name, b.Id;
 
     SELECT l.Id, l.CompanyId, l.BranchId, l.Code, l.Name, l.LocationType, l.Address, l.City, l.CountyCode, l.CountryCode,
-           l.PostalCode, l.IsActive, l.RowVersion
+           l.PostalCode, l.IsActive, l.RowVersion, l.Phone, l.Email
     FROM core.Location AS l
     JOIN #Companies AS v ON v.Id = l.CompanyId
     ORDER BY l.Name, l.Id;
+
+    SELECT k.Id, k.CompanyId, k.Name, k.Role, k.Phone, k.Email, k.Notes, k.IsActive, k.RowVersion, k.BranchId, k.LocationId
+    FROM core.CompanyContact AS k
+    JOIN #Companies AS v ON v.Id = k.CompanyId
+    WHERE k.BranchId IS NOT NULL OR k.LocationId IS NOT NULL
+    ORDER BY k.IsActive DESC, k.Name, k.Id;
 END;

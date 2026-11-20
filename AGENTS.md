@@ -29,7 +29,7 @@
 ## Lucru si verificare
 
 - Aplica numai instructiunile relevante din [ghidul de configurare](.github/README.md); daca mediul nu le incarca automat, citeste manual fisierul corespunzator. Nu urma recursiv toate linkurile.
-- Modificari mici, reutilizare inainte de abstractizare, fara modificari colaterale. Pastreaza lucrul existent al utilizatorului; nu crea commit/push fara cerere.
+- Modificari mici, reutilizare inainte de abstractizare, fara modificari colaterale. Pastreaza lucrul existent al utilizatorului; nu crea commit/push fara cerere. La un push cerut pe GitHub aplica `GIT-06`: kit nou si tag pe commit ([ghid, 3.5](Docs/arhitectura/08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md)).
 - Nu expune secrete sau date personale in cod, jurnale ori rezultate. Nu inghiti erori si nu raporta succes neverificat.
 - Ruleaza cea mai mica verificare existenta care acopera schimbarea; extinde numai justificat. Nu inventa comenzi, proiecte sau teste. Raporteaza explicit verificarile imposibile; nu instala infrastructura doar pentru a simula succesul.
 - Actualizeaza documentatia direct afectata. Comunica in romana; UI in romana cu diacritice si resurse de traducere, identificatori conform documentatiei.

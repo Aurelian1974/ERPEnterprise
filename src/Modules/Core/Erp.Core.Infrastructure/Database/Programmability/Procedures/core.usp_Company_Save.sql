@@ -13,6 +13,8 @@ CREATE OR ALTER PROCEDURE core.usp_Company_Save
     @CountyCode               nvarchar(3) = NULL,
     @CountryCode              char(2),
     @PostalCode               nvarchar(10) = NULL,
+    @Phone                    nvarchar(30) = NULL,
+    @Email                    nvarchar(254) = NULL,
     @DefaultPrecisionPolicyId int,
     @IncludeInConsolidation   bit,
     @IsActive                 bit,
@@ -45,9 +47,9 @@ BEGIN
     IF @Id IS NULL
     BEGIN
         INSERT INTO core.Company (GroupId, Code, Name, FiscalCode, VatPayer, VatOnCollection, TradeRegisterNo, ShareCapital,
-            Address, City, CountyCode, CountryCode, PostalCode, DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
+            Address, City, CountyCode, CountryCode, PostalCode, Phone, Email, DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
         VALUES (@GroupId, @Code, @Name, @FiscalCode, @VatPayer, @VatOnCollection, @TradeRegisterNo, @ShareCapital,
-            @Address, @City, @CountyCode, @CountryCode, @PostalCode, @DefaultPrecisionPolicyId, @IncludeInConsolidation, @IsActive, @UserId);
+            @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @DefaultPrecisionPolicyId, @IncludeInConsolidation, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -66,6 +68,7 @@ BEGIN
         SET GroupId = @GroupId, Code = @Code, Name = @Name, FiscalCode = @FiscalCode, VatPayer = @VatPayer,
             VatOnCollection = @VatOnCollection, TradeRegisterNo = @TradeRegisterNo, ShareCapital = @ShareCapital,
             Address = @Address, City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode,
+            Phone = @Phone, Email = @Email,
             DefaultPrecisionPolicyId = @DefaultPrecisionPolicyId, IncludeInConsolidation = @IncludeInConsolidation,
             IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND RowVersion = @RowVersion;

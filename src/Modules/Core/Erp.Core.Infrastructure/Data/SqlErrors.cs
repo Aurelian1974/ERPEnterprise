@@ -40,6 +40,8 @@ public sealed class CoreSqlErrors : ISqlErrorMap
         [50025] = (ErpErrorKind.Conflict, "CORE_NUMBER_SERIES_CLOSED"),
         [50026] = (ErpErrorKind.Conflict, "CORE_NUMBER_SERIES_DUPLICATE"),
         [50027] = (ErpErrorKind.NotFound, "CORE_ENTITY_NOT_FOUND"),
+        [50029] = (ErpErrorKind.Conflict, "CORE_ADDRESS_TYPE_DUPLICATE"),
+        [50030] = (ErpErrorKind.Validation, "CORE_ADDRESS_TYPE_PROTECTED"),
     };
 }
 

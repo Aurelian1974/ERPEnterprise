@@ -104,6 +104,12 @@
   <data name="Setup2fa.CodesHelp" xml:space="preserve"><value>Păstrează codurile de rezervă într-un loc sigur. Fiecare cod se folosește o singură dată și nu se mai afișează.</value></data>
   <data name="Setup2fa.Download" xml:space="preserve"><value>Descarcă</value></data>
   <data name="Setup2fa.Print" xml:space="preserve"><value>Tipărește</value></data>
+  <data name="Setup2fa.DisableHelp" xml:space="preserve"><value>Poți dezactiva autentificarea în doi pași pentru acest cont (nu este obligatorie). Confirmă cu parola.</value></data>
+  <data name="Setup2fa.DisablePassword" xml:space="preserve"><value>Parola contului</value></data>
+  <data name="Setup2fa.DisableSubmit" xml:space="preserve"><value>Dezactivează 2FA</value></data>
+  <data name="Setup2fa.DisableRefused" xml:space="preserve"><value>Autentificarea în doi pași nu poate fi dezactivată pentru acest cont.</value></data>
+  <data name="Setup2fa.DisableWrongPassword" xml:space="preserve"><value>Parola nu este corectă.</value></data>
+  <data name="Setup2fa.Disabled" xml:space="preserve"><value>Autentificarea în doi pași a fost dezactivată. O poți reactiva oricând din această pagină.</value></data>
   <data name="Setup2fa.Continue" xml:space="preserve"><value>Continuă în aplicație</value></data>
   <data name="Setup2fa.AlreadyEnabled" xml:space="preserve"><value>Autentificarea în doi pași este deja activă pentru acest cont.</value></data>
   <data name="Setup2fa.CodesFileHeader" xml:space="preserve"><value>Coduri de rezervă ERP pentru {0}. Fiecare cod se folosește o singură dată.</value></data>

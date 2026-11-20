@@ -8,6 +8,8 @@ CREATE OR ALTER PROCEDURE core.usp_Branch_Save
     @CountyCode  nvarchar(3) = NULL,
     @CountryCode char(2),
     @PostalCode  nvarchar(10) = NULL,
+    @Phone       nvarchar(30) = NULL,
+    @Email       nvarchar(254) = NULL,
     @IsActive    bit,
     @RowVersion  binary(8) = NULL,
     @UserId      int
@@ -31,8 +33,8 @@ BEGIN
 
     IF @Id IS NULL
     BEGIN
-        INSERT INTO core.Branch (CompanyId, Code, Name, Address, City, CountyCode, CountryCode, PostalCode, IsActive, CreatedBy)
-        VALUES (@CompanyId, @Code, @Name, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @IsActive, @UserId);
+        INSERT INTO core.Branch (CompanyId, Code, Name, Address, City, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
+                VALUES (@CompanyId, @Code, @Name, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -42,7 +44,7 @@ BEGIN
 
         UPDATE core.Branch
         SET Code = @Code, Name = @Name, Address = @Address, City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode,
-            PostalCode = @PostalCode, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            PostalCode = @PostalCode, Phone = @Phone, Email = @Email, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND CompanyId = @CompanyId AND RowVersion = @RowVersion;
 
         IF @@ROWCOUNT = 0

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Erp.Setup.Core.Answers;
 using Erp.Setup.Core.Checks;
+using Erp.Setup.Core.Kit;
 using Erp.Setup.Core.State;
 
 namespace Erp.Setup.Presentation;
@@ -74,8 +75,8 @@ public sealed record InstallationItem(InstanceState State, string KitVersion)
     /// <summary>Actiunile obisnuite (actualizare, reparare, cheie, diagnostic…) pe o instalare terminata sau in mentenanta.</summary>
     public bool CanManage => State.State is InstanceLifecycle.Installed or InstanceLifecycle.Maintenance;
 
-    public bool CanUpgrade => State.State == InstanceLifecycle.Installed && Version.TryParse(State.CurrentVersion, out var current)
-        && Version.TryParse(KitVersion, out var kit) && kit > current;
+    public bool CanUpgrade => State.State == InstanceLifecycle.Installed && ProductVersion.TryParse(State.CurrentVersion, out var current)
+        && ProductVersion.TryParse(KitVersion, out var kit) && kit > current;
 }
 
 /// <summary>Un rand din lista verificarilor (ecranul 4).</summary>

@@ -148,7 +148,7 @@ describe('formularul firmei', () => {
 describe('regulile adresei', () => {
   const companyValues = {
     code: 'EXD', name: 'Exemplu', fiscalCode: 'RO12345674', tradeRegisterNo: 'J40/1234/2015', shareCapital: '200,00', groupId: null,
-    vatPayer: true, vatOnCollection: false, address: 'Str. X 1', city: 'București', postalCode: null, defaultPrecisionPolicyId: 1,
+    vatPayer: true, vatOnCollection: false, address: 'Str. X 1', city: 'București', postalCode: null, phone: null, email: null, defaultPrecisionPolicyId: 1,
     includeInConsolidation: true, isActive: true,
   };
 
@@ -157,7 +157,7 @@ describe('regulile adresei', () => {
     expect(companySchema.safeParse({ ...companyValues, countryCode: 'RO', countyCode: 'B' }).success).toBe(true);
     expect(companySchema.safeParse({ ...companyValues, countryCode: 'DE', countyCode: null }).success).toBe(true);
 
-    const branch = { code: 'PL-CJ', name: 'Cluj', address: 'Str. Y 2', city: 'Cluj-Napoca', postalCode: null, isActive: true };
+    const branch = { code: 'PL-CJ', name: 'Cluj', address: 'Str. Y 2', city: 'Cluj-Napoca',     postalCode: null, phone: null, email: null, isActive: true };
     const missing = branchSchema.safeParse({ ...branch, countryCode: 'RO', countyCode: null });
     expect(missing.success).toBe(false);
     expect(missing.error?.issues[0]?.path).toEqual(['countyCode']);
@@ -165,10 +165,17 @@ describe('regulile adresei', () => {
   });
 
   it('la locație adresa e opțională, dar dacă s-a ales România se cere județul', () => {
-    const location = { code: 'DEP-1', name: 'Depozit', branchId: null, locationType: 2, address: null, city: null, postalCode: null, isActive: true };
+    const location = { code: 'DEP-1', name: 'Depozit', branchId: null, locationType: 2, address: null,     city: null, postalCode: null, phone: null, email: null, isActive: true };
     expect(locationSchema.safeParse({ ...location, countryCode: null, countyCode: null }).success).toBe(true);
     expect(locationSchema.safeParse({ ...location, countryCode: 'RO', countyCode: null }).success).toBe(false);
     expect(locationSchema.safeParse({ ...location, countryCode: 'RO', countyCode: 'CJ' }).success).toBe(true);
+  });
+
+  it('telefonul și e-mailul sunt opționale, dar validate când sunt date', () => {
+    const base = { ...companyValues, countryCode: 'DE', countyCode: null };
+    expect(companySchema.safeParse({ ...base, phone: '+40 264 123 456', email: 'a@b.ro' }).success).toBe(true);
+    expect(companySchema.safeParse({ ...base, phone: 'abc' }).success).toBe(false);
+    expect(companySchema.safeParse({ ...base, email: 'fara-arond' }).success).toBe(false);
   });
 
   it('un județ gol aparține oricărei țări; unul ales, numai țării lui', () => {

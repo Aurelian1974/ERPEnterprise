@@ -13,16 +13,20 @@ import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { orgApi, orgKeys, useNumberSeries, useOrgLookups, useOrgTree, type NumberSeries } from '../org/orgApi';
 import { LicenseTab } from './LicenseTab';
+import { AddressTypesTab } from './AddressTypesTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
   const user = useOutletContext<CurrentUser>();
   const canSeries = user.permissions.includes('Core.NumberSeries.Manage');
   const canLicense = user.permissions.includes('Core.License.Manage');
-  const tab = useLocation().pathname.endsWith('/licenta') && canLicense ? 'license' : 'series';
+  const canAddressTypes = user.permissions.includes('Core.Company.Manage');
+  const path = useLocation().pathname;
+  const tab = path.endsWith('/licenta') && canLicense ? 'license' : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes' : 'series';
+  const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes') : t('config.tab.series');
   return (
     <div className="page wide">
-      <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tab === 'license' ? t('config.tab.license') : t('config.tab.series')}</div>
+      <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
       <div className="head">
         <div>
           <h1>{t('config.title')}</h1>
@@ -38,6 +42,14 @@ export function ConfigPage() {
             </NavLink>
           )}
         </div>
+        {canAddressTypes && (
+          <div className="family">
+            <span className="family-name">{t('config.family.nomenclature')}</span>
+            <NavLink to="/admin/config/tipuri-adrese" className="tab">
+              ⌂ {t('config.tab.addressTypes')}
+            </NavLink>
+          </div>
+        )}
         {canLicense && (
           <div className="family">
             <span className="family-name">{t('config.family.system')}</span>
@@ -47,7 +59,7 @@ export function ConfigPage() {
           </div>
         )}
       </nav>
-      {tab === 'license' ? <LicenseTab /> : canSeries && <SeriesTab user={user} />}
+      {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : canSeries && <SeriesTab user={user} />}
     </div>
   );
 }

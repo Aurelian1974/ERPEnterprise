@@ -223,9 +223,26 @@ function Get-KitScriptVersions {
 }
 
 function Compare-ProductVersion {
-    <# Comparatie semantica AAAA.L.patch (GIT-05). #>
+    <# Comparatie numerica AAAA.LL.Major.Release.ServicePack (GIT-05); formele mai scurte se completeaza cu zero. #>
     param([Parameter(Mandatory)][string]$Left, [Parameter(Mandatory)][string]$Right)
-    ([version]$Left).CompareTo([version]$Right)
+    $l = @(ConvertTo-VersionParts $Left); $r = @(ConvertTo-VersionParts $Right)
+    for ($i = 0; $i -lt 5; $i++) {
+        if ($l[$i] -ne $r[$i]) { return [Math]::Sign($l[$i] - $r[$i]) }
+    }
+    0
+}
+
+function ConvertTo-VersionParts {
+    param([Parameter(Mandatory)][string]$Version)
+    $p = @($Version.Split('.') | ForEach-Object { [int]$_ })
+    if ($p.Count -gt 5) { throw "Versiunea '$Version' are mai mult de 5 componente." }
+    while ($p.Count -lt 5) { $p += 0 }
+    $p
+}
+
+function Get-VersionSortKey {
+    param([Parameter(Mandatory)][string]$Version)
+    (ConvertTo-VersionParts $Version | ForEach-Object { $_.ToString('D9') }) -join '.'
 }
 
 function Get-KitVersionTags {
@@ -233,7 +250,7 @@ function Get-KitVersionTags {
     $lines = & git -C $RepoRoot for-each-ref refs/tags --format='%(refname:short)|%(creatordate:short)' 2>$null
     foreach ($line in $lines) {
         $name, $date = "$line".Split('|')
-        if ($name -match '^v?(\d{4}\.\d+\.\d+)$') {
+        if ($name -match '^v?(\d{4}\.\d+\.\d+(?:\.\d+){0,2})$') {
             [pscustomobject]@{ Tag = $name; Version = $Matches[1]; Date = [datetime]::ParseExact($date, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) }
         }
     }
@@ -243,13 +260,13 @@ function Get-KitMinUpgradeFrom {
     <# Cea mai veche versiune livrata in ultimele 12 luni, mai mica decat versiunea curenta; altfel versiunea curenta. #>
     param([Parameter(Mandatory)][string]$Version, [Parameter(Mandatory)][datetime]$ReleaseDate, [object[]]$Tags = @())
     $candidates = @($Tags | Where-Object { $_.Date -ge $ReleaseDate.AddMonths(-12) -and (Compare-ProductVersion $_.Version $Version) -lt 0 } |
-        Sort-Object { [version]$_.Version })
+        Sort-Object { Get-VersionSortKey $_.Version })
     if ($candidates.Count -gt 0) { $candidates[0].Version } else { $Version }
 }
 
 function Get-KitPreviousTag {
     param([Parameter(Mandatory)][string]$Version, [object[]]$Tags = @())
-    $previous = @($Tags | Where-Object { (Compare-ProductVersion $_.Version $Version) -lt 0 } | Sort-Object { [version]$_.Version } -Descending)
+    $previous = @($Tags | Where-Object { (Compare-ProductVersion $_.Version $Version) -lt 0 } | Sort-Object { Get-VersionSortKey $_.Version } -Descending)
     if ($previous.Count -gt 0) { $previous[0].Tag } else { $null }
 }
 

@@ -321,7 +321,8 @@ app.MapPost("/api/sales/invoices/{id:int}/validate",
 | `GIT-02` | O | Mesajele de commit în format Conventional Commits, cu modulul ca scop: `feat(sales): validare factură`, `fix(core): gol în serie la rollback`. Din ele se generează nota de versiune pentru clienți. |
 | `GIT-03` | O | Orice pull request trece prin revizuire (și în echipa de un om plus Claude: Claude revizuiește codul scris de om și invers) folosind checklist-ul din secțiunea 8. |
 | `GIT-04` | O | CI la fiecare pull request: compilare fără avertismente, teste unitare, de integrare și de arhitectură, migrații pe bază goală și pe bază din versiunea anterioară (`MIG-07`), lint frontend, scanare de dependențe vulnerabile. Fără CI verde nu se unește. |
-| `GIT-05` | O | Versionare semantică a produsului (`AAAA.L.patch`, de exemplu `2027.1.3`); fiecare versiune livrată are tag în Git și pachet de instalare reproductibil. |
+| `GIT-05` | O | Versiunea produsului are 5 componente: `AAAA.LL.Major.Release.ServicePack` (de exemplu `2026.11.8.2.3`); fiecare versiune livrată are tag în Git și pachet de instalare reproductibil. Formele mai scurte se compară completate cu zero. |
+| `GIT-06` | O | La fiecare commit trimis pe GitHub se construiește un kit nou și commitul primește tag cu versiunea kitului (decizia lui Aurelian, 20.11.2026). Procedura: [ghidul de instalare, 3.2 și 3.5](../08-instalare-actualizare/GHID_INSTALARE_ACTUALIZARE.md). |
 
 ### 7.2 Securitate și GDPR în cod
 

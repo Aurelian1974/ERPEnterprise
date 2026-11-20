@@ -186,6 +186,11 @@ public sealed class FakeOrganizationStore : Erp.Core.Application.Organization.IO
 
     public Task<Erp.Core.Application.Organization.SavedEntity> SaveBankAccountAsync(Erp.Core.Application.Organization.SaveCompanyBankAccount command, int userId, CancellationToken ct) => throw new NotSupportedException();
 
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveContactAsync(Erp.Core.Application.Organization.SaveCompanyContact command, int userId, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveAddressAsync(Erp.Core.Application.Organization.SaveCompanyAddress command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<Erp.Core.Application.Organization.SavedEntity> SaveAddressTypeAsync(Erp.Core.Application.Organization.SaveAddressType command, int userId, CancellationToken ct) => throw new NotSupportedException();
+
     public Task<IReadOnlyList<Erp.Core.Application.Organization.NumberSeriesDto>> ListNumberSeriesAsync(int companyId, short? year, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<Erp.Core.Application.Organization.SavedEntity> SaveNumberSeriesAsync(Erp.Core.Application.NumberSeries.SaveNumberSeries command, int userId, CancellationToken ct) => throw new NotSupportedException();

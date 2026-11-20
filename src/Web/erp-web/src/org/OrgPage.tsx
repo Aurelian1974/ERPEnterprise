@@ -5,7 +5,7 @@ import type { CurrentUser } from '../api/session';
 import { companyStore } from '../app/company';
 import { tabKeyTarget } from '../components/tabs';
 import { t } from '../i18n';
-import { BankAccountsTab, CompanySeriesTab } from './CompanyTabs';
+import { AddressesTab, BankAccountsTab, CompanySeriesTab, ContactsSection, ContactsTab } from './CompanyTabs';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
 import { useCompany, useOrgLookups, useOrgTree, type OrgLookups, type Saved } from './orgApi';
 import { buildTree, countNodes, nodeId, type NodeKind, type OrgTree, type TreeNode } from './orgTree';
@@ -173,13 +173,27 @@ function Detail({ tree, lookups, selection, canManage }: {
     case 'branch': {
       const branch = tree.branches.find((b) => b.id === node.id);
       return branch === undefined ? null : (
-        <BranchForm tree={tree} lookups={lookups} companyId={branch.companyId} branchId={branch.id} onSaved={onSaved('branch')} onCancel={selection.clear} />
+        <BranchForm tree={tree} lookups={lookups} companyId={branch.companyId} branchId={branch.id} onSaved={onSaved('branch')} onCancel={selection.clear}
+          after={(
+            <section className="contacts-section" aria-label={t('section.contactPersons')}>
+              <h3 className="section">{t('section.contactPersons')}</h3>
+              <ContactsSection key={`b-${branch.id}`} companyId={branch.companyId} branchId={branch.id} canManage={canManage}
+                contacts={tree.contacts.filter((c) => c.branchId === branch.id)} />
+            </section>
+          )} />
       );
     }
     case 'location': {
       const location = tree.locations.find((l) => l.id === node.id);
       return location === undefined ? null : (
-        <LocationForm tree={tree} lookups={lookups} companyId={location.companyId} locationId={location.id} onSaved={onSaved('location')} onCancel={selection.clear} />
+        <LocationForm tree={tree} lookups={lookups} companyId={location.companyId} locationId={location.id} onSaved={onSaved('location')} onCancel={selection.clear}
+          after={(
+            <section className="contacts-section" aria-label={t('section.contactPersons')}>
+              <h3 className="section">{t('section.contactPersons')}</h3>
+              <ContactsSection key={`l-${location.id}`} companyId={location.companyId} locationId={location.id} canManage={canManage}
+                contacts={tree.contacts.filter((c) => c.locationId === location.id)} />
+            </section>
+          )} />
       );
     }
     default:
@@ -196,7 +210,7 @@ function parseNode(value: string | undefined): { kind: NodeKind; id: number } | 
   return { kind: kinds[match[1] ?? 'g'] ?? 'group', id: Number(match[2]) };
 }
 
-type CompanyTab = 'general' | 'bank' | 'series';
+type CompanyTab = 'general' | 'addresses' | 'contacts' | 'bank' | 'series';
 
 function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   readonly tree: OrgTree;
@@ -222,6 +236,8 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   const locations = tree.locations.filter((l) => l.companyId === companyId).length;
   const tabs: [CompanyTab, string][] = [
     ['general', t('org.tab.general')],
+    ['addresses', t('org.tab.addresses')],
+    ['contacts', t('org.tab.contacts')],
     ['bank', t('org.tab.bank')],
     ...(canSeeSeries ? [['series', t('org.tab.series')] as [CompanyTab, string]] : []),
   ];
@@ -302,6 +318,8 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
         ))}
       </div>
       {panel('general', <CompanyForm company={data} lookups={lookups} tree={tree} onSaved={() => undefined} onCancel={() => undefined} />)}
+      {panel('addresses', <AddressesTab company={data} lookups={lookups} canManage={canManage} />)}
+      {panel('contacts', <ContactsTab company={data} canManage={canManage} />)}
       {panel('bank', <BankAccountsTab company={data} canManage={canManage} />)}
       {canSeeSeries && panel('series', <CompanySeriesTab companyId={companyId} canManage={canSeeSeries} />)}
     </div>

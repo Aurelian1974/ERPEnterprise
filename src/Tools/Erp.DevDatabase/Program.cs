@@ -27,13 +27,15 @@ var sql = new SqlOperator(target, log);
 try
 {
     // Aceeasi sincronizare ca Erp.Host: o baza creata aici nu mai e refacuta la prima pornire a aplicatiei.
-    var sync = new DevDatabaseSync(sql, new DevSyncOptions(options.Database, options.Instance, options.Repo, AdminPassword: null,
+    var sync = new DevDatabaseSync(sql, new DevSyncOptions(options.Database, options.Instance, options.Repo, ReadAdminPasswordSecret(),
         Path.Combine(options.Repo, "build", "dev-sample-data.sql")));
     var result = await sync.SyncAsync(ct);
     if (!result.Succeeded)
     {
         return 30;
     }
+
+    await sync.ApplyAdministratorPasswordAsync(ct);
 
     var connection = SqlServerConnector.BuildOperatorConnectionString(target, options.Database);
 
@@ -82,6 +84,19 @@ catch (Exception ex) when (ex is SqlException or SqlSetupException or InvalidOpe
 {
     log.Error(ex, "Pregătirea bazei de dezvoltare a eșuat");
     return 30;
+}
+
+// Aceleasi user-secrets ca Erp.Host (UserSecretsId erp-development): DevDatabase:AdminPassword.
+static string? ReadAdminPasswordSecret()
+{
+    var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "UserSecrets", "erp-development", "secrets.json");
+    if (!File.Exists(path))
+    {
+        return null;
+    }
+
+    using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+    return document.RootElement.TryGetProperty("DevDatabase:AdminPassword", out var value) ? value.GetString() : null;
 }
 
 // Utilizatorul testelor E2E: cont de sistem (angajatii si externii vin in etapele 6 si 8, CK_User_Kind), rolul cerut (STANDARD sau

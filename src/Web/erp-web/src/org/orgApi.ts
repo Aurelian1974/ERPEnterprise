@@ -14,6 +14,12 @@ export type SaveCompany = Schemas['SaveCompany'];
 export type SaveBranch = Schemas['SaveBranch'];
 export type SaveLocation = Schemas['SaveLocation'];
 export type SaveBankAccount = Schemas['SaveCompanyBankAccount'];
+export type CompanyAddress = Schemas['CompanyAddressDto'];
+export type CompanyContact = Schemas['CompanyContactDto'];
+export type SaveCompanyContact = Schemas['SaveCompanyContact'];
+export type SaveCompanyAddress = Schemas['SaveCompanyAddress'];
+export type AddressType = Schemas['AddressTypeDto'];
+export type SaveAddressType = Schemas['SaveAddressType'];
 export type SaveSeries = Schemas['SaveNumberSeries'];
 
 export const orgKeys = {
@@ -89,6 +95,23 @@ export const orgApi = {
     return body.id === null
       ? unwrap(await api.POST('/api/core/companies/{companyId}/bank-accounts', { params: { path: { companyId } }, body, ...forCompany(companyId) }))
       : unwrap(await api.PUT('/api/core/companies/{companyId}/bank-accounts/{id}', { params: { path: { companyId, id: body.id } }, body, ...forCompany(companyId) }));
+  },
+  async saveAddressType(body: SaveAddressType): Promise<Saved> {
+    return body.id == null
+      ? unwrap(await api.POST('/api/core/address-types', { body }))
+      : unwrap(await api.PUT('/api/core/address-types/{id}', { params: { path: { id: body.id } }, body }));
+  },
+  async saveAddress(body: SaveCompanyAddress): Promise<Saved> {
+    const companyId = body.companyId;
+    return body.id === null
+      ? unwrap(await api.POST('/api/core/companies/{companyId}/addresses', { params: { path: { companyId } }, body, ...forCompany(companyId) }))
+      : unwrap(await api.PUT('/api/core/companies/{companyId}/addresses/{id}', { params: { path: { companyId, id: body.id } }, body, ...forCompany(companyId) }));
+  },
+  async saveContact(body: SaveCompanyContact): Promise<Saved> {
+    const companyId = body.companyId;
+    return body.id === null
+      ? unwrap(await api.POST('/api/core/companies/{companyId}/contacts', { params: { path: { companyId } }, body, ...forCompany(companyId) }))
+      : unwrap(await api.PUT('/api/core/companies/{companyId}/contacts/{id}', { params: { path: { companyId, id: body.id } }, body, ...forCompany(companyId) }));
   },
   async saveSeries(body: SaveSeries): Promise<Saved> {
     const companyId = body.companyId;

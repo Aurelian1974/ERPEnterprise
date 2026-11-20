@@ -10,21 +10,28 @@ public sealed record CompanyGroupNode(int Id, string Code, string Name, int? Par
 public sealed record CompanyNode(int Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool IsActive);
 
 public sealed record BranchNode(int Id, int CompanyId, string Code, string Name, string Address, string City, string? CountyCode,
-    string CountryCode, string? PostalCode, bool IsActive, byte[] RowVersion);
+    string CountryCode, string? PostalCode, bool IsActive, byte[] RowVersion, string? Phone, string? Email);
 
 /// <summary>LocationType: 1 birou, 2 depozit, 3 magazin, 4 fabrica, 5 santier, 6 punct de livrare.</summary>
 public sealed record LocationNode(int Id, int CompanyId, int? BranchId, string Code, string Name, byte LocationType, string? Address,
-    string? City, string? CountyCode, string? CountryCode, string? PostalCode, bool IsActive, byte[] RowVersion);
+    string? City, string? CountyCode, string? CountryCode, string? PostalCode, bool IsActive, byte[] RowVersion, string? Phone, string? Email);
 
 /// <summary>Arborele structurii organizatorice (macheta 03), filtrat dupa drepturi.</summary>
 public sealed record OrgTreeDto(IReadOnlyList<CompanyGroupNode> Groups, IReadOnlyList<CompanyNode> Companies,
-    IReadOnlyList<BranchNode> Branches, IReadOnlyList<LocationNode> Locations);
+    IReadOnlyList<BranchNode> Branches, IReadOnlyList<LocationNode> Locations, IReadOnlyList<CompanyContactDto> Contacts);
 
 /// <summary>Capitalul social e sir zecimal invariant (de exemplu „200.00”), ca toate valorile banesti din API (UI-05).</summary>
 public sealed record CompanyDetailDto(int Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool VatOnCollection,
     string TradeRegisterNo, string? ShareCapital, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode,
     string FunctionalCurrency, int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, string ModifiedByName,
-    DateTime LastChangedAt, byte[] RowVersion, IReadOnlyList<CompanyBankAccountDto> BankAccounts);
+    DateTime LastChangedAt, byte[] RowVersion, IReadOnlyList<CompanyBankAccountDto> BankAccounts, IReadOnlyList<CompanyAddressDto> Addresses,
+    string? Phone, string? Email, IReadOnlyList<CompanyContactDto> Contacts);
+
+/// <summary>Adresa firmei pe tip (core.AddressType, configurabil). Sediul social e pe fișa firmei.</summary>
+public sealed record CompanyAddressDto(int Id, int CompanyId, int AddressType, string? Name, string Address, string City, string? CountyCode,
+    string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsDefault, bool IsActive, byte[] RowVersion);
+
+public sealed record CompanyContactDto(int Id, int CompanyId, string Name, string? Role, string? Phone, string? Email, string? Notes, bool IsActive, byte[] RowVersion, int? BranchId = null, int? LocationId = null);
 
 public sealed record CompanyBankAccountDto(int Id, int CompanyId, string Iban, string BankName, string Currency, bool IsDefault, bool IsActive, byte[] RowVersion);
 
@@ -36,8 +43,10 @@ public sealed record PrecisionPolicyDto(int Id, string Code, string Name);
 
 public sealed record DocumentTypeDto(string Code, string ModuleCode, string Name, bool IsFiscalDefault);
 
+public sealed record AddressTypeDto(int Id, string Code, string Name, int SortOrder, bool IsSystem, bool IsActive, byte[] RowVersion);
+
 public sealed record OrgLookupsDto(IReadOnlyList<CountryDto> Countries, IReadOnlyList<CountyDto> Counties,
-    IReadOnlyList<PrecisionPolicyDto> PrecisionPolicies, IReadOnlyList<DocumentTypeDto> DocumentTypes);
+    IReadOnlyList<PrecisionPolicyDto> PrecisionPolicies, IReadOnlyList<DocumentTypeDto> DocumentTypes, IReadOnlyList<AddressTypeDto> AddressTypes);
 
 /// <summary>O firma din selectorul de firma (antet).</summary>
 public sealed record CompanySummaryDto(int Id, string Code, string Name);
@@ -66,6 +75,11 @@ public interface IOrganizationStore
     Task<SavedEntity> SaveLocationAsync(SaveLocation command, int userId, CancellationToken ct);
 
     Task<SavedEntity> SaveBankAccountAsync(SaveCompanyBankAccount command, int userId, CancellationToken ct);
+
+    Task<SavedEntity> SaveAddressAsync(SaveCompanyAddress command, int userId, CancellationToken ct);
+    Task<SavedEntity> SaveContactAsync(SaveCompanyContact command, int userId, CancellationToken ct);
+
+    Task<SavedEntity> SaveAddressTypeAsync(SaveAddressType command, int userId, CancellationToken ct);
 
     Task<IReadOnlyList<NumberSeriesDto>> ListNumberSeriesAsync(int companyId, short? year, CancellationToken ct);
 

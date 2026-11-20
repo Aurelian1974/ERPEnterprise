@@ -13,7 +13,12 @@
 }
 <h1>@T["Setup2fa.Title"]</h1>
 
-@if (Model.RecoveryCodes.Count > 0)
+@if (Model.Disabled)
+{
+    <div class="alert info" role="status">@T["Setup2fa.Disabled"]</div>
+    <a class="btn primary" href="@Model.ContinueUrl">@T["Setup2fa.Continue"]</a>
+}
+else if (Model.RecoveryCodes.Count > 0)
 {
     <div class="alert info" role="status">@T["Setup2fa.Done"]</div>
     <div class="stp">@T["Setup2fa.Step3"]</div>
@@ -33,6 +38,21 @@
 else if (Model.AlreadyEnabled)
 {
     <p class="sub">@T["Setup2fa.AlreadyEnabled"]</p>
+    @if (Model.Error is not null)
+    {
+        <div class="alert error" role="alert">@Model.Error</div>
+    }
+    @if (!Model.Required)
+    {
+        <form method="post" asp-page-handler="Disable" novalidate data-single-submit>
+            <p class="small">@T["Setup2fa.DisableHelp"]</p>
+            <div class="field">
+                <label for="Password">@T["Setup2fa.DisablePassword"]</label>
+                <div class="input"><input asp-for="Password" id="Password" type="password" value="" autocomplete="current-password" required></div>
+            </div>
+            <button type="submit" class="btn secondary">@T["Setup2fa.DisableSubmit"]</button>
+        </form>
+    }
     <a class="btn primary" href="@Model.ContinueUrl">@T["Setup2fa.Continue"]</a>
 }
 else
@@ -48,6 +68,10 @@ else
         <div class="small">@T["Setup2fa.ScanHelp"]<div class="key">@Model.SharedKey</div></div>
     </div>
     <form method="post" novalidate data-single-submit>
+        <div class="field">
+            <label for="Password">@T["Setup2fa.DisablePassword"]</label>
+            <div class="input"><input asp-for="Password" id="Password" type="password" value="" autocomplete="current-password" required></div>
+        </div>
         <div class="stp"><label for="Code" style="margin:0">@T["Setup2fa.Step2"]</label></div>
         <div class="field">
             <div class="input"><input asp-for="Code" id="Code" value="" class="code-input" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required></div>

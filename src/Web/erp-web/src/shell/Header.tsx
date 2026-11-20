@@ -34,7 +34,7 @@ function onUserAction(args: MenuEventArgs): void {
       browser.navigate('/account/password');
       break;
     case '2fa':
-      browser.navigate('/account/2fa');
+      browser.navigate('/cont/2fa');
       break;
     case 'signout':
       void signOut();

@@ -58,7 +58,7 @@ Fiecare versiune livrată are **un singur kit**, `ERP-<Versiune>-kit.zip` (de ex
 | Windows, PowerShell 7.4+ | `package-kit.ps1` are `#Requires -Version 7.4` |
 | .NET SDK 10.0.401 (sau o versiune 10.0.4xx mai nouă) | Fixat în `global.json` |
 | Node.js din `.nvmrc` și cheia Syncfusion | Interfața React se construiește în kit (07, ST4) |
-| Git, cu depozitul clonat și tagurile versiunilor livrate | Tagurile `AAAA.L.patch` sau `vAAAA.L.patch` (`GIT-05`) servesc la `minUpgradeFrom` și la verificarea `MIG-02` |
+| Git, cu depozitul clonat și tagurile versiunilor livrate | Tagurile `AAAA.LL.Major.Release.ServicePack` sau `v…` (`GIT-05`) servesc la `minUpgradeFrom` și la verificarea `MIG-02` |
 | Windows SDK (`signtool.exe`) | Semnarea Authenticode, cu marcă de timp (`-TimestampUrl`) |
 | Certificatul de semnare a codului, cu cheie privată, în `CurrentUser\My` al contului care construiește | Se dă prin amprentă (`-CodeSigningCertThumbprint`). Un certificat EV reduce avertismentele SmartScreen la primele descărcări |
 | Cheile kitului: activă 1 și de rezervă 2 | Generate o singură dată, **în afara depozitului**: [build/kit-signing/README.md](../../../build/kit-signing/README.md). Cheia privată 2 stă doar offline; ambele chei publice se încorporează în installer (specificația 7, D16) |
@@ -69,7 +69,7 @@ Fiecare versiune livrată are **un singur kit**, `ERP-<Versiune>-kit.zip` (de ex
 Procedura e aceeași pentru prima versiune și pentru orice versiune ulterioară; diferă doar numărul versiunii.
 
 1. Verificați că `main` are CI-ul verde (build, teste unitare, Pester, teste SQL de integrare).
-2. Alegeți versiunea `AAAA.L.patch`, mai mare decât ultima livrată (de exemplu `2027.1.0`, apoi `2027.1.1` pentru o corecție).
+2. Alegeți versiunea `AAAA.LL.Major.Release.ServicePack`, mai mare decât ultima livrată (de exemplu `2026.11.8.2.3`, apoi `2026.11.8.2.4`).
 3. Construiți kitul:
 
    ```powershell
@@ -111,6 +111,19 @@ Procedura e aceeași pentru prima versiune și pentru orice versiune ulterioară
 **Emiterea unei licențe:** completați ecranul, „Validează”, „Generează licența”. Deschideți fișierul generat cu „Deschide o licență” înainte de a-l trimite. Registrul `licente-emise.csv` se copiază pe aceleași suporturi offline, după fiecare licență emisă.
 
 **Rotirea cheilor:** specificația 3.5. Dacă se pierde calculatorul de emitere, se importă cheia 1 din copia offline; dacă cheia 1 e compromisă, se trece pe cheia 2 și se reemit licențele din registru.
+
+### 3.5 Kit și tag la fiecare commit trimis pe GitHub (`GIT-06`)
+
+Decizia lui Aurelian (20.11.2026): după fiecare commit trimis pe GitHub se construiește un kit nou și commitul primește tag.
+
+1. După `git push`, alegeți versiunea următoare după ultimul tag (`git describe --tags --abbrev=0`): creșteți `ServicePack` (`2026.11.8.2.3` → `2026.11.8.2.4`); `AAAA.LL` urmează data, iar `Major` și `Release` se schimbă manual, la decizia utilizatorului (`GIT-05`). Regula e validată de Aurelian. În .NET, `Version` primește primele 4 componente, iar versiunea completă merge în `ErpVersion` (`-p:ErpProductVersion`).
+2. Construiți kitul din commitul trimis, cu procedura 3.2 (pașii 3–4). Pe o mașină fără cheile kitului și certificatul de semnare, singura variantă e kitul de test (3.3); el **nu se livrează**, iar tagul atașat lui nu înseamnă versiune livrată.
+3. Puneți tagul pe același commit și publicați-l: `git tag <versiune>` și `git push origin <versiune>`. Ordinea contează: fără tagul versiunii anterioare, `MIG-02` și `minUpgradeFrom` se calculează greșit.
+4. Un commit fără kit și fără tag nu respectă `GIT-06`; un kit construit dintr-un commit netrimis pe GitHub nu primește tag.
+
+Pașii 1–3 se execută automat cu `pwsh build/eod.ps1 -Message "<mesaj commit>"` (opțional `-Major`, `-Release`; fără chei de semnare face kit de test): oprește serviciile dev, rulează testele unitare, face commit și push, calculează versiunea, construiește kitul, pune și publică tagul, repornește serviciile.
+
+Livrarea la client rămâne separată (secțiunea 4): tagul și kitul din fiecare commit nu înseamnă că versiunea a fost verificată pe mașina virtuală de test (3.2, pasul 5) sau trimisă clientului.
 
 ---
 

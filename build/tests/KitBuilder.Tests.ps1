@@ -248,6 +248,21 @@ Describe 'Versiuni' {
     It 'tagul anterior foloseste comparatia semantica, nu alfabetica' {
         Get-KitPreviousTag -Version '2027.1.0' -Tags $tags | Should -Be 'v2026.10.0'
     }
+
+    It 'compara numeric versiunile cu 5 componente' {
+        Compare-ProductVersion '2026.11.8.2.10' '2026.11.8.2.9' | Should -Be 1
+        Compare-ProductVersion '2026.11.8.2' '2026.11.8.2.0' | Should -Be 0
+        Compare-ProductVersion '2026.11.8.2.3' '2026.11.8.3.0' | Should -Be -1
+    }
+
+    It 'tagul anterior si minUpgradeFrom accepta versiuni cu 5 componente' {
+        $t = @(
+            [pscustomobject]@{ Tag = 'v2026.11.8.2.9'; Version = '2026.11.8.2.9'; Date = [datetime]'2026-11-01' }
+            [pscustomobject]@{ Tag = 'v2026.11.8.2.10'; Version = '2026.11.8.2.10'; Date = [datetime]'2026-11-02' }
+        )
+        Get-KitPreviousTag -Version '2026.11.8.2.11' -Tags $t | Should -Be 'v2026.11.8.2.10'
+        Get-KitMinUpgradeFrom -Version '2026.11.8.2.11' -ReleaseDate ([datetime]'2026-11-03') -Tags $t | Should -Be '2026.11.8.2.9'
+    }
 }
 
 Describe 'New-KitManifest' {

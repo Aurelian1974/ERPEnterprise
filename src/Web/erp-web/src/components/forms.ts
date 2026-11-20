@@ -24,6 +24,8 @@ export function applyServerErrors<T extends FieldValues>(error: unknown, setErro
 
 export const required = z.string().trim().min(1, t('common.required'));
 export const optionalText = z.string().trim().nullable().transform((v) => (v === null || v === '' ? null : v));
+export const optionalPhone = optionalText.refine((v) => v === null || /^\+?[0-9][0-9 .()/-]{5,28}$/.test(v), t('validation.phone'));
+export const optionalEmail = optionalText.refine((v) => v === null || (v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)), t('validation.email'));
 export const code = required.max(20).regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/, t('validation.code'));
 
 /** Suma introdusa in format romanesc (200,00 sau 200.00) -> sir zecimal invariant pentru API (UI-05). */

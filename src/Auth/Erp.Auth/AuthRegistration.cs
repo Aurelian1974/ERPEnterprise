@@ -146,6 +146,7 @@ public static class AuthRegistration
     public static IEndpointRouteBuilder MapErpAuth(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapRazorPages();
+        Web.TwoFactorApi.MapTwoFactorApi(endpoints);
         endpoints.MapGet("/api/antiforgery", (HttpContext http, IAntiforgery antiforgery) =>
             {
                 var tokens = antiforgery.GetAndStoreTokens(http);

@@ -145,9 +145,9 @@ public sealed class AuthFlowIntegrationTests(AuthDatabase database) : IClassFixt
         var setup = await (await browser.GetAsync("/account/2fa")).Content.ReadAsStringAsync(Ct);
         var key = Regex.Match(setup, "class=\"key\">([A-Z2-7 ]+)<").Groups[1].Value.Replace(" ", string.Empty, StringComparison.Ordinal);
         Assert.NotEmpty(key);
-        var wrong = await browser.PostFormAsync("/account/2fa", "/account/2fa", new() { ["Code"] = "000000" });
+        var wrong = await browser.PostFormAsync("/account/2fa", "/account/2fa", new() { ["Code"] = "000000", ["Password"] = newPassword });
         Assert.Contains("nu este corect", await wrong.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
-        var enabled = await browser.PostFormAsync("/account/2fa", "/account/2fa", new() { ["Code"] = Totp.Compute(key, DateTimeOffset.UtcNow) });
+        var enabled = await browser.PostFormAsync("/account/2fa", "/account/2fa", new() { ["Code"] = Totp.Compute(key, DateTimeOffset.UtcNow), ["Password"] = newPassword });
         var recoveryCodes = Regex.Matches(await enabled.Content.ReadAsStringAsync(Ct), "<span>([A-Z0-9-]{8,})</span>").Select(m => m.Groups[1].Value).ToList();
         Assert.Equal(10, recoveryCodes.Count);
 

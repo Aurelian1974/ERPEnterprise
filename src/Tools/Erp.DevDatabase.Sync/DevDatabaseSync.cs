@@ -235,6 +235,15 @@ public sealed partial class DevDatabaseSync(SqlOperator sql, DevSyncOptions opti
         }
     }
 
+    /// <summary>Aplica parola din user-secrets administratorului existent (si il creeaza daca lipseste); fara parola configurata nu face nimic.</summary>
+    public async Task ApplyAdministratorPasswordAsync(CancellationToken ct)
+    {
+        if (!string.IsNullOrEmpty(options.AdminPassword))
+        {
+            await CreateAdministratorAsync(ct).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>
     /// Administratorul de dezvoltare: cu parola din user-secrets, fara schimbare obligatorie si fara 2FA (aceeasi exceptie ca
     /// utilizatorii E2E, numai pe baza de dezvoltare); fara parola configurata, cea temporara se afiseaza o data in consola.
@@ -244,7 +253,7 @@ public sealed partial class DevDatabaseSync(SqlOperator sql, DevSyncOptions opti
         await using var connection = await sql.OpenAsync(options.Database, ct).ConfigureAwait(false);
         var admin = await new InitialAdminCreator(sql).CreateAsync(connection,
             new InitialAdminRequest("administrator", "Administrator ERP", null, ProductVersion, Environment.MachineName), ct).ConfigureAwait(false);
-        if (!admin.Created)
+        if (!admin.Created && string.IsNullOrEmpty(options.AdminPassword))
         {
             return;
         }
@@ -259,7 +268,8 @@ public sealed partial class DevDatabaseSync(SqlOperator sql, DevSyncOptions opti
 
         await sql.ExecuteAsync(connection, "parola administratorului de dezvoltare", """
             UPDATE ids.UserAccount
-            SET PasswordHash = @PasswordHash, PasswordChangedAt = SYSUTCDATETIME(), MustChangePassword = 0, TwoFactorRequired = 0
+            SET PasswordHash = @PasswordHash, PasswordChangedAt = SYSUTCDATETIME(), MustChangePassword = 0, TwoFactorRequired = 0,
+                AccessFailedCount = 0, LockoutEndAt = NULL
             WHERE NormalizedUserName = N'ADMINISTRATOR';
             """, ct, new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 500) { Value = IdentityPasswordHasher.Hash(options.AdminPassword) }).ConfigureAwait(false);
         Log.Information("Administratorul de dezvoltare folosește parola din user-secrets.");

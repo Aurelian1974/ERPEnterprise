@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { HomePage } from '../home/HomePage';
 import { AppShell } from '../shell/AppShell';
 import { ConfigPage } from '../config/ConfigPage';
+import { TwoFactorPage } from '../account/TwoFactorPage';
 import { OrgPage } from '../org/OrgPage';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -15,6 +16,8 @@ export const routes = [
       { path: 'admin/firme', element: <OrgPage /> },
       { path: 'admin/config/serii', element: <ConfigPage /> },
       { path: 'admin/config/licenta', element: <ConfigPage /> },
+      { path: 'admin/config/tipuri-adrese', element: <ConfigPage /> },
+      { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

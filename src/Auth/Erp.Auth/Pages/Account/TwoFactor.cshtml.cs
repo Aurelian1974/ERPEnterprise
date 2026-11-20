@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using QRCoder;
 
 namespace Erp.Auth.Pages.Account;
@@ -16,7 +17,8 @@ namespace Erp.Auth.Pages.Account;
 public sealed class TwoFactorModel(
     SignInManager<UserAccount> signIn,
     UserManager<UserAccount> users,
-    IStringLocalizer<AccountText> text) : PageModel
+    IStringLocalizer<AccountText> text,
+    ILogger<TwoFactorModel> logger) : PageModel
 {
     public const int RecoveryCodeCount = 10;
     public const string Issuer = "ERP";
@@ -81,6 +83,16 @@ public sealed class TwoFactorModel(
             return Page();
         }
 
+        var password = Password;
+        Password = string.Empty;
+        if (!await users.CheckPasswordAsync(user, password))
+        {
+            Error = text["Setup2fa.DisableWrongPassword"];
+            Code = string.Empty;
+            await PrepareKeyAsync(user);
+            return Page();
+        }
+
         var code = Code.Replace(" ", string.Empty, StringComparison.Ordinal).Replace("-", string.Empty, StringComparison.Ordinal);
         Code = string.Empty;
         if (!await users.VerifyTwoFactorTokenAsync(user, users.Options.Tokens.AuthenticatorTokenProvider, code))
@@ -94,6 +106,49 @@ public sealed class TwoFactorModel(
         RecoveryCodes = [.. await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? []];
         // Amprenta de securitate s-a schimbat: cookie-ul se reemite (aceeasi sesiune), fara pasul 2FA obligatoriu.
         await signIn.RefreshSignInAsync(user);
+        return Page();
+    }
+
+    [BindProperty]
+    public string Password { get; set; } = string.Empty;
+
+    public bool Disabled { get; private set; }
+
+    /// <summary>Dezactivarea propriului 2FA, cu parola; refuzata cand 2FA este obligatoriu pentru cont.</summary>
+    public async Task<IActionResult> OnPostDisableAsync()
+    {
+        var user = await users.GetUserAsync(User);
+        if (user is null)
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        Describe(user);
+        if (user.MustChangePassword)
+        {
+            return RedirectToPage("/Account/Password");
+        }
+
+        var password = Password;
+        Password = string.Empty;
+        if (!AlreadyEnabled || Required)
+        {
+            return Page();
+        }
+
+        if (!await users.CheckPasswordAsync(user, password))
+        {
+            Error = text["Setup2fa.DisableWrongPassword"];
+            return Page();
+        }
+
+        await users.SetTwoFactorEnabledAsync(user, false);
+        await users.ResetAuthenticatorKeyAsync(user);
+        await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 0);
+        await signIn.RefreshSignInAsync(user);
+        logger.LogInformation("2FA dezactivat de utilizatorul {User}.", user.UserName);
+        Describe(user);
+        Disabled = true;
         return Page();
     }
 

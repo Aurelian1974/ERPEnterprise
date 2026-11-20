@@ -941,6 +941,499 @@
         }
       }
     },
+    "/api/core/companies/{companyId}/addresses": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "CreateCompanyAddress",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCompanyAddress"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/companies/{companyId}/addresses/{id}": {
+      "put": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "UpdateCompanyAddress",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCompanyAddress"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/companies/{companyId}/contacts": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "CreateCompanyContact",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCompanyContact"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/companies/{companyId}/contacts/{id}": {
+      "put": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "UpdateCompanyContact",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCompanyContact"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/address-types": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "CreateAddressType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAddressType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/address-types/{id}": {
+      "put": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "UpdateAddressType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAddressType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/core/companies/{companyId}/number-series": {
       "get": {
         "tags": [
@@ -1329,10 +1822,121 @@
           }
         }
       }
+    },
+    "/api/account/two-factor": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "GetTwoFactorStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/two-factor/enable": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "EnableTwoFactor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnableTwoFactorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/two-factor/disable": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "DisableTwoFactor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisableTwoFactorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddressTypeDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sortOrder",
+          "isSystem",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isSystem": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
       "BranchNode": {
         "required": [
           "id",
@@ -1345,7 +1949,9 @@
           "countryCode",
           "postalCode",
           "isActive",
-          "rowVersion"
+          "rowVersion",
+          "phone",
+          "email"
         ],
         "type": "object",
         "properties": {
@@ -1390,6 +1996,18 @@
           "rowVersion": {
             "type": "string",
             "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1399,6 +2017,88 @@
         ],
         "type": "object",
         "properties": {
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "CompanyAddressDto": {
+        "required": [
+          "id",
+          "companyId",
+          "addressType",
+          "name",
+          "address",
+          "city",
+          "countyCode",
+          "countryCode",
+          "postalCode",
+          "phone",
+          "email",
+          "isDefault",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "addressType": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "countyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
           "rowVersion": {
             "type": "string",
             "format": "byte"
@@ -1447,6 +2147,78 @@
           }
         }
       },
+      "CompanyContactDto": {
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "role",
+          "phone",
+          "email",
+          "notes",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CompanyDetailDto": {
         "required": [
           "id",
@@ -1470,7 +2242,11 @@
           "modifiedByName",
           "lastChangedAt",
           "rowVersion",
-          "bankAccounts"
+          "bankAccounts",
+          "addresses",
+          "phone",
+          "email",
+          "contacts"
         ],
         "type": "object",
         "properties": {
@@ -1558,6 +2334,30 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CompanyBankAccountDto"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyAddressDto"
+            }
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyContactDto"
             }
           }
         }
@@ -1755,6 +2555,17 @@
           }
         }
       },
+      "DisableTwoFactorRequest": {
+        "required": [
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        }
+      },
       "DocumentTypeDto": {
         "required": [
           "code",
@@ -1775,6 +2586,21 @@
           },
           "isFiscalDefault": {
             "type": "boolean"
+          }
+        }
+      },
+      "EnableTwoFactorRequest": {
+        "required": [
+          "password",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
           }
         }
       },
@@ -1823,6 +2649,160 @@
           }
         }
       },
+      "LicenseDto": {
+        "required": [
+          "hasLicense",
+          "licenseId",
+          "keyId",
+          "customerName",
+          "fiscalCodes",
+          "modules",
+          "users",
+          "payrollEmployees",
+          "posTerminals",
+          "issuedAt",
+          "validUntil",
+          "updatesUntil",
+          "state",
+          "clockBehind",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "hasLicense": {
+            "type": "boolean"
+          },
+          "licenseId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fiscalCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "users": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payrollEmployees": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "posTerminals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "updatesUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "state": {
+            "type": "string"
+          },
+          "clockBehind": {
+            "type": "boolean"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LicenseHistoryItem"
+            }
+          }
+        }
+      },
+      "LicenseHistoryItem": {
+        "required": [
+          "licenseId",
+          "keyId",
+          "customerName",
+          "companies",
+          "issuedAt",
+          "validUntil",
+          "updatesUntil",
+          "isCurrent",
+          "loadedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "licenseId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "companies": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "updatesUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "loadedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "LocationNode": {
         "required": [
           "id",
@@ -1837,7 +2817,9 @@
           "countryCode",
           "postalCode",
           "isActive",
-          "rowVersion"
+          "rowVersion",
+          "phone",
+          "email"
         ],
         "type": "object",
         "properties": {
@@ -1902,6 +2884,18 @@
           "rowVersion": {
             "type": "string",
             "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2019,7 +3013,8 @@
           "countries",
           "counties",
           "precisionPolicies",
-          "documentTypes"
+          "documentTypes",
+          "addressTypes"
         ],
         "type": "object",
         "properties": {
@@ -2046,6 +3041,12 @@
             "items": {
               "$ref": "#/components/schemas/DocumentTypeDto"
             }
+          },
+          "addressTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressTypeDto"
+            }
           }
         }
       },
@@ -2054,7 +3055,8 @@
           "groups",
           "companies",
           "branches",
-          "locations"
+          "locations",
+          "contacts"
         ],
         "type": "object",
         "properties": {
@@ -2080,6 +3082,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LocationNode"
+            }
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyContactDto"
             }
           }
         }
@@ -2137,6 +3145,60 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "RecoveryCodesDto": {
+        "required": [
+          "codes"
+        ],
+        "type": "object",
+        "properties": {
+          "codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SaveAddressType": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sortOrder",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
           }
         }
       },
@@ -2203,6 +3265,18 @@
               "string"
             ],
             "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2304,6 +3378,104 @@
               "string"
             ],
             "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveCompanyAddress": {
+        "required": [
+          "id",
+          "companyId",
+          "addressType",
+          "name",
+          "address",
+          "city",
+          "countyCode",
+          "countryCode",
+          "postalCode",
+          "isDefault",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "addressType": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "countyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2352,6 +3524,84 @@
               "string"
             ],
             "format": "byte"
+          }
+        }
+      },
+      "SaveCompanyContact": {
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "role",
+          "phone",
+          "email",
+          "notes",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2508,6 +3758,18 @@
               "string"
             ],
             "format": "byte"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2582,157 +3844,32 @@
           }
         }
       },
-      "LicenseDto": {
+      "TwoFactorStatusDto": {
         "required": [
-          "hasLicense",
-          "licenseId",
-          "keyId",
-          "customerName",
-          "fiscalCodes",
-          "modules",
-          "users",
-          "payrollEmployees",
-          "posTerminals",
-          "issuedAt",
-          "validUntil",
-          "updatesUntil",
-          "state",
-          "clockBehind",
-          "history"
+          "enabled",
+          "required",
+          "sharedKey",
+          "qrSvg"
         ],
         "type": "object",
         "properties": {
-          "hasLicense": {
+          "enabled": {
             "type": "boolean"
           },
-          "licenseId": {
+          "required": {
+            "type": "boolean"
+          },
+          "sharedKey": {
             "type": [
               "null",
               "string"
             ]
           },
-          "keyId": {
+          "qrSvg": {
             "type": [
               "null",
               "string"
             ]
-          },
-          "customerName": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "fiscalCodes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modules": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "users": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "payrollEmployees": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "posTerminals": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "issuedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "validUntil": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "updatesUntil": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "state": {
-            "type": "string"
-          },
-          "clockBehind": {
-            "type": "boolean"
-          },
-          "history": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LicenseHistoryItem"
-            }
-          }
-        }
-      },
-      "LicenseHistoryItem": {
-        "required": [
-          "licenseId",
-          "keyId",
-          "customerName",
-          "companies",
-          "issuedAt",
-          "validUntil",
-          "updatesUntil",
-          "isCurrent",
-          "loadedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "licenseId": {
-            "type": "string"
-          },
-          "keyId": {
-            "type": "string"
-          },
-          "customerName": {
-            "type": "string"
-          },
-          "companies": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "issuedAt": {
-            "type": "string",
-            "format": "date"
-          },
-          "validUntil": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "updatesUntil": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "isCurrent": {
-            "type": "boolean"
-          },
-          "loadedAt": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },

@@ -229,6 +229,50 @@ public sealed class OrganizationIntegrationTests(OrgDatabase database) : IClassF
         Assert.Equal("CORE_BANK_ACCOUNT_DUPLICATE_IBAN", duplicate.Code);
     }
 
+    [Fact]
+    public async Task Company_has_several_typed_addresses_with_one_default_per_type()
+    {
+        var company = await CreateCompanyAsync(Code());
+        var first = await Send(new SaveCompanyAddress(null, company.Id, 1, "Depozit", "Str. 1", "Cluj-Napoca", "CJ", "RO", null, true, true, null), company.Id);
+        await Send(new SaveCompanyAddress(null, company.Id, 1, null, "Str. 2", "Iași", "IS", "RO", null, true, true, null), company.Id);
+        await Send(new SaveCompanyAddress(null, company.Id, 2, null, "Str. 3", "Brașov", "BV", "RO", null, true, true, null), company.Id);
+
+        var detail = await Send(new GetCompany(company.Id), company.Id);
+        Assert.Equal(3, detail.Addresses.Count);
+        Assert.Equal(2, detail.Addresses.Count(a => a.IsDefault));
+        Assert.False(detail.Addresses.Single(a => a.Id == first.Id).IsDefault);
+        Assert.False(string.IsNullOrEmpty(detail.Address));
+
+        var stale = await Assert.ThrowsAsync<ErpException>(() =>
+            Send(new SaveCompanyAddress(first.Id, company.Id, 1, "Depozit", "Str. 1", "Cluj-Napoca", "CJ", "RO", null, false, true, [1, 2, 3, 4, 5, 6, 7, 8]), company.Id));
+        Assert.Equal(ErpErrorKind.Conflict, stale.Kind);
+
+        var other = await CreateCompanyAsync(Code());
+        await Assert.ThrowsAsync<ErpException>(() =>
+            Send(new SaveCompanyAddress(first.Id, other.Id, 1, "Depozit", "Str. 1", "Cluj-Napoca", "CJ", "RO", null, false, true, first.RowVersion), other.Id));
+    }
+
+    [Fact]
+    public async Task Address_types_are_configurable_and_an_inactive_type_cannot_be_chosen()
+    {
+        var company = await CreateCompanyAsync(Code());
+        var code = $"TIP_{Guid.NewGuid():N}"[..20].ToUpperInvariant();
+        var type = await Send(new SaveAddressType(null, code, "Punct de ridicare", 50, true, null), company.Id);
+        await Assert.ThrowsAsync<ErpException>(() => Send(new SaveAddressType(null, code, "Duplicat", 60, true, null), company.Id));
+
+        await Send(new SaveCompanyAddress(null, company.Id, type.Id, null, "Str. 1", "Cluj-Napoca", "CJ", "RO", null, false, true, null), company.Id);
+
+        var inactive = await Send(new SaveAddressType(type.Id, code, "Punct de ridicare", 50, false, type.RowVersion), company.Id);
+        await Assert.ThrowsAsync<ErpException>(() =>
+            Send(new SaveCompanyAddress(null, company.Id, type.Id, null, "Str. 2", "Iași", "IS", "RO", null, false, true, null), company.Id));
+        Assert.NotEmpty(inactive.RowVersion);
+
+        var system = (await Send(new GetOrgLookups(), company.Id)).AddressTypes.First(t => t.IsSystem);
+        var protectedType = await Assert.ThrowsAsync<ErpException>(() =>
+            Send(new SaveAddressType(system.Id, system.Code, system.Name, system.SortOrder, false, system.RowVersion), company.Id));
+        Assert.Equal("CORE_ADDRESS_TYPE_PROTECTED", protectedType.Code);
+    }
+
     private async Task<(int CompanyId, SavedEntity Series)> SeriesAsync(string documentType = "Sales.Invoice", short year = 2026, bool autoRollover = false)
     {
         var company = await CreateCompanyAsync(Code());

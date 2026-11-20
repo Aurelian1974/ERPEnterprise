@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from 'react';
 import { useForm, useWatch, type DefaultValues, type FieldValues, type Path, type PathValue, type Resolver, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { ErrorBanner, SelectField, SwitchField, TextField, type Option } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
-import { applyServerErrors, code, money, moneyForInput, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
+import { applyServerErrors, code, money, moneyForInput, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { orgApi, orgKeys, type CompanyDetail, type OrgLookups, type Saved } from './orgApi';
@@ -14,8 +14,8 @@ import type { OrgTree } from './orgTree';
 
 type Lookups = OrgLookups;
 
-const countryOptions = (lookups: Lookups): Option[] => lookups.countries.map((c) => ({ value: c.code, text: c.name }));
-const countyOptions = (lookups: Lookups, country: string | null): Option[] =>
+export const countryOptions = (lookups: Lookups): Option[] => lookups.countries.map((c) => ({ value: c.code, text: c.name }));
+export const countyOptions = (lookups: Lookups, country: string | null): Option[] =>
   lookups.counties.filter((c) => c.countryCode === country).map((c) => ({ value: c.code, text: c.name }));
 
 /** Judetul ales apartine tarii? Un judet gol e mereu in regula (obligativitatea e regula separata, A3). */
@@ -28,7 +28,7 @@ export function countyBelongsTo(lookups: Pick<Lookups, 'counties'>, country: str
  * schimba doar valoarea la alegerea utilizatorului, deci altfel judetul vechi ramanea ascuns in formular si salvarea
  * pica pe server cu un mesaj fara legatura cu ce facuse utilizatorul.
  */
-function useCountyFollowsCountry<T extends FieldValues & { countryCode: string | null; countyCode: string | null }>(form: UseFormReturn<T, unknown, unknown>, lookups: Lookups) {
+export function useCountyFollowsCountry<T extends FieldValues & { countryCode: string | null; countyCode: string | null }>(form: UseFormReturn<T, unknown, unknown>, lookups: Lookups) {
   const country = useWatch({ control: form.control, name: 'countryCode' as Path<T> }) as string | null;
   const county = useWatch({ control: form.control, name: 'countyCode' as Path<T> }) as string | null;
   useEffect(() => {
@@ -81,26 +81,37 @@ function useSave<TInput extends FieldValues, TOutput>(
   };
 }
 
-function FormShell({ title, error, footer, onSubmit, children }: { title?: ReactNode; error: string | undefined; footer: ReactNode; onSubmit: () => void; children: ReactNode }) {
+const FormIdContext = createContext<string | undefined>(undefined);
+
+/** `after` (ex. sectiunea de contacte, cu propriile formulare) sta in afara <form>, deasupra butoanelor Anuleaza/Salveaza. */
+function FormShell({ title, error, footer, onSubmit, after, children }: { title?: ReactNode; error: string | undefined; footer: ReactNode; onSubmit: () => void; after?: ReactNode; children: ReactNode }) {
+  const formId = useId();
   return (
-    <form
-      className="node-form"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit();
-      }}
-    >
-      {title}
-      <ErrorBanner message={error} />
-      <div className="form-body">{children}</div>
-      {footer}
-    </form>
+    <FormIdContext.Provider value={formId}>
+      <div className="node-form">
+        <form
+          id={formId}
+          className="node-form"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit();
+          }}
+        >
+          {title}
+          <ErrorBanner message={error} />
+          <div className="form-body">{children}</div>
+        </form>
+        {after}
+        {footer}
+      </div>
+    </FormIdContext.Provider>
   );
 }
 
 function Footer({ info, onCancel, submitting }: { info?: string | undefined; onCancel: () => void; submitting: boolean }) {
   const readOnly = useContext(OrgReadOnly);
+  const formId = useContext(FormIdContext);
   return (
     <div className="form-footer">
       <span className="muted">{info}</span>
@@ -109,7 +120,7 @@ function Footer({ info, onCancel, submitting }: { info?: string | undefined; onC
           <button type="button" className="btn ghost" onClick={onCancel}>
             {t('common.cancel')}
           </button>
-          <button type="submit" className="btn primary" disabled={submitting}>
+          <button type="submit" form={formId} className="btn primary" disabled={submitting}>
             {t('common.save')}
           </button>
         </div>
@@ -186,6 +197,8 @@ export const companySchema = z
     countyCode: optionalText,
     city: required.max(100),
     postalCode: optionalText,
+    phone: optionalPhone,
+    email: optionalEmail,
     defaultPrecisionPolicyId: z.number({ message: t('common.required') }),
     includeInConsolidation: z.boolean(),
     isActive: z.boolean(),
@@ -205,13 +218,14 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
   const defaults: CompanyInput = company === undefined
     ? {
         code: '', name: '', fiscalCode: '', tradeRegisterNo: '', shareCapital: '', groupId: groupId ?? null, vatPayer: true, vatOnCollection: false,
-        address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null,
+        address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null, phone: null, email: null,
         defaultPrecisionPolicyId: lookups.precisionPolicies[0]?.id ?? 0, includeInConsolidation: true, isActive: true,
       }
     : {
         code: company.code, name: company.name, fiscalCode: (company.vatPayer ? 'RO' : '') + company.fiscalCode, tradeRegisterNo: company.tradeRegisterNo,
         shareCapital: moneyForInput(company.shareCapital), groupId: company.groupId, vatPayer: company.vatPayer, vatOnCollection: company.vatOnCollection,
         address: company.address, countryCode: company.countryCode, countyCode: company.countyCode, city: company.city, postalCode: company.postalCode,
+        phone: company.phone ?? null, email: company.email ?? null,
         defaultPrecisionPolicyId: company.defaultPrecisionPolicyId, includeInConsolidation: company.includeInConsolidation, isActive: company.isActive,
       };
   const form = useForm<CompanyInput, unknown, CompanyValues>({
@@ -264,6 +278,11 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
         <TextField control={form.control} name="city" label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
       </div>
+      <h3 className="section">{t('section.contact')}</h3>
+      <div className="grid g3">
+        <TextField control={form.control} name="phone" label={t('field.phone')} />
+        <TextField control={form.control} name="email" label={t('field.email')} />
+      </div>
       <h3 className="section">{t('section.accounting')}</h3>
       <div className="grid g3">
         <div className="field">
@@ -290,25 +309,28 @@ export const branchSchema = z
     countyCode: optionalText,
     city: required.max(100),
     postalCode: optionalText,
+    phone: optionalPhone,
+    email: optionalEmail,
     isActive: z.boolean(),
   })
   .superRefine(requireCountyForRomania);
 type BranchInput = z.input<typeof branchSchema>;
 type BranchValues = z.output<typeof branchSchema>;
 
-export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCancel }: {
+export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCancel, after }: {
   readonly tree: OrgTree;
   readonly lookups: Lookups;
   readonly companyId: number;
   readonly branchId: number | undefined;
   readonly onSaved: (saved: Saved) => void;
   readonly onCancel: () => void;
+  readonly after?: ReactNode;
 }) {
   const branch = tree.branches.find((b) => b.id === branchId);
   const defaults: BranchInput = branch === undefined
-    ? { code: '', name: '', address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null, isActive: true }
+    ? { code: '', name: '', address: '', countryCode: ROMANIA, countyCode: null,     city: '', postalCode: null, phone: null, email: null, isActive: true }
     : { code: branch.code, name: branch.name, address: branch.address, countryCode: branch.countryCode, countyCode: branch.countyCode, city: branch.city,
-        postalCode: branch.postalCode, isActive: branch.isActive };
+            postalCode: branch.postalCode, phone: branch.phone, email: branch.email, isActive: branch.isActive };
   const form = useForm<BranchInput, unknown, BranchValues>({
     resolver: zodResolver(branchSchema) as Resolver<BranchInput, unknown, BranchValues>,
     defaultValues: defaults as DefaultValues<BranchInput>,
@@ -329,6 +351,7 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
       error={save.error}
       onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer onCancel={() => (branch === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
+      after={after}
     >
       <div className="grid g3">
         <TextField control={form.control} name="code" label={t('field.code')} upper />
@@ -338,6 +361,8 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
         <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
         <TextField control={form.control} name="city" label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
+        <TextField control={form.control} name="phone" label={t('field.phone')} />
+        <TextField control={form.control} name="email" label={t('field.email')} />
         <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
       </div>
     </FormShell>
@@ -357,6 +382,8 @@ export const locationSchema = z
     countyCode: optionalText,
     city: optionalText,
     postalCode: optionalText,
+    phone: optionalPhone,
+    email: optionalEmail,
     isActive: z.boolean(),
   })
   // Adresa locatiei e optionala; daca s-a ales Romania, judetul se cere ca la firma si la punctul de lucru.
@@ -366,7 +393,7 @@ type LocationValues = z.output<typeof locationSchema>;
 
 export const locationTypes = [1, 2, 3, 4, 5, 6] as const;
 
-export function LocationForm({ tree, lookups, companyId, locationId, branchId, onSaved, onCancel }: {
+export function LocationForm({ tree, lookups, companyId, locationId, branchId, onSaved, onCancel, after }: {
   readonly tree: OrgTree;
   readonly lookups: Lookups;
   readonly companyId: number;
@@ -374,12 +401,14 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
   readonly branchId?: number | undefined;
   readonly onSaved: (saved: Saved) => void;
   readonly onCancel: () => void;
+  readonly after?: ReactNode;
 }) {
   const location = tree.locations.find((l) => l.id === locationId);
   const defaults: LocationInput = location === undefined
-    ? { code: '', name: '', branchId: branchId ?? null, locationType: 2, address: null, countryCode: null, countyCode: null, city: null, postalCode: null, isActive: true }
+    ? { code: '', name: '', branchId: branchId ?? null, locationType: 2, address: null, countryCode: null, countyCode: null,     city: null, postalCode: null, phone: null, email: null, isActive: true }
     : { code: location.code, name: location.name, branchId: location.branchId, locationType: location.locationType, address: location.address,
-        countryCode: location.countryCode, countyCode: location.countyCode, city: location.city, postalCode: location.postalCode, isActive: location.isActive };
+            countryCode: location.countryCode, countyCode: location.countyCode, city: location.city, postalCode: location.postalCode,
+            phone: location.phone, email: location.email, isActive: location.isActive };
   const form = useForm<LocationInput, unknown, LocationValues>({
     resolver: zodResolver(locationSchema) as Resolver<LocationInput, unknown, LocationValues>,
     defaultValues: defaults as DefaultValues<LocationInput>,
@@ -400,6 +429,7 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
       error={save.error}
       onSubmit={form.handleSubmit((v) => save.submit(v), save.invalid)}
       footer={<Footer onCancel={() => (location === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
+      after={after}
     >
       <div className="grid g3">
         <TextField control={form.control} name="code" label={t('field.code')} upper />
@@ -416,6 +446,11 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
         <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
         <TextField control={form.control} name="city" label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
+      </div>
+      <h3 className="section">{t('section.contact')}</h3>
+      <div className="grid g3">
+        <TextField control={form.control} name="phone" label={t('field.phone')} />
+        <TextField control={form.control} name="email" label={t('field.email')} />
       </div>
     </FormShell>
   );

@@ -19,7 +19,7 @@
     Cheia privata de productie nu sta in depozit (build/kit-signing/README.md).
 
 .EXAMPLE
-    ./build/package-kit.ps1 -Version 2026.0.1 -TestKit
+    ./build/package-kit.ps1 -Version 2026.11.8.2.3 -TestKit
 
 .EXAMPLE
     ./build/package-kit.ps1 -Version 2027.1.0 -SigningKeyPath K:\kit-signing\kit-1-private.pem -PublicKeyPath K:\kit-signing\kit-1-public.pem `
@@ -27,9 +27,9 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][ValidatePattern('^\d{4}\.\d+\.\d+$')][string]$Version,
+    [Parameter(Mandatory)][ValidatePattern('^\d{4}\.\d+\.\d+(\.\d+){0,2}$')][string]$Version,
     [ValidatePattern('^\d{4}-\d{2}-\d{2}$')][string]$ReleaseDate = [DateTime]::UtcNow.ToString('yyyy-MM-dd'),
-    [ValidatePattern('^\d{4}\.\d+\.\d+$')][string]$MinUpgradeFrom,
+    [ValidatePattern('^\d{4}\.\d+\.\d+(\.\d+){0,2}$')][string]$MinUpgradeFrom,
     [string]$PreviousTag,
     [string]$HostingBundlePath,
     [ValidatePattern('^\d+\.\d+\.\d+$')][string]$HostingBundleVersion,
@@ -153,7 +153,7 @@ try {
     finally { Pop-Location }
 
     Write-Host "   Public aplicațiile ($configuration, versiunea $Version)"
-    $common = @('-c', $configuration, "-p:Version=$Version", '-p:DebugType=None', '-p:DebugSymbols=false', '--nologo')
+    $common = @('-c', $configuration, "-p:Version=$(($Version.Split('.') | Select-Object -First 4) -join '.')", "-p:ErpProductVersion=$Version", '-p:DebugType=None', '-p:DebugSymbols=false', '--nologo')
     # 10.5: ultima migrare se incorporeaza in Erp.Host si Erp.Worker (AssemblyMetadata ErpLastMigration).
     if ($lastMigration) { $common += "-p:ErpLastMigration=$lastMigration" }
     Invoke-Native 'Erp.Host' { dotnet publish (Join-Path $repoRoot 'src/Host/Erp.Host/Erp.Host.csproj') @common -o (Join-Path $kitRoot 'app/host') }

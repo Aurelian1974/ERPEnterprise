@@ -245,6 +245,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/companies/{companyId}/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateCompanyAddress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{companyId}/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateCompanyAddress"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{companyId}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateCompanyContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{companyId}/contacts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateCompanyContact"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/address-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateAddressType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/address-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateAddressType"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/core/companies/{companyId}/number-series": {
         parameters: {
             query?: never;
@@ -309,10 +405,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTwoFactorStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/two-factor/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EnableTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/two-factor/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DisableTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddressTypeDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            sortOrder: number;
+            isSystem: boolean;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+        };
         BranchNode: {
             /** Format: int32 */
             id: number;
@@ -328,8 +484,30 @@ export interface components {
             isActive: boolean;
             /** Format: byte */
             rowVersion: string;
+            phone: null | string;
+            email: null | string;
         };
         CloseNumberSeriesBody: {
+            /** Format: byte */
+            rowVersion: string;
+        };
+        CompanyAddressDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            addressType: number;
+            name: null | string;
+            address: string;
+            city: string;
+            countyCode: null | string;
+            countryCode: string;
+            postalCode: null | string;
+            phone: null | string;
+            email: null | string;
+            isDefault: boolean;
+            isActive: boolean;
             /** Format: byte */
             rowVersion: string;
         };
@@ -345,6 +523,24 @@ export interface components {
             isActive: boolean;
             /** Format: byte */
             rowVersion: string;
+        };
+        CompanyContactDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            name: string;
+            role: null | string;
+            phone: null | string;
+            email: null | string;
+            notes: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+            /** Format: int32 */
+            branchId?: null | number;
+            /** Format: int32 */
+            locationId?: null | number;
         };
         CompanyDetailDto: {
             /** Format: int32 */
@@ -374,6 +570,10 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
             bankAccounts: components["schemas"]["CompanyBankAccountDto"][];
+            addresses: components["schemas"]["CompanyAddressDto"][];
+            phone: null | string;
+            email: null | string;
+            contacts: components["schemas"]["CompanyContactDto"][];
         };
         CompanyGroupNode: {
             /** Format: int32 */
@@ -427,11 +627,18 @@ export interface components {
             licenseState: string;
             companies: components["schemas"]["CompanySummaryDto"][];
         };
+        DisableTwoFactorRequest: {
+            password: string;
+        };
         DocumentTypeDto: {
             code: string;
             moduleCode: string;
             name: string;
             isFiscalDefault: boolean;
+        };
+        EnableTwoFactorRequest: {
+            password: string;
+            code: string;
         };
         HttpValidationProblemDetails: {
             type?: null | string;
@@ -443,197 +650,6 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
-        };
-        LocationNode: {
-            /** Format: int32 */
-            id: number;
-            /** Format: int32 */
-            companyId: number;
-            /** Format: int32 */
-            branchId: null | number;
-            code: string;
-            name: string;
-            /** Format: uint8 */
-            locationType: number;
-            address: null | string;
-            city: null | string;
-            countyCode: null | string;
-            countryCode: null | string;
-            postalCode: null | string;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: string;
-        };
-        NumberSeriesDto: {
-            /** Format: int32 */
-            id: number;
-            /** Format: int32 */
-            companyId: number;
-            /** Format: int32 */
-            branchId: null | number;
-            branchCode: null | string;
-            branchName: null | string;
-            documentTypeCode: string;
-            documentTypeName: string;
-            prefix: string;
-            /** Format: int16 */
-            year: number;
-            /** Format: int64 */
-            nextNumber: number;
-            /** Format: int64 */
-            firstNumber: number;
-            /** Format: int64 */
-            usedCount: number;
-            /** Format: uint8 */
-            padding: number;
-            isFiscal: boolean;
-            isDefault: boolean;
-            autoRollover: boolean;
-            /** Format: date-time */
-            lastUsedAt: null | string;
-            /** Format: date-time */
-            closedAt: null | string;
-            /** Format: byte */
-            rowVersion: string;
-        };
-        OrgLookupsDto: {
-            countries: components["schemas"]["CountryDto"][];
-            counties: components["schemas"]["CountyDto"][];
-            precisionPolicies: components["schemas"]["PrecisionPolicyDto"][];
-            documentTypes: components["schemas"]["DocumentTypeDto"][];
-        };
-        OrgTreeDto: {
-            groups: components["schemas"]["CompanyGroupNode"][];
-            companies: components["schemas"]["CompanyNode"][];
-            branches: components["schemas"]["BranchNode"][];
-            locations: components["schemas"]["LocationNode"][];
-        };
-        PrecisionPolicyDto: {
-            /** Format: int32 */
-            id: number;
-            code: string;
-            name: string;
-        };
-        ProblemDetails: {
-            type?: null | string;
-            title?: null | string;
-            /** Format: int32 */
-            status?: null | number;
-            detail?: null | string;
-            instance?: null | string;
-        };
-        SaveBranch: {
-            /** Format: int32 */
-            id: null | number;
-            /** Format: int32 */
-            companyId: number;
-            code: string;
-            name: string;
-            address: string;
-            city: string;
-            countyCode: null | string;
-            countryCode: string;
-            postalCode: null | string;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
-        };
-        SaveCompany: {
-            /** Format: int32 */
-            id: null | number;
-            /** Format: int32 */
-            groupId: null | number;
-            code: string;
-            name: string;
-            fiscalCode: string;
-            vatPayer: boolean;
-            vatOnCollection: boolean;
-            tradeRegisterNo: string;
-            shareCapital: null | string;
-            address: string;
-            city: string;
-            countyCode: null | string;
-            countryCode: string;
-            postalCode: null | string;
-            /** Format: int32 */
-            defaultPrecisionPolicyId: number;
-            includeInConsolidation: boolean;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
-        };
-        SaveCompanyBankAccount: {
-            /** Format: int32 */
-            id: null | number;
-            /** Format: int32 */
-            companyId: number;
-            iban: string;
-            bankName: string;
-            currency: string;
-            isDefault: boolean;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
-        };
-        SaveCompanyGroup: {
-            /** Format: int32 */
-            id: null | number;
-            code: string;
-            name: string;
-            /** Format: int32 */
-            parentGroupId: null | number;
-            /** Format: int32 */
-            parentCompanyId: null | number;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
-        };
-        SavedEntity: {
-            /** Format: int32 */
-            id: number;
-            /** Format: byte */
-            rowVersion: string;
-        };
-        SaveLocation: {
-            /** Format: int32 */
-            id: null | number;
-            /** Format: int32 */
-            companyId: number;
-            /** Format: int32 */
-            branchId: null | number;
-            code: string;
-            name: string;
-            /** Format: uint8 */
-            locationType: number;
-            address: null | string;
-            city: null | string;
-            countyCode: null | string;
-            countryCode: null | string;
-            postalCode: null | string;
-            isActive: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
-        };
-        SaveNumberSeries: {
-            /** Format: int32 */
-            id: null | number;
-            /** Format: int32 */
-            companyId: number;
-            /** Format: int32 */
-            branchId: null | number;
-            documentTypeCode: string;
-            prefix: string;
-            /** Format: int16 */
-            year: number;
-            /** Format: int64 */
-            nextNumber: number;
-            /** Format: uint8 */
-            padding: number;
-            isFiscal: boolean;
-            isDefault: boolean;
-            autoRollover: boolean;
-            /** Format: byte */
-            rowVersion: null | string;
         };
         LicenseDto: {
             hasLicense: boolean;
@@ -673,6 +689,265 @@ export interface components {
             isCurrent: boolean;
             /** Format: date-time */
             loadedAt: string;
+        };
+        LocationNode: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            locationType: number;
+            address: null | string;
+            city: null | string;
+            countyCode: null | string;
+            countryCode: null | string;
+            postalCode: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+            phone: null | string;
+            email: null | string;
+        };
+        NumberSeriesDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            branchCode: null | string;
+            branchName: null | string;
+            documentTypeCode: string;
+            documentTypeName: string;
+            prefix: string;
+            /** Format: int16 */
+            year: number;
+            /** Format: int64 */
+            nextNumber: number;
+            /** Format: int64 */
+            firstNumber: number;
+            /** Format: int64 */
+            usedCount: number;
+            /** Format: uint8 */
+            padding: number;
+            isFiscal: boolean;
+            isDefault: boolean;
+            autoRollover: boolean;
+            /** Format: date-time */
+            lastUsedAt: null | string;
+            /** Format: date-time */
+            closedAt: null | string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        OrgLookupsDto: {
+            countries: components["schemas"]["CountryDto"][];
+            counties: components["schemas"]["CountyDto"][];
+            precisionPolicies: components["schemas"]["PrecisionPolicyDto"][];
+            documentTypes: components["schemas"]["DocumentTypeDto"][];
+            addressTypes: components["schemas"]["AddressTypeDto"][];
+        };
+        OrgTreeDto: {
+            groups: components["schemas"]["CompanyGroupNode"][];
+            companies: components["schemas"]["CompanyNode"][];
+            branches: components["schemas"]["BranchNode"][];
+            locations: components["schemas"]["LocationNode"][];
+            contacts: components["schemas"]["CompanyContactDto"][];
+        };
+        PrecisionPolicyDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+        };
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+        };
+        RecoveryCodesDto: {
+            codes: string[];
+        };
+        SaveAddressType: {
+            /** Format: int32 */
+            id: null | number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            sortOrder: number;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        SaveBranch: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            code: string;
+            name: string;
+            address: string;
+            city: string;
+            countyCode: null | string;
+            countryCode: string;
+            postalCode: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            phone?: null | string;
+            email?: null | string;
+        };
+        SaveCompany: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            groupId: null | number;
+            code: string;
+            name: string;
+            fiscalCode: string;
+            vatPayer: boolean;
+            vatOnCollection: boolean;
+            tradeRegisterNo: string;
+            shareCapital: null | string;
+            address: string;
+            city: string;
+            countyCode: null | string;
+            countryCode: string;
+            postalCode: null | string;
+            /** Format: int32 */
+            defaultPrecisionPolicyId: number;
+            includeInConsolidation: boolean;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            phone?: null | string;
+            email?: null | string;
+        };
+        SaveCompanyAddress: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            addressType: number;
+            name: null | string;
+            address: string;
+            city: string;
+            countyCode: null | string;
+            countryCode: string;
+            postalCode: null | string;
+            isDefault: boolean;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            phone?: null | string;
+            email?: null | string;
+        };
+        SaveCompanyBankAccount: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            iban: string;
+            bankName: string;
+            currency: string;
+            isDefault: boolean;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        SaveCompanyContact: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            name: string;
+            role: null | string;
+            phone: null | string;
+            email: null | string;
+            notes: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            /** Format: int32 */
+            branchId?: null | number;
+            /** Format: int32 */
+            locationId?: null | number;
+        };
+        SaveCompanyGroup: {
+            /** Format: int32 */
+            id: null | number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            parentGroupId: null | number;
+            /** Format: int32 */
+            parentCompanyId: null | number;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        SavedEntity: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveLocation: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            locationType: number;
+            address: null | string;
+            city: null | string;
+            countyCode: null | string;
+            countryCode: null | string;
+            postalCode: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            phone?: null | string;
+            email?: null | string;
+        };
+        SaveNumberSeries: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            documentTypeCode: string;
+            prefix: string;
+            /** Format: int16 */
+            year: number;
+            /** Format: int64 */
+            nextNumber: number;
+            /** Format: uint8 */
+            padding: number;
+            isFiscal: boolean;
+            isDefault: boolean;
+            autoRollover: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        TwoFactorStatusDto: {
+            enabled: boolean;
+            required: boolean;
+            sharedKey: null | string;
+            qrSvg: null | string;
         };
         UploadLicense: {
             fileBase64: string;
@@ -1405,6 +1680,378 @@ export interface operations {
             };
         };
     };
+    CreateCompanyAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCompanyAddress"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCompanyAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCompanyAddress"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCompanyContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCompanyContact"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCompanyContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCompanyContact"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateAddressType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAddressType"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateAddressType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAddressType"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListNumberSeries: {
         parameters: {
             query?: {
@@ -1694,6 +2341,72 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    GetTwoFactorStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFactorStatusDto"];
+                };
+            };
+        };
+    };
+    EnableTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableTwoFactorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodesDto"];
+                };
+            };
+        };
+    };
+    DisableTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisableTwoFactorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

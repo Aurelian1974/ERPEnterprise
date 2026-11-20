@@ -296,14 +296,14 @@ public sealed class UpgradeRunner(UpgradeSession session, IWindowsSetup windows,
 
     private async Task<StepResult> CheckAsync(CancellationToken ct)
     {
-        var installed = Version.Parse(session.Instance.CurrentVersion ?? "0.0.0");
-        var kit = Version.Parse(session.ToVersion);
+        var installed = ProductVersion.Parse(session.Instance.CurrentVersion ?? "0.0.0");
+        var kit = ProductVersion.Parse(session.ToVersion);
         if (kit <= installed)
         {
             return StepResult.Failed($"Kitul {kit} nu este mai nou decât versiunea instalată {installed}.", ExitCodes.UnsupportedUpgradeVersion);
         }
 
-        if (installed < Version.Parse(session.Manifest.MinUpgradeFrom))
+        if (installed < ProductVersion.Parse(session.Manifest.MinUpgradeFrom))
         {
             return StepResult.Failed($"Versiunea {installed} e prea veche pentru acest kit (minimum {session.Manifest.MinUpgradeFrom}); actualizați întâi la o versiune intermediară.",
                 ExitCodes.UnsupportedUpgradeVersion);

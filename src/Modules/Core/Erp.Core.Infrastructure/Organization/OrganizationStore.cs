@@ -18,7 +18,8 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         var companies = (await grid.ReadAsync<CompanyNode>().ConfigureAwait(false)).ToList();
         var branches = (await grid.ReadAsync<BranchNode>().ConfigureAwait(false)).ToList();
         var locations = (await grid.ReadAsync<LocationNode>().ConfigureAwait(false)).ToList();
-        return new OrgTreeDto(groups, companies, branches, locations);
+        var contacts = (await grid.ReadAsync<CompanyContactDto>().ConfigureAwait(false)).ToList();
+        return new OrgTreeDto(groups, companies, branches, locations, contacts);
     }
 
     public async Task<CompanyDetailDto?> GetCompanyAsync(int companyId, CancellationToken ct)
@@ -26,10 +27,12 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         using var grid = await session.Connection.QueryMultipleAsync(Command("core.usp_Company_Get", new { Id = companyId }, ct)).ConfigureAwait(false);
         var row = await grid.ReadSingleOrDefaultAsync<CompanyRow>().ConfigureAwait(false);
         var accounts = (await grid.ReadAsync<CompanyBankAccountDto>().ConfigureAwait(false)).ToList();
+        var addresses = (await grid.ReadAsync<CompanyAddressDto>().ConfigureAwait(false)).ToList();
+        var contacts = (await grid.ReadAsync<CompanyContactDto>().ConfigureAwait(false)).ToList();
         return row is null ? null : new CompanyDetailDto(row.Id, row.GroupId, row.Code, row.Name, row.FiscalCode, row.VatPayer, row.VatOnCollection,
             row.TradeRegisterNo, row.ShareCapital?.ToString("0.00", CultureInfo.InvariantCulture), row.Address, row.City, row.CountyCode,
             row.CountryCode, row.PostalCode, row.FunctionalCurrency, row.DefaultPrecisionPolicyId, row.IncludeInConsolidation, row.IsActive,
-            row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc), row.RowVersion, accounts);
+            row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc), row.RowVersion, accounts, addresses, row.Phone, row.Email, contacts);
     }
 
     public async Task<OrgLookupsDto> GetLookupsAsync(CancellationToken ct)
@@ -39,7 +42,8 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         var counties = (await grid.ReadAsync<CountyDto>().ConfigureAwait(false)).ToList();
         var policies = (await grid.ReadAsync<PrecisionPolicyDto>().ConfigureAwait(false)).ToList();
         var types = (await grid.ReadAsync<DocumentTypeDto>().ConfigureAwait(false)).ToList();
-        return new OrgLookupsDto(countries, counties, policies, types);
+        var addressTypes = (await grid.ReadAsync<AddressTypeDto>().ConfigureAwait(false)).ToList();
+        return new OrgLookupsDto(countries, counties, policies, types, addressTypes);
     }
 
     public async Task<IReadOnlyList<CompanySummaryDto>> GetUserCompaniesAsync(int userId, CancellationToken ct) =>
@@ -55,26 +59,43 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         command.Id, command.GroupId, command.Code, command.Name, command.FiscalCode, command.VatPayer, command.VatOnCollection,
         command.TradeRegisterNo,
         ShareCapital = command.ShareCapital is null ? (decimal?)null : decimal.Parse(command.ShareCapital, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture),
-        command.Address, command.City, command.CountyCode, CountryCode = Ansi(command.CountryCode, 2), command.PostalCode,
+        command.Address, command.City,         command.CountyCode, CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email,
         command.DefaultPrecisionPolicyId, command.IncludeInConsolidation, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public Task<SavedEntity> SaveBranchAsync(SaveBranch command, int userId, CancellationToken ct) => SaveAsync("core.usp_Branch_Save", new
     {
         command.Id, command.CompanyId, command.Code, command.Name, command.Address, command.City, command.CountyCode,
-        CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.IsActive, command.RowVersion, UserId = userId,
+        CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public Task<SavedEntity> SaveLocationAsync(SaveLocation command, int userId, CancellationToken ct) => SaveAsync("core.usp_Location_Save", new
     {
         command.Id, command.CompanyId, command.BranchId, command.Code, command.Name, command.LocationType, command.Address, command.City,
-        command.CountyCode, command.CountryCode, command.PostalCode, command.IsActive, command.RowVersion, UserId = userId,
+        command.CountyCode, command.CountryCode, command.PostalCode, command.Phone, command.Email, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public Task<SavedEntity> SaveBankAccountAsync(SaveCompanyBankAccount command, int userId, CancellationToken ct) => SaveAsync("core.usp_CompanyBankAccount_Save", new
     {
         command.Id, command.CompanyId, Iban = Ansi(command.Iban, 34), command.BankName, Currency = Ansi(command.Currency, 3), command.IsDefault,
         command.IsActive, command.RowVersion, UserId = userId,
+    }, ct);
+
+    public Task<SavedEntity> SaveAddressAsync(SaveCompanyAddress command, int userId, CancellationToken ct) => SaveAsync("core.usp_CompanyAddress_Save", new
+    {
+        command.Id, command.CompanyId, command.AddressType, command.Name, command.Address, command.City, command.CountyCode,
+        CountryCode = Ansi(command.CountryCode, 2),         command.PostalCode, command.Phone, command.Email, command.IsDefault, command.IsActive, command.RowVersion, UserId = userId,
+    }, ct);
+
+            public Task<SavedEntity> SaveContactAsync(SaveCompanyContact command, int userId, CancellationToken ct) => SaveAsync("core.usp_CompanyContact_Save", new
+            {
+                command.Id, command.CompanyId, command.Name, command.Role, command.Phone, command.Email, command.Notes, command.BranchId, command.LocationId,
+                command.IsActive, command.RowVersion,
+                UserId = userId,
+            }, ct);
+    public Task<SavedEntity> SaveAddressTypeAsync(SaveAddressType command, int userId, CancellationToken ct) => SaveAsync("core.usp_AddressType_Save", new
+    {
+        command.Id, command.Code, command.Name, command.SortOrder, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public async Task<IReadOnlyList<NumberSeriesDto>> ListNumberSeriesAsync(int companyId, short? year, CancellationToken ct) =>
@@ -102,7 +123,7 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
 
     private sealed record CompanyRow(int Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool VatOnCollection,
         string TradeRegisterNo, decimal? ShareCapital, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode,
-        string FunctionalCurrency, int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, DateTime? ModifiedAt,
+                string? Phone, string? Email, string FunctionalCurrency, int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, DateTime? ModifiedAt,
         string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion);
 }
 

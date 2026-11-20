@@ -49,7 +49,7 @@ function useFieldId(name: string): string {
   return `${prefix}-${name.replace(/[^A-Za-z0-9]/g, '-')}`;
 }
 
-export function TextField<T extends FieldValues>({ control, name, label, disabled, className, upper, hint }: FieldProps<T> & { readonly upper?: boolean; readonly hint?: ReactNode }) {
+export function TextField<T extends FieldValues>({ control, name, label, disabled, className, upper, hint, password }: FieldProps<T> & { readonly upper?: boolean; readonly hint?: ReactNode; readonly password?: boolean }) {
   const id = useFieldId(name);
   return (
     <Controller
@@ -60,6 +60,7 @@ export function TextField<T extends FieldValues>({ control, name, label, disable
           <div className="field-row">
             <TextBoxComponent
               id={id}
+              type={password === true ? 'password' : 'text'}
               value={(field.value as string | null | undefined) ?? ''}
               input={(args: { value: string }) => field.onChange(upper === true ? args.value.toUpperCase() : args.value)}
               blur={field.onBlur}

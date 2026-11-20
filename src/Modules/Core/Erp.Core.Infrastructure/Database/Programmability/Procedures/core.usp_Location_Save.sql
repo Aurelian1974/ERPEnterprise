@@ -10,6 +10,8 @@ CREATE OR ALTER PROCEDURE core.usp_Location_Save
     @CountyCode   nvarchar(3) = NULL,
     @CountryCode  char(2) = NULL,
     @PostalCode   nvarchar(10) = NULL,
+    @Phone        nvarchar(30) = NULL,
+    @Email        nvarchar(254) = NULL,
     @IsActive     bit,
     @RowVersion   binary(8) = NULL,
     @UserId       int
@@ -41,15 +43,15 @@ BEGIN
 
     IF @Id IS NULL
     BEGIN
-        INSERT INTO core.Location (CompanyId, BranchId, Code, Name, LocationType, Address, City, CountyCode, CountryCode, PostalCode, IsActive, CreatedBy)
-        VALUES (@CompanyId, @BranchId, @Code, @Name, @LocationType, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @IsActive, @UserId);
+        INSERT INTO core.Location (CompanyId, BranchId, Code, Name, LocationType, Address, City, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
+                VALUES (@CompanyId, @BranchId, @Code, @Name, @LocationType, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
     BEGIN
         UPDATE core.Location
         SET BranchId = @BranchId, Code = @Code, Name = @Name, LocationType = @LocationType, Address = @Address, City = @City,
-            CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, IsActive = @IsActive,
+            CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email, IsActive = @IsActive,
             ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND CompanyId = @CompanyId AND RowVersion = @RowVersion;
 

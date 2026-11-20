@@ -102,6 +102,27 @@ public static class CoreApiRegistration
                     sender.Send(body with { Id = id, CompanyId = companyId }, ct))
             .WithName("UpdateCompanyBankAccount").Saves();
 
+        core.MapPost("/companies/{companyId:int}/addresses", (int companyId, SaveCompanyAddress body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, CompanyId = companyId }, ct))
+            .WithName("CreateCompanyAddress").Saves();
+        core.MapPut("/companies/{companyId:int}/addresses/{id:int}",
+                (int companyId, int id, SaveCompanyAddress body, ISender sender, CancellationToken ct) =>
+                    sender.Send(body with { Id = id, CompanyId = companyId }, ct))
+            .WithName("UpdateCompanyAddress").Saves();
+
+        core.MapPost("/companies/{companyId:int}/contacts", (int companyId, SaveCompanyContact body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, CompanyId = companyId }, ct))
+            .WithName("CreateCompanyContact").Saves();
+        core.MapPut("/companies/{companyId:int}/contacts/{id:int}",
+                (int companyId, int id, SaveCompanyContact body, ISender sender, CancellationToken ct) =>
+                    sender.Send(body with { Id = id, CompanyId = companyId }, ct))
+            .WithName("UpdateCompanyContact").Saves();
+
+        core.MapPost("/address-types", (SaveAddressType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateAddressType").Saves();
+        core.MapPut("/address-types/{id:int}", (int id, SaveAddressType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateAddressType").Saves();
+
         core.MapGet("/companies/{companyId:int}/number-series", (int companyId, short? year, ISender sender, CancellationToken ct) =>
                 sender.Send(new ListNumberSeries(companyId, year), ct))
             .WithName("ListNumberSeries").Produces<IReadOnlyList<NumberSeriesDto>>();
