@@ -10,6 +10,7 @@ import { useNotifier } from '../components/Notifier';
 import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
 import { partnerKeys } from '../partners/partnerApi';
+import { itemKeys } from '../items/itemApi';
 
 type ImportJob = components['schemas']['ImportJobDto'];
 type Issue = components['schemas']['ImportIssueDto'];
@@ -31,6 +32,7 @@ const statusKey = (status: number) => `import.status.${status}` as TextKey;
 export function ImportTab() {
   const [params, setParams] = useSearchParams();
   const jobId = Number(params.get('import')) || undefined;
+  const entity: Entity = params.get('entitate') === 'Item' ? 'Item' : 'Partner';
   const job = useQuery({
     queryKey: importKeys.job(jobId ?? 0),
     enabled: jobId !== undefined,
@@ -38,14 +40,14 @@ export function ImportTab() {
   });
   const history = useQuery({
     queryKey: importKeys.history,
-    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/import', { params: { query: { entityType: 'Partner' } }, signal })),
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/import', { params: { query: {} }, signal })),
   });
   const queryClient = useQueryClient();
   const open = (next: ImportJob | undefined) => {
     if (next !== undefined) {
       queryClient.setQueryData(importKeys.job(next.id), next);
     }
-    setParams(next === undefined ? {} : { import: String(next.id) });
+    setParams(next === undefined ? (entity === 'Item' ? { entitate: 'Item' } : {}) : { import: String(next.id) });
     void queryClient.invalidateQueries({ queryKey: importKeys.history });
   };
 
@@ -59,9 +61,9 @@ export function ImportTab() {
           </button>
         )}
       </div>
-      <Steps current={jobId === undefined ? 1 : job.data?.status === 1 ? 4 : 5} />
+      <Steps current={jobId === undefined ? 1 : job.data?.status === 1 ? 4 : 5} entity={(job.data?.entityType as Entity | undefined) ?? entity} />
       {jobId === undefined ? (
-        <UploadStep onValidated={open} />
+        <UploadStep key={entity} entity={entity} onEntity={(next) => setParams(next === 'Item' ? { entitate: 'Item' } : {})} onValidated={open} />
       ) : job.data === undefined ? (
         <p className="muted" role="status">{job.isError ? job.error.message : t('app.loading')}</p>
       ) : (
@@ -81,7 +83,9 @@ export function ImportTab() {
   );
 }
 
-function Steps({ current }: { readonly current: number }) {
+type Entity = 'Partner' | 'Item';
+
+function Steps({ current, entity }: { readonly current: number; readonly entity: Entity }) {
   const steps: TextKey[] = ['import.step.entity', 'import.step.template', 'import.step.upload', 'import.step.report', 'import.step.confirm'];
   return (
     <ol className="steps" aria-label={t('import.title')}>
@@ -91,7 +95,7 @@ function Steps({ current }: { readonly current: number }) {
         return (
           <li key={key} className={`step ${state}`} aria-current={state === 'current' ? 'step' : undefined}>
             <span className="step-mark" aria-hidden="true">{state === 'done' && current > 1 ? '✓' : number}</span>
-            {t(key)}
+            {key === 'import.step.entity' ? t(key, { entity: t(entity === 'Item' ? 'import.entity.Item' : 'import.entity.Partner') }) : t(key)}
           </li>
         );
       })}
@@ -99,7 +103,11 @@ function Steps({ current }: { readonly current: number }) {
   );
 }
 
-function UploadStep({ onValidated }: { readonly onValidated: (job: ImportJob) => void }) {
+function UploadStep({ entity, onEntity, onValidated }: {
+  readonly entity: Entity;
+  readonly onEntity: (entity: Entity) => void;
+  readonly onValidated: (job: ImportJob) => void;
+}) {
   const { notify } = useNotifier();
   const input = useRef<HTMLInputElement | null>(null);
   const [file, setFile] = useState<File | undefined>();
@@ -109,7 +117,8 @@ function UploadStep({ onValidated }: { readonly onValidated: (job: ImportJob) =>
 
   async function template() {
     try {
-      await downloadFile('/api/core/import/partners/template', {}, 'sablon-import-parteneri.xlsx');
+      await downloadFile(entity === 'Item' ? '/api/core/import/items/template' : '/api/core/import/partners/template', {},
+        entity === 'Item' ? 'sablon-import-articole.xlsx' : 'sablon-import-parteneri.xlsx');
     } catch (e) {
       notify(e instanceof Error ? e.message : t('app.loadError'), 'error');
     }
@@ -122,9 +131,10 @@ function UploadStep({ onValidated }: { readonly onValidated: (job: ImportJob) =>
     setBusy(true);
     setError(undefined);
     try {
-      const job = unwrap(await api.POST('/api/core/import/partners', {
-        body: { fileName: file.name, fileBase64: await fileToBase64(file), anafCheck },
-      }));
+      const fileBase64 = await fileToBase64(file);
+      const job = entity === 'Item'
+        ? unwrap(await api.POST('/api/core/import/items', { body: { fileName: file.name, fileBase64 } }))
+        : unwrap(await api.POST('/api/core/import/partners', { body: { fileName: file.name, fileBase64, anafCheck } }));
       onValidated(job);
     } catch (e) {
       const message = e instanceof ApiError ? (e.fieldErrors.file?.join(' ') ?? e.message) : t('app.loadError');
@@ -138,7 +148,17 @@ function UploadStep({ onValidated }: { readonly onValidated: (job: ImportJob) =>
   return (
     <div className="import-upload">
       <ErrorBanner message={error} />
-      <p className="muted">{t('import.templateHint')}</p>
+      <div className="field">
+        <span className="label" id="import-entity-label">{t('import.entity')}</span>
+        <div className="segmented two" role="radiogroup" aria-labelledby="import-entity-label">
+          {(['Partner', 'Item'] as const).map((key) => (
+            <button key={key} type="button" role="radio" aria-checked={entity === key} className={entity === key ? 'on' : ''} onClick={() => onEntity(key)}>
+              {t(key === 'Item' ? 'import.entity.Item' : 'import.entity.Partner')}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="muted">{t(entity === 'Item' ? 'import.itemTemplateHint' : 'import.templateHint')}</p>
       <div>
         <button type="button" className="btn ghost" onClick={() => void template()}>
           {t('import.template')}
@@ -149,11 +169,15 @@ function UploadStep({ onValidated }: { readonly onValidated: (job: ImportJob) =>
         <input id="import-file" ref={input} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={(e) => setFile(e.target.files?.[0])} />
       </div>
-      <label className="check-row">
-        <input type="checkbox" checked={anafCheck} onChange={(e) => setAnafCheck(e.target.checked)} />
-        {t('import.anaf')}
-      </label>
-      <p className="muted small">{t('import.anafHint')}</p>
+      {entity === 'Partner' && (
+        <>
+          <label className="check-row">
+            <input type="checkbox" checked={anafCheck} onChange={(e) => setAnafCheck(e.target.checked)} />
+            {t('import.anaf')}
+          </label>
+          <p className="muted small">{t('import.anafHint')}</p>
+        </>
+      )}
       <div className="actions">
         <button type="button" className="btn primary" disabled={file === undefined || busy} onClick={() => void validate()}>
           {busy ? t('import.validating') : t('import.validate')}
@@ -177,10 +201,10 @@ function Report({ job, onChanged }: { readonly job: ImportJob; readonly onChange
       const next = await action();
       onChanged(next);
       if (next.status === 2) {
-        await queryClient.invalidateQueries({ queryKey: partnerKeys.all });
+        await queryClient.invalidateQueries({ queryKey: next.entityType === 'Item' ? itemKeys.all : partnerKeys.all });
         notify(t('import.doneText', { count: next.importedRows.toLocaleString('ro-RO'), total: next.totalRows.toLocaleString('ro-RO') }));
       } else if (next.status === 4) {
-        await queryClient.invalidateQueries({ queryKey: partnerKeys.all });
+        await queryClient.invalidateQueries({ queryKey: next.entityType === 'Item' ? itemKeys.all : partnerKeys.all });
         notify(next.lastError ?? t(statusKey(4)), 'error');
       }
     } catch (e) {
@@ -278,9 +302,13 @@ function Report({ job, onChanged }: { readonly job: ImportJob; readonly onChange
         </div>
         <dl className="facts">
           <dt>{t('import.mode')}</dt>
-          <dd>{t('import.modeText')}</dd>
-          <dt>{t('import.anafLabel')}</dt>
-          <dd>{t(job.anafCheck ? 'common.yes' : 'common.no')}</dd>
+          <dd>{t(job.entityType === 'Item' ? 'import.modeTextItem' : 'import.modeText')}</dd>
+          {job.entityType !== 'Item' && (
+            <>
+              <dt>{t('import.anafLabel')}</dt>
+              <dd>{t(job.anafCheck ? 'common.yes' : 'common.no')}</dd>
+            </>
+          )}
           <dt>{t('import.company')}</dt>
           <dd>{t('import.companyText')}</dd>
         </dl>

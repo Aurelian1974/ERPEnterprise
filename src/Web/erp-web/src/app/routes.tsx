@@ -5,6 +5,7 @@ import { ConfigPage } from '../config/ConfigPage';
 import { TwoFactorPage } from '../account/TwoFactorPage';
 import { OrgPage } from '../org/OrgPage';
 import { PartnersPage } from '../partners/PartnersPage';
+import { ItemsPage } from '../items/ItemsPage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -23,6 +24,8 @@ export const routes = [
       { path: 'admin/config/proprietati', element: <ConfigPage /> },
       { path: 'admin/config/import', element: <ConfigPage /> },
       { path: 'nomenclatoare/parteneri', element: <PartnersPage /> },
+      { path: 'nomenclatoare/articole', element: <ItemsPage /> },
+      { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

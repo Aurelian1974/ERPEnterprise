@@ -36,6 +36,7 @@ export const menuGroups: readonly MenuGroup[] = [
     icon: '▤',
     items: [
       { id: 'partners', label: 'menu.partners', path: '/nomenclatoare/parteneri', icon: '', module: 'Core', permission: 'Core.Partner.View' },
+      { id: 'items', label: 'menu.items', path: '/nomenclatoare/articole', icon: '', module: 'Core', permission: 'Core.Item.View' },
     ],
   },
   {

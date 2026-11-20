@@ -1362,3 +1362,122 @@ a.btn {
   display: inline-flex;
   align-items: center;
 }
+
+/* ---------- Articole (macheta 05 / 05b) ---------- */
+
+.pill.violet {
+  background: var(--surface-violet);
+  color: var(--ink);
+}
+
+.grid.g2.tight {
+  gap: 8px;
+}
+
+.uom-table td.num,
+.uom-table th.num,
+.cell-input.num {
+  text-align: right;
+}
+
+.segmented.two {
+  grid-template-columns: repeat(2, auto);
+}
+
+/* ---------- Configurare › Nomenclatoare (macheta 07) ---------- */
+
+.nom-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 4fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.nom-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nom-nav .family-name {
+  margin-top: 8px;
+}
+
+.nom-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.nom-entry:hover {
+  background: var(--surface-muted);
+}
+
+.nom-entry.on {
+  background: var(--info-bg);
+  color: var(--action);
+  font-weight: 600;
+}
+
+.nom-foot {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.nom-body {
+  min-width: 0;
+}
+
+.nom-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nom-split {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.inline-table td {
+  padding: 3px 6px;
+}
+
+.inline-table tr.pending td {
+  background: var(--warn-bg);
+}
+
+.inline-table th.num {
+  text-align: right;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .nom-layout,
+  .nom-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.options-table select.cell-input {
+  min-width: 150px;
+}
+
+.cell-input.date {
+  width: 110px;
+}

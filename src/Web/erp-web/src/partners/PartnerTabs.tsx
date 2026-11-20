@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { ColumnDirective, ColumnsDirective, GridComponent } from '@syncfusion/ej2-react-grids';
 import { z } from 'zod';
 import { ErrorBanner, FieldIdPrefix, SelectField, SwitchField, TextField, type Option } from '../components/Field';
@@ -349,7 +349,11 @@ export function changeSummary(changes: string | null | undefined): string {
 
 /** Istoricul partenerului (ultimul tab, 02.01, 11): auditul partenerului, al adreselor, conturilor si contactelor lui. */
 export function PartnerHistoryTab({ partnerId, active }: { readonly partnerId: number; readonly active: boolean }) {
-  const history = usePartnerHistory(partnerId, active);
+  return <HistoryView history={usePartnerHistory(partnerId, active)} />;
+}
+
+/** Tabelul istoricului (auditul unei fise), comun partenerilor si articolelor. */
+export function HistoryView({ history }: { readonly history: UseQueryResult<HistoryEntry[]> }) {
   if (history.data === undefined) {
     return history.isError ? (
       <div className="banner error" role="alert">

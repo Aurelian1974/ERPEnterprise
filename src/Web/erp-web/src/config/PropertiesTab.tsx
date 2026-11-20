@@ -15,8 +15,8 @@ import { partnerKeys, usePartnerLookups } from '../partners/partnerApi';
 
 type Definition = components['schemas']['PropertyDefinitionAdminDto'];
 
-const ENTITY = 'Partner';
-const definitionsKey = ['core', 'property-definitions', ENTITY] as const;
+type Entity = 'Partner' | 'Item';
+const definitionsKey = (entity: Entity) => ['core', 'property-definitions', entity] as const;
 
 /** Tipurile care pot fi filtru in lista de parteneri (o optiune sau da/nu, ca pe server). */
 export const filterableTypes: readonly number[] = [4, 5, 6];
@@ -55,13 +55,19 @@ const appliesKey = (applies: number) => `property.applies.${applies}` as TextKey
 
 /**
  * Configurare › Proprietati (macheta 07l; 02.01, 3.2): definitiile campurilor suplimentare ale partenerilor, grupate pe sectiuni,
- * cu optiunile listelor. Articolele vin cu nomenclatorul lor.
+ * cu optiunile listelor; tab-ul Articole pentru proprietatile articolelor (aceleasi tipuri, se aplica tuturor articolelor).
  */
 export function PropertiesTab() {
+  const [entity, setEntity] = useState<Entity>('Partner');
   const definitions = useQuery({
-    queryKey: definitionsKey,
-    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/property-definitions', { params: { query: { entityType: ENTITY } }, signal })),
+    queryKey: definitionsKey(entity),
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/property-definitions', { params: { query: { entityType: entity } }, signal })),
   });
+  const otherCount = useQuery({
+    queryKey: definitionsKey(entity === 'Partner' ? 'Item' : 'Partner'),
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/property-definitions', {
+      params: { query: { entityType: entity === 'Partner' ? 'Item' : 'Partner' } }, signal })),
+  }).data?.length ?? 0;
   const lookups = usePartnerLookups();
   const [selected, setSelected] = useState<Definition | 'new' | undefined>();
   const [search, setSearch] = useState('');
@@ -76,10 +82,16 @@ export function PropertiesTab() {
     <div className="split series">
       <section className="card" aria-labelledby="properties-title">
         <div className="card-head">
-          <div className="segmented small" role="tablist" aria-label={t('property.title')}>
-            <button type="button" role="tab" aria-selected className="on">
-              {t('property.entity.Partner', { count: definitions.data?.length ?? 0 })}
-            </button>
+          <div className="segmented two" role="tablist" aria-label={t('property.title')}>
+            {(['Partner', 'Item'] as const).map((key) => (
+              <button key={key} type="button" role="tab" aria-selected={entity === key} className={entity === key ? 'on' : ''}
+                onClick={() => {
+                  setEntity(key);
+                  setSelected(undefined);
+                }}>
+                {t(key === 'Partner' ? 'property.entity.Partner' : 'property.entity.Item', { count: (entity === key ? definitions.data?.length : otherCount) ?? 0 })}
+              </button>
+            ))}
           </div>
           <div className="chips-row">
             <input className="search" type="search" placeholder={t('property.search')} aria-label={t('property.search')} value={search}
@@ -144,7 +156,8 @@ export function PropertiesTab() {
         {selected === undefined ? (
           <p className="muted empty-detail">{t('org.selectNode')}</p>
         ) : (
-          <DefinitionForm key={selected === 'new' ? 'new' : `${selected.id}-${selected.rowVersion}`} definition={selected === 'new' ? undefined : selected}
+          <DefinitionForm key={selected === 'new' ? `new-${entity}` : `${selected.id}-${selected.rowVersion}`} entity={entity}
+            definition={selected === 'new' ? undefined : selected}
             sections={[...new Set((definitions.data ?? []).map((d) => d.section))]}
             companies={(lookups.data?.companies ?? []).map((c) => ({ value: String(c.id), text: c.name }))}
             onDone={(next) => setSelected(next)} />
@@ -154,7 +167,8 @@ export function PropertiesTab() {
   );
 }
 
-function DefinitionForm({ definition, sections, companies, onDone }: {
+function DefinitionForm({ entity, definition, sections, companies, onDone }: {
+  readonly entity: Entity;
   readonly definition: Definition | undefined;
   readonly sections: readonly string[];
   readonly companies: readonly Option[];
@@ -193,7 +207,8 @@ function DefinitionForm({ definition, sections, companies, onDone }: {
     const body = {
       ...values,
       id: definition?.id ?? null,
-      entityType: ENTITY,
+      entityType: entity,
+      appliesTo: entity === 'Item' ? 3 : values.appliesTo,
       rowVersion: definition?.rowVersion ?? null,
       options: isList ? values.options.map((o, index) => ({ ...o, sortOrder: (index + 1) * 10 })) : [],
     };
@@ -204,11 +219,12 @@ function DefinitionForm({ definition, sections, companies, onDone }: {
       form.reset(form.getValues());
       guard.markClean();
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: definitionsKey }),
+        queryClient.invalidateQueries({ queryKey: definitionsKey(entity) }),
         queryClient.invalidateQueries({ queryKey: partnerKeys.lookups }),
+        queryClient.invalidateQueries({ queryKey: ['core', 'items', 'lookups'] }),
       ]);
       notify(t('common.saved'));
-      const fresh = queryClient.getQueryData<Definition[]>(definitionsKey)?.find((d) => d.id === saved.id);
+      const fresh = queryClient.getQueryData<Definition[]>(definitionsKey(entity))?.find((d) => d.id === saved.id);
       onDone(fresh);
     } catch (e) {
       const message = applyServerErrors(e, form.setError, Object.keys(defaults));
@@ -237,7 +253,9 @@ function DefinitionForm({ definition, sections, companies, onDone }: {
             options={typeOptions} numeric disabled={used} />
           <TextField control={form.control} name="name" label={t('property.field.name')} className="span2" />
           <TextField control={form.control} name="section" label={t('property.field.section')} />
-          <SelectField control={form.control} name="appliesTo" label={t('property.field.appliesTo')} options={appliesOptions} numeric />
+          {entity === 'Partner' && (
+            <SelectField control={form.control} name="appliesTo" label={t('property.field.appliesTo')} options={appliesOptions} numeric />
+          )}
           <NumberField control={form.control} name="sortOrder" label={t('property.field.sortOrder')} min={0} max={9999} grouping={false} />
           <SelectField control={form.control} name="companyId" label={t('property.field.scope')} options={companies} allowEmpty={t('property.scope.group')} numeric />
         </div>
