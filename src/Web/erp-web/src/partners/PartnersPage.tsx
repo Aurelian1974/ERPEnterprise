@@ -1,3 +1,4 @@
+import { contextName, contextOwner, useContextNode } from '../app/node';
 import { OwnerFilter } from '../org/OwnerFilter';
 import { ownerLabel, useOwnerOptions } from '../org/owner';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -55,7 +56,8 @@ export function PartnersPage() {
   // Pagina tine de filtrele cu care a fost aleasa: un filtru nou incepe de la prima pagina.
   const [owner, setOwner] = useState('');
   const ownerOptions = useOwnerOptions('Partner');
-  const filterKey = JSON.stringify([debounced, chip, showInactive, propertyId, propertyValue, owner]);
+  const context = useContextNode(user);
+  const filterKey = JSON.stringify([debounced, chip, showInactive, propertyId, propertyValue, owner, context]);
   const [paging, setPaging] = useState({ key: filterKey, page: 1 });
   const page = paging.key === filterKey ? paging.page : 1;
   const setPage = (next: number) => setPaging({ key: filterKey, page: next });
@@ -75,6 +77,7 @@ export function PartnersPage() {
     propertyOptionId: property !== undefined && property.dataType !== DataType.Bool && propertyValue !== undefined ? Number(propertyValue) : undefined,
     propertyBool: property?.dataType === DataType.Bool && propertyValue !== undefined ? propertyValue === 'true' : undefined,
     owner,
+    context,
     page,
   };
   const list = usePartners(criteria);
@@ -146,7 +149,7 @@ export function PartnersPage() {
                 {label}
               </button>
             ))}
-            <OwnerFilter options={ownerOptions.data} value={owner} onChange={setOwner} />
+            <OwnerFilter options={ownerOptions.data} context={context} value={owner} onChange={setOwner} />
             <button type="button" className={showInactive ? 'chip on' : 'chip'} aria-pressed={showInactive} onClick={() => setShowInactive(!showInactive)}>
               {t('partner.filter.showInactive')}
             </button>
@@ -299,6 +302,9 @@ function NewPartnerPanel({ lookups, orgLookups, canManage, onSaved, onCancel }: 
   readonly onCancel: () => void;
 }) {
   const [section, setSection] = useState<PartnerSection>('general');
+  const user = useOutletContext<CurrentUser>();
+  const context = useContextNode(user);
+  const newOwner = { key: contextOwner(context), name: contextName(user, context) };
   return (
     <div className="company-panel">
       <div className="tabs" role="tablist" aria-label={t('partner.newTitle')}>
@@ -317,7 +323,7 @@ function NewPartnerPanel({ lookups, orgLookups, canManage, onSaved, onCancel }: 
       </div>
       <div id="partner-form" role="tabpanel" aria-labelledby={`tab-${section}`}>
         <PartnerForm key="new" partner={undefined} lookups={lookups} orgLookups={orgLookups} section={section} canManage={canManage}
-          canViewPersonalData={false} onSaved={(saved) => onSaved(saved.id)} onCancel={onCancel} />
+          canViewPersonalData={false} onSaved={(saved) => onSaved(saved.id)} onCancel={onCancel} newOwner={newOwner} />
       </div>
       <p className="muted small">{t('partner.saveFirst')}</p>
     </div>

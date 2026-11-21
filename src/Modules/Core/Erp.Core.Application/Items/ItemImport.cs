@@ -101,7 +101,7 @@ public sealed record ItemImportAnalysis(string FileName, int TotalRows, IReadOnl
 [RequiresPermission(CorePermissions.ItemView)]
 public sealed record ExportItems(string? Search = null, bool? IsStockable = null, byte? ItemType = null, int? ItemGroupId = null, bool? IsActive = null,
     int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, byte? Owner = null, int? OwnerBranchId = null,
-    int? OwnerLocationId = null) : IQuery<FileDto>;
+    int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null) : IQuery<FileDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.ImportRun)]
@@ -130,7 +130,8 @@ internal sealed class ExportItemsHandler(IItemStore store, IPartnerSpreadsheet s
     {
         var criteria = ItemRules.Visible(ItemRules.Criteria(new SearchItems(request.Search, request.IsStockable, request.ItemType, request.ItemGroupId,
             request.IsActive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, Owner: request.Owner,
-            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId)), context);
+            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId, ContextBranchId: request.ContextBranchId,
+            ContextLocationId: request.ContextLocationId)), context);
         var rows = await store.ExportAsync(criteria, cancellationToken).ConfigureAwait(false);
         string? Number(decimal? value) => value is { } v ? Decimals.Trim(v) : null;
         var values = rows.Select(r => (IReadOnlyList<string?>)

@@ -14,6 +14,8 @@ const user: CurrentUser = {
   modules: ['Core', 'Finance'],
   licenseState: 'Valid',
   companies: [],
+  wholeCompany: true,
+  nodes: [],
 };
 
 function renderHome(current: CurrentUser) {

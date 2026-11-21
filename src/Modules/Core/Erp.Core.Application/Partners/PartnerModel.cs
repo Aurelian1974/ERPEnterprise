@@ -59,7 +59,7 @@ public sealed record PartnerExportRow(string Code, string Name, byte PartnerType
 
 public sealed record PartnerSearchCriteria(string? Search, string? FiscalSearch, byte? Role, byte? PartnerType, bool? IsActive, bool? AnafInactive,
     int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize, int? UserId = null, int? CompanyId = null,
-    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null);
+    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null);
 
 /// <summary>Accesul la date pentru parteneri (implementat in Infrastructure, NET-06).</summary>
 public interface IPartnerStore

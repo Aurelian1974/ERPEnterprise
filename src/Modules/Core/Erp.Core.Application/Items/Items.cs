@@ -28,7 +28,7 @@ public sealed record ItemDetailDto(int Id, string Code, string Name, byte ItemTy
 
 public sealed record ItemSearchCriteria(string? Search, string? Barcode, bool? IsStockable, byte? ItemType, int? ItemGroupId, bool? IsActive,
     int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize, int? UserId = null, int? CompanyId = null,
-    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null);
+    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null);
 
 /// <summary>Un articol in exportul Excel (coloanele sablonului de import).</summary>
 public sealed record ItemExportRow(string Code, string Name, byte ItemType, bool IsStockable, bool IsActive, string VatRateCode, string BaseUomCode,
@@ -110,7 +110,7 @@ public sealed record SaveItemBarcode(int? Id, int ItemId, string Barcode, byte B
 [RequiresPermission(CorePermissions.ItemView)]
 public sealed record SearchItems(string? Search = null, bool? IsStockable = null, byte? ItemType = null, int? ItemGroupId = null, bool? IsActive = null,
     int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50, byte? Owner = null,
-    int? OwnerBranchId = null, int? OwnerLocationId = null) : IQuery<ItemPageDto>;
+    int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null) : IQuery<ItemPageDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemView)]
@@ -145,7 +145,8 @@ internal static class ItemRules
         var page = Math.Max(request.Page, 1);
         return new ItemSearchCriteria(search, BarcodeCandidate(raw), request.IsStockable, request.ItemType, request.ItemGroupId, request.IsActive,
             request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, (page - 1) * pageSize, pageSize, null, null,
-            request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId);
+            request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId, request.ContextBranchId,
+            request.ContextLocationId);
     }
 }
 

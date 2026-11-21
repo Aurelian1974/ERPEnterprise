@@ -173,6 +173,9 @@ public sealed class FakeOrganizationStore : Erp.Core.Application.Organization.IO
     public Task<IReadOnlyList<Erp.Core.Application.Organization.CompanySummaryDto>> GetUserCompaniesAsync(int userId, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<Erp.Core.Application.Organization.CompanySummaryDto>>(Companies);
 
+    public Task<(bool WholeCompany, IReadOnlyList<Erp.Core.Application.Me.ContextNodeDto> Nodes)> GetUserNodesAsync(int userId, int companyId,
+        CancellationToken ct) => Task.FromResult<(bool, IReadOnlyList<Erp.Core.Application.Me.ContextNodeDto>)>((true, []));
+
     public Task<Erp.Core.Application.Organization.OrgTreeDto> GetTreeAsync(int userId, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<Erp.Core.Application.Organization.CompanyDetailDto?> GetCompanyAsync(int companyId, CancellationToken ct) => throw new NotSupportedException();

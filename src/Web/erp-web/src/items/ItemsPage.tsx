@@ -1,3 +1,4 @@
+import { contextName, contextOwner, useContextNode } from '../app/node';
 import { OwnerFilter } from '../org/OwnerFilter';
 import { ownerLabel, useOwnerOptions } from '../org/owner';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -64,8 +65,9 @@ export function ItemsPage() {
   const [propertyValue, setPropertyValue] = useState<string | undefined>();
   const [owner, setOwner] = useState('');
   const ownerOptions = useOwnerOptions('Item');
+  const context = useContextNode(user);
   const debounced = useDebounced(search);
-  const filterKey = JSON.stringify([debounced, chip, groupId, itemType, showInactive, propertyId, propertyValue, owner]);
+  const filterKey = JSON.stringify([debounced, chip, groupId, itemType, showInactive, propertyId, propertyValue, owner, context]);
   const [paging, setPaging] = useState({ key: filterKey, page: 1 });
   const page = paging.key === filterKey ? paging.page : 1;
   const canManage = user.permissions.includes('Core.Item.Manage');
@@ -84,6 +86,7 @@ export function ItemsPage() {
     propertyOptionId: property !== undefined && property.dataType !== DataType.Bool && propertyValue !== undefined ? Number(propertyValue) : undefined,
     propertyBool: property?.dataType === DataType.Bool && propertyValue !== undefined ? propertyValue === 'true' : undefined,
     owner,
+    context,
     page,
   };
   const list = useItems(criteria);
@@ -158,7 +161,7 @@ export function ItemsPage() {
               <option value="">{t('item.filter.anyType')}</option>
               {ITEM_TYPES.map((type) => <option key={type} value={type}>{t(typeKey(type))}</option>)}
             </select>
-            <OwnerFilter options={ownerOptions.data} value={owner} onChange={setOwner} />
+            <OwnerFilter options={ownerOptions.data} context={context} value={owner} onChange={setOwner} />
             <button type="button" className={showInactive ? 'chip on' : 'chip'} aria-pressed={showInactive} onClick={() => setShowInactive(!showInactive)}>
               {t('partner.filter.showInactive')}
             </button>
@@ -272,6 +275,9 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
   readonly onCancel: () => void;
 }) {
   const [section, setSection] = useState<ItemSection>('general');
+  const user = useOutletContext<CurrentUser>();
+  const context = useContextNode(user);
+  const newOwner = { key: contextOwner(context), name: contextName(user, context) };
   return (
     <div className="company-panel">
       <div className="tabs" role="tablist" aria-label={t('item.newTitle')}>
@@ -290,7 +296,8 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
         ))}
       </div>
       <div id="item-form" role="tabpanel" aria-labelledby={`tab-${section}`}>
-        <ItemForm key="new" item={undefined} lookups={lookups} section={section} canManage={canManage} onSaved={(saved) => onSaved(saved.id)} onCancel={onCancel} />
+        <ItemForm key="new" item={undefined} lookups={lookups} section={section} canManage={canManage} onSaved={(saved) => onSaved(saved.id)} onCancel={onCancel}
+          newOwner={newOwner} />
       </div>
       <p className="muted small">{t('item.saveFirst')}</p>
     </div>

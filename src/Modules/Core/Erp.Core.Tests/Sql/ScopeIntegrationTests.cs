@@ -127,6 +127,23 @@ public sealed partial class UserIntegrationTests
         Assert.Equal(Names("nord", "magazin"), (await Send(new SearchItems(Search: prefix, OwnerBranchId: org.Branch1))).Items.Select(i => i.Name)
             .Order(StringComparer.Ordinal).ToArray());
 
+        // Nodul din antet: lista se vede ca si cum acela ar fi nodul utilizatorului; un nod care nu e al lui se ignora.
+        string[] InContext(ItemPageDto page) => [.. page.Items.Select(i => i.Name).Order(StringComparer.Ordinal)];
+        Assert.Equal(Names("comun", "firma", "nord", "magazin"), InContext(await Send(new SearchItems(Search: prefix, PageSize: 200, ContextBranchId: org.Branch1))));
+        Assert.Equal(Names("comun", "firma", "depozit"), InContext(await Send(new SearchItems(Search: prefix, PageSize: 200, ContextLocationId: org.Location0))));
+        Assert.Equal(Names("comun", "firma", "nord", "magazin"),
+            InContext(await Send(new SearchItems(Search: prefix, PageSize: 200, ContextBranchId: org.Branch2), branchUser)));
+
+        await using (var connection = new SqlConnection(database.ConnectionString))
+        {
+            await using var grid = await connection.QueryMultipleAsync("core.usp_User_GetNodes", new { UserId = branchUser, database.CompanyId },
+                commandType: System.Data.CommandType.StoredProcedure);
+            Assert.False(await grid.ReadSingleAsync<bool>());
+            var nodes = (await grid.ReadAsync<(int? BranchId, int? LocationId, int? ParentBranchId, string Name)>()).ToList();
+            Assert.Equal([(int?)org.Branch1], nodes.Where(n => n.BranchId is not null).Select(n => n.BranchId).ToArray());
+            Assert.Equal([(int?)org.Location1], nodes.Where(n => n.LocationId is not null).Select(n => n.LocationId).ToArray());
+        }
+
         // Locatia vede articolul punctului ei de lucru, dar nu il modifica; punctul de lucru nu vede alt punct de lucru.
         var item = await Send(new GetItem(north.Id), locationUser);
         Assert.Equal((OwnerLevels.Branch, (int?)org.Branch1), (item.OwnerLevel, item.OwnerNodeId));

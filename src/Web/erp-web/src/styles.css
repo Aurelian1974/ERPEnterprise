@@ -122,6 +122,27 @@ p {
   gap: 10px;
 }
 
+.node-select {
+  max-width: 220px;
+  height: 32px;
+  border: 1px solid var(--on-dark-muted);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--on-dark);
+  font: inherit;
+  padding: 0 8px;
+}
+
+.node-select option {
+  color: var(--ink);
+  background: var(--surface-input);
+}
+
+.node-select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
 .company-label {
   font-size: 10px;
   color: var(--on-dark-muted);
@@ -1944,4 +1965,16 @@ button.cell:disabled {
   .roles-split {
     grid-template-columns: 1fr;
   }
+}
+
+/* „Aparține” in fisa articolului / partenerului: doar pentru citire, luat din antet (21.11.2026). */
+.readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--ink);
 }

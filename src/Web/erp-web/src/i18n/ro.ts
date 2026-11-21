@@ -963,11 +963,12 @@ export const ro = {
   'role.res.Core.Integration': 'Integrări',
   'owner.field': 'Aparține',
   'owner.common': 'Comun grupului',
-  'owner.company': '{name} (toată firma)',
-  'owner.filter.any': 'Oricine (toate vizibile)',
+  'owner.filter.context': 'Toate (după antet)',
   'owner.filter.common': 'Doar comune',
   'owner.filter.company': 'Ale firmei {name}',
-  'owner.hint': 'Comun = vizibil în toate firmele grupului. Un articol sau partener propriu unei firme, unui punct de lucru sau unei locații se vede acolo și în nodurile de deasupra; îl modifică doar cine are drept pe acel nod.',
+  'header.node': 'Punct de lucru / locație',
+  'header.wholeCompany': 'Toată firma',
+  'owner.fromContext': 'Se ia din antet (firma, punctul de lucru sau locația curentă) și nu se schimbă.',
 } as const;
 
 export type TextKey = keyof typeof ro;

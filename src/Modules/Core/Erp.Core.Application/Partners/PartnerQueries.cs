@@ -11,7 +11,7 @@ namespace Erp.Core.Application.Partners;
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record SearchPartners(string? Search = null, byte? Role = null, byte? PartnerType = null, bool? IsActive = null, bool? AnafInactive = null,
     int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50, byte? Owner = null,
-    int? OwnerBranchId = null, int? OwnerLocationId = null) : IQuery<PartnerPageDto>;
+    int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null) : IQuery<PartnerPageDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerView)]
@@ -45,7 +45,8 @@ internal sealed class SearchPartnersHandler(IPartnerStore store, ICurrentContext
         var page = Math.Max(request.Page, 1);
         return new PartnerSearchCriteria(search, fiscal, request.Role is 1 or 2 ? request.Role : null, request.PartnerType,
             request.IsActive, request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool,
-            (page - 1) * pageSize, pageSize, null, null, request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId);
+            (page - 1) * pageSize, pageSize, null, null, request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId,
+            request.ContextBranchId, request.ContextLocationId);
     }
 
     // Textul cautat ajunge intr-un LIKE: caracterele speciale se cauta literal.
@@ -83,7 +84,7 @@ internal sealed class GetPartnerHistoryHandler(IPartnerStore store, IOwnerAccess
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record ExportPartners(string? Search = null, byte? Role = null, byte? PartnerType = null, bool? IsActive = null, bool? AnafInactive = null,
     int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, byte? Owner = null, int? OwnerBranchId = null,
-    int? OwnerLocationId = null) : IQuery<FileDto>;
+    int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null) : IQuery<FileDto>;
 
 /// <summary>Sablonul Excel de import parteneri (02.01, 4.8 pasul 1): antetul, un rand exemplu si listele de valori.</summary>
 [Module("Core")]
@@ -97,7 +98,8 @@ internal sealed class ExportPartnersHandler(IPartnerStore store, IPartnerSpreads
     {
         var criteria = SearchPartnersHandler.Visible(SearchPartnersHandler.Criteria(new SearchPartners(request.Search, request.Role, request.PartnerType,
             request.IsActive, request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, Owner: request.Owner,
-            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId)), context);
+            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId, ContextBranchId: request.ContextBranchId,
+            ContextLocationId: request.ContextLocationId)), context);
         var rows = await store.ExportAsync(criteria, cancellationToken).ConfigureAwait(false);
         var values = rows.Select(r => (IReadOnlyList<string?>)
         [

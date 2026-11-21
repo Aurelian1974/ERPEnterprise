@@ -3,6 +3,7 @@ import { useLocation } from 'react-router';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 import { useQueryClient } from '@tanstack/react-query';
 import { companyStore } from '../app/company';
+import { contextOptions, nodeStore, useContextNode } from '../app/node';
 import { unsavedChanges } from '../components/UnsavedChanges';
 import { DropDownButtonComponent, type MenuEventArgs } from '@syncfusion/ej2-react-splitbuttons';
 import type { CurrentUser } from '../api/session';
@@ -106,6 +107,18 @@ export function Header({ user }: { readonly user: CurrentUser }) {
         .then(() => queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] !== 'me' }));
     }
   }, [queryClient]);
+  // Nodul din antet (21.11.2026): decide proprietarul articolelor si partenerilor noi si filtreaza listele lor.
+  const nodeOptions = useMemo(() => contextOptions(user), [user]);
+  const currentNode = useContextNode(user);
+  const onNodeChange = useCallback(async (key: string) => {
+    if (!(await unsavedChanges.confirmDiscard())) {
+      setRevision((r) => r + 1);
+      return;
+    }
+    nodeStore.set(user.companyId, key);
+    void queryClient.invalidateQueries({ queryKey: ['core', 'items'] });
+    void queryClient.invalidateQueries({ queryKey: ['core', 'partners'] });
+  }, [queryClient, user.companyId]);
   const onCompanySelect = useCallback((args: { itemData: { value?: unknown } | null }) => {
     const companyId = Number(args.itemData?.value);
     pendingCompany.current = Number.isInteger(companyId) && companyId > 0 ? companyId : null;
@@ -147,6 +160,12 @@ export function Header({ user }: { readonly user: CurrentUser }) {
             close={onCompanyClose}
             width="240px"
           />
+          {user.companyId > 0 && nodeOptions.length > 0 && (
+            <select key={`node#${revision}`} className="node-select" aria-label={t('header.node')} title={t('header.node')} value={currentNode}
+              disabled={nodeOptions.length < 2} onChange={(e) => void onNodeChange(e.target.value)}>
+              {nodeOptions.map((o) => <option key={o.value} value={o.value}>{o.text}</option>)}
+            </select>
+          )}
         </div>
         <button type="button" className="icon-btn" aria-label={t('header.notifications')} title={t('header.notificationsPending')} disabled>
           <span aria-hidden="true">🔔</span>

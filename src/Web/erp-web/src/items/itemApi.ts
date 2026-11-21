@@ -1,3 +1,4 @@
+import { contextQuery } from '../app/node';
 import { ownerQuery } from '../org/owner';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
@@ -34,6 +35,8 @@ export interface ItemCriteria {
   readonly propertyBool?: boolean | undefined;
   /** Proprietarul ales in filtru (cheile din org/owner); gol = toate cele vizibile. */
   readonly owner?: string | undefined;
+  /** Nodul din antet (app/node): „” toata firma, „b5”, „l9”. */
+  readonly context?: string | undefined;
   readonly page: number;
 }
 
@@ -64,7 +67,7 @@ export function itemSearchQuery(criteria: ItemCriteria): SearchQuery {
     ['Page', criteria.page],
     ['PageSize', PAGE_SIZE],
   ];
-  return { ...Object.fromEntries(entries.filter(([, value]) => value !== undefined)), ...ownerQuery(criteria.owner) } as SearchQuery;
+  return { ...Object.fromEntries(entries.filter(([, value]) => value !== undefined)), ...ownerQuery(criteria.owner), ...contextQuery(criteria.context ?? '') } as SearchQuery;
 }
 
 export function useItems(criteria: ItemCriteria) {

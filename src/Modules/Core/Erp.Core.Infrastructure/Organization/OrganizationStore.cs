@@ -49,6 +49,16 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
     public async Task<IReadOnlyList<CompanySummaryDto>> GetUserCompaniesAsync(int userId, CancellationToken ct) =>
         [.. await session.Connection.QueryAsync<CompanySummaryDto>(Command("core.usp_User_GetCompanies", new { UserId = userId }, ct)).ConfigureAwait(false)];
 
+    public async Task<(bool WholeCompany, IReadOnlyList<Application.Me.ContextNodeDto> Nodes)> GetUserNodesAsync(int userId, int companyId,
+        CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("core.usp_User_GetNodes", new { UserId = userId, CompanyId = companyId }, ct))
+            .ConfigureAwait(false);
+        var whole = await grid.ReadSingleAsync<bool>().ConfigureAwait(false);
+        var nodes = (await grid.ReadAsync<Application.Me.ContextNodeDto>().ConfigureAwait(false)).ToList();
+        return (whole, nodes);
+    }
+
     public Task<SavedEntity> SaveGroupAsync(SaveCompanyGroup command, int userId, CancellationToken ct) => SaveAsync("core.usp_CompanyGroup_Save", new
     {
         command.Id, command.Code, command.Name, command.ParentGroupId, command.ParentCompanyId, command.IsActive, command.RowVersion, UserId = userId,

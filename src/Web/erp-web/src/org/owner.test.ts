@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ownerChoices, ownerFields, ownerFilters, ownerKey, ownerQuery, type OwnerOptions } from './owner';
+import { ownerFields, ownerFilters, ownerKey, ownerQuery, type OwnerOptions } from './owner';
 
 const options = (manageWholeCompany: boolean): OwnerOptions => ({
   companyId: 3, companyName: 'Exemplu SRL', viewWholeCompany: manageWholeCompany, manageWholeCompany,
@@ -18,14 +18,10 @@ describe('proprietarul articolelor și partenerilor', () => {
     }
   });
 
-  it('comun și firmă doar cu dreptul pe toată firma; nodurile doar unde poate modifica', () => {
-    expect(ownerChoices(options(false)).map((c) => c.value)).toEqual(['b5', 'l9']);
-    expect(ownerChoices(options(true)).map((c) => c.value)).toEqual(['common', 'company', 'b5', 'l9']);
-    expect(ownerChoices(options(false), { key: 'b6', name: 'Punct Sud' })[0]).toEqual({ value: 'b6', text: 'Punct Sud' });
-  });
-
   it('filtrul listei arată doar nodurile vizibile și ajunge în parametrii căutării', () => {
     expect(ownerFilters(options(false)).map((c) => c.value)).toEqual(['common', 'company', 'b5', 'l9']);
+    expect(ownerFilters(options(true), 'l9').map((c) => c.value)).toEqual(['common', 'company', 'b5', 'l9']);
+    expect(ownerFilters(options(true), 'b6').map((c) => c.value)).toEqual(['common', 'company']);
     expect(ownerQuery('common')).toEqual({ Owner: 1 });
     expect(ownerQuery('company')).toEqual({ Owner: 2 });
     expect(ownerQuery('b5')).toEqual({ OwnerBranchId: 5 });

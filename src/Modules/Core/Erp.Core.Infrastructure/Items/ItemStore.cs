@@ -213,7 +213,8 @@ public sealed class ItemStore(IDbSession session) : IItemStore
         var parameters = new DynamicParameters(new
         {
             c.Search, c.IsStockable, c.ItemType, c.ItemGroupId, c.IsActive, c.PropertyDefinitionId, c.PropertyOptionId, c.PropertyBool, c.Offset,
-            c.PageSize, Export = export, c.UserId, c.CompanyId, OwnerFilter = c.Owner, c.OwnerBranchId, c.OwnerLocationId,
+            c.PageSize, Export = export, c.UserId, c.CompanyId, OwnerFilter = c.Owner, c.OwnerBranchId, c.OwnerLocationId, c.ContextBranchId,
+            c.ContextLocationId,
         });
         parameters.Add("Barcode", c.Barcode, DbType.AnsiString, size: 50);
         return parameters;

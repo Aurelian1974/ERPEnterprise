@@ -13,6 +13,8 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Search
     @OwnerFilter          tinyint = NULL,
     @OwnerBranchId        int = NULL,
     @OwnerLocationId      int = NULL,
+    @ContextBranchId      int = NULL,
+    @ContextLocationId    int = NULL,
     @Offset               int = 0,
     @PageSize             int = 50
 AS
@@ -23,12 +25,13 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Vizibilitatea pe proprietar (21.11.2026): cu @UserId, comunele si cele proprii nodurilor accesibile in firma @CompanyId
-    -- (core.fn_UserOwnerNodes). @OwnerFilter: 1 doar comune, 2 doar proprii firmei (oricarui nod al ei); @OwnerBranchId /
+    -- (core.fn_UserOwnerNodes); cu @ContextBranchId / @ContextLocationId (nodul din antet), ca si cum acela ar fi nodul lui. @OwnerFilter: 1 doar comune, 2 doar proprii firmei (oricarui nod al ei); @OwnerBranchId /
     -- @OwnerLocationId: doar cele ale punctului de lucru (cu locatiile lui) sau ale locatiei. Fara @UserId nu se filtreaza (module).
     DECLARE @Nodes TABLE (WholeCompany bit NOT NULL, BranchId int NULL, LocationId int NULL);
     IF @UserId IS NOT NULL
         INSERT INTO @Nodes (WholeCompany, BranchId, LocationId)
-        SELECT WholeCompany, BranchId, LocationId FROM core.fn_UserOwnerNodes(@UserId, @CompanyId, N'Core.Partner.View', 0);
+        SELECT WholeCompany, BranchId, LocationId
+        FROM core.fn_UserOwnerNodesInContext(@UserId, @CompanyId, N'Core.Partner.View', @ContextBranchId, @ContextLocationId);
     DECLARE @AnyNode bit = CASE WHEN EXISTS (SELECT 1 FROM @Nodes) THEN 1 ELSE 0 END;
 
     SELECT p.Id, p.Code, p.Name, p.PartnerType, p.FiscalCode, p.IsCustomer, p.IsSupplier, p.VatPayer, p.VatOnCollection,

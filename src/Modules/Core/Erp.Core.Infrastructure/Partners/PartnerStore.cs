@@ -16,7 +16,8 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         {
             criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
             criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.Offset, criteria.PageSize, criteria.UserId,
-            criteria.CompanyId, OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId,
+            criteria.CompanyId, OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId, criteria.ContextBranchId,
+            criteria.ContextLocationId,
         }, ct)).ConfigureAwait(false);
         var rows = (await grid.ReadAsync<SearchRow>().ConfigureAwait(false)).ToList();
         var active = await grid.ReadSingleAsync<int>().ConfigureAwait(false);
@@ -59,7 +60,8 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         {
             criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
             criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.UserId, criteria.CompanyId,
-            OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId,
+            OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId, criteria.ContextBranchId,
+            criteria.ContextLocationId,
         }, session.Transaction, commandType: CommandType.StoredProcedure, commandTimeout: 300, cancellationToken: ct)).ConfigureAwait(false)];
 
     public async Task<PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct)

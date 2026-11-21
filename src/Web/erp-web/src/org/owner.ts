@@ -50,38 +50,22 @@ function nodeText(node: OwnerOptions['nodes'][number]): string {
   return node.locationId != null && node.parentBranchId != null ? `    ↳ ${node.name}` : `↳ ${node.name}`;
 }
 
-/**
- * Proprietarii din care alege utilizatorul la adaugare sau modificare: comun si firma doar cu dreptul pe toata firma, apoi
- * nodurile lui. Proprietarul curent ramane in lista chiar daca nu e al lui (fisa e atunci doar pentru citire pe server).
- */
-export function ownerChoices(options: OwnerOptions | null | undefined, current?: { readonly key: string; readonly name: string | null }): OwnerChoice[] {
-  const choices: OwnerChoice[] = [];
-  if (options == null || options.manageWholeCompany) {
-    choices.push({ value: OWNER_COMMON, text: t('owner.common') });
-  }
-  if (options != null) {
-    if (options.manageWholeCompany) {
-      choices.push({ value: OWNER_COMPANY, text: t('owner.company', { name: options.companyName }) });
-    }
-    for (const node of options.nodes.filter((n) => n.canManage)) {
-      choices.push({ value: node.branchId != null ? `b${node.branchId}` : `l${node.locationId ?? 0}`, text: nodeText(node) });
-    }
-  }
-  if (current !== undefined && !choices.some((c) => c.value === current.key)) {
-    choices.unshift({ value: current.key, text: current.key === OWNER_COMMON ? t('owner.common') : (current.name ?? current.key) });
-  }
-  return choices;
-}
-
 /** Filtrul listei: toate cele vizibile, doar comune, doar ale firmei curente, ale unui punct de lucru sau ale unei locatii. */
-export function ownerFilters(options: OwnerOptions | null | undefined): OwnerChoice[] {
+export function ownerFilters(options: OwnerOptions | null | undefined, context = ''): OwnerChoice[] {
   if (options == null) {
     return [];
   }
+  // In nodul din antet: punctul de lucru cu locatiile lui, sau locatia cu punctul ei de lucru.
+  const contextId = Number(context.slice(1));
+  const location = context.startsWith('l') ? options.nodes.find((n) => n.locationId === contextId) : undefined;
+  const inContext = (n: OwnerOptions['nodes'][number]) => context === ''
+    || (context.startsWith('b') && (n.branchId === contextId || n.parentBranchId === contextId))
+    || (context.startsWith('l') && (n.locationId === contextId || (location?.parentBranchId != null && n.branchId === location.parentBranchId)));
   return [
     { value: OWNER_COMMON, text: t('owner.filter.common') },
     { value: OWNER_COMPANY, text: t('owner.filter.company', { name: options.companyName }) },
-    ...options.nodes.filter((n) => n.canView).map((n) => ({ value: n.branchId != null ? `b${n.branchId}` : `l${n.locationId ?? 0}`, text: nodeText(n) })),
+    ...options.nodes.filter((n) => n.canView && inContext(n))
+      .map((n) => ({ value: n.branchId != null ? `b${n.branchId}` : `l${n.locationId ?? 0}`, text: nodeText(n) })),
   ];
 }
 

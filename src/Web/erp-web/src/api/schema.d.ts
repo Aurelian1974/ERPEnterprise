@@ -1586,6 +1586,8 @@ export interface components {
             modules: string[];
             licenseState: string;
             companies: components["schemas"]["CompanySummaryDto"][];
+            wholeCompany: boolean;
+            nodes: components["schemas"]["ContextNodeDto"][];
         };
         DisableTwoFactorRequest: {
             password: string;
@@ -3085,6 +3087,15 @@ export interface components {
             manageWholeCompany: boolean;
             nodes: components["schemas"]["OwnerNodeDto"][];
         };
+        ContextNodeDto: {
+            /** Format: int32 */
+            branchId: null | number;
+            /** Format: int32 */
+            locationId: null | number;
+            /** Format: int32 */
+            parentBranchId: null | number;
+            name: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -4559,6 +4570,8 @@ export interface operations {
                 Owner?: number;
                 OwnerBranchId?: number;
                 OwnerLocationId?: number;
+                ContextBranchId?: number;
+                ContextLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -5497,6 +5510,8 @@ export interface operations {
                 Owner?: number;
                 OwnerBranchId?: number;
                 OwnerLocationId?: number;
+                ContextBranchId?: number;
+                ContextLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -6017,6 +6032,8 @@ export interface operations {
                 Owner?: number;
                 OwnerBranchId?: number;
                 OwnerLocationId?: number;
+                ContextBranchId?: number;
+                ContextLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -6118,6 +6135,8 @@ export interface operations {
                 Owner?: number;
                 OwnerBranchId?: number;
                 OwnerLocationId?: number;
+                ContextBranchId?: number;
+                ContextLocationId?: number;
             };
             header?: never;
             path?: never;

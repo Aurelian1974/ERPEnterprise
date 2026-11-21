@@ -66,6 +66,9 @@ public interface IOrganizationStore
 
     Task<IReadOnlyList<CompanySummaryDto>> GetUserCompaniesAsync(int userId, CancellationToken ct);
 
+    /// <summary>Rolul pe toata firma si nodurile firmei pe care utilizatorul are un rol (selectorul din antet).</summary>
+    Task<(bool WholeCompany, IReadOnlyList<Me.ContextNodeDto> Nodes)> GetUserNodesAsync(int userId, int companyId, CancellationToken ct);
+
     Task<SavedEntity> SaveGroupAsync(SaveCompanyGroup command, int userId, CancellationToken ct);
 
     Task<SavedEntity> SaveCompanyAsync(SaveCompany command, int userId, CancellationToken ct);
