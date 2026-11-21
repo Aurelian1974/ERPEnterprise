@@ -21,6 +21,7 @@ import { DataType } from '../partners/partnerApi';
 import { HistoryView } from '../partners/PartnerTabs';
 import { ItemBlockTab } from '../partners/BlockTab';
 import { ItemReferencesTab, ItemTranslationsTab } from './ItemCatalogTabs';
+import { DefaultDimensionsTab } from '../dimensions/DefaultDimensions';
 import { ItemForm, effectiveLines, type ItemSection } from './ItemForm';
 import {
   groupPath, ITEM_TYPES, itemApi, itemKeys, itemSearchQuery, PAGE_SIZE, percentText, useItem, useItemHistory, useItemLookups, useItems,
@@ -306,9 +307,10 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
   );
 }
 
-type ItemTab = ItemSection | 'barcodes' | 'references' | 'translations' | 'block' | 'history';
+type ItemTab = ItemSection | 'barcodes' | 'references' | 'translations' | 'block' | 'dimensions' | 'history';
 
 function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; readonly lookups: ItemLookups; readonly canManage: boolean }) {
+  const canManageDimensions = useOutletContext<CurrentUser>().permissions.includes('Core.Dimension.Manage');
   const item = useItem(itemId);
   const [tab, setTab] = useState<ItemTab>('general');
   const [visited, setVisited] = useState<ReadonlySet<ItemTab>>(() => new Set<ItemTab>(['general']));
@@ -327,6 +329,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
     ['references', t('item.tab.references')],
     ['translations', t('item.tab.translations')],
     ['block', t('item.tab.block')],
+    ['dimensions', t('tab.dimensions')],
     ['history', t('item.tab.history')],
   ];
   const open = (next: ItemTab, focus = false) => {
@@ -400,6 +403,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
       {panel('references', <ItemReferencesTab item={data} lookups={lookups} canManage={canManage} active={tab === 'references'} />)}
       {panel('translations', <ItemTranslationsTab itemId={itemId} itemName={data.name} canManage={canManage} active={tab === 'translations'} />)}
       {panel('block', <ItemBlockTab itemId={itemId} active={tab === 'block'} canManage={canManage} />)}
+      {panel('dimensions', <DefaultDimensionsTab source={2} sourceId={itemId} active={tab === 'dimensions'} canManage={canManageDimensions} />)}
       {panel('history', <HistoryView history={history} />)}
     </div>
   );

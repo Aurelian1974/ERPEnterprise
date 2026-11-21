@@ -380,6 +380,23 @@ public static class CoreApiRegistration
     // Configurare › Dimensiuni (02.01, 3.5; macheta 07k): centre de cost, proiecte, gestiuni, santiere.
     private static void MapDimensions(RouteGroupBuilder core)
     {
+        core.MapPost("/dimension-types", (SaveDimensionType body, ISender sender, CancellationToken ct) => sender.Send(body with { IsNew = true }, ct))
+            .WithName("CreateDimensionType").Saves();
+        core.MapPut("/dimension-types/{code}", (string code, SaveDimensionType body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Code = code, IsNew = false }, ct))
+            .WithName("UpdateDimensionType").Saves();
+        core.MapGet("/default-dimensions/{source:int}/{sourceId:int}", (byte source, int sourceId, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetDefaultDimensions(source, sourceId), ct))
+            .WithName("GetDefaultDimensions").Produces<DefaultDimensionPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPut("/default-dimensions/{source:int}/{sourceId:int}", (byte source, int sourceId, SaveDefaultDimensions body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Source = source, SourceId = sourceId }, ct))
+            .WithName("SaveDefaultDimensions").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/dimension-combinations", (ISender sender, CancellationToken ct) => sender.Send(new GetDimensionCombinations(), ct))
+            .WithName("GetDimensionCombinations").Produces<IReadOnlyList<DimensionCombinationDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/dimension-combinations", (SaveDimensionCombination body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreateDimensionCombination").Saves();
+        core.MapDelete("/dimension-combinations/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DeleteDimensionCombination(id), ct))
+            .WithName("DeleteDimensionCombination").Produces<int>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
         core.MapGet("/dimensions", ([AsParameters] GetDimensions query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("GetDimensions").Produces<DimensionPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapPost("/dimensions", (SaveDimensionValue body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))

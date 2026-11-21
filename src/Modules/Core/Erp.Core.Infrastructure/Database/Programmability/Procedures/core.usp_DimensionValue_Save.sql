@@ -22,8 +22,8 @@ BEGIN
     IF @Id IS NOT NULL
         SELECT @CompanyId = CompanyId, @DimensionType = DimensionType FROM core.DimensionValue WITH (UPDLOCK, ROWLOCK) WHERE Id = @Id;
 
-    IF NOT EXISTS (SELECT 1 FROM core.DimensionType WHERE Code = @DimensionType)
-        THROW 50021, N'Tipul de dimensiune nu există.', 1;
+    IF NOT EXISTS (SELECT 1 FROM core.DimensionType WHERE Code = @DimensionType AND (IsActive = 1 OR @Id IS NOT NULL))
+        THROW 50021, N'Tipul de dimensiune nu există sau este inactiv.', 1;
     IF @UserId <> 1 AND NOT EXISTS (SELECT 1 FROM core.fn_UserCompanies(@UserId, N'Core.Dimension.Manage') WHERE CompanyId = @CompanyId)
         THROW 50021, N'Nu aveți dreptul pe dimensiunile acestei firme.', 1;
     IF @ResponsibleUserId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM core.[User] WHERE Id = @ResponsibleUserId AND IsActive = 1 AND Id <> 1)

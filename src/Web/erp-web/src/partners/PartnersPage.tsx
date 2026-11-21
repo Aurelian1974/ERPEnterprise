@@ -15,6 +15,7 @@ import { DataType, PAGE_SIZE, PartnerType, searchQuery, usePartner, usePartnerLo
 import { PartnerForm, type PartnerSection } from './PartnerForm';
 import { anafBadge, displayFiscalCode } from './partnerModel';
 import { PartnerBlockTab } from './BlockTab';
+import { DefaultDimensionsTab } from '../dimensions/DefaultDimensions';
 import { blockedText } from './blockApi';
 import { PartnerAddressesTab, PartnerBankAccountsTab, PartnerContactsTab, PartnerHistoryTab } from './PartnerTabs';
 
@@ -340,7 +341,7 @@ function blockedTitle(mask: number): string {
   return blockedText(mask, 7, (f) => t(`block.partner.${f as 1 | 2 | 4}`), t('block.all')).toLocaleLowerCase('ro-RO');
 }
 
-type PartnerTab = PartnerSection | 'addresses' | 'bank' | 'contacts' | 'block' | 'history';
+type PartnerTab = PartnerSection | 'addresses' | 'bank' | 'contacts' | 'block' | 'dimensions' | 'history';
 
 /** Fisa partenerului cu tab-urile machetei; un panou se monteaza la prima vizita si apoi doar se ascunde (UI-18). */
 function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
@@ -367,6 +368,7 @@ function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
     ['bank', t('partner.tab.bank')],
     ['contacts', t('partner.tab.contacts')],
     ['block', t('partner.tab.block')],
+    ['dimensions', t('tab.dimensions')],
     ['history', t('partner.tab.history')],
   ];
   const open = (next: PartnerTab, focus = false) => {
@@ -441,6 +443,8 @@ function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
       {panel('contacts', <PartnerContactsTab partner={data} canManage={canManage} />)}
       {panel('block', <PartnerBlockTab partnerId={partnerId} active={tab === 'block'} canManage={canManage} isCustomer={data.isCustomer}
         canCredit={user.permissions.includes('Core.Partner.ManageCredit')} />)}
+      {panel('dimensions', <DefaultDimensionsTab source={1} sourceId={partnerId} active={tab === 'dimensions'}
+        canManage={user.permissions.includes('Core.Dimension.Manage')} />)}
       {panel('history', <PartnerHistoryTab partnerId={partnerId} active={tab === 'history'} />)}
     </div>
   );

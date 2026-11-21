@@ -49,6 +49,8 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Items.IItemCatalogStore, Items.ItemCatalogStore>();
         services.AddScoped<IItemCatalog, Application.Items.ItemCatalog>();
         services.AddScoped<Application.NumberSeries.INumberSeriesRuleStore, Organization.NumberSeriesRuleStore>();
+        services.AddScoped<Application.Dimensions.IDimensionRuleStore, Dimensions.DimensionRuleStore>();
+        services.AddScoped<IDimensionRules, Application.Dimensions.DimensionRules>();
         // Modulul care tine soldurile clientilor (Finante / Vanzari) isi inregistreaza propriul IPartnerExposureProvider inainte de Nucleu.
         services.TryAddScoped<IPartnerExposureProvider, Application.Partners.NoPartnerExposure>();
         services.AddScoped<IPrecisionService, Precision.PrecisionService>();

@@ -6,7 +6,8 @@ using FluentValidation;
 
 namespace Erp.Core.Application.Dimensions;
 
-public sealed record DimensionTypeDto(string Code, string Name, int ValueCount);
+/// <summary>Un tip de dimensiune (IsSystem = livrat; tipurile clientului se adauga din ecran, 3.6 punctul 15).</summary>
+public sealed record DimensionTypeDto(string Code, string Name, int ValueCount, int SortOrder, bool IsSystem, bool IsActive, byte[] RowVersion);
 
 /// <summary>O valoare in lista ecranului (macheta 07k): firma, parintele, responsabilul, valabilitatea si copiii activi.</summary>
 public sealed record DimensionValueItemDto(int Id, int CompanyId, string CompanyName, string DimensionType, string Code, string Name, int? ParentId,
@@ -50,7 +51,7 @@ internal sealed class SaveDimensionValueValidator : AbstractValidator<SaveDimens
 {
     public SaveDimensionValueValidator()
     {
-        RuleFor(x => x.DimensionType).Must(t => DimensionTypes.All.Contains(t)).WithMessage("Alegeți tipul de dimensiune.");
+        RuleFor(x => x.DimensionType).Must(DimensionTypeCode.IsValid).WithMessage("Alegeți tipul de dimensiune.");
         RuleFor(x => x.Code).NotEmpty().WithMessage("Codul este obligatoriu.")
             .Matches("^[A-Za-z0-9][A-Za-z0-9._/-]{0,29}$").WithMessage("Codul are 1–30 de caractere: litere, cifre, „.”, „_”, „/” sau „-”.");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Denumirea este obligatorie.").MaximumLength(200).WithMessage("Denumirea are cel mult 200 de caractere.");
@@ -65,7 +66,7 @@ internal sealed class GetDimensionsHandler(IDimensionStore store, ICurrentContex
 {
     public Task<DimensionPageDto> Handle(GetDimensions request, CancellationToken cancellationToken)
     {
-        var type = DimensionTypes.All.Contains(request.Type) ? request.Type : DimensionTypes.CostCenter;
+        var type = DimensionTypeCode.IsValid(request.Type) ? request.Type : DimensionTypes.CostCenter;
         var search = string.IsNullOrWhiteSpace(request.Search) ? null
             : request.Search.Trim().Replace("[", "[[]", StringComparison.Ordinal).Replace("%", "[%]", StringComparison.Ordinal)
                 .Replace("_", "[_]", StringComparison.Ordinal);

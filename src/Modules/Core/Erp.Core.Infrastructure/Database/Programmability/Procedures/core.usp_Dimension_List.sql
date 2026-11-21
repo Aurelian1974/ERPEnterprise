@@ -18,9 +18,10 @@ BEGIN
 
     SELECT t.Code, t.Name,
            (SELECT COUNT(*) FROM core.DimensionValue AS v JOIN #Companies AS c ON c.Id = v.CompanyId
-            WHERE v.DimensionType = t.Code AND (@IncludeInactive = 1 OR v.IsActive = 1)) AS ValueCount
+            WHERE v.DimensionType = t.Code AND (@IncludeInactive = 1 OR v.IsActive = 1)) AS ValueCount,
+           t.SortOrder, t.IsSystem, t.IsActive, t.RowVersion
     FROM core.DimensionType AS t
-    ORDER BY t.SortOrder;
+    ORDER BY t.IsActive DESC, t.SortOrder, t.Code;
 
     SELECT v.Id, v.CompanyId, co.Name AS CompanyName, v.DimensionType, v.Code, v.Name, v.ParentId, p.Code AS ParentCode, p.Name AS ParentName,
            v.ResponsibleUserId, u.DisplayName AS ResponsibleName, v.ValidFrom, v.ValidTo, v.IsActive,

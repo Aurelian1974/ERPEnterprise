@@ -1,4 +1,5 @@
--- Tipurile de dimensiuni (02.01, 3.5; macheta 07k): fixe, livrate cu kitul; valorile le adauga clientul. MERGE pe Code (MIG-06).
+-- Tipurile de dimensiuni livrate (02.01, 3.5; macheta 07k), de sistem; clientul isi adauga tipuri proprii (3.6 punctul 15), pe care MERGE-ul
+-- nu le atinge. Valorile le adauga clientul. MERGE pe Code (MIG-06).
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
@@ -10,7 +11,7 @@ USING (VALUES
     ('SITE',        N'Șantiere', 40)
 ) AS source (Code, Name, SortOrder)
 ON target.Code = source.Code
-WHEN MATCHED AND (target.Name <> source.Name OR target.SortOrder <> source.SortOrder) THEN
-    UPDATE SET Name = source.Name, SortOrder = source.SortOrder
+WHEN MATCHED AND (target.Name <> source.Name OR target.SortOrder <> source.SortOrder OR target.IsSystem = 0 OR target.IsActive = 0) THEN
+    UPDATE SET Name = source.Name, SortOrder = source.SortOrder, IsSystem = 1, IsActive = 1
 WHEN NOT MATCHED BY TARGET THEN
-    INSERT (Code, Name, SortOrder) VALUES (source.Code, source.Name, source.SortOrder);
+    INSERT (Code, Name, SortOrder, IsSystem, IsActive) VALUES (source.Code, source.Name, source.SortOrder, 1, 1);

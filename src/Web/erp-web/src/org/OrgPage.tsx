@@ -7,6 +7,7 @@ import { tabKeyTarget } from '../components/tabs';
 import { t } from '../i18n';
 import { AddressesTab, BankAccountsTab, CompanyHistoryTab, CompanySeriesTab, ContactsSection, ContactsTab } from './CompanyTabs';
 import { CompanyUsersTab } from '../roles/CompanyUsersTab';
+import { DefaultDimensionsTab } from '../dimensions/DefaultDimensions';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
 import { useCompany, useOrgLookups, useOrgTree, type OrgLookups, type Saved } from './orgApi';
 import { buildTree, countNodes, nodeId, type NodeKind, type OrgTree, type TreeNode } from './orgTree';
@@ -143,6 +144,7 @@ function Detail({ tree, lookups, selection, canManage }: {
   readonly selection: ReturnType<typeof useSelection>;
   readonly canManage: boolean;
 }) {
+  const user = useOutletContext<CurrentUser>();
   const parent = parseNode(selection.parent);
   const onSaved = (kind: NodeKind) => (saved: Saved) => selection.select(nodeId(kind, saved.id));
 
@@ -193,6 +195,12 @@ function Detail({ tree, lookups, selection, canManage }: {
               <h3 className="section">{t('section.contactPersons')}</h3>
               <ContactsSection key={`l-${location.id}`} companyId={location.companyId} locationId={location.id} canManage={canManage}
                 contacts={tree.contacts.filter((c) => c.locationId === location.id)} />
+              {location.companyId === user.companyId && (
+                <>
+                  <h3 className="section">{t('tab.dimensions')}</h3>
+                  <DefaultDimensionsTab source={3} sourceId={location.id} active canManage={user.permissions.includes('Core.Dimension.Manage')} />
+                </>
+              )}
             </section>
           )} />
       );

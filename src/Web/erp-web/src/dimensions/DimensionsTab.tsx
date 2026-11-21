@@ -7,6 +7,7 @@ import { useNotifier } from '../components/Notifier';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { t } from '../i18n';
 import { shortDay } from '../rates/ratesModel';
+import { DimensionCombinations, DimensionTypeForm } from './DimensionSettings';
 import { dimensionKeys, dimensionsApi, parentOptions, useDimensions, type DimensionPage, type DimensionValue } from './dimensionsApi';
 
 function problem(error: unknown): string {
@@ -31,22 +32,33 @@ export function DimensionsTab({ user }: { readonly user: CurrentUser }) {
   const data = query.data;
   const current = typeof selected === 'number' ? data?.values.find((v) => v.id === selected) : undefined;
   const typeName = data?.types.find((x) => x.code === type)?.name ?? '';
+  const [typeForm, setTypeForm] = useState<string | 'new' | undefined>();
+  const editedType = typeForm === 'new' ? undefined : data?.types.find((x) => x.code === typeForm);
 
   return (
     <div className="dimensions-layout">
       <section className="card dimension-types" aria-label={t('dim.types')}>
-        <span className="eyebrow">{t('dim.types')}</span>
+        <div className="card-head">
+          <span className="eyebrow">{t('dim.types')}</span>
+          <button type="button" className="btn ghost small" onClick={() => setTypeForm('new')}>{t('dimType.add')}</button>
+        </div>
         <ul>
           {(data?.types ?? []).map((x) => (
             <li key={x.code}>
               <button type="button" className={x.code === type ? 'current' : ''} aria-current={x.code === type ? 'true' : undefined}
                 onClick={() => { setType(x.code); setSelected(undefined); }}>
-                <span>{x.name}</span>
+                <span>{x.name}{x.isActive ? '' : ` · ${t('dim.inactiveOne')}`}</span>
                 <span className="muted small">{x.valueCount}</span>
               </button>
             </li>
           ))}
         </ul>
+        {typeForm === undefined && data?.types.some((x) => x.code === type) === true && (
+          <button type="button" className="btn ghost small" onClick={() => setTypeForm(type)}>{t('dimType.editCurrent')}</button>
+        )}
+        {typeForm !== undefined && (typeForm === 'new' || editedType !== undefined) && (
+          <DimensionTypeForm key={typeForm} type={editedType} onDone={(code) => { setTypeForm(undefined); if (code !== undefined) { setType(code); } }} />
+        )}
         <p className="muted small">{t('dim.typesHint')}</p>
       </section>
 
@@ -107,6 +119,7 @@ export function DimensionsTab({ user }: { readonly user: CurrentUser }) {
           <p className="muted empty-detail">{t('dim.select')}</p>
         )}
       </section>
+      {data !== undefined && user.companyId > 0 && <DimensionCombinations page={data} companyId={user.companyId} />}
     </div>
   );
 }

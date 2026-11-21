@@ -2317,3 +2317,23 @@ td .pill.bad {
   flex-direction: column;
   gap: 10px;
 }
+
+/* ---------- Dimensiuni: tipuri și combinații (3.6 punctele 14 și 15) ---------- */
+
+.dimensions-layout .dimension-combinations {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dim-comb-form .field select + select,
+.dim-comb-form .field input + button {
+  margin-top: 6px;
+}
+
+.dimension-type-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
