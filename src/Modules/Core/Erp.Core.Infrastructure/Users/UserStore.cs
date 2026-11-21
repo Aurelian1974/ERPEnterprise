@@ -43,7 +43,8 @@ public sealed class UserStore(IDbSession session) : IUserStore
             r.ExternalPartnerId, r.ExternalPartnerName, r.ExternalPartnerFiscalCode, r.SponsorUserId, r.SponsorName, r.AccessReason, Date(r.ValidFrom),
             Date(r.ValidUntil), r.Language, r.LastCompanyId, Utc(r.LastLoginAt), Utc(r.CreatedAt)!.Value, r.CreatedByName, Utc(r.LastChangedAt)!.Value,
             r.ModifiedByName, r.HasAccount, r.HasPassword ?? false, Utc(r.PasswordChangedAt), r.MustChangePassword ?? false,
-            r.TwoFactorEnabled ?? false, r.TwoFactorRequired ?? false, Utc(r.LockedUntil), r.ActiveSessions ?? 0, r.RowVersion, roles);
+            r.TwoFactorEnabled ?? false, r.TwoFactorRequired ?? false, Utc(r.LockedUntil), r.ActiveSessions ?? 0, r.RowVersion, roles,
+            NotificationPreferenceRules.Effective(r.NotificationPreferences));
     }
 
     public Task<UserAccountRef?> GetAccountAsync(int id, CancellationToken ct) =>
@@ -55,7 +56,7 @@ public sealed class UserStore(IDbSession session) : IUserStore
         var roles = (await grid.ReadAsync<RoleOptionDto>().ConfigureAwait(false)).ToList();
         var companies = (await grid.ReadAsync<CompanyOptionDto>().ConfigureAwait(false)).ToList();
         var sponsors = (await grid.ReadAsync<UserOptionDto>().ConfigureAwait(false)).ToList();
-        return new UserLookupsDto(roles, companies, sponsors, externalAccessMaxMonths);
+        return new UserLookupsDto(roles, companies, sponsors, externalAccessMaxMonths, NotificationTypes.All);
     }
 
     public async Task<IReadOnlyList<PartnerHistoryEntryDto>> GetHistoryAsync(int id, CancellationToken ct) =>
@@ -70,7 +71,7 @@ public sealed class UserStore(IDbSession session) : IUserStore
             ExternalAccessType = new DbString { Value = user.ExternalAccessType, Length = 20, IsAnsi = true },
             user.ExternalPartnerId, user.SponsorUserId, user.AccessReason, ValidFrom = Date(user.ValidFrom), ValidUntil = Date(user.ValidUntil),
             Language = new DbString { Value = user.Language, Length = 10, IsAnsi = true }, user.LastCompanyId, user.IsActive,
-            MaxActiveUsers = maxActiveUsers, user.RowVersion, UserId = actorUserId,
+            MaxActiveUsers = maxActiveUsers, user.RowVersion, user.SaveNotificationPreferences, user.NotificationPreferences, UserId = actorUserId,
         }, ct));
 
     public Task<bool> SaveRolesAsync(int userId, IReadOnlyList<UserRoleInput> roles, int actorUserId, CancellationToken ct)
@@ -119,7 +120,7 @@ public sealed class UserStore(IDbSession session) : IUserStore
         DateTime? ValidFrom, DateTime? ValidUntil, string Language, int? LastCompanyId, DateTime? LastLoginAt, DateTime? CreatedAt,
         string CreatedByName, DateTime? LastChangedAt, string ModifiedByName, bool? HasPassword, DateTime? PasswordChangedAt,
         bool? MustChangePassword, bool? TwoFactorEnabled, bool? TwoFactorRequired, DateTime? LockedUntil, int? ActiveSessions, bool HasAccount,
-        byte[] RowVersion);
+        byte[] RowVersion, string? NotificationPreferences);
 
     private sealed record HistoryRow(long Id, DateTime OccurredAt, string Action, string EntityType, long? EntityId, string UserName, string? Changes);
 }

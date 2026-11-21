@@ -11,7 +11,7 @@ import { useNotifier } from '../components/Notifier';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required } from '../components/forms';
 import { formatDate } from '../format/date';
-import { t } from '../i18n';
+import { t, type TextKey } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
 import { UserKind, externalAccessTypes, userApi, userKeys, type UserDetail, type UserLookups, type UserSaved } from './userApi';
 import { accessTypeLabel, isoToday, kindOf } from './userModel';
@@ -38,6 +38,7 @@ function userSchema(maxMonths: number) {
       lastCompanyId: z.number().nullable(),
       isActive: z.boolean(),
       roles: z.array(z.object({ roleId: z.number().nullable(), companyId: z.string() })),
+      notificationPreferences: z.array(z.object({ code: z.string(), inApp: z.boolean(), email: z.boolean(), emailMode: z.string() })),
     })
     .superRefine((v, ctx) => {
       const need = (path: string, ok: boolean) => {
@@ -103,12 +104,14 @@ const fields = ['kind', 'userName', 'employeeId', 'firstName', 'lastName', 'emai
 /** Valoarea firmei in randul de rol: id-ul ca text, sau „” pentru toata instalarea (doar Administrator). */
 const ALL_COMPANIES = '';
 
-function defaultsFor(user: UserDetail | undefined): UserInput {
+function defaultsFor(user: UserDetail | undefined, lookups: UserLookups): UserInput {
   if (user === undefined) {
     return {
       kind: UserKind.Employee, userName: '', employeeId: null, firstName: null, lastName: null, email: null, phone: null, externalAccessType: null,
       externalPartnerId: null, sponsorUserId: null, accessReason: null, validFrom: isoToRo(isoToday()), validUntil: '', language: 'ro',
       lastCompanyId: null, isActive: true, roles: [],
+      notificationPreferences: lookups.notificationTypes.map((type) => ({ code: type.code, inApp: type.defaultInApp, email: type.defaultEmail,
+        emailMode: type.defaultEmailMode })),
     };
   }
   return {
@@ -118,10 +121,11 @@ function defaultsFor(user: UserDetail | undefined): UserInput {
     validFrom: user.validFrom == null ? '' : isoToRo(user.validFrom), validUntil: user.validUntil == null ? '' : isoToRo(user.validUntil),
     language: user.language, lastCompanyId: user.lastCompanyId ?? null, isActive: user.isActive,
     roles: user.roles.map((r) => ({ roleId: r.roleId, companyId: r.companyId == null ? ALL_COMPANIES : String(r.companyId) })),
+    notificationPreferences: user.notificationPreferences.map((p) => ({ code: p.code, inApp: p.inApp, email: p.email, emailMode: p.emailMode })),
   };
 }
 
-export type UserSection = 'account' | 'roles';
+export type UserSection = 'account' | 'roles' | 'preferences';
 
 async function searchPartners(text: string): Promise<Option[]> {
   const page = unwrap(await api.GET('/api/core/partners', { params: { query: { ...(text === '' ? {} : { Search: text }), IsActive: true, PageSize: 30 } } }));
@@ -149,7 +153,7 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
 }) {
   const isNew = user === undefined;
   const schema = useMemo(() => userSchema(lookups.externalAccessMaxMonths), [lookups.externalAccessMaxMonths]);
-  const defaults = useMemo(() => defaultsFor(user), [user]);
+  const defaults = useMemo(() => defaultsFor(user, lookups), [user, lookups]);
   const form = useForm<UserInput, unknown, UserValues>({ resolver: zodResolver(schema) as Resolver<UserInput, unknown, UserValues>, defaultValues: defaults });
   useEffect(() => form.reset(defaults), [user?.id, user?.rowVersion]); // eslint-disable-line react-hooks/exhaustive-deps
   const roles = useFieldArray({ control: form.control, name: 'roles' });
@@ -185,6 +189,8 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
         isActive: values.isActive,
         // Propriile roluri nu se trimit: serverul refuza schimbarea lor (separarea drepturilor, 02.01, 8).
         roles: self ? null : values.roles.map((r) => ({ roleId: r.roleId ?? 0, companyId: r.companyId === ALL_COMPANIES ? null : Number(r.companyId) })),
+        // Preferintele se trimit doar daca s-au schimbat: tipurile neatinse raman pe implicitele catalogului.
+        notificationPreferences: form.formState.dirtyFields.notificationPreferences === undefined ? null : values.notificationPreferences,
       });
       form.reset(form.getValues());
       guard.markClean();
@@ -324,6 +330,10 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
         <p className="muted small">{t('user.roles.hint')}</p>
       </fieldset>
 
+      <fieldset className="form-body plain" hidden={section !== 'preferences'}>
+        <NotificationPreferences form={form} lookups={lookups} />
+      </fieldset>
+
       <div className="form-footer">
         <span className="muted">{info}</span>
         <div className="actions">
@@ -390,6 +400,58 @@ function RoleRow({ index, form, roleOptions, companyOptions, onRemove }: {
         </button>
       </td>
     </tr>
+  );
+}
+
+/**
+ * Tab-ul Preferinte: matricea tip × canal (in aplicatie, email) si momentul emailului (02.01, 11.2). Tipurile critice nu se
+ * opresc in aplicatie. Fara alegere, utilizatorul primeste implicitele catalogului.
+ */
+function NotificationPreferences({ form, lookups }: { readonly form: UserFormApi; readonly lookups: UserLookups }) {
+  const critical = new Map(lookups.notificationTypes.map((type) => [type.code, type.critical]));
+  const rows = useWatch({ control: form.control, name: 'notificationPreferences' });
+  return (
+    <>
+      <table className="simple preferences-table">
+        <thead>
+          <tr>
+            <th scope="col">{t('user.preferences.type')}</th>
+            <th scope="col">{t('user.preferences.inApp')}</th>
+            <th scope="col">{t('user.preferences.email')}</th>
+            <th scope="col">{t('user.preferences.emailMode')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => {
+            const label = t(`notification.type.${row.code}` as TextKey);
+            const isCritical = critical.get(row.code) === true;
+            return (
+              <tr key={row.code}>
+                <td>
+                  {label}
+                  {isCritical && <span className="pill warn small-pill">{t('user.preferences.critical')}</span>}
+                </td>
+                <td>
+                  <input type="checkbox" aria-label={`${label}: ${t('user.preferences.inApp')}`} disabled={isCritical}
+                    {...form.register(`notificationPreferences.${index}.inApp`)} />
+                </td>
+                <td>
+                  <input type="checkbox" aria-label={`${label}: ${t('user.preferences.email')}`} {...form.register(`notificationPreferences.${index}.email`)} />
+                </td>
+                <td>
+                  <select className="cell-input" aria-label={`${label}: ${t('user.preferences.emailMode')}`} disabled={!row.email}
+                    {...form.register(`notificationPreferences.${index}.emailMode`)}>
+                    <option value="Immediate">{t('user.preferences.immediate')}</option>
+                    <option value="DailyDigest">{t('user.preferences.dailyDigest')}</option>
+                  </select>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="muted small">{t('user.preferences.hint')}</p>
+    </>
   );
 }
 

@@ -1535,3 +1535,13 @@ table.roles-table .cell-input {
     align-items: flex-start;
   }
 }
+
+.small-pill {
+  margin-left: 6px;
+  font-size: 11px;
+}
+
+table.preferences-table td:not(:first-child),
+table.preferences-table th:not(:first-child) {
+  text-align: center;
+}

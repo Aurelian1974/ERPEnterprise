@@ -364,6 +364,34 @@ public sealed class UserIntegrationTests(UserDatabase database) : IClassFixture<
         Assert.Contains(found.Items, e => e.EmployeeNo == number);
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.01-11.2")]
+    public async Task Notification_preferences_are_saved_with_the_user_and_critical_types_stay_in_the_application()
+    {
+        var created = await Send(Employee(await NewEmployee()));
+        var detail = await Send(new GetUser(created.Id));
+        Assert.All(detail.NotificationPreferences, p => Assert.True(p.IsDefault));
+
+        var critical = await Assert.ThrowsAsync<ErpValidationException>(() => Send(UpdateOf(detail) with
+        {
+            NotificationPreferences = [new NotificationPreferenceInput(NotificationTypes.AccountLocked, false, true, EmailModes.Immediate)],
+        }));
+        Assert.Contains($"notificationPreferences.{NotificationTypes.AccountLocked}", critical.Errors.Keys);
+
+        await Send(UpdateOf(detail) with
+        {
+            NotificationPreferences = [new NotificationPreferenceInput(NotificationTypes.ImportCompleted, true, true, EmailModes.Immediate)],
+        });
+        detail = await Send(new GetUser(created.Id));
+        var import = Assert.Single(detail.NotificationPreferences, p => p.Code == NotificationTypes.ImportCompleted);
+        Assert.Equal((true, EmailModes.Immediate, false), (import.Email, import.EmailMode, import.IsDefault));
+
+        // O salvare fara preferinte (null) le lasa neschimbate.
+        await Send(UpdateOf(detail) with { Phone = null });
+        Assert.False(Assert.Single((await Send(new GetUser(created.Id))).NotificationPreferences, p => p.Code == NotificationTypes.ImportCompleted).IsDefault);
+        Assert.Contains(await Send(new GetUserLookups()).ContinueWith(t => t.Result.NotificationTypes), t => t.Code == NotificationTypes.OutboxFailed && t.Critical);
+    }
+
     private static SaveUser UpdateOf(UserDetailDto d) =>
         new(d.Id, d.UserName, (byte)(d.IsSystem ? 3 : d.IsEmployee ? 1 : 2), d.EmployeeId, d.FirstName, d.LastName, d.Email, d.Phone, d.ExternalAccessType, d.ExternalPartnerId,
             d.SponsorUserId, d.AccessReason, d.ValidFrom, d.ValidUntil, d.Language, d.LastCompanyId, d.IsActive, d.RowVersion);

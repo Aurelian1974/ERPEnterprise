@@ -10,15 +10,16 @@ namespace Erp.Core.Application.Users;
 /// aceeasi tranzactie. Un utilizator nou primeste o parola temporara (schimbare obligatorie la prima autentificare), aratata o
 /// singura data; un cont tehnic (extern cu tip TECHNICAL) nu are parola. Kind: 1 angajat, 2 extern, 3 cont de sistem (doar
 /// administratorul integrat, creat de installer; nu se creeaza de aici). Roles = null lasa rolurile neschimbate; altfel le
-/// inlocuieste pe toate (tab-ul „Roluri și firme”).
+/// inlocuieste pe toate (tab-ul „Roluri și firme”). NotificationPreferences = null lasa preferintele de notificare neschimbate;
+/// altfel le inlocuieste (tab-ul Preferinte; tipurile lipsa revin la implicitele catalogului).
 /// </summary>
 [Module("Core")]
 [RequiresPermission(CorePermissions.UserManage)]
 [Audited("Core.User.Save")]
 public sealed record SaveUser(int? Id, string UserName, byte Kind, int? EmployeeId, string? FirstName, string? LastName, string? Email,
     string? Phone, string? ExternalAccessType, int? ExternalPartnerId, int? SponsorUserId, string? AccessReason, DateOnly? ValidFrom,
-    DateOnly? ValidUntil, string Language, int? LastCompanyId, bool IsActive, byte[]? RowVersion, IReadOnlyList<UserRoleInput>? Roles = null)
-    : ICommand<UserSavedDto>;
+    DateOnly? ValidUntil, string Language, int? LastCompanyId, bool IsActive, byte[]? RowVersion, IReadOnlyList<UserRoleInput>? Roles = null,
+    IReadOnlyList<NotificationPreferenceInput>? NotificationPreferences = null) : ICommand<UserSavedDto>;
 
 /// <summary>„Resetează parola” (macheta 06b): parola temporara noua, aratata o singura data; sesiunile utilizatorului se inchid.</summary>
 [Module("Core")]
@@ -129,6 +130,11 @@ internal sealed class SaveUserHandler(IUserStore store, IIdentityAccountAdmin id
             throw ErpException.Conflict("CORE_SYSTEM_USER_PROTECTED", "Conturile de sistem se creează doar la instalare.");
         }
 
+        if (request.NotificationPreferences is not null && NotificationPreferenceRules.Validate(request.NotificationPreferences) is { Count: > 0 } errors)
+        {
+            throw new ErpValidationException(errors);
+        }
+
         UserAccountRef? previous = null;
         if (request.Id is { } id)
         {
@@ -158,7 +164,8 @@ internal sealed class SaveUserHandler(IUserStore store, IIdentityAccountAdmin id
             UserRules.Clean(request.Email)?.ToLowerInvariant(), external ? UserRules.Clean(request.Phone) : null,
             external ? request.ExternalAccessType : null, external ? request.ExternalPartnerId : null, external ? request.SponsorUserId : null,
             external ? UserRules.Clean(request.AccessReason) : null, external ? request.ValidFrom : null, external ? request.ValidUntil : null,
-            request.Language, request.LastCompanyId, request.IsActive, request.RowVersion);
+            request.Language, request.LastCompanyId, request.IsActive, request.RowVersion, request.NotificationPreferences is not null,
+            request.NotificationPreferences is null ? null : NotificationPreferenceRules.Serialize(request.NotificationPreferences));
         var saved = await store.SaveAsync(record, license.GetLimit("users"), context.UserId, cancellationToken).ConfigureAwait(false);
 
         var isAdmin = saved.IsAdmin;
@@ -194,6 +201,7 @@ internal sealed class SaveUserHandler(IUserStore store, IIdentityAccountAdmin id
             record.EmployeeId, record.ExternalAccessType, record.ExternalPartnerId, record.SponsorUserId, record.ValidFrom, record.ValidUntil,
             record.Language, record.LastCompanyId, saved.IsActive, TwoFactorRequired = twoFactor,
             Roles = request.Roles?.Select(r => new { r.RoleId, r.CompanyId }),
+            NotificationPreferences = request.NotificationPreferences?.Select(p => new { p.Code, p.InApp, p.Email, p.EmailMode }),
             AccountCreated = previous is null ? true : (bool?)null,
             TemporaryPasswordIssued = temporaryPassword is null ? (bool?)null : true,
         });

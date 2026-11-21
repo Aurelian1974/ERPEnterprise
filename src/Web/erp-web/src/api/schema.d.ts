@@ -2619,6 +2619,7 @@ export interface components {
             /** Format: byte */
             rowVersion: null | string;
             roles?: null | components["schemas"]["UserRoleInput"][];
+            notificationPreferences?: null | components["schemas"]["NotificationPreferenceInput"][];
         };
         TemporaryPasswordDto: {
             temporaryPassword: string;
@@ -2704,6 +2705,7 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
             roles: components["schemas"]["UserRoleAssignmentDto"][];
+            notificationPreferences: components["schemas"]["NotificationPreferenceDto"][];
         };
         UserListItemDto: {
             /** Format: int32 */
@@ -2732,6 +2734,7 @@ export interface components {
             sponsors: components["schemas"]["UserOptionDto"][];
             /** Format: int32 */
             externalAccessMaxMonths: number;
+            notificationTypes: components["schemas"]["NotificationTypeDto"][];
         };
         UserPageDto: {
             items: components["schemas"]["UserListItemDto"][];
@@ -2770,6 +2773,27 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
             temporaryPassword: null | string;
+        };
+        NotificationPreferenceDto: {
+            code: string;
+            inApp: boolean;
+            email: boolean;
+            emailMode: string;
+            isDefault: boolean;
+        };
+        NotificationPreferenceInput: {
+            code: string;
+            inApp: boolean;
+            email: boolean;
+            emailMode: string;
+        };
+        NotificationTypeDto: {
+            code: string;
+            moduleCode: string;
+            critical: boolean;
+            defaultInApp: boolean;
+            defaultEmail: boolean;
+            defaultEmailMode: string;
         };
     };
     responses: never;

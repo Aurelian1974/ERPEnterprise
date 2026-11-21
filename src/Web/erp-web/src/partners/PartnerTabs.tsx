@@ -340,7 +340,7 @@ export function changeSummary(changes: string | null | undefined): string {
     const parsed = JSON.parse(changes) as Record<string, unknown>;
     return Object.entries(parsed)
       .filter(([, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => `${key}: ${typeof value === 'boolean' ? t(value ? 'common.yes' : 'common.no') : String(value)}`)
+      .map(([key, value]) => `${key}: ${typeof value === 'boolean' ? t(value ? 'common.yes' : 'common.no') : typeof value === 'object' ? JSON.stringify(value) : String(value)}`)
       .join(' · ');
   } catch {
     return changes;

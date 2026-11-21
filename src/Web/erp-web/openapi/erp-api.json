@@ -11129,6 +11129,15 @@
             "items": {
               "$ref": "#/components/schemas/UserRoleInput"
             }
+          },
+          "notificationPreferences": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NotificationPreferenceInput"
+            }
           }
         }
       },
@@ -11236,7 +11245,8 @@
           "lockedUntil",
           "activeSessions",
           "rowVersion",
-          "roles"
+          "roles",
+          "notificationPreferences"
         ],
         "type": "object",
         "properties": {
@@ -11484,6 +11494,12 @@
             "items": {
               "$ref": "#/components/schemas/UserRoleAssignmentDto"
             }
+          },
+          "notificationPreferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationPreferenceDto"
+            }
           }
         }
       },
@@ -11590,7 +11606,8 @@
           "roles",
           "companies",
           "sponsors",
-          "externalAccessMaxMonths"
+          "externalAccessMaxMonths",
+          "notificationTypes"
         ],
         "type": "object",
         "properties": {
@@ -11615,6 +11632,12 @@
           "externalAccessMaxMonths": {
             "type": "integer",
             "format": "int32"
+          },
+          "notificationTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationTypeDto"
+            }
           }
         }
       },
@@ -11759,6 +11782,87 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "NotificationPreferenceDto": {
+        "required": [
+          "code",
+          "inApp",
+          "email",
+          "emailMode",
+          "isDefault"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "inApp": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "boolean"
+          },
+          "emailMode": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NotificationPreferenceInput": {
+        "required": [
+          "code",
+          "inApp",
+          "email",
+          "emailMode"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "inApp": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "boolean"
+          },
+          "emailMode": {
+            "type": "string"
+          }
+        }
+      },
+      "NotificationTypeDto": {
+        "required": [
+          "code",
+          "moduleCode",
+          "critical",
+          "defaultInApp",
+          "defaultEmail",
+          "defaultEmailMode"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "defaultInApp": {
+            "type": "boolean"
+          },
+          "defaultEmail": {
+            "type": "boolean"
+          },
+          "defaultEmailMode": {
+            "type": "string"
           }
         }
       }

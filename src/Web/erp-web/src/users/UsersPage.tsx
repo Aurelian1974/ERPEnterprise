@@ -297,6 +297,7 @@ function UserPanel({ userId, lookups, currentUserId, onPassword }: {
   const tabs: [UserTab, string][] = [
     ['account', t('user.tab.account')],
     ['roles', t('user.tab.roles')],
+    ['preferences', t('user.tab.preferences')],
     ['security', t('user.tab.security')],
     ['sessions', t('user.tab.sessions')],
     ['history', t('user.tab.history')],
@@ -314,7 +315,7 @@ function UserPanel({ userId, lookups, currentUserId, onPassword }: {
         {content}
       </div>
     );
-  const formSection: UserSection | undefined = tab === 'account' || tab === 'roles' ? tab : undefined;
+  const formSection: UserSection | undefined = tab === 'account' || tab === 'roles' || tab === 'preferences' ? tab : undefined;
   const status = userStatus(data, isoToday());
   const companies = new Set(data.roles.map((r) => r.companyId ?? 0)).size;
   const subtitle = [
@@ -358,7 +359,7 @@ function UserPanel({ userId, lookups, currentUserId, onPassword }: {
             role="tab"
             id={`tab-${key}`}
             aria-selected={tab === key}
-            aria-controls={key === 'account' || key === 'roles' ? 'user-form' : visited.has(key) ? `panel-${key}` : undefined}
+            aria-controls={key === 'account' || key === 'roles' || key === 'preferences' ? 'user-form' : visited.has(key) ? `panel-${key}` : undefined}
             tabIndex={tab === key ? 0 : -1}
             className={tab === key ? 'tab on' : 'tab'}
             onClick={() => open(key)}
@@ -375,7 +376,7 @@ function UserPanel({ userId, lookups, currentUserId, onPassword }: {
           </button>
         ))}
       </div>
-      {/* Cont si Roluri sunt un singur formular, cu o singura salvare; ramane montat pe celelalte tab-uri. */}
+      {/* Cont, Roluri si Preferinte sunt un singur formular, cu o singura salvare; ramane montat pe celelalte tab-uri. */}
       <div id="user-form" role="tabpanel" aria-labelledby={`tab-${formSection ?? 'account'}`} hidden={formSection === undefined}>
         <UserForm user={data} lookups={lookups} section={formSection} currentUserId={currentUserId} onSaved={() => undefined} onCancel={() => undefined} />
       </div>

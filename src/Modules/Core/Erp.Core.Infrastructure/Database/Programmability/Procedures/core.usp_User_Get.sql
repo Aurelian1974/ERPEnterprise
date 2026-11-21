@@ -16,7 +16,7 @@ BEGIN
            COALESCE(u.ModifiedAt, u.CreatedAt) AS LastChangedAt, COALESCE(mu.DisplayName, cu.DisplayName) AS ModifiedByName,
            s.HasPassword, s.PasswordChangedAt, s.MustChangePassword, s.TwoFactorEnabled, s.TwoFactorRequired, s.LockedUntil,
            s.ActiveSessions, CAST(CASE WHEN s.SubjectId IS NULL THEN 0 ELSE 1 END AS bit) AS HasAccount,
-           u.RowVersion
+           u.RowVersion, u.NotificationPreferences
     FROM core.[User] AS u
     LEFT JOIN core.Employee AS e ON e.Id = u.EmployeeId
     LEFT JOIN core.Company AS ec ON ec.Id = e.CompanyId

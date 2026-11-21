@@ -18,6 +18,8 @@ CREATE OR ALTER PROCEDURE core.usp_User_Save
     @LastCompanyId      int = NULL,
     @IsActive           bit,
     @MaxActiveUsers     int = NULL,
+    @SaveNotificationPreferences bit = 0,
+    @NotificationPreferences     nvarchar(max) = NULL,
     @RowVersion         binary(8) = NULL,
     @UserId             int
 AS
@@ -28,6 +30,7 @@ BEGIN
     --   de sistem (administratorul integrat): se creeaza doar de installer; tipul si numele de utilizator nu se schimba (50033).
     -- Contul tehnic „system” (Id = 1) nu se modifica. Un utilizator nou sau reactivat consuma o licenta (@MaxActiveUsers,
     -- NULL = fara limita; conturile de sistem nu se numara). Ultimul administrator activ nu se dezactiveaza (50015).
+    -- @SaveNotificationPreferences = 1 inlocuieste preferintele de notificare (JSON validat de aplicatie, tab-ul Preferinte).
     -- Intoarce si datele necesare contului de autentificare (ids), sincronizat de aplicatie in aceeasi tranzactie.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -124,11 +127,12 @@ BEGIN
     BEGIN
         INSERT INTO core.[User]
             (SubjectId, UserName, DisplayName, FirstName, LastName, Email, Phone, IsActive, IsSystem, IsEmployee, EmployeeId,
-             ExternalAccessType, ExternalPartnerId, SponsorUserId, AccessReason, ValidFrom, ValidUntil, Language, LastCompanyId, CreatedBy)
+             ExternalAccessType, ExternalPartnerId, SponsorUserId, AccessReason, ValidFrom, ValidUntil, Language, LastCompanyId,
+             NotificationPreferences, CreatedBy)
         VALUES
             (@SubjectId, @UserName, @DisplayName, @FirstName, @LastName, @Email, @Phone, @IsActive, 0, @IsEmployee, @EmployeeId,
              @ExternalAccessType, @ExternalPartnerId, @SponsorUserId, @AccessReason, @ValidFrom, @ValidUntil, @Language, @LastCompanyId,
-             @UserId);
+             CASE WHEN @SaveNotificationPreferences = 1 THEN @NotificationPreferences END, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -138,7 +142,9 @@ BEGIN
             Phone = @Phone, IsActive = @IsActive, IsEmployee = @IsEmployee, EmployeeId = @EmployeeId,
             ExternalAccessType = @ExternalAccessType, ExternalPartnerId = @ExternalPartnerId, SponsorUserId = @SponsorUserId,
             AccessReason = @AccessReason, ValidFrom = @ValidFrom, ValidUntil = @ValidUntil, Language = @Language,
-            LastCompanyId = @LastCompanyId, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            LastCompanyId = @LastCompanyId,
+            NotificationPreferences = CASE WHEN @SaveNotificationPreferences = 1 THEN @NotificationPreferences ELSE NotificationPreferences END,
+            ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND RowVersion = @RowVersion;
 
         IF @@ROWCOUNT = 0

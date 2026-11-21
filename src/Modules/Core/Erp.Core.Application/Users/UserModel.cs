@@ -51,15 +51,19 @@ public sealed record UserDetailDto(int Id, string UserName, string DisplayName, 
     string? ExternalPartnerFiscalCode, int? SponsorUserId, string? SponsorName, string? AccessReason, DateOnly? ValidFrom, DateOnly? ValidUntil,
     string Language, int? LastCompanyId, DateTime? LastLoginAt, DateTime CreatedAt, string CreatedByName, DateTime LastChangedAt,
     string ModifiedByName, bool HasAccount, bool HasPassword, DateTime? PasswordChangedAt, bool MustChangePassword, bool TwoFactorEnabled,
-    bool TwoFactorRequired, DateTime? LockedUntil, int ActiveSessions, byte[] RowVersion, IReadOnlyList<UserRoleAssignmentDto> Roles);
+    bool TwoFactorRequired, DateTime? LockedUntil, int ActiveSessions, byte[] RowVersion, IReadOnlyList<UserRoleAssignmentDto> Roles,
+    IReadOnlyList<NotificationPreferenceDto> NotificationPreferences);
 
 public sealed record RoleOptionDto(int Id, string Code, string Name, bool IsSystem);
 
 public sealed record CompanyOptionDto(int Id, string Code, string Name);
 
-/// <summary>Listele fisei: roluri, firme active, responsabili interni posibili, numarul maxim de luni al accesului extern.</summary>
+/// <summary>
+/// Listele fisei: roluri, firme active, responsabili interni posibili, numarul maxim de luni al accesului extern si catalogul
+/// tipurilor de notificare (tab-ul Preferinte).
+/// </summary>
 public sealed record UserLookupsDto(IReadOnlyList<RoleOptionDto> Roles, IReadOnlyList<CompanyOptionDto> Companies,
-    IReadOnlyList<UserOptionDto> Sponsors, int ExternalAccessMaxMonths);
+    IReadOnlyList<UserOptionDto> Sponsors, int ExternalAccessMaxMonths, IReadOnlyList<NotificationTypeDto> NotificationTypes);
 
 /// <summary>Rezultatul crearii sau al unei resetari: parola temporara se arata o singura data administratorului (null = fara parola).</summary>
 public sealed record UserSavedDto(int Id, byte[] RowVersion, string? TemporaryPassword);
@@ -68,10 +72,14 @@ public sealed record TemporaryPasswordDto(string TemporaryPassword);
 
 public sealed record UserSearchCriteria(string? Search, byte? Kind, byte? Filter, int? CompanyId, int? RoleId, DateOnly Today, int Offset, int PageSize);
 
-/// <summary>Utilizatorul pregatit pentru salvare (numele de utilizator cu litere mici, campurile tipului curatate).</summary>
+/// <summary>
+/// Utilizatorul pregatit pentru salvare (numele de utilizator cu litere mici, campurile tipului curatate). NotificationPreferences =
+/// JSON-ul preferintelor, scris doar cu SaveNotificationPreferences = true.
+/// </summary>
 public sealed record UserRecord(int? Id, Guid? SubjectId, string UserName, bool IsEmployee, int? EmployeeId, string? FirstName, string? LastName,
     string? Email, string? Phone, string? ExternalAccessType, int? ExternalPartnerId, int? SponsorUserId, string? AccessReason, DateOnly? ValidFrom,
-    DateOnly? ValidUntil, string Language, int? LastCompanyId, bool IsActive, byte[]? RowVersion);
+    DateOnly? ValidUntil, string Language, int? LastCompanyId, bool IsActive, byte[]? RowVersion, bool SaveNotificationPreferences = false,
+    string? NotificationPreferences = null);
 
 /// <summary>Ce a salvat core.usp_User_Save: datele contului de autentificare de sincronizat si starea anterioara.</summary>
 public sealed record UserSaveResult(int Id, byte[] RowVersion, Guid SubjectId, string UserName, string DisplayName, string? Email, bool IsActive,
