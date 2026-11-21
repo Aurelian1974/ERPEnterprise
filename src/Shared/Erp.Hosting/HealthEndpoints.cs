@@ -97,8 +97,11 @@ public sealed class LicenseCheck(Func<bool> isValid) : IReadinessCheck
             : HealthStatus.Unhealthy);
 }
 
-/// <summary>worker: serverul Hangfire al serviciului are heartbeat in ultimele 60 s (hangfire.Server).</summary>
-public sealed class WorkerCheck(Func<SqlConnection> connectionFactory) : IReadinessCheck
+/// <summary>
+/// worker: serverul Hangfire al serviciului are heartbeat in ultimele 60 s (hangfire.Server). In mentenanta (10.3) Worker-ul
+/// nu proceseaza prin proiect, deci verificarea raporteaza Healthy fara heartbeat, ca health-check-ul de la U-09/R-04 sa treaca.
+/// </summary>
+public sealed class WorkerCheck(Func<SqlConnection> connectionFactory, Func<bool>? maintenanceActive = null) : IReadinessCheck
 {
     public const string Query = """
         SELECT CAST(CASE WHEN EXISTS (
@@ -109,6 +112,11 @@ public sealed class WorkerCheck(Func<SqlConnection> connectionFactory) : IReadin
 
     public async Task<HealthStatus> CheckAsync(CancellationToken ct)
     {
+        if (maintenanceActive?.Invoke() == true)
+        {
+            return HealthStatus.Healthy;
+        }
+
         try
         {
             await using var connection = connectionFactory();

@@ -1028,7 +1028,7 @@ Installer-ul **nu** copiază backup-urile în afara serverului SQL: asta e respo
 | `schema` | Ultimul script din `core.SchemaVersion` = `lastMigration` încorporat în build (10.4) |
 | `license` | Licența activă din bază e validă (4.2, 4.4) |
 | `dataProtection` | Certificatul instalării e accesibil, iar cheia curentă a inelului se poate citi |
-| `worker` | Serverul Hangfire al serviciului are heartbeat în ultimele 60 s (`hangfire.Server`) |
+| `worker` | Serverul Hangfire al serviciului are heartbeat în ultimele 60 s (`hangfire.Server`). Cât timp `maintenance.flag` există (10.3), Worker-ul nu procesează prin proiect, deci verificarea răspunde `Healthy` fără heartbeat (altfel U-09 și R-04 nu ar putea trece) |
 
 4. Verifică și `GET /` (200, HTML) și `GET /account/login` (200, pagina de autentificare).
 5. Health-check eșuat → pasul I-17 eșuează pe ecranul 5 (cod 60); mesajul listează verificările care nu sunt `Healthy` și ultimele 50 de rânduri din jurnalele componentelor.

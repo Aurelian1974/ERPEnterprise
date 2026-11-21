@@ -164,6 +164,15 @@ public sealed class HostingTests : IDisposable
     }
 
     [Fact]
+    [Trait("Criteriu", "08-U-09")]
+    public async Task Worker_check_is_healthy_while_maintenance_is_active()
+    {
+        var check = new WorkerCheck(() => throw new InvalidOperationException("nu trebuie conexiune"), maintenanceActive: () => true);
+
+        Assert.Equal(HealthStatus.Healthy, await check.CheckAsync(CancellationToken.None));
+    }
+
+    [Fact]
     [Trait("Criteriu", "08-IA-18")]
     public async Task Business_api_is_refused_when_the_database_version_does_not_match()
     {

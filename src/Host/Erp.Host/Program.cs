@@ -93,7 +93,7 @@ app.MapErpHealth(build, () =>
     new SchemaCheck(schemaReader, build, allowUnversionedBuild: development),
     new LicenseCheck(() => app.Services.GetRequiredService<ILicenseInfo>() is { HasLicense: true, State: not LicenseState.ReadOnly }),
     new DataProtectionCheck(app.Services.GetRequiredService<IDataProtectionProvider>()),
-    new WorkerCheck(Connect),
+    new WorkerCheck(Connect, () => app.Services.GetRequiredService<MaintenanceFlag>().IsActive),
 ]);
 
 app.MapCoreApi();
