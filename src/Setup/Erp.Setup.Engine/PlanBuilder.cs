@@ -362,6 +362,8 @@ public static class PlanBuilder
 
     private static async Task<StepResult> StartAsync(InstallSession session, IWindowsSetup windows, CancellationToken ct)
     {
+        // Un maintenance.flag ramas dintr-o instalare sau o actualizare intrerupta ar opri Worker-ul si ar bloca health-check-ul.
+        windows.ClearMaintenanceFlag(session.Request);
         windows.StartApplication(session.Request, session.Version);
         var state = session.RequireState();
         var pinned = state.CertificateKind == CertificateKind.Internal ? state.CertificateThumbprint : null;

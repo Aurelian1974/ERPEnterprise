@@ -515,6 +515,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                     : $"Pasul {outcome.FailedStep} a eșuat (cod {outcome.ExitCode}): {outcome.Message}";
             }
         }
+        catch (Engine.SetupModeException ex)
+        {
+            InstallError = $"{ex.Message} (cod {ex.ExitCode})";
+        }
         finally
         {
             IsInstalling = false;
