@@ -41,6 +41,8 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<IExchangeRateWriter, ExchangeRates.ExchangeRateWriter>();
         services.AddScoped<Application.Dimensions.IDimensionStore, Dimensions.DimensionStore>();
         services.AddScoped<IDimensionLookup, Dimensions.DimensionLookup>();
+        services.AddScoped<Application.Precision.IPrecisionStore, Precision.PrecisionStore>();
+        services.AddScoped<IPrecisionService, Precision.PrecisionService>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));
         services.AddScoped<Application.Anaf.IAnafVatRegistry, Anaf.AnafVatRegistry>();

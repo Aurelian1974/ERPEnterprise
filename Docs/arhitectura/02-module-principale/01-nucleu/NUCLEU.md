@@ -350,6 +350,13 @@ Mărime: S = mic, M = mediu, L = mare.
 - API: `GET /dimensions?type=&companyId=&search=&includeInactive=`, `POST /dimensions`, `PUT /dimensions/{id}` (`Core.Dimension.Manage`, auditate). Ecran: Configurare › Dimensiuni (`/admin/config/dimensiuni`, familia „Nomenclatoare”): tipurile cu numărul de valori, valorile cu căutare, firmă și „Inactive”, fișa valorii. Fără „Export Excel” și coloana „Folosit pe” (vin cu documentele).
 - Restricțiile pe gestiuni din atribuirile de roluri (`DimensionScope`, punctul 4 din 3.4.1) rămân de făcut, odată cu modulul Stocuri.
 
+**Precizie: detalii de implementare** (21.11.2026; macheta 07d).
+
+- Tabela `core.PrecisionPolicy` exista din etapa 4 (migrarea `2026.11.006`, datele `06_PrecisionPolicies.sql`); nu a fost nevoie de migrare nouă. Valoarea (sumele) are mereu 2 zecimale, cerință fiscală: `core.usp_PrecisionPolicy_Save` o fixează la 2, refuză un cod duplicat (50018) și dezactivarea unei politici folosite de o firmă (50010).
+- `core.usp_PrecisionPolicy_List`: politicile cu numărul de firme, firmele cu politica lor și numărul de articole cu zecimale proprii. `core.usp_Precision_Resolve(@CompanyId, @ItemId)`: zecimalele articolului, dacă există, altfel politica firmei.
+- `IPrecisionService` (`Erp.Core.Contracts`) a devenit asincron (`ResolveAsync`, citește din bază); `RoundAmount` primește `PrecisionInfo`, nu moneda (valoarea are mereu 2 zecimale). Rotunjirea propriu-zisă e în `PrecisionRounding` (aplicația), folosită de serviciu și de documente: preț și cantitate rotunjite după politică, valoarea liniei = cantitate × preț rotunjită la 2. Nivelul „listă de prețuri” din ierarhie se adaugă odată cu Vânzările (parametrul `priceListId` e deja în contract).
+- API: `GET /precision-policies`, `POST /precision-policies`, `PUT /precision-policies/{id}` (`Core.Precision.Manage`, auditate), `GET /precision?itemId=` (orice utilizator autentificat, pe firma curentă). Ecran: Configurare › Precizie (`/admin/config/precizie`, familia „Documente”): politicile, fișa politicii (zecimale preț și cantitate 0–6, rotunjirea), unde se aplică și previzualizarea pe exemplul 3,25 × 12,345678. Atribuirea politicii pe firmă rămâne în fișa firmei (Firme și structură).
+
 **Valute și cursuri: detalii de implementare** (deciziile lui Aurelian din 21.11.2026; macheta 07b).
 
 - Migrarea `2026.11.016`: `core.Currency` (cod ISO 4217 ca cheie, denumire, zecimale, activ; RON e baza și rămâne activ, `CK_Currency_BaseActive`), `core.ExchangeRate` (`Rate decimal(19,6)` = lei pentru `Multiplier` unități, `Source` `BNR` / `MANUAL`, `Note` obligatoriu la manual, unic pe monedă + zi + sursă; RON nu are curs), tipul `core.ExchangeRateList` și cheile străine ale monedei din `CompanyBankAccount` și `PartnerBankAccount` (monedele conturilor existente devin active). Datele livrate `12_Currencies.sql`: monedele publicate de BNR, cu denumiri în română; active la prima livrare RON, EUR, USD, GBP, CHF.
@@ -516,10 +523,10 @@ public sealed record DocumentNumber(string Prefix, int Year, long Number, string
 // Precizie și rotunjire
 public interface IPrecisionService
 {
-    PrecisionInfo Resolve(int companyId, int? itemId, int? priceListId);
-    decimal RoundAmount(decimal value, string currency);   // 2 zecimale pentru RON
-    decimal RoundPrice(decimal value, PrecisionInfo p);     // 0–6 zecimale
-    decimal RoundQuantity(decimal value, PrecisionInfo p);
+    Task<PrecisionInfo> ResolveAsync(int companyId, int? itemId, int? priceListId, CancellationToken ct);
+    decimal RoundPrice(decimal value, PrecisionInfo precision);     // 0–6 zecimale
+    decimal RoundQuantity(decimal value, PrecisionInfo precision);
+    decimal RoundAmount(decimal value, PrecisionInfo precision);    // mereu 2 zecimale
 }
 public sealed record PrecisionInfo(byte PriceDecimals, byte QuantityDecimals, byte AmountDecimals,
     MidpointRounding Rounding);
@@ -871,7 +878,7 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 | Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
 | Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate. Implementat (21.11.2026, `/admin/config/roluri`, familia „Securitate”): comutatorul „Pe rol” (macheta 07e: listă de roluri, matricea resursă × acțiune, copiere, ștergere pentru rolurile clientului) / „Roluri și utilizatori” (rândurile sunt rolurile cu utilizatorii lor dedesubt, coloanele sunt resursele și acțiunile; filtru pe firmă — sau „Toate firmele” —, pe modul și „Doar cu excepții”; clic pe celula unui utilizator revocă un drept moștenit sau adaugă unul lipsă; lista „Modificări nesalvate” cere motivul drepturilor adăugate). Drepturile rolului se schimbă doar din „Pe rol”. Fără „Raport utilizatori și drepturi” și „Compară cu alt rol” (rămân de făcut) |
 | Serii de numerotare | Pe firmă și tip de document | Avertizare la modificarea unei serii fiscale folosite |
-| Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale |
+| Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale. Implementat (21.11.2026, `/admin/config/precizie`, familia „Documente”, cu `Core.Precision.Manage`), după macheta 07d; atribuirea pe firmă se face din fișa firmei (vezi 3.5) |
 | Audit | Căutare și detaliu de modificare (înainte / după) | Doar citire |
 | Licență | Module active, limite, valabilitate; încărcare fișier nou | — |
 | Monitor integrări | Outbox: în așteptare, eșuate, reîncercare manuală | — |

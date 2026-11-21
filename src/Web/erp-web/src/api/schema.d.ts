@@ -1557,6 +1557,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/precision-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPrecisionPolicies"];
+        put?: never;
+        post: operations["CreatePrecisionPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/precision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ResolvePrecision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/precision-policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdatePrecisionPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3381,6 +3429,63 @@ export interface components {
             validFrom: null | string;
             /** Format: date */
             validTo: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        MidpointRounding: number;
+        PrecisionInfo: {
+            /** Format: uint8 */
+            priceDecimals: number;
+            /** Format: uint8 */
+            quantityDecimals: number;
+            /** Format: uint8 */
+            amountDecimals: number;
+            rounding: components["schemas"]["MidpointRounding"];
+        };
+        PrecisionPageDto: {
+            policies: components["schemas"]["PrecisionPolicyItemDto"][];
+            companies: components["schemas"]["PrecisionUsageDto"][];
+            /** Format: int32 */
+            itemOverrides: number;
+        };
+        PrecisionPolicyItemDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            pricePrecision: number;
+            /** Format: uint8 */
+            quantityPrecision: number;
+            /** Format: uint8 */
+            amountPrecision: number;
+            /** Format: uint8 */
+            roundingMode: number;
+            isActive: boolean;
+            /** Format: int32 */
+            companyCount: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        PrecisionUsageDto: {
+            /** Format: int32 */
+            companyId: number;
+            companyName: string;
+            /** Format: int32 */
+            policyId: number;
+        };
+        SavePrecisionPolicy: {
+            /** Format: int32 */
+            id: null | number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            pricePrecision: number;
+            /** Format: uint8 */
+            quantityPrecision: number;
+            /** Format: uint8 */
+            roundingMode: number;
             isActive: boolean;
             /** Format: byte */
             rowVersion: null | string;
@@ -8585,6 +8690,188 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SaveDimensionValue"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPrecisionPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecisionPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreatePrecisionPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePrecisionPolicy"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResolvePrecision: {
+        parameters: {
+            query?: {
+                ItemId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecisionInfo"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePrecisionPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePrecisionPolicy"];
             };
         };
         responses: {

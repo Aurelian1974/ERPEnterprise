@@ -2159,3 +2159,14 @@ button.cell:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Configurare › Precizie (macheta 07d) ---------- */
+
+.segmented.digits {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.rates-table tr.current td {
+  background: var(--info-bg);
+  font-weight: 600;
+}

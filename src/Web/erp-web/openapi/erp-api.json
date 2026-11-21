@@ -7112,6 +7112,225 @@
           }
         }
       }
+    },
+    "/api/core/precision-policies": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetPrecisionPolicies",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrecisionPageDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "CreatePrecisionPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePrecisionPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/precision": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "ResolvePrecision",
+        "parameters": [
+          {
+            "name": "ItemId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrecisionInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/precision-policies/{id}": {
+      "put": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "UpdatePrecisionPolicy",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePrecisionPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14342,6 +14561,186 @@
               "string"
             ],
             "format": "date"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "MidpointRounding": {
+        "type": "integer"
+      },
+      "PrecisionInfo": {
+        "required": [
+          "priceDecimals",
+          "quantityDecimals",
+          "amountDecimals",
+          "rounding"
+        ],
+        "type": "object",
+        "properties": {
+          "priceDecimals": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "quantityDecimals": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "amountDecimals": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "rounding": {
+            "$ref": "#/components/schemas/MidpointRounding"
+          }
+        }
+      },
+      "PrecisionPageDto": {
+        "required": [
+          "policies",
+          "companies",
+          "itemOverrides"
+        ],
+        "type": "object",
+        "properties": {
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrecisionPolicyItemDto"
+            }
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrecisionUsageDto"
+            }
+          },
+          "itemOverrides": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PrecisionPolicyItemDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "pricePrecision",
+          "quantityPrecision",
+          "amountPrecision",
+          "roundingMode",
+          "isActive",
+          "companyCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pricePrecision": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "quantityPrecision": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "amountPrecision": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "roundingMode": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "companyCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "PrecisionUsageDto": {
+        "required": [
+          "companyId",
+          "companyName",
+          "policyId"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "policyId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SavePrecisionPolicy": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "pricePrecision",
+          "quantityPrecision",
+          "roundingMode",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pricePrecision": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "quantityPrecision": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "roundingMode": {
+            "type": "integer",
+            "format": "uint8"
           },
           "isActive": {
             "type": "boolean"

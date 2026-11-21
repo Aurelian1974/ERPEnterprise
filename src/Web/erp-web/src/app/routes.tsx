@@ -33,6 +33,7 @@ export const routes = [
       { path: 'admin/config/roluri', element: <ConfigPage /> },
       { path: 'admin/config/cursuri', element: <ConfigPage /> },
       { path: 'admin/config/dimensiuni', element: <ConfigPage /> },
+      { path: 'admin/config/precizie', element: <ConfigPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

@@ -5,6 +5,7 @@ using Erp.Core.Application.Me;
 using Erp.Core.Application.NumberSeries;
 using Erp.Core.Application.Organization;
 using Erp.Core.Application.Partners;
+using Erp.Core.Application.Precision;
 using Erp.Core.Application.Anaf;
 using Erp.Core.Application.Settings;
 using Erp.Core.Application.Properties;
@@ -60,6 +61,7 @@ public static class CoreApiRegistration
         MapRoles(core);
         MapExchangeRates(core);
         MapDimensions(core);
+        MapPrecision(core);
         MapEmployees(core);
         MapLicense(core);
         return endpoints;
@@ -305,6 +307,20 @@ public static class CoreApiRegistration
         core.MapPost("/users/{id:int}/revoke-sessions", (int id, RevokeUserSessionsBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new RevokeUserSessions(id, body.SessionId), ct))
             .WithName("RevokeUserSessions").Produces<bool>().SecurityAction();
+    }
+
+    // Configurare › Precizie (02.01, 3.5; macheta 07d): politicile de zecimale si precizia unui articol pe firma curenta.
+    private static void MapPrecision(RouteGroupBuilder core)
+    {
+        core.MapGet("/precision-policies", (ISender sender, CancellationToken ct) => sender.Send(new GetPrecisionPolicies(), ct))
+            .WithName("GetPrecisionPolicies").Produces<PrecisionPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/precision", ([AsParameters] ResolvePrecision query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("ResolvePrecision").Produces<PrecisionInfo>().ProducesValidationProblem();
+        core.MapPost("/precision-policies", (SavePrecisionPolicy body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePrecisionPolicy").Saves();
+        core.MapPut("/precision-policies/{id:int}", (int id, SavePrecisionPolicy body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePrecisionPolicy").Saves();
     }
 
     // Configurare › Dimensiuni (02.01, 3.5; macheta 07k): centre de cost, proiecte, gestiuni, santiere.
