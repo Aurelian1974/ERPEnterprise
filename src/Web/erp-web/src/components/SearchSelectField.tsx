@@ -1,12 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { DropDownListComponent, type FilteringEventArgs } from '@syncfusion/ej2-react-dropdowns';
 import { t } from '../i18n';
 import type { Option } from './Field';
 
 /**
- * Alegerea dintr-o lista mare cautata pe server (parteneri, angajati): lista arata initial doar optiunea curenta, iar textul
- * tastat in filtru aduce rezultatele de la server. Valoarea formularului e id-ul numeric sau null.
+ * Alegerea dintr-o lista mare cautata pe server (parteneri, angajati): lista arata optiunea curenta si primele rezultate ale
+ * serverului (cautarea fara text, incarcata o data la afisarea campului), iar textul tastat in filtru aduce rezultatele
+ * potrivite. Valoarea formularului e id-ul numeric sau null.
  */
 export function SearchSelectField<T extends FieldValues>({ control, name, label, disabled, className, current, search }: {
   readonly control: Control<T>;
@@ -21,8 +22,27 @@ export function SearchSelectField<T extends FieldValues>({ control, name, label,
   const id = `f-${name.replace(/[^A-Za-z0-9]/g, '-')}`;
   // Proprietati stabile (UI-12): lista initiala se schimba doar cu optiunea curenta; `search` trebuie sa fie o functie stabila
   // (definita in afara componentei sau memorata), altfel filtrul se recreeaza la fiecare randare.
-  const currentKey = current === undefined ? '' : `${current.value}|${current.text}`;
-  const initial = useMemo(() => (current === undefined ? [] : [current]), [currentKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [first, setFirst] = useState<readonly Option[]>([]);
+  useEffect(() => {
+    let active = true;
+    void search('').then(
+      (options) => {
+        if (active) {
+          setFirst(options);
+        }
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [search]);
+  // Lista se schimba doar cand se schimba continutul (optiunea curenta sau primele rezultate), nu la fiecare randare.
+  const key = JSON.stringify([current ?? null, first]);
+  const initial = useMemo(() => {
+    const [selected, options] = JSON.parse(key) as [Option | null, Option[]];
+    return selected === null ? options : [selected, ...options.filter((o) => o.value !== selected.value)];
+  }, [key]);
   const filtering = useMemo(() => (args: FilteringEventArgs) => {
     args.preventDefaultAction = true;
     const text = args.text.trim();
