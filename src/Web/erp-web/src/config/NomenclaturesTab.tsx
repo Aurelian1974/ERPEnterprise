@@ -348,6 +348,14 @@ const setSchema = z.object({
   if (v.lines.filter((l) => l.isBase).length !== 1) {
     ctx.addIssue({ code: 'custom', path: ['lines'], message: 'Setul are exact o UM de bază, cu factorul 1.' });
   }
+  v.lines.forEach((l, i) => {
+    const factor = Number(l.factorToBase.trim().replace(',', '.'));
+    if (l.isBase && factor !== 1) {
+      ctx.addIssue({ code: 'custom', path: ['lines', i, 'factorToBase'], message: t('nom.invalidRow', { row: i + 1, message: t('nom.set.baseFactor') }) });
+    } else if (!l.isBase && /^\d{1,13}([.,]\d{1,6})?$/.test(l.factorToBase.trim()) && !(factor > 0)) {
+      ctx.addIssue({ code: 'custom', path: ['lines', i, 'factorToBase'], message: t('nom.invalidRow', { row: i + 1, message: t('nom.set.positiveFactor') }) });
+    }
+  });
 });
 type SetValues = z.infer<typeof setSchema>;
 
@@ -454,7 +462,8 @@ function UomSetForm({ set, units, onDone }: { readonly set: UomSet | undefined; 
   return (
     <form className="node-form" noValidate onSubmit={(e) => void submit(e)}>
       <h2 className="form-title">{set === undefined ? t('nom.set.newTitle') : set.name}</h2>
-      <ErrorBanner message={error ?? form.formState.errors.lines?.message} />
+      <ErrorBanner message={error ?? form.formState.errors.lines?.message
+        ?? (Array.isArray(form.formState.errors.lines) ? form.formState.errors.lines.find((l) => l?.factorToBase?.message !== undefined)?.factorToBase?.message : undefined)} />
       <div className="form-body">
         <div className="grid g2">
           <TextField control={form.control} name="code" label={t('field.code')} upper />

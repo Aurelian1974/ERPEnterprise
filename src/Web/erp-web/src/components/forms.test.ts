@@ -13,6 +13,11 @@ describe('formulare', () => {
     expect(banner).toBeUndefined();
   });
 
+  it('erorile fără câmp în formular apar în banner cu textul lor', () => {
+    const error = new ApiError(400, { title: 'Datele trimise nu sunt valide.', code: 'CORE_VALIDATION', errors: { 'lines[0].factorToBase': ['UM de bază are factorul 1.'] } });
+    expect(applyServerErrors(error, vi.fn(), ['code'])).toBe('UM de bază are factorul 1.');
+  });
+
   it('un conflict 409 devine mesajul de sus', () => {
     const banner = applyServerErrors(new ApiError(409, { title: 'Codul firmei există deja.', code: 'CORE_DUPLICATE_CODE' }), vi.fn(), ['code']);
     expect(banner).toBe('Codul firmei există deja.');

@@ -11,15 +11,19 @@ export function applyServerErrors<T extends FieldValues>(error: unknown, setErro
   if (!(error instanceof ApiError)) {
     return t('app.loadError');
   }
-  let unmatched = false;
+  // Erorile fara camp in formular (ex. „lines[0].factorToBase”) ajung in banner cu textul lor, nu doar titlul generic.
+  const unmatched: string[] = [];
   for (const [field, messages] of Object.entries(error.fieldErrors)) {
     if (fields.includes(field)) {
       setError(field as Path<T>, { type: 'server', message: messages.join(' ') });
     } else {
-      unmatched = true;
+      unmatched.push(...messages);
     }
   }
-  return Object.keys(error.fieldErrors).length === 0 || unmatched ? error.message : undefined;
+  if (Object.keys(error.fieldErrors).length === 0) {
+    return error.message;
+  }
+  return unmatched.length === 0 ? undefined : [...new Set(unmatched)].join(' · ');
 }
 
 export const required = z.string().trim().min(1, t('common.required'));

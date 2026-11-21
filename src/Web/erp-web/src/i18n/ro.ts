@@ -630,6 +630,8 @@ export const ro = {
   'nom.set.addLine': '+ UM',
   'nom.set.base': 'Bază',
   'nom.set.factor': 'Factor la bază',
+  'nom.set.baseFactor': 'UM de bază are factorul 1.',
+  'nom.set.positiveFactor': 'Factorul este un număr pozitiv.',
   'nom.set.usage': 'Folosit de {count} articole; UM de bază a lor urmează setul.',
   'nom.group.hint': 'Arbore de grupe pe mai multe niveluri. O grupă cu subgrupe sau articole active nu se dezactivează.',
   'nom.group.new': '+ Grupă',
