@@ -6,6 +6,7 @@ import { ColumnDirective, ColumnsDirective, GridComponent } from '@syncfusion/ej
 import { z } from 'zod';
 import { ErrorBanner, FieldIdPrefix, SelectField, SwitchField, TextField, type Option } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
+import { currencyOptions, useCurrencies } from '../rates/ratesApi';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
@@ -167,6 +168,9 @@ export function PartnerBankAccountsTab({ partner, canManage }: { readonly partne
     : { iban: account.iban, bankName: account.bankName, currency: account.currency, isDefault: account.isDefault, isActive: account.isActive };
   const form = useForm<BankValues>({ resolver: zodResolver(bankSchema) as Resolver<BankValues>, defaultValues: defaults });
   useEffect(() => form.reset(defaults), [selected]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Moneda din nomenclatorul de valute (02.01, 3.5): cele active, plus cea a contului.
+  const currencies = useCurrencies();
+  const currencyChoices = useMemo(() => currencyOptions(currencies.data, defaults.currency), [currencies.data, defaults.currency]);
   const guard = useUnsavedChanges(selected !== undefined && form.formState.isDirty);
   const onRowSelected = useCallback((args: { data: PartnerBankAccount }) => {
     if (canManage) {
@@ -218,7 +222,7 @@ export function PartnerBankAccountsTab({ partner, canManage }: { readonly partne
             <ErrorBanner message={save.error} />
             <div className="grid g3">
               <TextField control={form.control} name="iban" label={t('field.iban')} upper className="span2" />
-              <TextField control={form.control} name="currency" label={t('field.currency')} upper />
+              <SelectField control={form.control} name="currency" label={t('field.currency')} options={currencyChoices} />
               <TextField control={form.control} name="bankName" label={t('field.bank')} className="span2" />
               <SwitchField control={form.control} name="isDefault" label={t('partner.bank.isDefault')} />
               <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />

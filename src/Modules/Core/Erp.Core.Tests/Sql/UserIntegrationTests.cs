@@ -71,6 +71,7 @@ public sealed class UserDatabase(SqlServerFixture sql) : IAsyncLifetime
 public sealed partial class UserIntegrationTests(UserDatabase database) : IClassFixture<UserDatabase>
 {
     private readonly FakeLicense license = new();
+    private readonly FakeBnrSource bnr = new();
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -87,10 +88,12 @@ public sealed partial class UserIntegrationTests(UserDatabase database) : IClass
             new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
         var context = new FakeContext { UserId = userId ?? database.AdminId, CompanyId = database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.RoleManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage,
-            CorePermissions.ItemView, CorePermissions.ItemManage, CorePermissions.PartnerView, CorePermissions.PartnerManage]);
+            CorePermissions.ItemView, CorePermissions.ItemManage, CorePermissions.PartnerView, CorePermissions.PartnerManage,
+            CorePermissions.ExchangeRateManageManual, CorePermissions.NomenclatureManage]);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();
+        services.AddSingleton<Erp.Core.Application.ExchangeRates.IBnrRatesSource>(bnr);
         using var scope = services.BuildServiceProvider().CreateScope();
         return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
     }

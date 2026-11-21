@@ -18,6 +18,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM core.Company WHERE Id = @CompanyId)
         THROW 50021, N'Firma nu există.', 1;
 
+    -- Moneda din nomenclatorul de valute (21.11.2026): activa sau, la un cont existent, cea pe care o avea deja.
+    IF NOT EXISTS (SELECT 1 FROM core.Currency WHERE Code = @Currency
+                   AND (IsActive = 1 OR EXISTS (SELECT 1 FROM core.CompanyBankAccount WHERE Id = @Id AND Currency = @Currency)))
+        THROW 50021, N'Moneda contului nu există sau nu e activă în nomenclatorul de valute.', 1;
+
     IF EXISTS (SELECT 1 FROM core.CompanyBankAccount WITH (UPDLOCK, HOLDLOCK) WHERE Iban = @Iban AND (@Id IS NULL OR Id <> @Id))
         THROW 50023, N'IBAN-ul este deja înregistrat.', 1;
 

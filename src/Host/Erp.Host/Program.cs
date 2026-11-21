@@ -53,6 +53,10 @@ builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 // Nucleul (02.01): pipeline-ul comun al comenzilor, contextul cererii, ProblemDetails. Modulele se adauga aici, dupa licenta.
 builder.Services.AddErpMediator();
 // Licenta (08, 4.1): din baza, reincarcata de LicenseRefresher la pornire, la 5 minute si dupa fiecare incarcare.
+// Cursurile BNR (02.01, 4.3): adresele fisierelor, inlocuibile din configurare daca BNR le muta.
+builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
+    new Uri(builder.Configuration["Bnr:DailyUrl"] ?? Erp.Bnr.BnrOptions.Default.DailyUrl.ToString()),
+    new Uri(builder.Configuration["Bnr:TenDaysUrl"] ?? Erp.Bnr.BnrOptions.Default.TenDaysUrl.ToString())));
 builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(development));
 builder.Services.AddErpApi();
 

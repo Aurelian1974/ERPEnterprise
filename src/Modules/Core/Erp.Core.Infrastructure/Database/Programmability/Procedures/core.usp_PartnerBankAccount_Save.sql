@@ -18,6 +18,11 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM core.Partner WHERE Id = @PartnerId)
         THROW 50027, N'Partenerul nu există.', 1;
 
+    -- Moneda din nomenclatorul de valute (21.11.2026): activa sau, la un cont existent, cea pe care o avea deja.
+    IF NOT EXISTS (SELECT 1 FROM core.Currency WHERE Code = @Currency
+                   AND (IsActive = 1 OR EXISTS (SELECT 1 FROM core.PartnerBankAccount WHERE Id = @Id AND Currency = @Currency)))
+        THROW 50021, N'Moneda contului nu există sau nu e activă în nomenclatorul de valute.', 1;
+
     IF EXISTS (SELECT 1 FROM core.PartnerBankAccount WITH (UPDLOCK, HOLDLOCK)
                WHERE PartnerId = @PartnerId AND Iban = @Iban AND (@Id IS NULL OR Id <> @Id))
         THROW 50023, N'IBAN-ul este deja înregistrat la acest partener.', 1;

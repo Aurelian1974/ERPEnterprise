@@ -97,7 +97,7 @@ Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; u
 
 - Tabelele `core.CompanyGroup`, `Company`, `Branch`, `Location`, `CompanyBankAccount` (migrarea `2026.11.006`). CUI-ul se salvează fără prefixul RO (prefixul rezultă din `VatPayer`), validat cu cifra de control ANAF. Numărul de registrul comerțului se validează doar ca formă (clasic și formatul unic ONRC, Legea 265/2022); cifra de control a formatului nou nu se recalculează, pentru că nu am găsit o descriere oficială sigură a algoritmului. IBAN-ul se validează mod 97 (ISO 13616).
 - `IsGroupParent` nu e o coloană: firma-mamă e `CompanyGroup.ParentCompanyId` și trebuie să fie în grup sau într-un subgrup. Din machetă s-a adăugat `IncludeInConsolidation`. `FunctionalCurrency` e fixă `RON` (`CHECK`).
-- Firma folosește țările și județele livrate acum (`core.Country`: România, statele UE și câteva frecvente; `core.County`: cele 41 de județe și București, cod ISO 3166-2:RO) și politica de zecimale STANDARD. Localitatea rămâne text până la SIRUTA (etapa 5). Moneda contului bancar primește cheie străină odată cu nomenclatorul de valute (etapa 5). `LogoAttachmentId` așteaptă atașamentele (etapa 10).
+- Firma folosește țările și județele livrate acum (`core.Country`: România, statele UE și câteva frecvente; `core.County`: cele 41 de județe și București, cod ISO 3166-2:RO) și politica de zecimale STANDARD. Localitatea rămâne text până la SIRUTA (etapa 5). Moneda contului bancar are cheie străină spre nomenclatorul de valute (migrarea `2026.11.016`, 21.11.2026) și se alege dintre monedele active. `LogoAttachmentId` așteaptă atașamentele (etapa 10).
 - O firmă activă trebuie să aibă CUI-ul în licență (4.4): altfel 409 `CORE_COMPANY_NOT_LICENSED`; în `Development`, fără licență, orice CUI e acceptat. Salvarea firmei publică `FirmaModificata`.
 - Acces: arborele arată firmele cu `Core.Company.View` (pe firmă sau la nivelul instalării) și grupurile care le conțin. Firma curentă vine din antetul `X-Company-Id`, acceptat numai dacă utilizatorul are un rol pe acea firmă (altfel firma efectivă devine 0). `X-Company-Id: 0` înseamnă nivelul instalării: numai rolurile fără firmă (ADMIN). Grupurile și firmele noi se creează doar la acest nivel; punctele de lucru, locațiile, conturile bancare și seriile, numai pe firma lor.
 - Ecranul: arbore (Syncfusion TreeView) cu căutare fără diacritice, filtrele „Toate”, „Doar firme”, „Arată inactive”, „Extinde tot”; fișa cu tab-urile Date generale, Conturi bancare și Serii (doar citire, cu legătură spre Configurare › Serii). Tab-urile Structură, Setări, Certificat ANAF și Istoric, precum și Export/Import, vin cu etapele care le dețin (Istoric cu auditul, etapa 10; certificatul cu Integrări). Fără `Core.Company.Manage`, fișele sunt doar pentru citire.
@@ -342,6 +342,13 @@ Mărime: S = mic, M = mediu, L = mare.
 | `InstallationLicense` | `LicenseId`, `CustomerName`, `FiscalCodes`, `Modules`, `Limits` (case POS, angajați), `ValidUntil`, `Signature` | Verificată la pornire și zilnic (fluxul 4.4) |
 | `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu Data Protection, cu inelul de chei în bază (`NET-17`; 08, secțiunea 5.12) |
 
+**Valute și cursuri: detalii de implementare** (deciziile lui Aurelian din 21.11.2026; macheta 07b).
+
+- Migrarea `2026.11.016`: `core.Currency` (cod ISO 4217 ca cheie, denumire, zecimale, activ; RON e baza și rămâne activ, `CK_Currency_BaseActive`), `core.ExchangeRate` (`Rate decimal(19,6)` = lei pentru `Multiplier` unități, `Source` `BNR` / `MANUAL`, `Note` obligatoriu la manual, unic pe monedă + zi + sursă; RON nu are curs), tipul `core.ExchangeRateList` și cheile străine ale monedei din `CompanyBankAccount` și `PartnerBankAccount` (monedele conturilor existente devin active). Datele livrate `12_Currencies.sql`: monedele publicate de BNR, cu denumiri în română; active la prima livrare RON, EUR, USD, GBP, CHF.
+- Sursa BNR: fișierele XML zilnic (`https://www.bnr.ro/nbrfxrates.xml`) și pe 10 zile (`nbrfxrates10days.xml`), actualizate puțin după ora 13:00 în zilele bancare; BNR cere HTTPS (TLS 1.2+) și descărcări rare. Adresele se pot schimba din configurare (`Bnr:DailyUrl`, `Bnr:TenDaysUrl`, în `Erp.Host` și `Erp.Worker`). Citirea (`Shared/Erp.Bnr`, folosit de Nucleu și de `Erp.Worker`) caută `Cube` cu atributul `date` și `Rate` cu `currency` și `multiplier` după numele local, deci nu depinde de spațiul de nume (`http://www.bnr.ro/xsd` în arhive, `https://…` din 2026). Un răspuns care nu e XML de cursuri (de exemplu o pagină de eroare) se refuză cu mesaj clar (503 `CORE_BNR_UNAVAILABLE` la preluarea din ecran). Structura fișierului nu a putut fi verificată direct pe 21.11.2026: site-ul BNR refuză cererile din mediul de dezvoltare cloud; se verifică la prima preluare de pe un server real.
+- `IExchangeRateProvider` (`core.usp_ExchangeRate_Get`): cursul BNR al zilei sau ultimul anterior, cu data lui; RON = 1; fără curs, `CORE_EXCHANGE_RATE_NOT_FOUND`. Cursul manual nu înlocuiește cursul BNR pe documente (pentru el, cererea va indica explicit sursa `MANUAL`).
+- API: `GET /currencies`, `GET /exchange-rates?from=&to=`, `GET /exchange-rates/rate?currency=&date=`, `POST /exchange-rates/manual`, `PUT /exchange-rates/manual/{id}` (`Core.ExchangeRate.ManageManual`, auditate; un curs BNR răspunde 50008), `POST /exchange-rates/import-bnr` (`Core.ExchangeRate.ManageManual`, auditat), `PUT /currencies/{code}/active` (`Core.Nomenclature.Manage`, auditat).
+
 ## 4. Fluxuri principale
 
 ### 4.1 Pipeline-ul comun al comenzilor
@@ -388,7 +395,7 @@ Caz limită: două validări simultane pe aceeași serie se serializează pe râ
 
 ### 4.3 Cursul valutar
 
-1. Jobul zilnic din Integrări preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`.
+1. Jobul zilnic preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`. Până la modulul Integrări (decizia lui Aurelian din 21.11.2026), jobul stă în `Erp.Worker` (`core-bnr-rates`, de luni până vineri la :15 și :45 între 13:00 și 16:45, ora României; se oprește când cursul zilei există), iar în Configurare › Cursuri valutare butonul „Preia acum de la BNR” aduce la cerere cursurile ultimelor zile bancare. Integrări poate prelua jobul fără schimbări în Nucleu.
 2. Nucleul salvează cursurile cu `Source = BNR` și publică `CursValutarActualizat`.
 3. `IExchangeRateProvider.GetRate(currency, date)` întoarce cursul BNR din ziua cerută; dacă ziua nu are curs (weekend, sărbătoare), întoarce ultimul curs anterior și data lui.
 4. Documentele memorează cursul folosit; o corectare ulterioară a cursului nu modifică documentele validate.
@@ -584,7 +591,8 @@ public interface IDbSession
 // Scriere cursuri (folosit doar de Integrări)
 public interface IExchangeRateWriter
 {
-    Task SaveBnrRatesAsync(DateOnly rateDate, IReadOnlyList<ExchangeRateDto> rates, CancellationToken ct);
+    // Una sau mai multe zile (fișierul BNR pe 10 zile); întoarce cursurile adăugate (21.11.2026).
+    Task<IReadOnlyList<ExchangeRateDto>> SaveBnrRatesAsync(IReadOnlyList<ExchangeRateDto> rates, CancellationToken ct);
 }
 
 // Datele firmei pentru documente (emitent e-Factura, antet tipărire)
@@ -694,7 +702,8 @@ Proceduri stocate principale (convenție de nume `core.usp_<Entitate>_<Acțiune>
 | --- | --- | --- |
 | `core.usp_NumberSeries_Next` | Alocă următorul număr în tranzacția curentă | Da |
 | `core.usp_ExchangeRate_Get` | Curs pentru monedă și zi, cu fallback la ultima zi cu curs | Da |
-| `core.usp_ExchangeRate_SaveBatch` | Salvează cursurile unei zile (table-valued parameter) | Nu |
+| `core.usp_ExchangeRate_SaveBatch` | Salvează cursurile BNR lipsă, pe una sau mai multe zile (table-valued parameter); o monedă nouă publicată de BNR se adaugă inactivă | Nu |
+| `core.usp_ExchangeRate_SaveManual`, `usp_ExchangeRate_List`, `usp_Currency_List`, `usp_Currency_SetActive` | Cursul manual (motiv obligatoriu); ecranul Cursuri valutare; lista valutelor; activarea unei monede | Nu |
 | `core.usp_Partner_Save`, `usp_Partner_Search` | Salvare cu validare de duplicat CUI; căutare pagină | Search: da |
 | `core.usp_Item_Save`, `usp_Item_Search` | Idem pentru articole, cu UM și coduri de bare (TVP) | Search: da |
 | `core.usp_User_GetPermissions` | Permisiunile efective ale unui utilizator pe o firmă | Nu (doar Nucleu) |
@@ -849,7 +858,7 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 | Parteneri | Listă cu căutare după nume, cod, CUI; fișă: Date, Adrese, Conturi bancare, Contacte, Istoric | Buton „Preia de la ANAF” după CUI |
 | Articole | Listă cu filtre pe stocabil, grupă și tip; fișă: Date generale, UM și conversii, Proprietăți, Coduri de bare, Istoric, plus Contabilitate și Stoc pentru firma curentă (tab-uri ale modulelor Finanțe și Stocuri) | Tab-urile de modul apar doar dacă modulul e licențiat |
 | Nomenclatoare | Valute, cote TVA, UM, țări, județe, localități, grupe de articole | Editare în tabel, cu validare la salvare |
-| Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | — |
+| Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | Implementat (21.11.2026, `/admin/config/cursuri`, familia „Nomenclatoare”, cu `Core.Nomenclature.Manage` sau `Core.ExchangeRate.ManageManual`), după macheta 07b: cursurile BNR pe zile (intervalul 7–92 de zile, monedele afișate se aleg), zilele fără curs arată ziua cursului folosit; cursurile manuale; monedele active („+ monedă”, cu `Core.Nomenclature.Manage`); „Preia acum de la BNR” (cu `Core.ExchangeRate.ManageManual`). Fără „Export Excel” și „Raport istoric cursuri” (rămân de făcut) |
 | Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): Roluri și firme = rolul pe un nod (instalare, grup, firmă, punct de lucru, locație), cu coloana „Se aplică pe”; Preferințe = matricea de notificări (limba și firma implicită rămân în Cont, ca în 06b); fără export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
 | Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
 | Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate. Implementat (21.11.2026, `/admin/config/roluri`, familia „Securitate”): comutatorul „Pe rol” (macheta 07e: listă de roluri, matricea resursă × acțiune, copiere, ștergere pentru rolurile clientului) / „Roluri și utilizatori” (rândurile sunt rolurile cu utilizatorii lor dedesubt, coloanele sunt resursele și acțiunile; filtru pe firmă — sau „Toate firmele” —, pe modul și „Doar cu excepții”; clic pe celula unui utilizator revocă un drept moștenit sau adaugă unul lipsă; lista „Modificări nesalvate” cere motivul drepturilor adăugate). Drepturile rolului se schimbă doar din „Pe rol”. Fără „Raport utilizatori și drepturi” și „Compară cu alt rol” (rămân de făcut) |

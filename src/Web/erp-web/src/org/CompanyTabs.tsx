@@ -7,6 +7,7 @@ import { Link } from 'react-router';
 import { z } from 'zod';
 import { ErrorBanner, FieldIdPrefix, SelectField, SwitchField, TextField, type Option } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
+import { currencyOptions, useCurrencies } from '../rates/ratesApi';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { t } from '../i18n';
@@ -34,6 +35,9 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
     : { iban: account.iban, bankName: account.bankName, currency: account.currency, isDefault: account.isDefault, isActive: account.isActive };
   const form = useForm<BankValues>({ resolver: zodResolver(bankSchema) as Resolver<BankValues>, defaultValues: defaults });
   useEffect(() => form.reset(defaults), [selected]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Moneda din nomenclatorul de valute (02.01, 3.5): cele active, plus cea a contului.
+  const currencies = useCurrencies();
+  const currencyChoices = useMemo(() => currencyOptions(currencies.data, defaults.currency), [currencies.data, defaults.currency]);
   // Contul deschis in editare intra in garda modificarilor nesalvate (UI-18) cat timp formularul exista.
   const guard = useUnsavedChanges(selected !== undefined && form.formState.isDirty);
   // Handler stabil (UI-12): o functie noua la fiecare randare face grila sa se relege.
@@ -93,7 +97,7 @@ export function BankAccountsTab({ company, canManage }: { readonly company: Comp
             <ErrorBanner message={error} />
             <div className="grid g3">
               <TextField control={form.control} name="iban" label={t('field.iban')} upper className="span2" />
-              <TextField control={form.control} name="currency" label={t('field.currency')} upper />
+              <SelectField control={form.control} name="currency" label={t('field.currency')} options={currencyChoices} />
               <TextField control={form.control} name="bankName" label={t('field.bank')} className="span2" />
               <SwitchField control={form.control} name="isDefault" label={t('field.isDefault')} />
               <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />

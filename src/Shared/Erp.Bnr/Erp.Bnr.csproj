@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cursurile de referinta BNR in format XML (02.01, 4.3): citirea fisierului si clientul HTTP, folosite de Nucleu (preluarea la
+       cerere) si de Erp.Worker (jobul zilnic). Fara dependente de module. -->
+
+</Project>

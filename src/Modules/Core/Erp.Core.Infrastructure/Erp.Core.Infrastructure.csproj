@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Erp.Core.Application\Erp.Core.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Erp.Bnr\Erp.Bnr.csproj" />
     <ProjectReference Include="..\..\..\Shared\Erp.Licensing\Erp.Licensing.csproj" />
   </ItemGroup>
 

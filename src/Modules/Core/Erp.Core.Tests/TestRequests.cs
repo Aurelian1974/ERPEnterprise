@@ -294,6 +294,10 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Users.IUserStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Users.IRoleStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Organization.IOwnerAccess>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.ExchangeRates.IExchangeRateStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.ExchangeRates.IBnrRatesSource>(_ => throw new NotSupportedException());
+        services.AddSingleton<IExchangeRateProvider>(_ => throw new NotSupportedException());
+        services.AddSingleton<IExchangeRateWriter>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Employees.IEmployeeStore>(_ => throw new NotSupportedException());
         services.AddSingleton<IIdentityAccountAdmin>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Anaf.IAnafVatRegistry>(new FakeAnafRegistry());

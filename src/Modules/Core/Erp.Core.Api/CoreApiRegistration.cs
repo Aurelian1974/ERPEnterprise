@@ -1,3 +1,4 @@
+using Erp.Core.Application.ExchangeRates;
 using Erp.Core.Application.Licensing;
 using Erp.Core.Application.Me;
 using Erp.Core.Application.NumberSeries;
@@ -56,6 +57,7 @@ public static class CoreApiRegistration
         MapItems(core);
         MapUsers(core);
         MapRoles(core);
+        MapExchangeRates(core);
         MapEmployees(core);
         MapLicense(core);
         return endpoints;
@@ -301,6 +303,28 @@ public static class CoreApiRegistration
         core.MapPost("/users/{id:int}/revoke-sessions", (int id, RevokeUserSessionsBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new RevokeUserSessions(id, body.SessionId), ct))
             .WithName("RevokeUserSessions").Produces<bool>().SecurityAction();
+    }
+
+    // Configurare › Cursuri valutare (02.01, 4.3; macheta 07b): valutele, cursurile BNR (doar citire) si cele manuale.
+    private static void MapExchangeRates(RouteGroupBuilder core)
+    {
+        core.MapGet("/exchange-rates", ([AsParameters] GetExchangeRates query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetExchangeRates").Produces<ExchangeRatesDto>().ProducesValidationProblem();
+        core.MapGet("/currencies", (ISender sender, CancellationToken ct) => sender.Send(new GetCurrencies(), ct))
+            .WithName("GetCurrencies").Produces<IReadOnlyList<CurrencyDto>>();
+        core.MapGet("/exchange-rates/rate", ([AsParameters] GetExchangeRate query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetExchangeRate").Produces<ExchangeRateDto>().ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapPost("/exchange-rates/manual", (SaveManualExchangeRate body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateManualExchangeRate").Saves();
+        core.MapPut("/exchange-rates/manual/{id:int}", (int id, SaveManualExchangeRate body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateManualExchangeRate").Saves();
+        core.MapPost("/exchange-rates/import-bnr", (ISender sender, CancellationToken ct) => sender.Send(new ImportBnrRates(), ct))
+            .WithName("ImportBnrRates").Produces<BnrImportResultDto>().ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+        core.MapPut("/currencies/{code}/active", (string code, SetCurrencyActiveBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new SetCurrencyActive(code, body.IsActive, body.RowVersion), ct))
+            .WithName("SetCurrencyActive").Produces<byte[]>().ProducesValidationProblem().SecurityAction();
     }
 
     // Configurare › Roluri (02.01, 8; macheta 07e si vederea „Roluri și utilizatori”): Core.Role.Manage.

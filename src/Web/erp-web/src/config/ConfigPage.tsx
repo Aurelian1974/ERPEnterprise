@@ -20,6 +20,7 @@ import { ImportTab } from './ImportTab';
 import { PropertiesTab } from './PropertiesTab';
 import { NomenclaturesTab } from './NomenclaturesTab';
 import { RolesTab } from '../roles/RolesTab';
+import { ExchangeRatesTab } from '../rates/ExchangeRatesTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -33,6 +34,7 @@ export function ConfigPage() {
   const canImport = user.permissions.includes('Core.Import.Run');
   const canNomenclatures = user.permissions.includes('Core.Nomenclature.Manage');
   const canRoles = user.permissions.includes('Core.Role.Manage');
+  const canRates = canNomenclatures || user.permissions.includes('Core.ExchangeRate.ManageManual');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
@@ -41,11 +43,12 @@ export function ConfigPage() {
           : path.endsWith('/proprietati') && canProperties ? 'properties'
             : path.endsWith('/import') && canImport ? 'import'
               : path.endsWith('/nomenclatoare') && canNomenclatures ? 'nomenclatures'
-                : path.endsWith('/roluri') && canRoles ? 'roles' : 'series';
+                : path.endsWith('/roluri') && canRoles ? 'roles'
+                  : path.endsWith('/cursuri') && canRates ? 'rates' : 'series';
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
     : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings')
       : tab === 'properties' ? t('config.tab.properties') : tab === 'import' ? t('config.tab.import')
-        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : t('config.tab.series');
+        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -64,12 +67,17 @@ export function ConfigPage() {
             </NavLink>
           )}
         </div>
-        {(canAddressTypes || canPartnerGroups || canProperties || canNomenclatures) && (
+        {(canAddressTypes || canPartnerGroups || canProperties || canNomenclatures || canRates) && (
           <div className="family">
             <span className="family-name">{t('config.family.nomenclature')}</span>
             {canNomenclatures && (
               <NavLink to="/admin/config/nomenclatoare" className="tab">
                 ▤ {t('config.tab.nomenclatures')}
+              </NavLink>
+            )}
+            {canRates && (
+              <NavLink to="/admin/config/cursuri" className="tab">
+                € {t('config.tab.rates')}
               </NavLink>
             )}
             {canAddressTypes && (
@@ -120,7 +128,7 @@ export function ConfigPage() {
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
         : tab === 'settings' ? <SettingsTab /> : tab === 'properties' ? <PropertiesTab /> : tab === 'import' ? <ImportTab />
-        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} />
+        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

@@ -5,6 +5,7 @@ using Erp.Core.Infrastructure.Licensing;
 using Erp.Core.Infrastructure.Users;
 using Erp.Licensing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Erp.Core.Infrastructure;
 
@@ -31,6 +32,13 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Users.IUserStore, UserStore>();
         services.AddScoped<Application.Users.IRoleStore, RoleStore>();
         services.AddScoped<Application.Organization.IOwnerAccess, Organization.OwnerAccess>();
+        // Valute si cursuri (02.01, 4.3): adresele BNR implicite, inlocuibile din configurare (Bnr:DailyUrl, Bnr:TenDaysUrl).
+        services.TryAddSingleton(Erp.Bnr.BnrOptions.Default);
+        services.AddSingleton(_ => new Erp.Bnr.BnrRatesClient(new HttpClient { Timeout = TimeSpan.FromSeconds(30) }));
+        services.AddScoped<Application.ExchangeRates.IExchangeRateStore, ExchangeRates.ExchangeRateStore>();
+        services.AddScoped<Application.ExchangeRates.IBnrRatesSource, ExchangeRates.BnrRatesSource>();
+        services.AddScoped<IExchangeRateProvider, ExchangeRates.ExchangeRateProvider>();
+        services.AddScoped<IExchangeRateWriter, ExchangeRates.ExchangeRateWriter>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));
         services.AddScoped<Application.Anaf.IAnafVatRegistry, Anaf.AnafVatRegistry>();

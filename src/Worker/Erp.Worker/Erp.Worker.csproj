@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Erp.Hosting\Erp.Hosting.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Bnr\Erp.Bnr.csproj" />
+    <ProjectReference Include="..\..\Modules\Core\Erp.Core.Contracts\Erp.Core.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
