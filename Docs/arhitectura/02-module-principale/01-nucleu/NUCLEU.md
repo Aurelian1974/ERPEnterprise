@@ -296,6 +296,31 @@ Implementare: migrarea `2026.11.014` (`core.UserPermissionOverride`, tipurile `c
 
 ![Utilizator extern](ecrane/06c-utilizator-extern.png)
 
+#### 3.4.1 Extinderi aprobate pentru utilizatori și drepturi (revenim asupra lor mai târziu)
+
+**Stare: aprobat de Aurelian (21.11.2026), neimplementat; revenim asupra lor mai târziu.** Lista a pornit de la ce oferă alte ERP-uri (SAP, Microsoft Dynamics 365, Oracle NetSuite, Odoo, Charisma, WinMentor Enterprise, Senior ERP) față de ce există deja: conturi de angajați și de externi, roluri pe instalare / grup / firmă / punct de lucru / locație, matricea de drepturi cu excepții, proprietarul articolelor și partenerilor din nodul din antet, 2FA, sesiuni și istoric. Fiecare punct se detaliază (model, reguli, ecran) înainte de implementare. Ordinea propusă pentru început: 1, 3, 2; punctul 4 odată cu modulul Stocuri.
+
+| Nr. | Extindere | Ce înseamnă | Inspirație | Mărime |
+| --- | --- | --- | --- | --- |
+| 1 | Raport „cine poate face ce” și „de ce are dreptul” | Pentru un drept: toți utilizatorii care îl au, pe ce firmă sau nod. Pentru un utilizator: fiecare drept explicat (rolul R pe nodul N, excepție sau Administrator). Include „Raport utilizatori și drepturi” și „Compară cu alt rol” din macheta 07e | SAP SUIM, Dynamics „Security diagnostics” | M |
+| 2 | Drepturi incompatibile | Perechi de drepturi care nu trebuie să ajungă la același om (de exemplu creare furnizor și aprobare plată, emitere factură și încasare); avertisment sau blocaj cu motiv obligatoriu la salvarea unui rol sau a unei excepții | SAP GRC, Dynamics „Segregation of duties” | M |
+| 3 | Roluri și excepții cu valabilitate în timp; înlocuitori | Atribuirea și excepția cu dată de început și de sfârșit; „îl înlocuiește pe X între …”, cu drepturile lui X pe perioadă, expirate automat de jobul zilnic | Substituirea din SAP, delegările din NetSuite și Odoo | M |
+| 4 | Restricții pe date dincolo de proprietar | Agentul vede doar clienții lui, gestionarul doar gestiunile lui, cineva doar anumite centre de cost; folosește `DimensionScope` de pe atribuire | Regulile pe înregistrări din Odoo, Dynamics „Data security policies” | L |
+| 5 | Limite de aprobare pe sumă | De exemplu „aprobă comenzi de achiziție până la 10.000 lei”, cu trecere automată la nivelul următor; legat de fluxurile de aprobare din documente | Strategiile de aprobare din SAP, limitele din NetSuite | M |
+| 6 | Securitate la nivel de câmp | Câmpuri ascunse unor roluri (preț de achiziție, adaos, salariu, CNP), ca regulă generală, nu doar „Date personale” | Dynamics „Field security”, NetSuite | M |
+| 7 | „Vezi ca utilizatorul X”, doar pentru citire | Administratorul vede meniul și ecranele ca X, fără parola lui; totul în audit | Practica ERP-urilor cloud | S/M |
+| 8 | Operații în masă | Copierea drepturilor altui utilizator, un rol atribuit la mai mulți deodată, import de utilizatori din Excel, dezactivarea unui departament | ERP-urile românești, la implementare | S |
+| 9 | Valori implicite pe utilizator, pe server | Nodul din antet, gestiunea, seria, casa și imprimanta implicite (acum nodul se ține doar în browser) | Majoritatea ERP-urilor | S |
+| 10 | Autentificare unică (SSO) | Microsoft Entra ID (fostul Azure AD) sau Google, cu grupurile din directorul firmei transformate automat în roluri | Dynamics, NetSuite, Odoo | M/L |
+| 11 | Politici de acces configurabile | Reguli de parolă, chei de acces fără parolă (passkeys), restricții pe IP sau pe program pentru externi, număr maxim de sesiuni simultane, deconectare după inactivitate în funcție de rol | SAP, Dynamics | M |
+| 12 | Alerte de securitate către administratori | Multe autentificări eșuate, drepturi critice acordate, acces dintr-o locație nouă; pe notificările existente | Dynamics, NetSuite | S |
+| 13 | Revizuirea periodică a accesului | La 6 luni, fiecare șef confirmă sau retrage drepturile oamenilor lui | Oracle, Dynamics | M |
+| 14 | Tipuri de licență pe utilizator | Complet, limitat, doar citire; influențează prețul și limitele din licență | Dynamics | M |
+| 15 | Ecran pentru conturile tehnice și cheile API | POS, Power BI, integrări: cheie nouă, revocare, ultima folosire | — | S/M |
+| 16 | Invitație pe email | În locul parolei temporare arătate o singură dată; după modulul de notificări | Majoritatea ERP-urilor | S |
+
+Mărime: S = mic, M = mediu, L = mare.
+
 ### 3.5 Celelalte nomenclatoare și entități
 
 | Entitate | Câmpuri principale | Reguli |
