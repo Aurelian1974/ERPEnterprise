@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Erp.Core.Api\Erp.Core.Api.csproj" />
+    <!-- Conturile ids create din administrarea utilizatorilor (IIdentityAccountAdmin), verificate pe aceeasi baza. -->
+    <ProjectReference Include="..\..\..\Auth\Erp.Auth\Erp.Auth.csproj" />
     <ProjectReference Include="..\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
     <ProjectReference Include="..\..\..\Tools\Erp.LicenseGen.Core\Erp.LicenseGen.Core.csproj" />

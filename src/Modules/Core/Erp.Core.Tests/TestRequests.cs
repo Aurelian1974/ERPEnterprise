@@ -152,7 +152,9 @@ public sealed class FakeLicense : ILicenseInfo
 
     public bool IsFiscalCodeLicensed(string fiscalCode) => FiscalCodes.Count == 0 || FiscalCodes.Contains(fiscalCode);
 
-    public int? GetLimit(string limitCode) => null;
+    public Dictionary<string, int> Limits { get; } = new(StringComparer.Ordinal);
+
+    public int? GetLimit(string limitCode) => Limits.TryGetValue(limitCode, out var limit) ? limit : null;
 }
 
 public sealed class FakePeriods : IPeriodLock
@@ -286,6 +288,9 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Properties.IPropertyDefinitionStore>(new FakePropertyStore());
         services.AddSingleton<Erp.Core.Application.Partners.IImportJobStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Items.IItemStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.Users.IUserStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.Employees.IEmployeeStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<IIdentityAccountAdmin>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Anaf.IAnafVatRegistry>(new FakeAnafRegistry());
         services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
             new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));

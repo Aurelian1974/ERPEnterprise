@@ -52,6 +52,8 @@ public static class CorePermissions
     public const string NumberSeriesManage = "Core.NumberSeries.Manage";
     public const string PrecisionManage = "Core.Precision.Manage";
     public const string ImportRun = "Core.Import.Run";
+    public const string EmployeeView = "Core.Employee.View";
+    public const string EmployeeManage = "Core.Employee.Manage";
     public const string UserManage = "Core.User.Manage";
     public const string RoleManage = "Core.Role.Manage";
     public const string AuditView = "Core.Audit.View";

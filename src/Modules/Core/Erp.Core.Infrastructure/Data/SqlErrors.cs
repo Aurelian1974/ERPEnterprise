@@ -42,6 +42,10 @@ public sealed class CoreSqlErrors : ISqlErrorMap
         [50027] = (ErpErrorKind.NotFound, "CORE_ENTITY_NOT_FOUND"),
         [50029] = (ErpErrorKind.Conflict, "CORE_ADDRESS_TYPE_DUPLICATE"),
         [50030] = (ErpErrorKind.Validation, "CORE_ADDRESS_TYPE_PROTECTED"),
+        [50031] = (ErpErrorKind.Conflict, "CORE_USER_DUPLICATE_USERNAME"),
+        [50032] = (ErpErrorKind.Conflict, "CORE_USER_LICENSE_LIMIT"),
+        [50033] = (ErpErrorKind.Conflict, "CORE_SYSTEM_USER_PROTECTED"),
+        [50034] = (ErpErrorKind.Validation, "CORE_ROLE_SCOPE_INVALID"),
     };
 }
 

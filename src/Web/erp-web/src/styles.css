@@ -1481,3 +1481,57 @@ a.btn {
 .cell-input.date {
   width: 110px;
 }
+
+/* ---------- Utilizatori si angajati (machetele 06, 06b, 06c) ---------- */
+
+.tiles.users-tiles {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.span3 {
+  grid-column: 1 / -1;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar.small {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  flex: none;
+}
+
+.password-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.password-value {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  margin: 6px 0;
+  user-select: all;
+}
+
+table.roles-table .cell-input {
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .tiles.users-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .password-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

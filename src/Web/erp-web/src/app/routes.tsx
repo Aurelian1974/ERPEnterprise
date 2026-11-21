@@ -6,6 +6,8 @@ import { TwoFactorPage } from '../account/TwoFactorPage';
 import { OrgPage } from '../org/OrgPage';
 import { PartnersPage } from '../partners/PartnersPage';
 import { ItemsPage } from '../items/ItemsPage';
+import { UsersPage } from '../users/UsersPage';
+import { EmployeesPage } from '../employees/EmployeesPage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -16,6 +18,8 @@ export const routes = [
     children: [
       { index: true, element: <HomePage /> },
       { path: 'admin/firme', element: <OrgPage /> },
+      { path: 'admin/utilizatori', element: <UsersPage /> },
+      { path: 'admin/angajati', element: <EmployeesPage /> },
       { path: 'admin/config/serii', element: <ConfigPage /> },
       { path: 'admin/config/licenta', element: <ConfigPage /> },
       { path: 'admin/config/tipuri-adrese', element: <ConfigPage /> },

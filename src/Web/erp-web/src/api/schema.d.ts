@@ -1093,6 +1093,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchUsers"];
+        put?: never;
+        post: operations["CreateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUserLookups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUser"];
+        put: operations["UpdateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUserHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUserSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResetUserPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UnlockUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/reset-two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResetUserTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/users/{id}/revoke-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RevokeUserSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchEmployees"];
+        put?: never;
+        post: operations["CreateEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/employees/lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployeeLookups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployee"];
+        put: operations["UpdateEmployee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/employees/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployeeHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2258,6 +2466,310 @@ export interface components {
             validTo: null | string;
             /** Format: byte */
             rowVersion: null | string;
+        };
+        BranchOptionDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            name: string;
+        };
+        CompanyOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+        };
+        EmployeeDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            companyName: string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            employeeNo: string;
+            firstName: string;
+            lastName: string;
+            department: null | string;
+            jobTitle: null | string;
+            workEmail: null | string;
+            phone: null | string;
+            /** Format: date */
+            hireDate: null | string;
+            /** Format: date */
+            leaveDate: null | string;
+            isActive: boolean;
+            /** Format: int32 */
+            userId: null | number;
+            userName: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastChangedAt: string;
+            modifiedByName: string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        EmployeeListItemDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            companyName: string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            employeeNo: string;
+            firstName: string;
+            lastName: string;
+            department: null | string;
+            jobTitle: null | string;
+            workEmail: null | string;
+            /** Format: date */
+            hireDate: null | string;
+            /** Format: date */
+            leaveDate: null | string;
+            isActive: boolean;
+            /** Format: int32 */
+            userId: null | number;
+            userName: null | string;
+        };
+        EmployeeLookupsDto: {
+            companies: components["schemas"]["CompanyOptionDto"][];
+            branches: components["schemas"]["BranchOptionDto"][];
+        };
+        EmployeePageDto: {
+            items: components["schemas"]["EmployeeListItemDto"][];
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            activeCount: number;
+        };
+        IdentityAccountSession: {
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            ipAddress: null | string;
+            userAgent: null | string;
+        };
+        RevokeUserSessionsBody: {
+            /** Format: uuid */
+            sessionId: null | string;
+        };
+        RoleOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            isSystem: boolean;
+        };
+        SaveEmployee: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            employeeNo: string;
+            firstName: string;
+            lastName: string;
+            department: null | string;
+            jobTitle: null | string;
+            workEmail: null | string;
+            phone: null | string;
+            /** Format: date */
+            hireDate: null | string;
+            /** Format: date */
+            leaveDate: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        SaveUser: {
+            /** Format: int32 */
+            id: null | number;
+            userName: string;
+            /** Format: uint8 */
+            kind: number;
+            /** Format: int32 */
+            employeeId: null | number;
+            firstName: null | string;
+            lastName: null | string;
+            email: null | string;
+            phone: null | string;
+            externalAccessType: null | string;
+            /** Format: int32 */
+            externalPartnerId: null | number;
+            /** Format: int32 */
+            sponsorUserId: null | number;
+            accessReason: null | string;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validUntil: null | string;
+            language: string;
+            /** Format: int32 */
+            lastCompanyId: null | number;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
+            roles?: null | components["schemas"]["UserRoleInput"][];
+        };
+        TemporaryPasswordDto: {
+            temporaryPassword: string;
+        };
+        UserCountersDto: {
+            /** Format: int32 */
+            activeCount: number;
+            /** Format: int32 */
+            licensedUsers: null | number;
+            /** Format: int32 */
+            employeeCount: number;
+            /** Format: int32 */
+            externalCount: number;
+            /** Format: int32 */
+            expiringCount: number;
+            /** Format: int32 */
+            withoutTwoFactorCount: number;
+            /** Format: int32 */
+            inactiveCount: number;
+        };
+        UserDetailDto: {
+            /** Format: int32 */
+            id: number;
+            userName: string;
+            displayName: string;
+            firstName: null | string;
+            lastName: null | string;
+            email: null | string;
+            phone: null | string;
+            isActive: boolean;
+            isSystem: boolean;
+            isEmployee: boolean;
+            /** Format: int32 */
+            employeeId: null | number;
+            employeeNo: null | string;
+            /** Format: int32 */
+            employeeCompanyId: null | number;
+            employeeCompanyName: null | string;
+            employeeBranchName: null | string;
+            employeeDepartment: null | string;
+            employeeJobTitle: null | string;
+            employeePhone: null | string;
+            /** Format: date */
+            employeeHireDate: null | string;
+            /** Format: date */
+            employeeLeaveDate: null | string;
+            employeeIsActive: null | boolean;
+            externalAccessType: null | string;
+            /** Format: int32 */
+            externalPartnerId: null | number;
+            externalPartnerName: null | string;
+            externalPartnerFiscalCode: null | string;
+            /** Format: int32 */
+            sponsorUserId: null | number;
+            sponsorName: null | string;
+            accessReason: null | string;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validUntil: null | string;
+            language: string;
+            /** Format: int32 */
+            lastCompanyId: null | number;
+            /** Format: date-time */
+            lastLoginAt: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            createdByName: string;
+            /** Format: date-time */
+            lastChangedAt: string;
+            modifiedByName: string;
+            hasAccount: boolean;
+            hasPassword: boolean;
+            /** Format: date-time */
+            passwordChangedAt: null | string;
+            mustChangePassword: boolean;
+            twoFactorEnabled: boolean;
+            twoFactorRequired: boolean;
+            /** Format: date-time */
+            lockedUntil: null | string;
+            /** Format: int32 */
+            activeSessions: number;
+            /** Format: byte */
+            rowVersion: string;
+            roles: components["schemas"]["UserRoleAssignmentDto"][];
+        };
+        UserListItemDto: {
+            /** Format: int32 */
+            id: number;
+            userName: string;
+            displayName: string;
+            email: null | string;
+            isActive: boolean;
+            isSystem: boolean;
+            isEmployee: boolean;
+            employeeNo: null | string;
+            /** Format: date */
+            employeeLeaveDate: null | string;
+            externalAccessType: null | string;
+            organizationName: null | string;
+            /** Format: date */
+            validUntil: null | string;
+            twoFactorEnabled: null | boolean;
+            /** Format: date-time */
+            lastLoginAt: null | string;
+            roles: components["schemas"]["UserRoleSummaryDto"][];
+        };
+        UserLookupsDto: {
+            roles: components["schemas"]["RoleOptionDto"][];
+            companies: components["schemas"]["CompanyOptionDto"][];
+            sponsors: components["schemas"]["UserOptionDto"][];
+            /** Format: int32 */
+            externalAccessMaxMonths: number;
+        };
+        UserPageDto: {
+            items: components["schemas"]["UserListItemDto"][];
+            /** Format: int32 */
+            total: number;
+            counters: components["schemas"]["UserCountersDto"];
+        };
+        UserRoleAssignmentDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            roleId: number;
+            roleCode: string;
+            roleName: string;
+            /** Format: int32 */
+            companyId: null | number;
+            companyName: null | string;
+            dimensionScope: null | string;
+        };
+        UserRoleInput: {
+            /** Format: int32 */
+            roleId: number;
+            /** Format: int32 */
+            companyId: null | number;
+        };
+        UserRoleSummaryDto: {
+            /** Format: int32 */
+            companyId: null | number;
+            companyName: null | string;
+            roleCode: string;
+            roleName: string;
+        };
+        UserSavedDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+            temporaryPassword: null | string;
         };
     };
     responses: never;
@@ -5931,6 +6443,763 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchUsers: {
+        parameters: {
+            query?: {
+                Search?: string;
+                Kind?: number;
+                Filter?: number;
+                CompanyId?: number;
+                RoleId?: number;
+                Page?: number;
+                PageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveUser"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSavedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetUserLookups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLookupsDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDetailDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveUser"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSavedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetUserHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerHistoryEntryDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetUserSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityAccountSession"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetUserPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryPasswordDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnlockUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetUserTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RevokeUserSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeUserSessionsBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchEmployees: {
+        parameters: {
+            query?: {
+                Search?: string;
+                CompanyId?: number;
+                IsActive?: boolean;
+                WithoutUser?: boolean;
+                Page?: number;
+                PageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeePageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEmployee"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEmployeeLookups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeLookupsDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEmployee"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEmployeeHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerHistoryEntryDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

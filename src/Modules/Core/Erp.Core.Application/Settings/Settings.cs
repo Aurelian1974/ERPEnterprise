@@ -11,6 +11,9 @@ public static class SettingKeys
 
     /// <summary>Versiunea sincrona v9 (instructiunile ANAF publicate pe 04.02.2025); aceeasi valoare ca in seed-ul 04_Settings.</summary>
     public const string DefaultAnafVatRegistryUrl = "https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva";
+
+    /// <summary>Durata maxima a accesului unui utilizator extern, in luni (02.01, 3.4: „cel mult 12 luni (configurabil)”).</summary>
+    public const string ExternalAccessMaxMonths = "Users.ExternalAccessMaxMonths";
 }
 
 /// <summary>Valoarea unei setari si versiunea ei; RowVersion null = setarea nu exista inca.</summary>

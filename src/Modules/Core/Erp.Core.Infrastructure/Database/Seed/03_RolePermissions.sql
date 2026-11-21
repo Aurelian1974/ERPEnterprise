@@ -20,6 +20,7 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'AUDITOR',       N'Core.Partner.View'),
         (N'AUDITOR',       N'Core.Item.View'),
         (N'AUDITOR',       N'Core.Audit.View'),
+        (N'AUDITOR',       N'Core.Employee.View'),
         (N'STANDARD',      N'Core.Partner.View'),
         (N'STANDARD',      N'Core.Item.View'),
         (N'STANDARD',      N'Core.Company.View')

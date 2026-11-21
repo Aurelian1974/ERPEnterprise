@@ -7,7 +7,9 @@ USING (VALUES
     ('Installation.SetupCompleted', N'false'),
     -- Serviciul web ANAF de verificare a contribuabililor, versiunea sincrona v9 (instructiuni ANAF din 04.02.2025);
     -- se schimba din Configurare › Setari cand ANAF publica o versiune noua.
-    ('Anaf.VatRegistryUrl', N'https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva')
+    ('Anaf.VatRegistryUrl', N'https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva'),
+    -- Durata maxima a accesului unui utilizator extern, in luni (02.01, 3.4).
+    ('Users.ExternalAccessMaxMonths', N'12')
 ) AS source ([Key], Value)
 ON target.Scope = 'Installation' AND target.ScopeId IS NULL AND target.[Key] = source.[Key]
 WHEN NOT MATCHED BY TARGET THEN

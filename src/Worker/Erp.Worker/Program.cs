@@ -1,4 +1,5 @@
 using Erp.Hosting;
+using Erp.Worker.Jobs;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.Data.SqlClient;
@@ -43,7 +44,10 @@ var storage = new SqlServerStorage(() => new SqlConnection(connectionString), ne
     PrepareSchemaIfNecessary = false,
 });
 builder.Services.AddSingleton<JobStorage>(storage);
-builder.Services.AddSingleton<IBackgroundProcessingFactory>(sp => new HangfireProcessingFactory(sp.GetRequiredService<JobStorage>(), instance));
+builder.Services.AddSingleton<Func<SqlConnection>>(() => new SqlConnection(connectionString));
+builder.Services.AddTransient<UserAccessExpirationJob>();
+builder.Services.AddSingleton<IBackgroundProcessingFactory>(sp => new HangfireProcessingFactory(sp.GetRequiredService<JobStorage>(), instance,
+    sp.GetRequiredService<IServiceScopeFactory>()));
 builder.Services.AddHostedService(sp => new BackgroundProcessingLifecycle(
     sp.GetRequiredService<IBackgroundProcessingFactory>(),
     sp.GetRequiredService<SchemaVersionGuard>(),
@@ -53,10 +57,22 @@ builder.Services.AddHostedService(sp => new BackgroundProcessingLifecycle(
 
 builder.Build().Run();
 
-internal sealed class HangfireProcessingFactory(JobStorage storage, string instance) : IBackgroundProcessingFactory
+internal sealed class HangfireProcessingFactory(JobStorage storage, string instance, IServiceScopeFactory scopes) : IBackgroundProcessingFactory
 {
-    public IAsyncDisposable Start() => new Running(new BackgroundJobServer(
-        new BackgroundJobServerOptions { ServerName = $"ErpWorker-{instance}:{Environment.MachineName}" }, storage));
+    // Joburile recurente se inregistreaza la pornirea procesarii, deci numai cu baza compatibila si fara mentenanta (10.4, 10.5).
+    public IAsyncDisposable Start()
+    {
+        var jobs = new RecurringJobManager(storage);
+        // 02.01, 3.4: zilnic, imediat dupa miezul noptii UTC (ziua folosita si de autentificare, core.v_UserLoginStatus).
+        jobs.AddOrUpdate<UserAccessExpirationJob>(UserAccessExpirationJob.Id, job => job.RunAsync(CancellationToken.None), "5 0 * * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        return new Running(new BackgroundJobServer(
+            new BackgroundJobServerOptions
+            {
+                ServerName = $"ErpWorker-{instance}:{Environment.MachineName}",
+                Activator = new ServiceProviderJobActivator(scopes),
+            }, storage));
+    }
 
     private sealed class Running(BackgroundJobServer server) : IAsyncDisposable
     {

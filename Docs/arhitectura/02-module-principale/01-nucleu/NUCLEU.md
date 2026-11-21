@@ -251,6 +251,16 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 
 Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOARE`, `AUDITOR`, `STANDARD`.
 
+**Detalii de implementare (administrarea utilizatorilor, 21.11.2026).** Deciziile lui Aurelian din 21.11.2026: parola inițială a unui utilizator nou e o parolă temporară generată de server, arătată o singură dată administratorului (schimbare obligatorie la prima autentificare), până când invitația pe email devine posibilă (notificările, etapa 10); fișa minimă de angajat rămâne `core.Employee` în Nucleu, cu ecran propriu „Angajați” (listă și fișă, fără machetă aprobată; macheta se face odată cu modulul HR); utilizatorul extern primește coloanele `ExternalAccessType` (`AUDITOR`, `CONSULTANT`, `ACCOUNTANT`, `TECHNICAL` = cont tehnic, fără parolă interactivă) și `Phone`, din macheta 06c.
+
+- Migrarea `2026.11.013`: `core.Employee` (marca unică pe firmă fără diferență de majuscule, `EmployeeNoKey`; căutare după „prenume nume” și „nume prenume” fără diacritice; punctul de lucru al firmei prin cheia compusă `(BranchId, CompanyId)`), `FK_User_Employee`, `User.ExternalAccessType`, `User.Phone`, `User.NameSearch`, indexul unic `(UserId, RoleId, CompanyId)` pe atribuiri și tipul `core.UserRoleAssignmentList`. Permisiuni noi: `Core.Employee.View` / `.Manage` (Auditorul primește `View`).
+- Proceduri: `core.usp_User_Search` (filtrele machetei 06 și indicatorii; „Fără 2FA” = activ, cu parolă, fără aplicația de autentificare), `usp_User_Get`, `usp_User_GetAccount`, `usp_User_Save`, `usp_UserRoleAssignment_Save` (înlocuiește lista; păstrează restricțiile atribuirilor neschimbate), `usp_UserLookups_Get`, `usp_User_History`, `usp_User_DeactivateExpired`; `usp_Employee_Search`, `usp_Employee_Get`, `usp_Employee_Save`, `usp_EmployeeLookups_Get`, `usp_Employee_History`. În `ids`: view-ul `ids.v_UserAccountSecurity` (fără hash-uri, citit de listă și de tab-ul Securitate) și procedurile `ids.usp_UserAccount_Create`, `usp_UserAccount_AdminUpdate`, `usp_UserAccount_AdminReset` (resetare parolă, deblocare, resetare 2FA, închiderea sesiunilor), `usp_UserSession_List`.
+- Contul din `core` și cel din `ids` se scriu în aceeași tranzacție a comenzii: contractul `IIdentityAccountAdmin` (`Erp.Core.Contracts`) e implementat în `Erp.Auth`. 2FA e obligatoriu pentru externi (fără conturile tehnice) și pentru cine are rolul `ADMIN`; se recalculează la fiecare salvare a contului sau a rolurilor.
+- Reguli: angajatul are un singur cont (50012), iar numele, emailul și funcția vin din fișa lui (salvarea fișei le actualizează și în contul legat, inclusiv emailul din `ids`); externul cere tip acces, organizație, responsabil intern activ (angajat sau cont de sistem), motiv și perioadă, cel mult `Users.ExternalAccessMaxMonths` luni (setare, implicit 12); `CompanyId = NULL` doar pentru `ADMIN` (50034); ultimul administrator activ al instalării nu se dezactivează și nu-și pierde rolul (50015); nimeni nu-și schimbă propriile roluri și nu-și dezactivează propriul cont; administratorul integrat își păstrează numele de utilizator și tipul (50033); contul tehnic `system` nu se deschide.
+- Licența: un utilizator nou sau reactivat consumă o poziție din limita `users`; se numără utilizatorii activi fără conturile de sistem (50032). Dacă se numără și administratorul integrat rămâne de confirmat.
+- Autentificarea refuză contul din ziua expirării accesului extern (după `ValidUntil`, și înainte de `ValidFrom`) și din data încetării contractului angajatului (`core.v_UserLoginStatus`, folosit și de `usp_User_GetPermissions`). Jobul zilnic Hangfire `core-user-access-expiration` din `Erp.Worker` (00:05 UTC) trece apoi conturile pe inactiv, scrie auditul ca `system`, pune `UtilizatorDezactivat` în outbox și închide sesiunile. Notificarea responsabilului cu 14 zile înainte vine cu notificările (etapa 10).
+- Nerealizate încă: Preferințe (notificări), export Excel, sincronizarea Active Directory și legătura cu contul Windows, cheile API ale conturilor tehnice (`ids.ApiKey`), restricțiile pe dimensiuni din „Roluri și firme” (vin cu dimensiunile).
+
 ![Ecranul Utilizatori · listă](ecrane/06-utilizatori.png)
 
 ![Utilizator angajat](ecrane/06b-utilizator-angajat.png)
@@ -671,8 +681,16 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50026 | `CORE_NUMBER_SERIES_DUPLICATE` | 409 | Există deja o serie cu același prefix pentru firmă, punct de lucru, tip de document și an |
 | 50027 | `CORE_ENTITY_NOT_FOUND` | 404 | Înregistrarea modificată nu există (sau nu aparține firmei) |
 | 50028 | — | 500 | `core.usp_NumberSeries_Next` apelată în afara tranzacției documentului (eroare de programare) |
+| 50029 | `CORE_ADDRESS_TYPE_DUPLICATE` | 409 | Codul tipului de adresă există deja |
+| 50030 | `CORE_ADDRESS_TYPE_PROTECTED` | 400 | Tip de adresă de sistem dezactivat sau cu codul schimbat |
+| 50031 | `CORE_USER_DUPLICATE_USERNAME` | 409 | Numele de utilizator e deja folosit |
+| 50032 | `CORE_USER_LICENSE_LIMIT` | 409 | Utilizatorul nou sau reactivat ar depăși limita `users` din licență |
+| 50033 | `CORE_SYSTEM_USER_PROTECTED` | 409 | Modificarea contului `system` sau a tipului / numelui administratorului integrat |
+| 50034 | `CORE_ROLE_SCOPE_INVALID` | 400 | Atribuire pentru toate firmele a altui rol decât `ADMIN` |
 
 Cod API fără cod SQL (etapa 4): `CORE_COMPANY_NOT_LICENSED` (409), CUI-ul unei firme active nu este în licență (4.4).
+
+Coduri API fără cod SQL (utilizatori): `CORE_USER_SELF_ROLES` (409, propriile roluri), `CORE_USER_TECHNICAL_ACCOUNT` (409, parolă pentru un cont tehnic), `CORE_USER_NO_ACCOUNT` (409, acțiune de securitate pe un utilizator fără cont `ids`; resetarea parolei îl creează).
 
 Coduri API ale pipeline-ului, fără cod SQL (etapa 1, 15.11.2026): `CORE_UNAUTHENTICATED` (401), `CORE_FORBIDDEN`, `CORE_MODULE_NOT_LICENSED`, `CORE_LICENSE_READ_ONLY` (403), `CORE_VALIDATION` (400, cu `errors` pe câmp), `CORE_PERIOD_CLOSED`, `CORE_RESOURCE_BUSY`, `CORE_IDEMPOTENCY_KEY_REUSED` (409), `CORE_UNEXPECTED_ERROR` (500, fără detalii tehnice). Răspunsurile de eroare sunt ProblemDetails cu extensiile `code` și `correlationId`. Codurile 50009 și 50016 rămân erori neprevăzute (500).
 
@@ -705,6 +723,7 @@ Permisiunile Nucleului (format `Core.<Resursă>.<Acțiune>`):
 | `Core.NumberSeries.Manage` | Creare și modificare serii |
 | `Core.Precision.Manage` | Politici de zecimale |
 | `Core.Import.Run` | Importuri din Excel |
+| `Core.Employee.View` / `.Manage` | Vizualizare / creare și modificare fișe minime de angajat (adăugat pe 21.11.2026) |
 | `Core.User.Manage` | Utilizatori, atribuiri de roluri, deblocare cont și resetare 2FA |
 | `Core.Role.Manage` | Roluri și permisiunile lor |
 | `Core.Audit.View` | Consultare jurnal de audit și jurnal de autentificări |
@@ -773,7 +792,8 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 | Articole | Listă cu filtre pe stocabil, grupă și tip; fișă: Date generale, UM și conversii, Proprietăți, Coduri de bare, Istoric, plus Contabilitate și Stoc pentru firma curentă (tab-uri ale modulelor Finanțe și Stocuri) | Tab-urile de modul apar doar dacă modulul e licențiat |
 | Nomenclatoare | Valute, cote TVA, UM, țări, județe, localități, grupe de articole | Editare în tabel, cu validare la salvare |
 | Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | — |
-| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount` |
+| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): fără Preferințe, export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
+| Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
 | Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate |
 | Serii de numerotare | Pe firmă și tip de document | Avertizare la modificarea unei serii fiscale folosite |
 | Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale |

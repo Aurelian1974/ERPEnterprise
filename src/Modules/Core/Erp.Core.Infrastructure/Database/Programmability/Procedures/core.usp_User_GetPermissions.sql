@@ -8,18 +8,18 @@ BEGIN
     -- NULL = ultima firma a utilizatorului, altfel prima firma activa la care are acces.
     -- O firma ceruta la care utilizatorul nu are niciun rol (sau inactiva) nu se accepta: firma efectiva devine 0.
     -- Atribuirile cu CompanyId NULL (rolul ADMIN la nivel de instalare) se aplica oricarei firme.
-    -- Utilizatorii externi sunt valabili doar pana la ValidUntil (inclusiv).
+    -- Utilizatorii externi sunt valabili doar intre ValidFrom si ValidUntil (inclusiv), angajatii pana la data incetarii.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
-    DECLARE @Today date = CAST(SYSUTCDATETIME() AS date);
     DECLARE @UserId int, @LastCompanyId int, @EffectiveCompanyId int;
 
-    SELECT @UserId = u.Id, @LastCompanyId = u.LastCompanyId
-    FROM core.[User] AS u
+    -- Aceeasi regula ca autentificarea (core.v_UserLoginStatus): activ, in perioada de valabilitate, contract neincetat.
+    SELECT @UserId = u.UserId, @LastCompanyId = cu.LastCompanyId
+    FROM core.v_UserLoginStatus AS u
+    JOIN core.[User] AS cu ON cu.Id = u.UserId
     WHERE u.SubjectId = @SubjectId
-      AND u.IsActive = 1
-      AND (u.ValidUntil IS NULL OR u.ValidUntil >= @Today);
+      AND u.CanSignIn = 1;
 
     IF @CompanyId = 0
         SET @EffectiveCompanyId = 0;

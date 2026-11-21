@@ -16,7 +16,7 @@ import { PartnerAddressesTab, PartnerBankAccountsTab, PartnerContactsTab, Partne
 type Chip = 'all' | 'customers' | 'suppliers' | 'individuals' | 'anafInactive';
 
 /** Textul cautat ajunge la server dupa o scurta pauza, nu la fiecare tasta. */
-function useDebounced(value: string, delay = 250): string {
+export function useDebounced(value: string, delay = 250): string {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
@@ -220,7 +220,7 @@ export function PartnersPage() {
   );
 }
 
-function Pager({ page, total, onPage }: { readonly page: number; readonly total: number; readonly onPage: (page: number) => void }) {
+export function Pager({ page, total, onPage }: { readonly page: number; readonly total: number; readonly onPage: (page: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const from = (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);

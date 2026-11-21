@@ -43,6 +43,8 @@ public static class AuthRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AuthSessionStore>();
         services.AddScoped<UserAccountStore>();
+        // Conturile ids create si administrate din fisa utilizatorului (02.01, 3.4), in tranzactia comenzii din Nucleu.
+        services.AddScoped<IIdentityAccountAdmin, IdentityAccountAdmin>();
         services.AddScoped<ErpIdentityErrorDescriber>();
 
         services.AddIdentityCore<UserAccount>(identity =>

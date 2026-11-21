@@ -18,6 +18,8 @@ USING (VALUES
     (N'Core.NumberSeries.Manage',          N'Creare și modificare serii de numerotare'),
     (N'Core.Precision.Manage',             N'Politici de zecimale'),
     (N'Core.Import.Run',                   N'Importuri din Excel'),
+    (N'Core.Employee.View',                N'Vizualizare fișe de angajat'),
+    (N'Core.Employee.Manage',              N'Creare și modificare fișe de angajat'),
     (N'Core.User.Manage',                  N'Utilizatori, atribuiri de roluri, deblocare cont și resetare 2FA'),
     (N'Core.Role.Manage',                  N'Roluri și permisiunile lor'),
     (N'Core.Audit.View',                   N'Consultare jurnal de audit și jurnal de autentificări'),

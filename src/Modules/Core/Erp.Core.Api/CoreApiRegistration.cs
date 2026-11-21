@@ -7,6 +7,8 @@ using Erp.Core.Application.Anaf;
 using Erp.Core.Application.Settings;
 using Erp.Core.Application.Properties;
 using Erp.Core.Application.Items;
+using Erp.Core.Application.Users;
+using Erp.Core.Application.Employees;
 using Erp.Core.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -52,6 +54,8 @@ public static class CoreApiRegistration
         MapPartners(core);
         MapSettings(core);
         MapItems(core);
+        MapUsers(core);
+        MapEmployees(core);
         MapLicense(core);
         return endpoints;
     }
@@ -265,6 +269,54 @@ public static class CoreApiRegistration
             .WithName("UpdateItemGroup").Saves();
     }
 
+    // Utilizatori (machetele 06, 06b, 06c): conturile din Nucleu si cele de autentificare; Core.User.Manage la nivelul instalarii.
+    private static void MapUsers(RouteGroupBuilder core)
+    {
+        core.MapGet("/users", ([AsParameters] SearchUsers query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchUsers").Produces<UserPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/users/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetUserLookups(), ct))
+            .WithName("GetUserLookups").Produces<UserLookupsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/users/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetUser(id), ct))
+            .WithName("GetUser").Produces<UserDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/users/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetUserHistory(id), ct))
+            .WithName("GetUserHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/users/{id:int}/sessions", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetUserSessions(id), ct))
+            .WithName("GetUserSessions").Produces<IReadOnlyList<IdentityAccountSession>>()
+            .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+
+        core.MapPost("/users", (SaveUser body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateUser").SavesUser();
+        core.MapPut("/users/{id:int}", (int id, SaveUser body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateUser").SavesUser();
+        core.MapPost("/users/{id:int}/reset-password", (int id, ISender sender, CancellationToken ct) => sender.Send(new ResetUserPassword(id), ct))
+            .WithName("ResetUserPassword").Produces<TemporaryPasswordDto>().SecurityAction();
+        core.MapPost("/users/{id:int}/unlock", (int id, ISender sender, CancellationToken ct) => sender.Send(new UnlockUser(id), ct))
+            .WithName("UnlockUser").Produces<bool>().SecurityAction();
+        core.MapPost("/users/{id:int}/reset-two-factor", (int id, ISender sender, CancellationToken ct) => sender.Send(new ResetUserTwoFactor(id), ct))
+            .WithName("ResetUserTwoFactor").Produces<bool>().SecurityAction();
+        core.MapPost("/users/{id:int}/revoke-sessions", (int id, RevokeUserSessionsBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new RevokeUserSessions(id, body.SessionId), ct))
+            .WithName("RevokeUserSessions").Produces<bool>().SecurityAction();
+    }
+
+    // Angajati: fisa minima din Nucleu (02.01, 3.4), de care se leaga utilizatorii angajati; modulul HR o extinde.
+    private static void MapEmployees(RouteGroupBuilder core)
+    {
+        core.MapGet("/employees", ([AsParameters] SearchEmployees query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchEmployees").Produces<EmployeePageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/employees/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetEmployeeLookups(), ct))
+            .WithName("GetEmployeeLookups").Produces<EmployeeLookupsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/employees/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetEmployee(id), ct))
+            .WithName("GetEmployee").Produces<EmployeeDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/employees/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetEmployeeHistory(id), ct))
+            .WithName("GetEmployeeHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/employees", (SaveEmployee body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateEmployee").Saves();
+        core.MapPut("/employees/{id:int}", (int id, SaveEmployee body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateEmployee").Saves();
+    }
+
     // Configurare › Import (macheta 07g; fluxul 02.01, 4.8): sablon, incarcare si validare, confirmare in loturi, randuri cu erori.
     private static void MapImport(RouteGroupBuilder core)
     {
@@ -329,6 +381,18 @@ public static class CoreApiRegistration
 
     private static IResult File(FileDto file) => Results.File(file.Content, file.ContentType, file.FileName);
 
+    private static RouteHandlerBuilder SavesUser(this RouteHandlerBuilder builder) => builder
+        .Produces<UserSavedDto>()
+        .ProducesValidationProblem()
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict);
+
+    private static RouteHandlerBuilder SecurityAction(this RouteHandlerBuilder builder) => builder
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict);
+
     private static RouteHandlerBuilder Saves(this RouteHandlerBuilder builder) => builder
         .Produces<SavedEntity>()
         .ProducesValidationProblem()
@@ -345,3 +409,6 @@ public sealed record UploadItemImport(string FileName, string FileBase64);
 
 /// <summary>Corpul cererii de inchidere a unei serii: versiunea vazuta de utilizator.</summary>
 public sealed record CloseNumberSeriesBody(byte[] RowVersion);
+
+/// <summary>Corpul cererii de inchidere a sesiunilor unui utilizator: o sesiune anume sau toate (null).</summary>
+public sealed record RevokeUserSessionsBody(Guid? SessionId);

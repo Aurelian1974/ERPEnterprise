@@ -44,6 +44,8 @@ export const menuGroups: readonly MenuGroup[] = [
     label: 'menu.admin',
     icon: '⛭',
     items: [
+      { id: 'users', label: 'menu.users', path: '/admin/utilizatori', icon: '', module: 'Core', permission: 'Core.User.Manage' },
+      { id: 'employees', label: 'menu.employees', path: '/admin/angajati', icon: '', module: 'Core', permission: 'Core.Employee.View' },
       { id: 'companies', label: 'menu.companies', path: '/admin/firme', icon: '', module: 'Core', permission: 'Core.Company.View' },
       { id: 'config', label: 'menu.config', path: '/admin/config/serii', icon: '', module: 'Core', permission: 'Core.NumberSeries.Manage' },
     ],
