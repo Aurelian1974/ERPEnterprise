@@ -342,6 +342,14 @@ Mărime: S = mic, M = mediu, L = mare.
 | `InstallationLicense` | `LicenseId`, `CustomerName`, `FiscalCodes`, `Modules`, `Limits` (case POS, angajați), `ValidUntil`, `Signature` | Verificată la pornire și zilnic (fluxul 4.4) |
 | `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu Data Protection, cu inelul de chei în bază (`NET-17`; 08, secțiunea 5.12) |
 
+**Dimensiuni: detalii de implementare** (21.11.2026; macheta 07k).
+
+- Migrarea `2026.11.017`: `core.DimensionType` (tipuri fixe, livrate în `13_DimensionTypes.sql`: `COST_CENTER` centre de cost, `PROJECT` proiecte, `WAREHOUSE` gestiuni, `SITE` șantiere) și `core.DimensionValue` (firmă, tip, cod unic pe firmă și tip fără diferență de majuscule, denumire, părinte de același tip și din aceeași firmă — cheie străină compusă —, responsabil, valabilitate, activ). Tabela `core.Dimension` din schița inițială a devenit catalogul `core.DimensionType`.
+- Reguli (`core.usp_DimensionValue_Save`): firma și tipul nu se schimbă după creare; firma trebuie să fie una pe care utilizatorul are `Core.Dimension.Manage`; părintele e activ și nu creează cicluri; o valoare cu copii activi nu se dezactivează (50020); dezactivarea înlocuiește ștergerea. Regula „codul nu se schimbă după prima folosire” se aplică odată cu documentele care folosesc dimensiunile (azi nu există încă folosiri).
+- `IDimensionLookup` (`Erp.Core.Contracts`): `GetAsync` și `EnsureAsync` (creează valoarea după cod dacă lipsește, în tranzacția modulului) pentru Stocuri (gestiuni) și Construcții (șantiere).
+- API: `GET /dimensions?type=&companyId=&search=&includeInactive=`, `POST /dimensions`, `PUT /dimensions/{id}` (`Core.Dimension.Manage`, auditate). Ecran: Configurare › Dimensiuni (`/admin/config/dimensiuni`, familia „Nomenclatoare”): tipurile cu numărul de valori, valorile cu căutare, firmă și „Inactive”, fișa valorii. Fără „Export Excel” și coloana „Folosit pe” (vin cu documentele).
+- Restricțiile pe gestiuni din atribuirile de roluri (`DimensionScope`, punctul 4 din 3.4.1) rămân de făcut, odată cu modulul Stocuri.
+
 **Valute și cursuri: detalii de implementare** (deciziile lui Aurelian din 21.11.2026; macheta 07b).
 
 - Migrarea `2026.11.016`: `core.Currency` (cod ISO 4217 ca cheie, denumire, zecimale, activ; RON e baza și rămâne activ, `CK_Currency_BaseActive`), `core.ExchangeRate` (`Rate decimal(19,6)` = lei pentru `Multiplier` unități, `Source` `BNR` / `MANUAL`, `Note` obligatoriu la manual, unic pe monedă + zi + sursă; RON nu are curs), tipul `core.ExchangeRateList` și cheile străine ale monedei din `CompanyBankAccount` și `PartnerBankAccount` (monedele conturilor existente devin active). Datele livrate `12_Currencies.sql`: monedele publicate de BNR, cu denumiri în română; active la prima livrare RON, EUR, USD, GBP, CHF.
@@ -648,7 +656,7 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.UserPermissionOverride` | `Id int` | UQ `(UserId, PermissionId, CompanyId)`; FK `UserId`, `PermissionId`, `CompanyId` (nullable: `NULL` = toate firmele) | `PermissionId`, `CompanyId` (filtrat) |
 | `core.NumberSeries` | `Id int` | UQ `(CompanyId, BranchId, DocumentType, Prefix, Year)` | — |
 | `core.PrecisionPolicy` | `Id int` | UQ `Code` | — |
-| `core.Dimension`, `DimensionValue` | `Id int` | UQ `(CompanyId, DimensionType, Code)` | — |
+| `core.DimensionType`, `core.DimensionValue` | `Code varchar(20)`; `Id int` | UQ `(CompanyId, DimensionType, CodeKey)`; FK `CompanyId`, `DimensionType`, `ResponsibleUserId`, părintele `(ParentId, CompanyId, DimensionType)` | `ParentId` (filtrat), `(DimensionType, CompanyId)` |
 | `core.AuditEntry` | `Id bigint` | — | Cluster pe `Id`; `(EntityType, EntityId)`, `(UserId, OccurredAt)` |
 | `core.Attachment` | `Id int` | — | `(EntityType, EntityId)` |
 | `core.Notification` | `Id bigint` | FK `UserId` | `(UserId, ReadAt)` |

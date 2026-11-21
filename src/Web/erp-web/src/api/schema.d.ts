@@ -1525,6 +1525,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetDimensions"];
+        put?: never;
+        post: operations["CreateDimensionValue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/dimensions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateDimensionValue"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3294,6 +3326,64 @@ export interface components {
             isActive: boolean;
             /** Format: byte */
             rowVersion: string;
+        };
+        DimensionPageDto: {
+            types: components["schemas"]["DimensionTypeDto"][];
+            values: components["schemas"]["DimensionValueItemDto"][];
+            companies: components["schemas"]["CompanyOptionDto"][];
+            users: components["schemas"]["UserOptionDto"][];
+        };
+        DimensionTypeDto: {
+            code: string;
+            name: string;
+            /** Format: int32 */
+            valueCount: number;
+        };
+        DimensionValueItemDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            companyName: string;
+            dimensionType: string;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            parentId: null | number;
+            parentCode: null | string;
+            parentName: null | string;
+            /** Format: int32 */
+            responsibleUserId: null | number;
+            responsibleName: null | string;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            isActive: boolean;
+            /** Format: int32 */
+            activeChildren: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveDimensionValue: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            dimensionType: string;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            parentId: null | number;
+            /** Format: int32 */
+            responsibleUserId: null | number;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
         };
     };
     responses: never;
@@ -8349,6 +8439,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDimensions: {
+        parameters: {
+            query?: {
+                Type?: string;
+                CompanyId?: number;
+                Search?: string;
+                IncludeInactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DimensionPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateDimensionValue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveDimensionValue"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateDimensionValue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveDimensionValue"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
                 };
             };
             /** @description Bad Request */

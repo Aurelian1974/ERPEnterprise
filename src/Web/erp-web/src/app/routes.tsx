@@ -32,6 +32,7 @@ export const routes = [
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
       { path: 'admin/config/cursuri', element: <ConfigPage /> },
+      { path: 'admin/config/dimensiuni', element: <ConfigPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

@@ -1,3 +1,4 @@
+using Erp.Core.Application.Dimensions;
 using Erp.Core.Application.ExchangeRates;
 using Erp.Core.Application.Licensing;
 using Erp.Core.Application.Me;
@@ -58,6 +59,7 @@ public static class CoreApiRegistration
         MapUsers(core);
         MapRoles(core);
         MapExchangeRates(core);
+        MapDimensions(core);
         MapEmployees(core);
         MapLicense(core);
         return endpoints;
@@ -303,6 +305,17 @@ public static class CoreApiRegistration
         core.MapPost("/users/{id:int}/revoke-sessions", (int id, RevokeUserSessionsBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new RevokeUserSessions(id, body.SessionId), ct))
             .WithName("RevokeUserSessions").Produces<bool>().SecurityAction();
+    }
+
+    // Configurare › Dimensiuni (02.01, 3.5; macheta 07k): centre de cost, proiecte, gestiuni, santiere.
+    private static void MapDimensions(RouteGroupBuilder core)
+    {
+        core.MapGet("/dimensions", ([AsParameters] GetDimensions query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetDimensions").Produces<DimensionPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/dimensions", (SaveDimensionValue body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateDimensionValue").Saves();
+        core.MapPut("/dimensions/{id:int}", (int id, SaveDimensionValue body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateDimensionValue").Saves();
     }
 
     // Configurare › Cursuri valutare (02.01, 4.3; macheta 07b): valutele, cursurile BNR (doar citire) si cele manuale.

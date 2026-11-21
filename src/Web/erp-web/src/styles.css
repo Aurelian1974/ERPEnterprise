@@ -2085,3 +2085,77 @@ button.cell:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Configurare › Dimensiuni (macheta 07k) ---------- */
+
+.dimensions-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2.2fr) minmax(300px, 1.3fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.dimension-types,
+.dimension-values,
+.dimension-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dimension-types .eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dimension-types ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dimension-types li button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dimension-types li button.current {
+  background: var(--info-bg);
+  color: var(--action-hover);
+  font-weight: 600;
+}
+
+.dimension-types li button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.dim-table tbody tr {
+  cursor: pointer;
+}
+
+.dim-table tbody tr.current td {
+  background: var(--info-bg);
+}
+
+@media (max-width: 1200px) {
+  .dimensions-layout {
+    grid-template-columns: 1fr;
+  }
+}
