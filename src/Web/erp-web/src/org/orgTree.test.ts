@@ -12,11 +12,11 @@ const tree: OrgTree = {
     { id: 11, groupId: 2, code: 'EXC', name: 'Exemplu Construct SRL', fiscalCode: '34567890', vatPayer: false, isActive: true },
   ],
   branches: [
-    { id: 20, companyId: 10, code: 'PL-CJ', name: 'Punct de lucru Cluj', address: 'Str. 1', city: 'Cluj-Napoca', countyCode: 'CJ', countryCode: 'RO', postalCode: null, phone: null, email: null, isActive: true, rowVersion: rv },
+    { id: 20, companyId: 10, code: 'PL-CJ', name: 'Punct de lucru Cluj', address: 'Str. 1', city: 'Cluj-Napoca', citySirutaCode: null, countyCode: 'CJ', countryCode: 'RO', postalCode: null, phone: null, email: null, isActive: true, rowVersion: rv },
   ],
   locations: [
-    { id: 30, companyId: 10, branchId: 20, code: 'DEP-CJ', name: 'Depozit Brașov', locationType: 2, address: null, city: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: true, rowVersion: rv },
-    { id: 31, companyId: 11, branchId: null, code: 'SH', name: 'Șantier Hala Bacău', locationType: 5, address: null, city: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: false, rowVersion: rv },
+    { id: 30, companyId: 10, branchId: 20, code: 'DEP-CJ', name: 'Depozit Brașov', locationType: 2, address: null, city: null, citySirutaCode: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: true, rowVersion: rv },
+    { id: 31, companyId: 11, branchId: null, code: 'SH', name: 'Șantier Hala Bacău', locationType: 5, address: null, city: null, citySirutaCode: null, countyCode: null, countryCode: null, postalCode: null, phone: null, email: null, isActive: false, rowVersion: rv },
   ],
   contacts: [],
 };

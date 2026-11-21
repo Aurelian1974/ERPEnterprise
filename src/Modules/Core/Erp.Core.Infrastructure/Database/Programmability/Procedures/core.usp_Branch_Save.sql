@@ -10,6 +10,7 @@ CREATE OR ALTER PROCEDURE core.usp_Branch_Save
     @PostalCode  nvarchar(10) = NULL,
     @Phone       nvarchar(30) = NULL,
     @Email       nvarchar(254) = NULL,
+    @CitySirutaCode int = NULL,
     @IsActive    bit,
     @RowVersion  binary(8) = NULL,
     @UserId      int
@@ -31,10 +32,13 @@ BEGIN
                WHERE CompanyId = @CompanyId AND CodeKey = UPPER(@Code) AND (@Id IS NULL OR Id <> @Id))
         THROW 50018, N'Codul punctului de lucru există deja în firmă.', 1;
 
+    -- Localitatea SIRUTA (02.01, 3.5): codul ales se verifica, fara cod se cauta dupa nume (usp_City_Resolve).
+    EXEC core.usp_City_Resolve @CountryCode, @CountyCode, @City OUTPUT, @CitySirutaCode OUTPUT;
+
     IF @Id IS NULL
     BEGIN
-        INSERT INTO core.Branch (CompanyId, Code, Name, Address, City, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
-                VALUES (@CompanyId, @Code, @Name, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
+        INSERT INTO core.Branch (CompanyId, Code, Name, Address, City, CitySirutaCode, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
+                VALUES (@CompanyId, @Code, @Name, @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -43,7 +47,7 @@ BEGIN
             THROW 50020, N'Punctul de lucru are locații active; dezactivați-le întâi.', 1;
 
         UPDATE core.Branch
-        SET Code = @Code, Name = @Name, Address = @Address, City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode,
+        SET Code = @Code, Name = @Name, Address = @Address, City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode, CountryCode = @CountryCode,
             PostalCode = @PostalCode, Phone = @Phone, Email = @Email, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND CompanyId = @CompanyId AND RowVersion = @RowVersion;
 

@@ -19,6 +19,19 @@ vi.mock('@syncfusion/ej2-react-notifications', () => ({ ToastComponent: () => nu
 
 // Componentele Syncfusion nu se pot monta in jsdom (cad la randare), deci campurile devin aici echivalente HTML simple,
 // legate la formular prin acelasi Controller. Testul verifica logica formularului, nu invelisul Syncfusion.
+// Lista SIRUTA (Syncfusion, cautare pe server) devine aici campul text al localitatii, ca celelalte campuri.
+vi.mock('./CityField', async () => {
+  const { Controller } = await import('react-hook-form');
+  return {
+    CityField: ({ form, label }: { form: { control: never }; label: string }) => (
+      <Controller control={form.control} name="city" render={({ field, fieldState }) => (
+        <label>{label}<input aria-label={label} value={(field.value as string | null) ?? ''} onChange={(e) => field.onChange(e.target.value)} />
+          {fieldState.error === undefined ? null : <span role="alert">{fieldState.error.message}</span>}</label>
+      )} />
+    ),
+  };
+});
+
 vi.mock('../components/Field', async () => {
   const { Controller } = await import('react-hook-form');
   type Props = { control: never; name: string; label: string; disabled?: boolean };
@@ -71,7 +84,7 @@ const company = (changes: Partial<CompanyDetail> = {}): CompanyDetail => ({
   tradeRegisterNo: 'J40/1234/2015',
   shareCapital: '200.00',
   address: 'Str. Exemplului nr. 10',
-  city: 'București',
+  city: 'București', citySirutaCode: null,
   countyCode: 'B',
   countryCode: 'RO',
   postalCode: '010101',

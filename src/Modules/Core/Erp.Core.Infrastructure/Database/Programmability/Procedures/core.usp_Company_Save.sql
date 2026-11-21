@@ -15,6 +15,7 @@ CREATE OR ALTER PROCEDURE core.usp_Company_Save
     @PostalCode               nvarchar(10) = NULL,
     @Phone                    nvarchar(30) = NULL,
     @Email                    nvarchar(254) = NULL,
+    @CitySirutaCode           int = NULL,
     @DefaultPrecisionPolicyId int,
     @IncludeInConsolidation   bit,
     @IsActive                 bit,
@@ -44,12 +45,15 @@ BEGIN
     IF EXISTS (SELECT 1 FROM core.Company WITH (UPDLOCK, HOLDLOCK) WHERE FiscalCode = @FiscalCode AND (@Id IS NULL OR Id <> @Id))
         THROW 50019, N'Există deja o firmă cu acest CUI.', 1;
 
+    -- Localitatea SIRUTA (02.01, 3.5): codul ales se verifica, fara cod se cauta dupa nume (usp_City_Resolve).
+    EXEC core.usp_City_Resolve @CountryCode, @CountyCode, @City OUTPUT, @CitySirutaCode OUTPUT;
+
     IF @Id IS NULL
     BEGIN
         INSERT INTO core.Company (GroupId, Code, Name, FiscalCode, VatPayer, VatOnCollection, TradeRegisterNo, ShareCapital,
-            Address, City, CountyCode, CountryCode, PostalCode, Phone, Email, DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
+            Address, City, CitySirutaCode, CountyCode, CountryCode, PostalCode, Phone, Email, DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
         VALUES (@GroupId, @Code, @Name, @FiscalCode, @VatPayer, @VatOnCollection, @TradeRegisterNo, @ShareCapital,
-            @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @DefaultPrecisionPolicyId, @IncludeInConsolidation, @IsActive, @UserId);
+            @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @DefaultPrecisionPolicyId, @IncludeInConsolidation, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -67,7 +71,7 @@ BEGIN
         UPDATE core.Company
         SET GroupId = @GroupId, Code = @Code, Name = @Name, FiscalCode = @FiscalCode, VatPayer = @VatPayer,
             VatOnCollection = @VatOnCollection, TradeRegisterNo = @TradeRegisterNo, ShareCapital = @ShareCapital,
-            Address = @Address, City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode,
+            Address = @Address, City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode,
             Phone = @Phone, Email = @Email,
             DefaultPrecisionPolicyId = @DefaultPrecisionPolicyId, IncludeInConsolidation = @IncludeInConsolidation,
             IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId

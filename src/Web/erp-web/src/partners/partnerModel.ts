@@ -163,6 +163,8 @@ export function anafToForm(company: AnafCompany, counties: readonly { code: stri
   }
   if (company.city != null) {
     values.city = company.city;
+    // Textul ANAF („Mun. Suceava”) se leaga de SIRUTA la salvare, pe server; codul ales inainte nu mai e valabil.
+    values.citySirutaCode = null;
   }
   if (company.postalCode != null) {
     values.postalCode = company.postalCode;

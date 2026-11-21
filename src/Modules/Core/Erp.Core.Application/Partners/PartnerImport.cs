@@ -518,7 +518,7 @@ internal sealed class ImportPartnerBatchHandler(IImportJobStore jobs, IPartnerSt
             }
 
             var partner = new PartnerRecord(match?.Id, code, row.Name, row.PartnerType, row.FiscalCode, false, null, row.IsCustomer, row.IsSupplier,
-                row.PartnerGroupId, row.VatPayer, row.VatOnCollection, row.AnafInactive, row.TradeRegisterNo, row.Address, row.City, row.CountyCode,
+                row.PartnerGroupId, row.VatPayer, row.VatOnCollection, row.AnafInactive, row.TradeRegisterNo, row.Address, row.City, null, row.CountyCode,
                 row.CountryCode, row.PostalCode, row.Phone, row.Email, match?.IntraGroupCompanyId, row.IsActive, null, match?.RowVersion, row.AnafCheckedAt);
             var saved = await partners.SaveAsync(partner, context.UserId, cancellationToken).ConfigureAwait(false);
             var individual = row.PartnerType == (byte)PartnerType.Individual;

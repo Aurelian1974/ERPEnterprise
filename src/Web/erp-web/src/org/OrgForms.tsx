@@ -9,6 +9,7 @@ import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, code, money, moneyForInput, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
+import { CityField } from './CityField';
 import { orgApi, orgKeys, type CompanyDetail, type OrgLookups, type Saved } from './orgApi';
 import type { OrgTree } from './orgTree';
 
@@ -196,6 +197,7 @@ export const companySchema = z
     countryCode: required,
     countyCode: optionalText,
     city: required.max(100),
+    citySirutaCode: z.number().int().nullable().default(null),
     postalCode: optionalText,
     phone: optionalPhone,
     email: optionalEmail,
@@ -218,13 +220,13 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
   const defaults: CompanyInput = company === undefined
     ? {
         code: '', name: '', fiscalCode: '', tradeRegisterNo: '', shareCapital: '', groupId: groupId ?? null, vatPayer: true, vatOnCollection: false,
-        address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null, phone: null, email: null,
+        address: '', countryCode: ROMANIA, countyCode: null, city: '', citySirutaCode: null, postalCode: null, phone: null, email: null,
         defaultPrecisionPolicyId: lookups.precisionPolicies[0]?.id ?? 0, includeInConsolidation: true, isActive: true,
       }
     : {
         code: company.code, name: company.name, fiscalCode: (company.vatPayer ? 'RO' : '') + company.fiscalCode, tradeRegisterNo: company.tradeRegisterNo,
         shareCapital: moneyForInput(company.shareCapital), groupId: company.groupId, vatPayer: company.vatPayer, vatOnCollection: company.vatOnCollection,
-        address: company.address, countryCode: company.countryCode, countyCode: company.countyCode, city: company.city, postalCode: company.postalCode,
+        address: company.address, countryCode: company.countryCode, countyCode: company.countyCode, city: company.city, citySirutaCode: company.citySirutaCode, postalCode: company.postalCode,
         phone: company.phone ?? null, email: company.email ?? null,
         defaultPrecisionPolicyId: company.defaultPrecisionPolicyId, includeInConsolidation: company.includeInConsolidation, isActive: company.isActive,
       };
@@ -275,7 +277,7 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
         <TextField control={form.control} name="address" label={t('field.address')} className="span2" />
         <SelectField control={form.control} name="countryCode" label={t('field.country')} options={countryOptions(lookups)} />
         <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
-        <TextField control={form.control} name="city" label={t('field.city')} />
+        <CityField form={form} label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
       </div>
       <h3 className="section">{t('section.contact')}</h3>
@@ -308,6 +310,7 @@ export const branchSchema = z
     countryCode: required,
     countyCode: optionalText,
     city: required.max(100),
+    citySirutaCode: z.number().int().nullable().default(null),
     postalCode: optionalText,
     phone: optionalPhone,
     email: optionalEmail,
@@ -328,8 +331,8 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
 }) {
   const branch = tree.branches.find((b) => b.id === branchId);
   const defaults: BranchInput = branch === undefined
-    ? { code: '', name: '', address: '', countryCode: ROMANIA, countyCode: null,     city: '', postalCode: null, phone: null, email: null, isActive: true }
-    : { code: branch.code, name: branch.name, address: branch.address, countryCode: branch.countryCode, countyCode: branch.countyCode, city: branch.city,
+    ? { code: '', name: '', address: '', countryCode: ROMANIA, countyCode: null, city: '', citySirutaCode: null, postalCode: null, phone: null, email: null, isActive: true }
+    : { code: branch.code, name: branch.name, address: branch.address, countryCode: branch.countryCode, countyCode: branch.countyCode, city: branch.city, citySirutaCode: branch.citySirutaCode,
             postalCode: branch.postalCode, phone: branch.phone, email: branch.email, isActive: branch.isActive };
   const form = useForm<BranchInput, unknown, BranchValues>({
     resolver: zodResolver(branchSchema) as Resolver<BranchInput, unknown, BranchValues>,
@@ -359,7 +362,7 @@ export function BranchForm({ tree, lookups, companyId, branchId, onSaved, onCanc
         <TextField control={form.control} name="address" label={t('field.address')} className="span2" />
         <SelectField control={form.control} name="countryCode" label={t('field.country')} options={countryOptions(lookups)} />
         <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
-        <TextField control={form.control} name="city" label={t('field.city')} />
+        <CityField form={form} label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
         <TextField control={form.control} name="phone" label={t('field.phone')} />
         <TextField control={form.control} name="email" label={t('field.email')} />
@@ -381,6 +384,7 @@ export const locationSchema = z
     countryCode: optionalText,
     countyCode: optionalText,
     city: optionalText,
+    citySirutaCode: z.number().int().nullable().default(null),
     postalCode: optionalText,
     phone: optionalPhone,
     email: optionalEmail,
@@ -405,9 +409,9 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
 }) {
   const location = tree.locations.find((l) => l.id === locationId);
   const defaults: LocationInput = location === undefined
-    ? { code: '', name: '', branchId: branchId ?? null, locationType: 2, address: null, countryCode: null, countyCode: null,     city: null, postalCode: null, phone: null, email: null, isActive: true }
+    ? { code: '', name: '', branchId: branchId ?? null, locationType: 2, address: null, countryCode: null, countyCode: null, city: null, citySirutaCode: null, postalCode: null, phone: null, email: null, isActive: true }
     : { code: location.code, name: location.name, branchId: location.branchId, locationType: location.locationType, address: location.address,
-            countryCode: location.countryCode, countyCode: location.countyCode, city: location.city, postalCode: location.postalCode,
+            countryCode: location.countryCode, countyCode: location.countyCode, city: location.city, citySirutaCode: location.citySirutaCode, postalCode: location.postalCode,
             phone: location.phone, email: location.email, isActive: location.isActive };
   const form = useForm<LocationInput, unknown, LocationValues>({
     resolver: zodResolver(locationSchema) as Resolver<LocationInput, unknown, LocationValues>,
@@ -444,7 +448,7 @@ export function LocationForm({ tree, lookups, companyId, locationId, branchId, o
         <TextField control={form.control} name="address" label={t('field.address')} className="span2" />
         <SelectField control={form.control} name="countryCode" label={t('field.country')} options={countryOptions(lookups)} allowEmpty={t('common.none')} />
         <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
-        <TextField control={form.control} name="city" label={t('field.city')} />
+        <CityField form={form} label={t('field.city')} />
         <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
       </div>
       <h3 className="section">{t('section.contact')}</h3>

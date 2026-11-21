@@ -7609,6 +7609,54 @@
           }
         }
       }
+    },
+    "/api/core/cities": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "SearchCities",
+        "parameters": [
+          {
+            "name": "County",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "SirutaCode",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7659,6 +7707,7 @@
           "name",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -7688,6 +7737,13 @@
           },
           "city": {
             "type": "string"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -7745,6 +7801,7 @@
           "name",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -7779,6 +7836,13 @@
           },
           "city": {
             "type": "string"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -7946,6 +8010,7 @@
           "shareCapital",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -8004,6 +8069,13 @@
           },
           "city": {
             "type": "string"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -8538,6 +8610,7 @@
           "locationType",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -8584,6 +8657,13 @@
               "null",
               "string"
             ]
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -9002,6 +9082,13 @@
               "null",
               "string"
             ]
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9115,6 +9202,13 @@
               "null",
               "string"
             ]
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9201,6 +9295,13 @@
               "null",
               "string"
             ]
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9495,6 +9596,13 @@
               "null",
               "string"
             ]
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9617,6 +9725,7 @@
           "name",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -9651,6 +9760,13 @@
           },
           "city": {
             "type": "string"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -9809,6 +9925,7 @@
           "tradeRegisterNo",
           "address",
           "city",
+          "citySirutaCode",
           "countyCode",
           "countryCode",
           "postalCode",
@@ -9893,6 +10010,13 @@
           },
           "city": {
             "type": "string"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "countyCode": {
             "type": [
@@ -10520,6 +10644,13 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -10608,6 +10739,13 @@
               "string"
             ],
             "format": "byte"
+          },
+          "citySirutaCode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -15319,6 +15457,49 @@
           },
           "allCompanies": {
             "type": "boolean"
+          }
+        }
+      },
+      "CityOptionDto": {
+        "required": [
+          "sirutaCode",
+          "name",
+          "kind",
+          "parentName",
+          "parentKind",
+          "postalCode"
+        ],
+        "type": "object",
+        "properties": {
+          "sirutaCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "parentName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parentKind": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       }

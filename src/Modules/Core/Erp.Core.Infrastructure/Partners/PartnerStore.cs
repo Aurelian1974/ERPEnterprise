@@ -49,7 +49,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             .ToList();
         return row is null ? null : new PartnerDetailDto(row.Id, row.Code, row.Name, row.PartnerType, row.FiscalCode, row.HasPersonalId, row.IsCustomer,
             row.IsSupplier, row.PartnerGroupId, row.VatPayer, row.VatOnCollection, row.AnafInactive, Utc(row.AnafCheckedAt), row.TradeRegisterNo,
-            row.Address, row.City, row.CountyCode, row.CountryCode, row.PostalCode, row.Phone, row.Email, row.IntraGroupCompanyId, row.IsActive,
+            row.Address, row.City, row.CitySirutaCode, row.CountyCode, row.CountryCode, row.PostalCode, row.Phone, row.Email, row.IntraGroupCompanyId, row.IsActive,
             DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc), row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc),
             row.RowVersion, addresses, accounts, contacts, properties, OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).Level,
             OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).NodeId, row.OwnerName);
@@ -90,7 +90,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         {
             partner.Id, partner.Code, partner.Name, partner.PartnerType, partner.FiscalCode, PersonalIdChange = partner.PersonalIdChange,
             partner.IsCustomer, partner.IsSupplier, partner.PartnerGroupId, partner.VatPayer, partner.VatOnCollection,
-            partner.AnafInactive, partner.TradeRegisterNo, partner.Address, partner.City, partner.CountyCode, CountryCode = Ansi(partner.CountryCode, 2),
+            partner.AnafInactive, partner.TradeRegisterNo, partner.Address, partner.City, partner.CitySirutaCode, partner.CountyCode, CountryCode = Ansi(partner.CountryCode, 2),
             partner.PostalCode, partner.Phone, partner.Email, partner.IntraGroupCompanyId, partner.IsActive,
             SaveProperties = partner.Properties is not null, partner.RowVersion, partner.AnafCheckedAt, UserId = userId,
             SaveOwner = partner.Owner is not null, OwnerCompanyId = partner.Owner?.CompanyId, OwnerBranchId = partner.Owner?.BranchId,
@@ -113,7 +113,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
 
     public Task<SavedEntity> SaveAddressAsync(SavePartnerAddress command, int userId, CancellationToken ct) => Save("core.usp_PartnerAddress_Save", new
     {
-        command.Id, command.PartnerId, command.AddressType, command.Name, command.Address, command.City, command.CountyCode,
+        command.Id, command.PartnerId, command.AddressType, command.Name, command.Address, command.City, command.CitySirutaCode, command.CountyCode,
         CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email, command.IsDefault, command.IsActive,
         command.RowVersion, UserId = userId,
     }, ct);
@@ -172,7 +172,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
 
     private sealed record PartnerRow(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool HasPersonalId, bool IsCustomer,
         bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,
-        string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
+        string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
         bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, int? OwnerCompanyId, int? OwnerBranchId,
         int? OwnerLocationId, string? OwnerName);
 

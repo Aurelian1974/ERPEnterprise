@@ -21,6 +21,7 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Save
     @PostalCode          nvarchar(10) = NULL,
     @Phone               nvarchar(30) = NULL,
     @Email               nvarchar(254) = NULL,
+    @CitySirutaCode      int = NULL,
     @IntraGroupCompanyId int = NULL,
     @IsActive            bit,
     @SaveProperties      bit = 0,
@@ -87,13 +88,16 @@ BEGIN
            OR (p.ValueUserId IS NOT NULL AND u.Id IS NULL))
         THROW 50021, N'O proprietate sau o valoare aleasă nu există.', 1;
 
+    -- Localitatea SIRUTA (02.01, 3.5): codul ales se verifica, fara cod se cauta dupa nume (usp_City_Resolve).
+    EXEC core.usp_City_Resolve @CountryCode, @CountyCode, @City OUTPUT, @CitySirutaCode OUTPUT;
+
     IF @Id IS NULL
     BEGIN
         INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, PersonalIdEncrypted, IsCustomer, IsSupplier, PartnerGroupId,
-            VatPayer, VatOnCollection, AnafInactive, AnafCheckedAt, TradeRegisterNo, Address, City, CountyCode, CountryCode, PostalCode, Phone, Email,
+            VatPayer, VatOnCollection, AnafInactive, AnafCheckedAt, TradeRegisterNo, Address, City, CitySirutaCode, CountyCode, CountryCode, PostalCode, Phone, Email,
             IntraGroupCompanyId, IsActive, OwnerCompanyId, OwnerBranchId, OwnerLocationId, CreatedBy)
         VALUES (@Code, @Name, @PartnerType, @FiscalCode, @PersonalIdEncrypted, @IsCustomer, @IsSupplier, @PartnerGroupId,
-            @VatPayer, @VatOnCollection, @AnafInactive, @AnafCheckedAt, @TradeRegisterNo, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
+            @VatPayer, @VatOnCollection, @AnafInactive, @AnafCheckedAt, @TradeRegisterNo, @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
             @IntraGroupCompanyId, @IsActive, @OwnerCompanyId, @OwnerBranchId, @OwnerLocationId, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
@@ -104,7 +108,7 @@ BEGIN
             PersonalIdEncrypted = CASE WHEN @PartnerType <> 4 THEN NULL WHEN @PersonalIdChange = 1 THEN @PersonalIdEncrypted ELSE PersonalIdEncrypted END,
             IsCustomer = @IsCustomer, IsSupplier = @IsSupplier, PartnerGroupId = @PartnerGroupId, VatPayer = @VatPayer,
             VatOnCollection = @VatOnCollection, AnafInactive = @AnafInactive, AnafCheckedAt = COALESCE(@AnafCheckedAt, AnafCheckedAt), TradeRegisterNo = @TradeRegisterNo, Address = @Address,
-            City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email,
+            City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email,
             IntraGroupCompanyId = @IntraGroupCompanyId, IsActive = @IsActive,
             OwnerCompanyId = CASE WHEN @SaveOwner = 1 THEN @OwnerCompanyId ELSE OwnerCompanyId END,
             OwnerBranchId = CASE WHEN @SaveOwner = 1 THEN @OwnerBranchId ELSE OwnerBranchId END,

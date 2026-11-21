@@ -23,6 +23,19 @@ vi.mock('./partnerApi', async (original) => ({
 vi.mock('@syncfusion/ej2-react-notifications', () => ({ ToastComponent: () => null }));
 
 // Ca in OrgForms.test.tsx: campurile Syncfusion devin echivalente HTML legate prin acelasi Controller.
+// Lista SIRUTA (Syncfusion, cautare pe server) devine aici campul text al localitatii, ca celelalte campuri.
+vi.mock('../org/CityField', async () => {
+  const { Controller } = await import('react-hook-form');
+  return {
+    CityField: ({ form, label }: { form: { control: never }; label: string }) => (
+      <Controller control={form.control} name="city" render={({ field, fieldState }) => (
+        <label>{label}<input aria-label={label} value={(field.value as string | null) ?? ''} onChange={(e) => field.onChange(e.target.value)} />
+          {fieldState.error === undefined ? null : <span role="alert">{fieldState.error.message}</span>}</label>
+      )} />
+    ),
+  };
+});
+
 vi.mock('../components/Field', async () => {
   const { Controller } = await import('react-hook-form');
   type Props = { control: never; name: string; label: string; disabled?: boolean; hint?: import('react').ReactNode };
@@ -71,7 +84,7 @@ const lookups: PartnerLookups = {
 const partner = (changes: Partial<PartnerDetail> = {}): PartnerDetail => ({
   id: 5, code: 'AGN', name: 'Agro Nord Distribuție SRL', partnerType: 1, fiscalCode: '33445566', hasPersonalId: false, isCustomer: true, isSupplier: false,
   partnerGroupId: null, vatPayer: true, vatOnCollection: false, anafInactive: false, anafCheckedAt: null, tradeRegisterNo: 'J33/567/2012',
-  address: 'Str. Gării nr. 21', city: 'Suceava', countyCode: 'SV', countryCode: 'RO', postalCode: '720004', phone: null, email: null,
+  address: 'Str. Gării nr. 21', city: 'Suceava', citySirutaCode: null, countyCode: 'SV', countryCode: 'RO', postalCode: '720004', phone: null, email: null,
   intraGroupCompanyId: null, isActive: true, createdAt: '2025-02-03T08:00:00Z', modifiedByName: 'Ana Ionescu', lastChangedAt: '2026-11-10T09:12:00Z',
   rowVersion: 'AAAAAAAAB9E=', addresses: [], bankAccounts: [], contacts: [], properties: [{ propertyDefinitionId: 10, valueOptionId: 101 }],
   ownerLevel: 0, ownerNodeId: null, ownerName: null,

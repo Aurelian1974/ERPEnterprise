@@ -17,7 +17,7 @@ public sealed record PartnerPageDto(IReadOnlyList<PartnerListItemDto> Items, int
 public sealed record PartnerPropertyValue(int PropertyDefinitionId, string? ValueText = null, string? ValueNumber = null, DateOnly? ValueDate = null,
     bool? ValueBool = null, int? ValueOptionId = null, int? ValueUserId = null);
 
-public sealed record PartnerAddressDto(int Id, int PartnerId, int AddressType, string? Name, string Address, string City, string? CountyCode,
+public sealed record PartnerAddressDto(int Id, int PartnerId, int AddressType, string? Name, string Address, string City, int? CitySirutaCode, string? CountyCode,
     string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsDefault, bool IsActive, byte[] RowVersion);
 
 public sealed record PartnerBankAccountDto(int Id, int PartnerId, string Iban, string BankName, string Currency, bool IsDefault, bool IsActive, byte[] RowVersion);
@@ -28,7 +28,7 @@ public sealed record PartnerContactDto(int Id, int PartnerId, string Name, strin
 /// <summary>Fisa partenerului. CNP-ul nu e inclus: HasPersonalId spune doar ca exista; se citeste separat, cu permisiune (A13).</summary>
 public sealed record PartnerDetailDto(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool HasPersonalId, bool IsCustomer,
     bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,
-    string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
+    string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
     bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, IReadOnlyList<PartnerAddressDto> Addresses,
     IReadOnlyList<PartnerBankAccountDto> BankAccounts, IReadOnlyList<PartnerContactDto> Contacts, IReadOnlyList<PartnerPropertyValue> Properties,
     byte OwnerLevel, int? OwnerNodeId, string? OwnerName);
@@ -100,7 +100,7 @@ public interface IPartnerStore
 /// </summary>
 public sealed record PartnerRecord(int? Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool PersonalIdChange,
     byte[]? PersonalIdEncrypted, bool IsCustomer, bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive,
-    string? TradeRegisterNo, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email,
+    string? TradeRegisterNo, string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email,
     int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, DateTime? AnafCheckedAt = null,
     OwnerRef? Owner = null);
 

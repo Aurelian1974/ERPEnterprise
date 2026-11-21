@@ -30,7 +30,7 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         var addresses = (await grid.ReadAsync<CompanyAddressDto>().ConfigureAwait(false)).ToList();
         var contacts = (await grid.ReadAsync<CompanyContactDto>().ConfigureAwait(false)).ToList();
         return row is null ? null : new CompanyDetailDto(row.Id, row.GroupId, row.Code, row.Name, row.FiscalCode, row.VatPayer, row.VatOnCollection,
-            row.TradeRegisterNo, row.ShareCapital?.ToString("0.00", CultureInfo.InvariantCulture), row.Address, row.City, row.CountyCode,
+            row.TradeRegisterNo, row.ShareCapital?.ToString("0.00", CultureInfo.InvariantCulture), row.Address, row.City, row.CitySirutaCode, row.CountyCode,
             row.CountryCode, row.PostalCode, row.FunctionalCurrency, row.DefaultPrecisionPolicyId, row.IncludeInConsolidation, row.IsActive,
             row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc), row.RowVersion, accounts, addresses, row.Phone, row.Email, contacts);
     }
@@ -69,19 +69,19 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         command.Id, command.GroupId, command.Code, command.Name, command.FiscalCode, command.VatPayer, command.VatOnCollection,
         command.TradeRegisterNo,
         ShareCapital = command.ShareCapital is null ? (decimal?)null : decimal.Parse(command.ShareCapital, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture),
-        command.Address, command.City,         command.CountyCode, CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email,
+        command.Address, command.City, command.CitySirutaCode, command.CountyCode, CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email,
         command.DefaultPrecisionPolicyId, command.IncludeInConsolidation, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public Task<SavedEntity> SaveBranchAsync(SaveBranch command, int userId, CancellationToken ct) => SaveAsync("core.usp_Branch_Save", new
     {
-        command.Id, command.CompanyId, command.Code, command.Name, command.Address, command.City, command.CountyCode,
+        command.Id, command.CompanyId, command.Code, command.Name, command.Address, command.City, command.CitySirutaCode, command.CountyCode,
         CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
     public Task<SavedEntity> SaveLocationAsync(SaveLocation command, int userId, CancellationToken ct) => SaveAsync("core.usp_Location_Save", new
     {
-        command.Id, command.CompanyId, command.BranchId, command.Code, command.Name, command.LocationType, command.Address, command.City,
+        command.Id, command.CompanyId, command.BranchId, command.Code, command.Name, command.LocationType, command.Address, command.City, command.CitySirutaCode,
         command.CountyCode, command.CountryCode, command.PostalCode, command.Phone, command.Email, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
@@ -93,7 +93,7 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
 
     public Task<SavedEntity> SaveAddressAsync(SaveCompanyAddress command, int userId, CancellationToken ct) => SaveAsync("core.usp_CompanyAddress_Save", new
     {
-        command.Id, command.CompanyId, command.AddressType, command.Name, command.Address, command.City, command.CountyCode,
+        command.Id, command.CompanyId, command.AddressType, command.Name, command.Address, command.City, command.CitySirutaCode, command.CountyCode,
         CountryCode = Ansi(command.CountryCode, 2),         command.PostalCode, command.Phone, command.Email, command.IsDefault, command.IsActive, command.RowVersion, UserId = userId,
     }, ct);
 
@@ -132,7 +132,7 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
     private static DbString Ansi(string value, int length) => new() { Value = value, Length = length, IsAnsi = true, IsFixedLength = length <= 3 };
 
     private sealed record CompanyRow(int Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool VatOnCollection,
-        string TradeRegisterNo, decimal? ShareCapital, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode,
+        string TradeRegisterNo, decimal? ShareCapital, string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode,
                 string? Phone, string? Email, string FunctionalCurrency, int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, DateTime? ModifiedAt,
         string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion);
 }

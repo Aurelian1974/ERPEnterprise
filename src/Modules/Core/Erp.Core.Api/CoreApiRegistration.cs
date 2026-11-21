@@ -85,6 +85,8 @@ public static class CoreApiRegistration
     // care se verifica permisiunile; 0 = nivelul instalarii (grupuri si firme noi).
     private static void MapOrganization(RouteGroupBuilder core)
     {
+        core.MapGet("/cities", ([AsParameters] SearchCities query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchCities").Produces<IReadOnlyList<CityOptionDto>>();
         core.MapGet("/org/tree", (ISender sender, CancellationToken ct) => sender.Send(new GetOrgTree(), ct))
             .WithName("GetOrgTree").Produces<OrgTreeDto>();
         core.MapGet("/org/lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetOrgLookups(), ct))

@@ -12,6 +12,7 @@ import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
+import { CityField } from '../org/CityField';
 import { countryOptions, countyOptions, useCountyFollowsCountry } from '../org/OrgForms';
 import type { OrgLookups } from '../org/orgApi';
 import { DataType, PartnerType, partnerApi, partnerKeys, type AnafCompany, type PartnerDetail, type PartnerLookups, type PropertyDefinition, type Saved } from './partnerApi';
@@ -37,6 +38,7 @@ function partnerSchema(definitions: readonly PropertyDefinition[], isNew: boolea
       countryCode: required,
       countyCode: optionalText,
       city: required.max(100),
+      citySirutaCode: z.number().int().nullable().default(null),
       postalCode: optionalText,
       phone: optionalPhone,
       email: optionalEmail,
@@ -76,14 +78,14 @@ type PartnerInput = z.input<Schema>;
 type PartnerValues = z.output<Schema>;
 
 const fields = ['code', 'name', 'partnerType', 'fiscalCode', 'isCustomer', 'isSupplier', 'partnerGroupId', 'vatPayer', 'vatOnCollection', 'anafInactive',
-  'tradeRegisterNo', 'address', 'countryCode', 'countyCode', 'city', 'postalCode', 'phone', 'email', 'intraGroupCompanyId', 'isActive', 'personalId'];
+  'tradeRegisterNo', 'address', 'countryCode', 'countyCode', 'city', 'citySirutaCode', 'postalCode', 'phone', 'email', 'intraGroupCompanyId', 'isActive', 'personalId'];
 
 function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly PropertyDefinition[]): PartnerInput {
   if (partner === undefined) {
     return {
       code: null, name: '', partnerType: PartnerType.LegalRomania, fiscalCode: null, isCustomer: true, isSupplier: false, partnerGroupId: null,
       vatPayer: false, vatOnCollection: false, anafInactive: false, tradeRegisterNo: null, address: '', countryCode: ROMANIA, countyCode: null,
-      city: '', postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, changePersonalId: true, personalId: null,
+      city: '', citySirutaCode: null, postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, changePersonalId: true, personalId: null,
       anafCheckedAt: null, props: toFormProps(definitions, []),
     };
   }
@@ -91,7 +93,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
     code: partner.code, name: partner.name, partnerType: partner.partnerType, fiscalCode: partner.fiscalCode ?? null, isCustomer: partner.isCustomer,
     isSupplier: partner.isSupplier, partnerGroupId: partner.partnerGroupId ?? null, vatPayer: partner.vatPayer, vatOnCollection: partner.vatOnCollection,
     anafInactive: partner.anafInactive, tradeRegisterNo: partner.tradeRegisterNo ?? null, address: partner.address, countryCode: partner.countryCode,
-    countyCode: partner.countyCode ?? null, city: partner.city, postalCode: partner.postalCode ?? null, phone: partner.phone ?? null,
+    countyCode: partner.countyCode ?? null, city: partner.city, citySirutaCode: partner.citySirutaCode, postalCode: partner.postalCode ?? null, phone: partner.phone ?? null,
     email: partner.email ?? null, intraGroupCompanyId: partner.intraGroupCompanyId ?? null, isActive: partner.isActive,
     changePersonalId: !partner.hasPersonalId, personalId: null, anafCheckedAt: null, props: toFormProps(definitions, partner.properties),
   };
@@ -316,7 +318,7 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
           <SelectField control={form.control} name="countryCode" label={`${t('field.country')} *`} options={countryOptions(orgLookups)}
             disabled={partnerType === PartnerType.LegalRomania} />
           <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(orgLookups, country)} allowEmpty={t('common.none')} />
-          <TextField control={form.control} name="city" label={`${t('field.city')} *`} />
+          <CityField form={form} label={`${t('field.city')} *`} />
         </div>
         <h3 className="section">{t('partner.section.other')}</h3>
         <div className="grid g3">

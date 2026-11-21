@@ -11,6 +11,7 @@ import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, ROMANIA } from '../components/forms';
 import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
+import { CityField } from '../org/CityField';
 import { ro } from '../i18n/ro';
 import { actionOption, fieldLabel } from '../audit/auditModel';
 import { addressSchema } from '../org/CompanyTabs';
@@ -59,10 +60,10 @@ export function PartnerAddressesTab({ partner, orgLookups, canManage }: { readon
   const save = useChildSave(partner.id);
   const types = orgLookups.addressTypes;
   const defaults: AddressInput = address === undefined
-    ? { addressType: types.find((x) => x.isActive)?.id ?? 0, name: null, address: '', countryCode: partner.countryCode, countyCode: null, city: '',
+    ? { addressType: types.find((x) => x.isActive)?.id ?? 0, name: null, address: '', countryCode: partner.countryCode, countyCode: null, city: '', citySirutaCode: null,
         postalCode: null, phone: null, email: null, isDefault: !partner.addresses.some((a) => a.isDefault), isActive: true }
     : { addressType: address.addressType, name: address.name ?? null, address: address.address, countryCode: address.countryCode,
-        countyCode: address.countyCode ?? null, city: address.city, postalCode: address.postalCode ?? null, phone: address.phone ?? null,
+        countyCode: address.countyCode ?? null, city: address.city, citySirutaCode: address.citySirutaCode, postalCode: address.postalCode ?? null, phone: address.phone ?? null,
         email: address.email ?? null, isDefault: address.isDefault, isActive: address.isActive };
   const form = useForm<AddressInput, unknown, AddressValues>({
     resolver: zodResolver(addressSchema) as Resolver<AddressInput, unknown, AddressValues>,
@@ -135,7 +136,7 @@ export function PartnerAddressesTab({ partner, orgLookups, canManage }: { readon
               <TextField control={form.control} name="address" label={t('field.address')} className="span2" />
               <SelectField control={form.control} name="countryCode" label={t('field.country')} options={countryOptions(orgLookups)} />
               <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(orgLookups, country)} allowEmpty={t('common.none')} />
-              <TextField control={form.control} name="city" label={t('field.city')} />
+              <CityField form={form} label={t('field.city')} />
               <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
               <TextField control={form.control} name="phone" label={t('field.phone')} />
               <TextField control={form.control} name="email" label={t('field.email')} />

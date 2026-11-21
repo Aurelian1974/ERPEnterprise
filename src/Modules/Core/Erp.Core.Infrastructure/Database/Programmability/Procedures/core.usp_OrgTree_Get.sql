@@ -41,12 +41,12 @@ BEGIN
     JOIN #Companies AS v ON v.Id = c.Id
     ORDER BY c.Name, c.Id;
 
-    SELECT b.Id, b.CompanyId, b.Code, b.Name, b.Address, b.City, b.CountyCode, b.CountryCode, b.PostalCode, b.IsActive, b.RowVersion, b.Phone, b.Email
+    SELECT b.Id, b.CompanyId, b.Code, b.Name, b.Address, b.City, b.CitySirutaCode, b.CountyCode, b.CountryCode, b.PostalCode, b.IsActive, b.RowVersion, b.Phone, b.Email
     FROM core.Branch AS b
     JOIN #Companies AS v ON v.Id = b.CompanyId
     ORDER BY b.Name, b.Id;
 
-    SELECT l.Id, l.CompanyId, l.BranchId, l.Code, l.Name, l.LocationType, l.Address, l.City, l.CountyCode, l.CountryCode,
+    SELECT l.Id, l.CompanyId, l.BranchId, l.Code, l.Name, l.LocationType, l.Address, l.City, l.CitySirutaCode, l.CountyCode, l.CountryCode,
            l.PostalCode, l.IsActive, l.RowVersion, l.Phone, l.Email
     FROM core.Location AS l
     JOIN #Companies AS v ON v.Id = l.CompanyId

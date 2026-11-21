@@ -11,6 +11,7 @@ import { currencyOptions, useCurrencies } from '../rates/ratesApi';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { t } from '../i18n';
+import { CityField } from './CityField';
 import { useCompanyHistory } from '../audit/auditApi';
 import { HistoryView } from '../partners/PartnerTabs';
 import { countryOptions, countyOptions, useCountyFollowsCountry } from './OrgForms';
@@ -127,6 +128,7 @@ export const addressSchema = z
     countryCode: required,
     countyCode: optionalText,
     city: required.max(100),
+    citySirutaCode: z.number().int().nullable().default(null),
     postalCode: optionalText,
     phone: optionalPhone,
     email: optionalEmail,
@@ -147,9 +149,9 @@ export function AddressesTab({ company, lookups, canManage }: { readonly company
   const types = lookups.addressTypes;
   const defaultType = types.find((x) => x.isActive)?.id ?? 0;
   const defaults: AddressInput = address === undefined
-    ? { addressType: defaultType, name: null, address: '', countryCode: ROMANIA, countyCode: null, city: '', postalCode: null, phone: null, email: null, isDefault: false, isActive: true }
+    ? { addressType: defaultType, name: null, address: '', countryCode: ROMANIA, countyCode: null, city: '', citySirutaCode: null, postalCode: null, phone: null, email: null, isDefault: false, isActive: true }
     : { addressType: address.addressType, name: address.name ?? null, address: address.address, countryCode: address.countryCode,
-        countyCode: address.countyCode ?? null, city: address.city, postalCode: address.postalCode ?? null,
+        countyCode: address.countyCode ?? null, city: address.city, citySirutaCode: address.citySirutaCode, postalCode: address.postalCode ?? null,
         phone: address.phone ?? null, email: address.email ?? null, isDefault: address.isDefault, isActive: address.isActive };
   const form = useForm<AddressInput, unknown, AddressValues>({
     resolver: zodResolver(addressSchema) as Resolver<AddressInput, unknown, AddressValues>,
@@ -226,7 +228,7 @@ export function AddressesTab({ company, lookups, canManage }: { readonly company
               <TextField control={form.control} name="address" label={t('field.address')} className="span2" />
               <SelectField control={form.control} name="countryCode" label={t('field.country')} options={countryOptions(lookups)} />
               <SelectField control={form.control} name="countyCode" label={t('field.county')} options={countyOptions(lookups, country)} allowEmpty={t('common.none')} />
-              <TextField control={form.control} name="city" label={t('field.city')} />
+              <CityField form={form} label={t('field.city')} />
               <TextField control={form.control} name="postalCode" label={t('field.postalCode')} />
               <TextField control={form.control} name="phone" label={t('field.phone')} />
               <TextField control={form.control} name="email" label={t('field.email')} />

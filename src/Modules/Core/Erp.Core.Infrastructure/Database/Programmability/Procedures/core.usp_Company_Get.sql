@@ -6,7 +6,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT c.Id, c.GroupId, c.Code, c.Name, c.FiscalCode, c.VatPayer, c.VatOnCollection, c.TradeRegisterNo, c.ShareCapital,
-           c.Address, c.City, c.CountyCode, c.CountryCode, c.PostalCode, c.Phone, c.Email, c.FunctionalCurrency, c.DefaultPrecisionPolicyId,
+           c.Address, c.City, c.CitySirutaCode, c.CountyCode, c.CountryCode, c.PostalCode, c.Phone, c.Email, c.FunctionalCurrency, c.DefaultPrecisionPolicyId,
            c.IncludeInConsolidation, c.IsActive, c.ModifiedAt, COALESCE(m.DisplayName, cr.DisplayName) AS ModifiedByName,
            COALESCE(c.ModifiedAt, c.CreatedAt) AS LastChangedAt, c.RowVersion
     FROM core.Company AS c
@@ -19,7 +19,7 @@ BEGIN
     WHERE a.CompanyId = @Id
     ORDER BY a.IsActive DESC, a.IsDefault DESC, a.Currency, a.Id;
 
-    SELECT a.Id, a.CompanyId, a.AddressType, a.Name, a.Address, a.City, a.CountyCode, a.CountryCode,     a.PostalCode, a.Phone, a.Email, a.IsDefault, a.IsActive, a.RowVersion
+    SELECT a.Id, a.CompanyId, a.AddressType, a.Name, a.Address, a.City, a.CitySirutaCode, a.CountyCode, a.CountryCode,     a.PostalCode, a.Phone, a.Email, a.IsDefault, a.IsActive, a.RowVersion
     FROM core.CompanyAddress AS a
     WHERE a.CompanyId = @Id
     ORDER BY a.IsActive DESC, a.AddressType, a.IsDefault DESC, a.Id;

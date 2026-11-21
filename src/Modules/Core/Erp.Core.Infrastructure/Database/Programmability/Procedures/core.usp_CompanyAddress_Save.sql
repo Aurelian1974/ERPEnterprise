@@ -10,6 +10,7 @@ CREATE OR ALTER PROCEDURE core.usp_CompanyAddress_Save
     @PostalCode  nvarchar(10) = NULL,
     @Phone       nvarchar(30) = NULL,
     @Email       nvarchar(254) = NULL,
+    @CitySirutaCode int = NULL,
     @IsDefault   bit,
     @IsActive    bit,
     @RowVersion  binary(8) = NULL,
@@ -34,16 +35,19 @@ BEGIN
         SET IsDefault = 0, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE CompanyId = @CompanyId AND AddressType = @AddressType AND IsDefault = 1 AND (@Id IS NULL OR Id <> @Id);
 
+    -- Localitatea SIRUTA (02.01, 3.5): codul ales se verifica, fara cod se cauta dupa nume (usp_City_Resolve).
+    EXEC core.usp_City_Resolve @CountryCode, @CountyCode, @City OUTPUT, @CitySirutaCode OUTPUT;
+
     IF @Id IS NULL
     BEGIN
-        INSERT INTO core.CompanyAddress (CompanyId, AddressType, Name, Address, City, CountyCode,         CountryCode, PostalCode, Phone, Email, IsDefault, IsActive, CreatedBy)
-                VALUES (@CompanyId, @AddressType, @Name, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsDefault, @IsActive, @UserId);
+        INSERT INTO core.CompanyAddress (CompanyId, AddressType, Name, Address, City, CitySirutaCode, CountyCode,         CountryCode, PostalCode, Phone, Email, IsDefault, IsActive, CreatedBy)
+                VALUES (@CompanyId, @AddressType, @Name, @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsDefault, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
     BEGIN
         UPDATE core.CompanyAddress
-        SET AddressType = @AddressType, Name = @Name, Address = @Address, City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode,
+        SET AddressType = @AddressType, Name = @Name, Address = @Address, City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode, CountryCode = @CountryCode,
             PostalCode = @PostalCode, Phone = @Phone, Email = @Email, IsDefault = @IsDefault, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND CompanyId = @CompanyId AND RowVersion = @RowVersion;
 

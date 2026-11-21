@@ -19,13 +19,13 @@ public sealed record SavePartner(int? Id, string? Code, string Name, byte Partne
     int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, string? TradeRegisterNo, string Address, string City,
     string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId, bool IsActive,
     byte[]? RowVersion, bool ChangePersonalId = false, string? PersonalId = null, IReadOnlyList<PartnerPropertyValue>? Properties = null,
-    DateTime? AnafCheckedAt = null, byte? OwnerLevel = null, int? OwnerNodeId = null) : ICommand<SavedEntity>;
+    DateTime? AnafCheckedAt = null, byte? OwnerLevel = null, int? OwnerNodeId = null, int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
 [Audited("Core.PartnerAddress.Save")]
 public sealed record SavePartnerAddress(int? Id, int PartnerId, int AddressType, string? Name, string Address, string City, string? CountyCode,
-    string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsDefault, bool IsActive, byte[]? RowVersion) : ICommand<SavedEntity>;
+    string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsDefault, bool IsActive, byte[]? RowVersion, int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
@@ -177,7 +177,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             PartnerRules.NormalizeFiscalCode(request.PartnerType, request.FiscalCode),
             individual && request.ChangePersonalId, personalId is null ? null : protector.Protect(RomanianPersonalId.Normalize(personalId)),
             request.IsCustomer, request.IsSupplier, request.PartnerGroupId, request.VatPayer, request.VatOnCollection, request.AnafInactive,
-            PartnerRules.Clean(request.TradeRegisterNo), request.Address.Trim(), request.City.Trim(), PartnerRules.Clean(request.CountyCode),
+            PartnerRules.Clean(request.TradeRegisterNo), request.Address.Trim(), request.City.Trim(), request.CitySirutaCode, PartnerRules.Clean(request.CountyCode),
             request.CountryCode, PartnerRules.Clean(request.PostalCode), PartnerRules.Clean(request.Phone), PartnerRules.Clean(request.Email),
             request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt), owner);
         var saved = await store.SaveAsync(partner, context.UserId, cancellationToken).ConfigureAwait(false);

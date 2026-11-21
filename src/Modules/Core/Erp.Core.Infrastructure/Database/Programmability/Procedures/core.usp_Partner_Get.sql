@@ -8,7 +8,7 @@ BEGIN
 
     SELECT p.Id, p.Code, p.Name, p.PartnerType, p.FiscalCode, CAST(CASE WHEN p.PersonalIdEncrypted IS NULL THEN 0 ELSE 1 END AS bit) AS HasPersonalId,
            p.IsCustomer, p.IsSupplier, p.PartnerGroupId, p.VatPayer, p.VatOnCollection, p.AnafInactive, p.AnafCheckedAt, p.TradeRegisterNo,
-           p.Address, p.City, p.CountyCode, p.CountryCode, p.PostalCode, p.Phone, p.Email, p.IntraGroupCompanyId, p.IsActive,
+           p.Address, p.City, p.CitySirutaCode, p.CountyCode, p.CountryCode, p.PostalCode, p.Phone, p.Email, p.IntraGroupCompanyId, p.IsActive,
            p.CreatedAt, COALESCE(m.DisplayName, cr.DisplayName) AS ModifiedByName, COALESCE(p.ModifiedAt, p.CreatedAt) AS LastChangedAt, p.RowVersion,
            p.OwnerCompanyId, p.OwnerBranchId, p.OwnerLocationId,
            CASE WHEN p.OwnerLocationId IS NOT NULL THEN (SELECT x.Name FROM core.Location AS x WHERE x.Id = p.OwnerLocationId)
@@ -19,7 +19,7 @@ BEGIN
     LEFT JOIN core.[User] AS m ON m.Id = p.ModifiedBy
     WHERE p.Id = @Id;
 
-    SELECT a.Id, a.PartnerId, a.AddressType, a.Name, a.Address, a.City, a.CountyCode, a.CountryCode, a.PostalCode, a.Phone, a.Email,
+    SELECT a.Id, a.PartnerId, a.AddressType, a.Name, a.Address, a.City, a.CitySirutaCode, a.CountyCode, a.CountryCode, a.PostalCode, a.Phone, a.Email,
            a.IsDefault, a.IsActive, a.RowVersion
     FROM core.PartnerAddress AS a
     WHERE a.PartnerId = @Id

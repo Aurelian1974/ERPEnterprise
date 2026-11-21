@@ -17,21 +17,21 @@ public sealed record SaveCompanyGroup(int? Id, string Code, string Name, int? Pa
 [Audited("Core.Company.Save")]
 public sealed record SaveCompany(int? Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool VatOnCollection,
     string TradeRegisterNo, string? ShareCapital, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode,
-    int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null)
-    : ICommand<SavedEntity>;
+    int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null,
+    int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.CompanyManage)]
 [Audited("Core.Branch.Save")]
 public sealed record SaveBranch(int? Id, int CompanyId, string Code, string Name, string Address, string City, string? CountyCode,
-    string CountryCode, string? PostalCode, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null) : ICommand<SavedEntity>;
+    string CountryCode, string? PostalCode, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null, int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.CompanyManage)]
 [Audited("Core.Location.Save")]
 public sealed record SaveLocation(int? Id, int CompanyId, int? BranchId, string Code, string Name, byte LocationType, string? Address,
     string? City, string? CountyCode, string? CountryCode, string? PostalCode, bool IsActive, byte[]? RowVersion,
-    string? Phone = null, string? Email = null) : ICommand<SavedEntity>;
+    string? Phone = null, string? Email = null, int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.CompanyManage)]
@@ -44,8 +44,8 @@ public sealed record SaveCompanyBankAccount(int? Id, int CompanyId, string Iban,
 [RequiresPermission(CorePermissions.CompanyManage)]
 [Audited("Core.CompanyAddress.Save")]
 public sealed record SaveCompanyAddress(int? Id, int CompanyId, int AddressType, string? Name, string Address, string City, string? CountyCode,
-    string CountryCode, string? PostalCode, bool IsDefault, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null)
-    : ICommand<SavedEntity>;
+    string CountryCode, string? PostalCode, bool IsDefault, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null,
+    int? CitySirutaCode = null) : ICommand<SavedEntity>;
 
 /// <summary>Persoană de contact a firmei: cel puțin un telefon sau un e-mail.</summary>
 [Module("Core")]

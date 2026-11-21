@@ -12,6 +12,7 @@ CREATE OR ALTER PROCEDURE core.usp_Location_Save
     @PostalCode   nvarchar(10) = NULL,
     @Phone        nvarchar(30) = NULL,
     @Email        nvarchar(254) = NULL,
+    @CitySirutaCode int = NULL,
     @IsActive     bit,
     @RowVersion   binary(8) = NULL,
     @UserId       int
@@ -41,16 +42,19 @@ BEGIN
                WHERE CompanyId = @CompanyId AND CodeKey = UPPER(@Code) AND (@Id IS NULL OR Id <> @Id))
         THROW 50018, N'Codul locației există deja în firmă.', 1;
 
+    -- Localitatea SIRUTA (02.01, 3.5): codul ales se verifica, fara cod se cauta dupa nume (usp_City_Resolve).
+    EXEC core.usp_City_Resolve @CountryCode, @CountyCode, @City OUTPUT, @CitySirutaCode OUTPUT;
+
     IF @Id IS NULL
     BEGIN
-        INSERT INTO core.Location (CompanyId, BranchId, Code, Name, LocationType, Address, City, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
-                VALUES (@CompanyId, @BranchId, @Code, @Name, @LocationType, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
+        INSERT INTO core.Location (CompanyId, BranchId, Code, Name, LocationType, Address, City, CitySirutaCode, CountyCode, CountryCode,         PostalCode, Phone, Email, IsActive, CreatedBy)
+                VALUES (@CompanyId, @BranchId, @Code, @Name, @LocationType, @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email, @IsActive, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
     BEGIN
         UPDATE core.Location
-        SET BranchId = @BranchId, Code = @Code, Name = @Name, LocationType = @LocationType, Address = @Address, City = @City,
+        SET BranchId = @BranchId, Code = @Code, Name = @Name, LocationType = @LocationType, Address = @Address, City = @City, CitySirutaCode = @CitySirutaCode,
             CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email, IsActive = @IsActive,
             ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND CompanyId = @CompanyId AND RowVersion = @RowVersion;
