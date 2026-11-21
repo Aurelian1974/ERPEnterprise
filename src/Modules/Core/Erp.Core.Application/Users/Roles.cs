@@ -14,8 +14,15 @@ public sealed record PermissionDto(int Id, string Code, string ModuleCode, strin
 public sealed record RoleDto(int Id, string Code, string Name, string? Description, bool IsSystem, bool HasAllPermissions, int UserCount,
     byte[] RowVersion, IReadOnlyList<int> PermissionIds);
 
-/// <summary>Un utilizator din vederea „Roluri și utilizatori”, cu rolurile lui pe firma aleasa (sau pe oricare firma).</summary>
-public sealed record MatrixUserDto(int Id, string DisplayName, string UserName, bool IsActive, IReadOnlyList<int> RoleIds);
+/// <summary>
+/// Un utilizator din vederea „Roluri și utilizatori”, cu rolurile lui pe firma aleasa (sau pe oricare firma) si nodurile atribuirilor
+/// (grup, firma, punct de lucru, locatie; toate null = instalarea).
+/// </summary>
+public sealed record MatrixUserDto(int Id, string DisplayName, string UserName, bool IsActive, IReadOnlyList<int> RoleIds,
+    IReadOnlyList<MatrixAssignmentDto> Assignments);
+
+public sealed record MatrixAssignmentDto(int RoleId, int? CompanyGroupId, string? GroupName, int? CompanyId, string? CompanyName, int? BranchId,
+    string? BranchName, int? LocationId, string? LocationName);
 
 /// <summary>Exceptia unui utilizator: G = drept adaugat, R = drept revocat; CompanyId null = pe toate firmele.</summary>
 public sealed record PermissionOverrideDto(int UserId, int PermissionId, int? CompanyId, string Effect, string? Reason);
@@ -43,6 +50,14 @@ public interface IRoleStore
 
     Task SaveOverridesAsync(int userId, int? companyId, IReadOnlyList<PermissionOverrideInput> overrides, int actorUserId, CancellationToken ct);
 }
+
+/// <summary>
+/// Fisa firmei › Utilizatori (21.11.2026): utilizatorii cu roluri care acopera firma si drepturile lor, doar pentru citire. Cere
+/// administrarea utilizatorilor; matricea nu se modifica de aici.
+/// </summary>
+[Module("Core")]
+[RequiresPermission(CorePermissions.UserManage)]
+public sealed record GetCompanyAccess(int CompanyId) : IQuery<RoleMatrixDto>;
 
 /// <summary>Configurare › Roluri (02.01, 8 si 11): ambele vederi, „Pe rol” (macheta 07e) si „Roluri și utilizatori”.</summary>
 [Module("Core")]
@@ -123,6 +138,15 @@ internal sealed class GetRoleMatrixHandler(IRoleStore store, ILicenseInfo licens
     {
         var matrix = await store.GetMatrixAsync(request.CompanyId, cancellationToken).ConfigureAwait(false);
         // Modulele nelicentiate nu apar in matrice (02.01, 11); drepturile lor raman salvate pe roluri.
+        return matrix with { Permissions = [.. matrix.Permissions.Where(p => license.IsModuleActive(p.ModuleCode))] };
+    }
+}
+
+internal sealed class GetCompanyAccessHandler(IRoleStore store, ILicenseInfo license) : IQueryHandler<GetCompanyAccess, RoleMatrixDto>
+{
+    public async Task<RoleMatrixDto> Handle(GetCompanyAccess request, CancellationToken cancellationToken)
+    {
+        var matrix = await store.GetMatrixAsync(request.CompanyId, cancellationToken).ConfigureAwait(false);
         return matrix with { Permissions = [.. matrix.Permissions.Where(p => license.IsModuleActive(p.ModuleCode))] };
     }
 }

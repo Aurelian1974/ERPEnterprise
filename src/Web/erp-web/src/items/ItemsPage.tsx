@@ -1,3 +1,5 @@
+import { OwnerFilter } from '../org/OwnerFilter';
+import { ownerLabel, useOwnerOptions } from '../org/owner';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router';
 import { useForm, type Resolver } from 'react-hook-form';
@@ -60,8 +62,10 @@ export function ItemsPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [propertyId, setPropertyId] = useState<number | undefined>();
   const [propertyValue, setPropertyValue] = useState<string | undefined>();
+  const [owner, setOwner] = useState('');
+  const ownerOptions = useOwnerOptions('Item');
   const debounced = useDebounced(search);
-  const filterKey = JSON.stringify([debounced, chip, groupId, itemType, showInactive, propertyId, propertyValue]);
+  const filterKey = JSON.stringify([debounced, chip, groupId, itemType, showInactive, propertyId, propertyValue, owner]);
   const [paging, setPaging] = useState({ key: filterKey, page: 1 });
   const page = paging.key === filterKey ? paging.page : 1;
   const canManage = user.permissions.includes('Core.Item.Manage');
@@ -79,6 +83,7 @@ export function ItemsPage() {
     propertyDefinitionId: property !== undefined && propertyValue !== undefined ? property.id : undefined,
     propertyOptionId: property !== undefined && property.dataType !== DataType.Bool && propertyValue !== undefined ? Number(propertyValue) : undefined,
     propertyBool: property?.dataType === DataType.Bool && propertyValue !== undefined ? propertyValue === 'true' : undefined,
+    owner,
     page,
   };
   const list = useItems(criteria);
@@ -153,6 +158,7 @@ export function ItemsPage() {
               <option value="">{t('item.filter.anyType')}</option>
               {ITEM_TYPES.map((type) => <option key={type} value={type}>{t(typeKey(type))}</option>)}
             </select>
+            <OwnerFilter options={ownerOptions.data} value={owner} onChange={setOwner} />
             <button type="button" className={showInactive ? 'chip on' : 'chip'} aria-pressed={showInactive} onClick={() => setShowInactive(!showInactive)}>
               {t('partner.filter.showInactive')}
             </button>
@@ -196,6 +202,7 @@ export function ItemsPage() {
                   <th scope="col">{t('item.col.type')}</th>
                   <th scope="col">{t('item.col.stock')}</th>
                   <th scope="col">{t('item.col.vat')}</th>
+                  <th scope="col">{t('owner.field')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,6 +222,7 @@ export function ItemsPage() {
                       <td><span className="tag type">{t(typeKey(item.itemType))}</span></td>
                       <td><span className={item.isStockable ? 'pill ok' : 'pill violet'}>{t(item.isStockable ? 'item.stockable' : 'item.nonStockable')}</span></td>
                       <td>{percentText(item.vatPercent)}</td>
+                      <td className="small">{ownerLabel(item.ownerLevel, item.ownerName)}</td>
                     </tr>
                   );
                 })}

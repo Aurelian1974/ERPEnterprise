@@ -48,6 +48,7 @@ public sealed class CoreSqlErrors : ISqlErrorMap
         [50034] = (ErpErrorKind.Validation, "CORE_ROLE_SCOPE_INVALID"),
         [50035] = (ErpErrorKind.Conflict, "CORE_ROLE_PROTECTED"),
         [50036] = (ErpErrorKind.Validation, "CORE_PERMISSION_OVERRIDE_INVALID"),
+        [50037] = (ErpErrorKind.Forbidden, "CORE_OWNER_ACCESS_DENIED"),
     };
 }
 

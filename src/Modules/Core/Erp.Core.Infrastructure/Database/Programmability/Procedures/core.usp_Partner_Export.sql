@@ -7,11 +7,25 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Export
     @AnafInactive         bit = NULL,
     @PropertyDefinitionId int = NULL,
     @PropertyOptionId     int = NULL,
-    @PropertyBool         bit = NULL
+    @PropertyBool         bit = NULL,
+    @UserId               int = NULL,
+    @CompanyId            int = NULL,
+    @OwnerFilter          tinyint = NULL,
+    @OwnerBranchId        int = NULL,
+    @OwnerLocationId      int = NULL
 AS
 BEGIN
     -- Exportul Excel al listei partenerilor (02.01, 10), cu aceleasi filtre ca usp_Partner_Search si coloanele sablonului de import.
     SET NOCOUNT ON;
+
+    -- Vizibilitatea pe proprietar (21.11.2026): cu @UserId, comunele si cele proprii nodurilor accesibile in firma @CompanyId
+    -- (core.fn_UserOwnerNodes). @OwnerFilter: 1 doar comune, 2 doar proprii firmei (oricarui nod al ei); @OwnerBranchId /
+    -- @OwnerLocationId: doar cele ale punctului de lucru (cu locatiile lui) sau ale locatiei. Fara @UserId nu se filtreaza (module).
+    DECLARE @Nodes TABLE (WholeCompany bit NOT NULL, BranchId int NULL, LocationId int NULL);
+    IF @UserId IS NOT NULL
+        INSERT INTO @Nodes (WholeCompany, BranchId, LocationId)
+        SELECT WholeCompany, BranchId, LocationId FROM core.fn_UserOwnerNodes(@UserId, @CompanyId, N'Core.Partner.View', 0);
+    DECLARE @AnyNode bit = CASE WHEN EXISTS (SELECT 1 FROM @Nodes) THEN 1 ELSE 0 END;
 
     SELECT p.Code, p.Name, p.PartnerType, p.IsCustomer, p.IsSupplier, p.FiscalCode, p.TradeRegisterNo, p.VatPayer, p.VatOnCollection,
            p.AnafInactive, g.Code AS GroupCode, p.Address, p.City, p.CountyCode, p.CountryCode, p.PostalCode, p.Phone, p.Email, p.IsActive
@@ -30,6 +44,16 @@ BEGIN
             WHERE v.PropertyDefinitionId = @PropertyDefinitionId AND v.EntityId = p.Id
               AND (@PropertyOptionId IS NULL OR v.ValueOptionId = @PropertyOptionId)
               AND (@PropertyBool IS NULL OR v.ValueBool = @PropertyBool)))
+      AND (@UserId IS NULL
+            OR (p.OwnerCompanyId IS NULL AND @AnyNode = 1)
+            OR (p.OwnerCompanyId = @CompanyId AND EXISTS (
+                    SELECT 1 FROM @Nodes AS n
+                    WHERE n.WholeCompany = 1 OR n.BranchId = p.OwnerBranchId OR n.LocationId = p.OwnerLocationId
+                       OR (n.BranchId IS NULL AND n.LocationId IS NULL AND p.OwnerBranchId IS NULL AND p.OwnerLocationId IS NULL))))
+      AND (@OwnerFilter IS NULL OR (@OwnerFilter = 1 AND p.OwnerCompanyId IS NULL) OR (@OwnerFilter = 2 AND p.OwnerCompanyId = @CompanyId))
+      AND (@OwnerBranchId IS NULL OR p.OwnerBranchId = @OwnerBranchId
+            OR p.OwnerLocationId IN (SELECT l.Id FROM core.Location AS l WHERE l.BranchId = @OwnerBranchId))
+      AND (@OwnerLocationId IS NULL OR p.OwnerLocationId = @OwnerLocationId)
     ORDER BY p.NameSearch, p.Id
     OPTION (RECOMPILE);
 END;

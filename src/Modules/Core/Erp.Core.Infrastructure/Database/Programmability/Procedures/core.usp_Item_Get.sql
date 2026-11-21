@@ -8,7 +8,10 @@ BEGIN
     SELECT i.Id, i.Code, i.Name, i.ItemType, i.UomSetId, i.BaseUomId, i.DefaultVatRateId, i.ItemGroupId, i.PricePrecision, i.QuantityPrecision,
            i.IsStockable, i.CnCode, i.DepositItemId, d.Code AS DepositItemCode, d.Name AS DepositItemName, i.NetWeightKg, i.GrossWeightKg, i.VolumeM3,
            i.IsActive, i.CreatedAt, COALESCE(m.DisplayName, cr.DisplayName) AS ModifiedByName, COALESCE(i.ModifiedAt, i.CreatedAt) AS LastChangedAt,
-           i.RowVersion
+           i.RowVersion, i.OwnerCompanyId, i.OwnerBranchId, i.OwnerLocationId,
+           CASE WHEN i.OwnerLocationId IS NOT NULL THEN (SELECT x.Name FROM core.Location AS x WHERE x.Id = i.OwnerLocationId)
+                WHEN i.OwnerBranchId IS NOT NULL THEN (SELECT x.Name FROM core.Branch AS x WHERE x.Id = i.OwnerBranchId)
+                WHEN i.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = i.OwnerCompanyId) END AS OwnerName
     FROM core.Item AS i
     JOIN core.[User] AS cr ON cr.Id = i.CreatedBy
     LEFT JOIN core.[User] AS m ON m.Id = i.ModifiedBy

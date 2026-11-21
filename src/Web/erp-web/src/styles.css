@@ -1856,6 +1856,10 @@ button.cell.locked {
   cursor: not-allowed;
 }
 
+button.cell:disabled {
+  cursor: default;
+}
+
 .cell.role-on {
   background: var(--action);
   border-color: var(--action);

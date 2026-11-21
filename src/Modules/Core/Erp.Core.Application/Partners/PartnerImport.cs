@@ -485,10 +485,12 @@ internal sealed class CreatePartnerImportJobHandler(IImportJobStore jobs, ICurre
 }
 
 internal sealed class ImportPartnerBatchHandler(IImportJobStore jobs, IPartnerStore partners, INumberSeriesService series, ICurrentContext context,
-    IAuditScope audit, IOutbox outbox, TimeProvider clock) : ICommandHandler<ImportPartnerBatch, ImportBatchResult>
+    IAuditScope audit, IOutbox outbox, TimeProvider clock, IOwnerAccess owners) : ICommandHandler<ImportPartnerBatch, ImportBatchResult>
 {
     public async Task<ImportBatchResult> Handle(ImportPartnerBatch request, CancellationToken cancellationToken)
     {
+        // Importul creeaza parteneri comuni (21.11.2026): cere dreptul de modificare pe toata firma.
+        await owners.EnsureManageAsync(OwnedEntities.Partner, null, OwnerRef.Common, CorePermissions.PartnerManage, cancellationToken).ConfigureAwait(false);
         var record = await jobs.GetAsync(request.JobId, forUpdate: true, withData: true, cancellationToken).ConfigureAwait(false) ?? throw ImportJson.NotFound();
         var job = record.Job;
         if (job.EntityType != "Partner" || job.Status != ImportStatus.Validated)

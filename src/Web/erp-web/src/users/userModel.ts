@@ -49,14 +49,111 @@ export function accessTypeLabel(type: string | null | undefined): string {
   return type == null ? '' : t(`user.accessType.${type}` as TextKey);
 }
 
-/** „Firma: Rol” pe randuri, ca in coloana „Firme și roluri”; atribuirile fara firma = toata instalarea. */
-export function roleLines(roles: readonly { readonly companyName?: string | null; readonly roleName: string }[]): string[] {
-  const byCompany = new Map<string, string[]>();
-  for (const role of roles) {
-    const company = role.companyName ?? t('user.roles.allCompanies');
-    byCompany.set(company, [...(byCompany.get(company) ?? []), role.roleName]);
+interface RoleNode {
+  readonly companyGroupId?: number | null;
+  readonly groupName?: string | null;
+  readonly companyId?: number | null;
+  readonly companyName?: string | null;
+  readonly branchId?: number | null;
+  readonly branchName?: string | null;
+  readonly locationId?: number | null;
+  readonly locationName?: string | null;
+}
+
+/** Nodul unei atribuiri (21.11.2026), ca text: grupul, firma sau „firma › punct de lucru / locatie”; fara nod = toata instalarea. */
+export function nodeName(role: RoleNode): string {
+  if (role.companyGroupId != null) {
+    return t('user.roles.groupNode', { name: role.groupName ?? '' });
   }
-  return [...byCompany.entries()].map(([company, names]) => `${company}: ${names.join(', ')}`);
+  if (role.companyId == null) {
+    return t('user.roles.allCompanies');
+  }
+  const node = role.branchName ?? role.locationName;
+  return node == null ? (role.companyName ?? '') : `${role.companyName ?? ''} › ${node}`;
+}
+
+/** „Nod: Rol” pe randuri, ca in coloana „Firme și roluri”. */
+export function roleLines(roles: readonly (RoleNode & { readonly roleName: string })[]): string[] {
+  const byNode = new Map<string, string[]>();
+  for (const role of roles) {
+    const node = nodeName(role);
+    byNode.set(node, [...(byNode.get(node) ?? []), role.roleName]);
+  }
+  return [...byNode.entries()].map(([node, names]) => `${node}: ${names.join(', ')}`);
+}
+
+/** Cheia nodului in lista din fisa: „” toata instalarea, „g7” grup, „c3” firma, „b5” punct de lucru, „l9” locatie. */
+export const INSTALLATION = '';
+
+export function nodeKey(role: RoleNode): string {
+  return role.companyGroupId != null ? `g${role.companyGroupId}`
+    : role.locationId != null ? `l${role.locationId}`
+      : role.branchId != null ? `b${role.branchId}`
+        : role.companyId != null ? `c${role.companyId}` : INSTALLATION;
+}
+
+/** Cheia inapoi in campurile comenzii; firma punctului de lucru sau a locatiei o deduce serverul. */
+export function nodeInput(key: string): { companyGroupId: number | null; companyId: number | null; branchId: number | null; locationId: number | null } {
+  const id = Number(key.slice(1));
+  const kind = key.charAt(0);
+  return {
+    companyGroupId: kind === 'g' ? id : null,
+    companyId: kind === 'c' ? id : null,
+    branchId: kind === 'b' ? id : null,
+    locationId: kind === 'l' ? id : null,
+  };
+}
+
+/** Ce acopera nodul: toate firmele, firmele grupului, toata firma, punctul de lucru cu locatiile lui sau doar locatia. */
+export function scopeText(key: string): string {
+  const kind = key.charAt(0);
+  return t(kind === 'g' ? 'user.roles.scope.group' : kind === 'c' ? 'user.roles.scope.company' : kind === 'b' ? 'user.roles.scope.branch'
+    : kind === 'l' ? 'user.roles.scope.location' : 'user.roles.scope.installation');
+}
+
+export interface NodeOption {
+  readonly value: string;
+  readonly text: string;
+}
+
+export interface NodeGroup {
+  readonly label: string;
+  readonly options: readonly NodeOption[];
+}
+
+interface NodeLookups {
+  readonly companies: readonly { readonly id: number; readonly name: string }[];
+  readonly groups: readonly { readonly id: number; readonly name: string }[];
+  readonly branches: readonly { readonly id: number; readonly companyId: number; readonly name: string }[];
+  readonly locations: readonly { readonly id: number; readonly companyId: number; readonly branchId?: number | null; readonly name: string }[];
+}
+
+/**
+ * Nodurile din lista fisei: „Toate firmele” (doar Administrator), grupurile, apoi fiecare firma cu punctele ei de lucru si locatiile
+ * (locatiile unui punct de lucru sub el, cele direct in firma la sfarsit).
+ */
+export function nodeGroups(lookups: NodeLookups, isAdmin: boolean): NodeGroup[] {
+  const groups: NodeGroup[] = [];
+  if (isAdmin) {
+    groups.push({ label: t('user.roles.installation'), options: [{ value: INSTALLATION, text: t('user.roles.allCompanies') }] });
+  }
+  if (lookups.groups.length > 0) {
+    groups.push({ label: t('user.roles.groups'), options: lookups.groups.map((g) => ({ value: `g${g.id}`, text: g.name })) });
+  }
+  for (const company of lookups.companies) {
+    const options: NodeOption[] = [{ value: `c${company.id}`, text: t('user.roles.wholeCompanyOf', { name: company.name }) }];
+    for (const branch of lookups.branches.filter((b) => b.companyId === company.id)) {
+      options.push({ value: `b${branch.id}`, text: `↳ ${branch.name}` });
+      for (const location of lookups.locations.filter((l) => l.branchId === branch.id)) {
+        options.push({ value: `l${location.id}`, text: `    ↳ ${location.name}` });
+      }
+    }
+    for (const location of lookups.locations.filter((l) => l.companyId === company.id && l.branchId == null)) {
+      options.push({ value: `l${location.id}`, text: `↳ ${location.name}` });
+    }
+    groups.push({ label: company.name, options });
+  }
+  return groups;
 }
 
 /** Initialele pentru avatar: prima litera din primele doua cuvinte ale numelui. */

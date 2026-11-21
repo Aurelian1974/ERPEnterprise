@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { OWNER_COMMON, ownerChoices, ownerFields, ownerKey, useOwnerOptions } from '../org/owner';
 import { useFieldArray, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +36,7 @@ function itemSchema(definitions: readonly PropertyDefinition[], isNew: boolean) 
       grossWeightKg: measure,
       volumeM3: measure,
       isActive: z.boolean(),
+      owner: z.string(),
       uoms: z.array(z.object({
         uomId: z.number().int().min(1, t('common.required')),
         factorToBase: z.string().trim().regex(/^\d{1,13}([.,]\d{1,6})?$/, t('validation.number')),
@@ -74,14 +76,14 @@ function defaultsFor(item: ItemDetail | undefined, lookups: ItemLookups): ItemIn
     return {
       code: null, name: '', itemType: ItemType.Merchandise, itemGroupId: null, isStockable: true, defaultVatRateId: vat?.id ?? 0, cnCode: null,
       depositItemId: null, uomSetId: set?.id ?? 0, pricePrecision: null, quantityPrecision: null, netWeightKg: null, grossWeightKg: null, volumeM3: null,
-      isActive: true, uoms: [], props: toFormProps(definitions, []),
+      isActive: true, owner: OWNER_COMMON, uoms: [], props: toFormProps(definitions, []),
     };
   }
   return {
     code: item.code, name: item.name, itemType: item.itemType, itemGroupId: item.itemGroupId ?? null, isStockable: item.isStockable,
     defaultVatRateId: item.defaultVatRateId, cnCode: item.cnCode ?? null, depositItemId: item.depositItemId ?? null, uomSetId: item.uomSetId,
     pricePrecision: item.pricePrecision ?? null, quantityPrecision: item.quantityPrecision ?? null, netWeightKg: toRo(item.netWeightKg),
-    grossWeightKg: toRo(item.grossWeightKg), volumeM3: toRo(item.volumeM3), isActive: item.isActive,
+    grossWeightKg: toRo(item.grossWeightKg), volumeM3: toRo(item.volumeM3), isActive: item.isActive, owner: ownerKey(item.ownerLevel, item.ownerNodeId),
     uoms: item.uoms.map((u) => ({ uomId: u.uomId, factorToBase: toRo(u.factorToBase) ?? '', isDefaultSales: u.isDefaultSales,
       isDefaultPurchase: u.isDefaultPurchase, isDefaultPos: u.isDefaultPos })),
     props: toFormProps(definitions, item.properties),
@@ -128,6 +130,17 @@ export function ItemForm({ item, lookups, section, canManage, onSaved, onCancel 
   const [itemType, uomSetId, uoms] = useWatch({ control: form.control, name: ['itemType', 'uomSetId', 'uoms'] });
   const exceptions = useFieldArray({ control: form.control, name: 'uoms' });
   const packaging = usePackagingItems();
+  const ownerOptions = useOwnerOptions('Item');
+  const owners = useMemo(
+    () => ownerChoices(ownerOptions.data, item === undefined ? undefined : { key: ownerKey(item.ownerLevel, item.ownerNodeId), name: item.ownerName ?? null }),
+    [ownerOptions.data, item],
+  );
+  // Un articol nou primeste primul proprietar permis (comun doar cu dreptul pe toata firma).
+  useEffect(() => {
+    if (item === undefined && owners.length > 0 && !owners.some((o) => o.value === form.getValues('owner'))) {
+      form.setValue('owner', owners[0]?.value ?? OWNER_COMMON);
+    }
+  }, [form, item, owners]);
 
   // Un serviciu nu tine stoc (CK_Item_Service): comutatorul urmeaza tipul.
   useEffect(() => {
@@ -167,12 +180,13 @@ export function ItemForm({ item, lookups, section, canManage, onSaved, onCancel 
 
   const submit = form.handleSubmit(async (values) => {
     setError(undefined);
-    const { props, uoms: exceptionValues, ...rest } = values;
+    const { props, uoms: exceptionValues, owner, ...rest } = values;
     try {
       const saved = await itemApi.save({
         ...rest,
         id: item?.id ?? null,
         rowVersion: item?.rowVersion ?? null,
+        ...ownerFields(owner),
         netWeightKg: fromRo(rest.netWeightKg),
         grossWeightKg: fromRo(rest.grossWeightKg),
         volumeM3: fromRo(rest.volumeM3),
@@ -224,8 +238,10 @@ export function ItemForm({ item, lookups, section, canManage, onSaved, onCancel 
             <SelectField control={form.control} name="quantityPrecision" label={t('item.field.quantityPrecision')} options={precisionOptions}
               allowEmpty={t('item.field.precisionPolicy')} numeric />
           </div>
+          <SelectField control={form.control} name="owner" label={t('owner.field')} options={owners} />
           <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
         </div>
+        <p className="muted small">{t('owner.hint')}</p>
         <p className="banner dashed small">{t('item.accountingHint')}</p>
       </fieldset>
       <fieldset className="form-body plain" disabled={readOnly} hidden={section !== 'uom'}>

@@ -25,6 +25,10 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Save
     @IsActive            bit,
     @SaveProperties      bit = 0,
     @Properties          core.PropertyValueList READONLY,
+    @SaveOwner           bit = 0,
+    @OwnerCompanyId      int = NULL,
+    @OwnerBranchId       int = NULL,
+    @OwnerLocationId     int = NULL,
     @RowVersion          binary(8) = NULL,
     @UserId              int
 AS
@@ -34,6 +38,9 @@ BEGIN
     -- tip in aplicatie; aici: definitia apartine partenerilor, e activa, iar optiunea ii apartine). Ruleaza in tranzactia comenzii.
     -- @PersonalIdChange = 0 pastreaza CNP-ul criptat existent (fisa nu il primeste inapoi in clar). @AnafCheckedAt NULL pastreaza
     -- data ultimei verificari ANAF; altfel e momentul interogarii din care s-au preluat datele.
+    -- Proprietarul (21.11.2026): NULL = comun; altfel firma, cu punctul de lucru sau locatia ei. Un articol / partener nou il
+    -- primeste mereu; la modificare se schimba doar cu @SaveOwner = 1 (importul il pastreaza). Accesul se verifica inainte, in
+    -- core.usp_OwnerAccess_Check.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -51,9 +58,23 @@ BEGIN
     IF EXISTS (SELECT 1 FROM core.Partner WITH (UPDLOCK, HOLDLOCK) WHERE CodeKey = UPPER(@Code) AND (@Id IS NULL OR Id <> @Id))
         THROW 50018, N'Codul partenerului există deja.', 1;
 
+    -- Un CUI o singura data in toata baza (21.11.2026): mesajul spune unde exista partenerul, care se poate folosi pe documente.
     IF @FiscalCode IS NOT NULL
        AND EXISTS (SELECT 1 FROM core.Partner WITH (UPDLOCK, HOLDLOCK) WHERE FiscalCode = @FiscalCode AND (@Id IS NULL OR Id <> @Id))
-        THROW 50002, N'CUI-ul există deja la alt partener.', 1;
+    BEGIN
+        DECLARE @Existing nvarchar(2000) = (
+            SELECT TOP (1) FORMATMESSAGE(N'Partenerul „%s” (cod %s) cu acest CUI există deja %s și poate fi folosit pe facturi, NIR și celelalte documente.',
+                   p.Name, p.Code,
+                   CASE WHEN p.OwnerCompanyId IS NULL THEN N'ca partener comun al grupului'
+                        ELSE N'în ' + COALESCE(l.Name, b.Name, c.Name) + CASE WHEN l.Id IS NOT NULL OR b.Id IS NOT NULL THEN N' (' + c.Name + N')' ELSE N'' END END)
+            FROM core.Partner AS p
+            LEFT JOIN core.Company AS c ON c.Id = p.OwnerCompanyId
+            LEFT JOIN core.Branch AS b ON b.Id = p.OwnerBranchId
+            LEFT JOIN core.Location AS l ON l.Id = p.OwnerLocationId
+            WHERE p.FiscalCode = @FiscalCode AND (@Id IS NULL OR p.Id <> @Id)
+            ORDER BY p.Id);
+        THROW 50002, @Existing, 1;
+    END;
 
     IF @SaveProperties = 1 AND EXISTS (
         SELECT 1
@@ -70,10 +91,10 @@ BEGIN
     BEGIN
         INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, PersonalIdEncrypted, IsCustomer, IsSupplier, PartnerGroupId,
             VatPayer, VatOnCollection, AnafInactive, AnafCheckedAt, TradeRegisterNo, Address, City, CountyCode, CountryCode, PostalCode, Phone, Email,
-            IntraGroupCompanyId, IsActive, CreatedBy)
+            IntraGroupCompanyId, IsActive, OwnerCompanyId, OwnerBranchId, OwnerLocationId, CreatedBy)
         VALUES (@Code, @Name, @PartnerType, @FiscalCode, @PersonalIdEncrypted, @IsCustomer, @IsSupplier, @PartnerGroupId,
             @VatPayer, @VatOnCollection, @AnafInactive, @AnafCheckedAt, @TradeRegisterNo, @Address, @City, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
-            @IntraGroupCompanyId, @IsActive, @UserId);
+            @IntraGroupCompanyId, @IsActive, @OwnerCompanyId, @OwnerBranchId, @OwnerLocationId, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -84,7 +105,11 @@ BEGIN
             IsCustomer = @IsCustomer, IsSupplier = @IsSupplier, PartnerGroupId = @PartnerGroupId, VatPayer = @VatPayer,
             VatOnCollection = @VatOnCollection, AnafInactive = @AnafInactive, AnafCheckedAt = COALESCE(@AnafCheckedAt, AnafCheckedAt), TradeRegisterNo = @TradeRegisterNo, Address = @Address,
             City = @City, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email,
-            IntraGroupCompanyId = @IntraGroupCompanyId, IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            IntraGroupCompanyId = @IntraGroupCompanyId, IsActive = @IsActive,
+            OwnerCompanyId = CASE WHEN @SaveOwner = 1 THEN @OwnerCompanyId ELSE OwnerCompanyId END,
+            OwnerBranchId = CASE WHEN @SaveOwner = 1 THEN @OwnerBranchId ELSE OwnerBranchId END,
+            OwnerLocationId = CASE WHEN @SaveOwner = 1 THEN @OwnerLocationId ELSE OwnerLocationId END,
+            ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND RowVersion = @RowVersion;
 
         IF @@ROWCOUNT = 0

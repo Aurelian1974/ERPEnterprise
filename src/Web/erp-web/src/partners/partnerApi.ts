@@ -1,3 +1,4 @@
+import { ownerQuery } from '../org/owner';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { unwrap } from '../api/problem';
@@ -39,6 +40,8 @@ export interface PartnerCriteria {
   readonly propertyDefinitionId?: number | undefined;
   readonly propertyOptionId?: number | undefined;
   readonly propertyBool?: boolean | undefined;
+  /** Proprietarul ales in filtru (cheile din org/owner); gol = toate cele vizibile. */
+  readonly owner?: string | undefined;
   readonly page: number;
 }
 
@@ -71,7 +74,7 @@ export function searchQuery(criteria: PartnerCriteria): SearchQuery {
     ['Page', criteria.page],
     ['PageSize', PAGE_SIZE],
   ];
-  return Object.fromEntries(entries.filter(([, value]) => value !== undefined)) as SearchQuery;
+  return { ...Object.fromEntries(entries.filter(([, value]) => value !== undefined)), ...ownerQuery(criteria.owner) } as SearchQuery;
 }
 
 export function usePartners(criteria: PartnerCriteria) {

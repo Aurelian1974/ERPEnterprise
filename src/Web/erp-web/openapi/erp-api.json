@@ -1980,6 +1980,30 @@
               "format": "int32",
               "default": 50
             }
+          },
+          {
+            "name": "Owner",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "OwnerBranchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "OwnerLocationId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -3217,6 +3241,30 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "Owner",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "OwnerBranchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "OwnerLocationId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -3919,6 +3967,30 @@
               "format": "int32",
               "default": 50
             }
+          },
+          {
+            "name": "Owner",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "OwnerBranchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "OwnerLocationId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -4078,6 +4150,30 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "Owner",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "OwnerBranchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "OwnerLocationId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -6251,6 +6347,87 @@
                   "items": {
                     "$ref": "#/components/schemas/PartnerHistoryEntryDto"
                   }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/owner-options/{entity}": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetOwnerOptions",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerOptionsDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/companies/{id}/access": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetCompanyAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMatrixDto"
                 }
               }
             }
@@ -8470,7 +8647,10 @@
           "addresses",
           "bankAccounts",
           "contacts",
-          "properties"
+          "properties",
+          "ownerLevel",
+          "ownerNodeId",
+          "ownerName"
         ],
         "type": "object",
         "properties": {
@@ -8613,6 +8793,23 @@
             "items": {
               "$ref": "#/components/schemas/PartnerPropertyValue"
             }
+          },
+          "ownerLevel": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "ownerNodeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "ownerName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8708,7 +8905,9 @@
           "anafInactive",
           "countryCode",
           "city",
-          "isActive"
+          "isActive",
+          "ownerLevel",
+          "ownerName"
         ],
         "type": "object",
         "properties": {
@@ -8755,6 +8954,16 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "ownerLevel": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "ownerName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9121,6 +9330,20 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "ownerLevel": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "ownerNodeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -9951,7 +10174,10 @@
           "rowVersion",
           "uoms",
           "barcodes",
-          "properties"
+          "properties",
+          "ownerLevel",
+          "ownerNodeId",
+          "ownerName"
         ],
         "type": "object",
         "properties": {
@@ -10083,6 +10309,23 @@
             "items": {
               "$ref": "#/components/schemas/PartnerPropertyValue"
             }
+          },
+          "ownerLevel": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "ownerNodeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "ownerName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10145,7 +10388,9 @@
           "vatPercent",
           "baseUomCode",
           "groupName",
-          "barcode"
+          "barcode",
+          "ownerLevel",
+          "ownerName"
         ],
         "type": "object",
         "properties": {
@@ -10185,6 +10430,16 @@
             ]
           },
           "barcode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ownerLevel": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "ownerName": {
             "type": [
               "null",
               "string"
@@ -10407,6 +10662,20 @@
             "items": {
               "$ref": "#/components/schemas/PartnerPropertyValue"
             }
+          },
+          "ownerLevel": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "ownerNodeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -11950,7 +12219,10 @@
           "companies",
           "sponsors",
           "externalAccessMaxMonths",
-          "notificationTypes"
+          "notificationTypes",
+          "groups",
+          "branches",
+          "locations"
         ],
         "type": "object",
         "properties": {
@@ -11980,6 +12252,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NotificationTypeDto"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupOptionDto"
+            }
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BranchOptionDto"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocationOptionDto"
             }
           }
         }
@@ -12015,7 +12305,13 @@
           "roleName",
           "companyId",
           "companyName",
-          "dimensionScope"
+          "dimensionScope",
+          "companyGroupId",
+          "groupName",
+          "branchId",
+          "branchName",
+          "locationId",
+          "locationName"
         ],
         "type": "object",
         "properties": {
@@ -12051,6 +12347,45 @@
               "null",
               "string"
             ]
+          },
+          "companyGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "groupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "branchName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12071,6 +12406,27 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "companyGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12079,7 +12435,13 @@
           "companyId",
           "companyName",
           "roleCode",
-          "roleName"
+          "roleName",
+          "companyGroupId",
+          "groupName",
+          "branchId",
+          "branchName",
+          "locationId",
+          "locationName"
         ],
         "type": "object",
         "properties": {
@@ -12101,6 +12463,45 @@
           },
           "roleName": {
             "type": "string"
+          },
+          "companyGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "groupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "branchName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12227,7 +12628,8 @@
           "displayName",
           "userName",
           "isActive",
-          "roleIds"
+          "roleIds",
+          "assignments"
         ],
         "type": "object",
         "properties": {
@@ -12249,6 +12651,12 @@
             "items": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatrixAssignmentDto"
             }
           }
         }
@@ -12503,6 +12911,213 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PermissionOverrideInput"
+            }
+          }
+        }
+      },
+      "GroupOptionDto": {
+        "required": [
+          "id",
+          "name",
+          "parentGroupId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LocationOptionDto": {
+        "required": [
+          "id",
+          "companyId",
+          "branchId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MatrixAssignmentDto": {
+        "required": [
+          "roleId",
+          "companyGroupId",
+          "groupName",
+          "companyId",
+          "companyName",
+          "branchId",
+          "branchName",
+          "locationId",
+          "locationName"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "groupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "companyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "branchName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OwnerNodeDto": {
+        "required": [
+          "branchId",
+          "locationId",
+          "parentBranchId",
+          "code",
+          "name",
+          "isActive",
+          "canView",
+          "canManage"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "locationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "parentBranchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "canView": {
+            "type": "boolean"
+          },
+          "canManage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OwnerOptionsDto": {
+        "required": [
+          "companyId",
+          "companyName",
+          "viewWholeCompany",
+          "manageWholeCompany",
+          "nodes"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "viewWholeCompany": {
+            "type": "boolean"
+          },
+          "manageWholeCompany": {
+            "type": "boolean"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerNodeDto"
             }
           }
         }

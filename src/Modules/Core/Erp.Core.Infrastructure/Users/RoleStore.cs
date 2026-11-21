@@ -20,11 +20,14 @@ public sealed class RoleStore(IDbSession session) : IRoleStore
         var users = (await grid.ReadAsync<UserRow>().ConfigureAwait(false)).ToList();
         var userRoles = (await grid.ReadAsync<(int UserId, int RoleId)>().ConfigureAwait(false)).ToLookup(x => x.UserId, x => x.RoleId);
         var overrides = (await grid.ReadAsync<PermissionOverrideDto>().ConfigureAwait(false)).ToList();
+        var assignments = (await grid.ReadAsync<AssignmentRow>().ConfigureAwait(false)).ToLookup(a => a.UserId,
+            a => new MatrixAssignmentDto(a.RoleId, a.CompanyGroupId, a.GroupName, a.CompanyId, a.CompanyName, a.BranchId, a.BranchName, a.LocationId,
+                a.LocationName));
         return new RoleMatrixDto(companyId, permissions,
             [.. roles.Select(r => new RoleDto(r.Id, r.Code, r.Name, r.Description, r.IsSystem, r.HasAllPermissions, r.UserCount, r.RowVersion,
                 [.. rolePermissions[r.Id].Order()]))],
             companies,
-            [.. users.Select(u => new MatrixUserDto(u.Id, u.DisplayName, u.UserName, u.IsActive, [.. userRoles[u.Id].Order()]))],
+            [.. users.Select(u => new MatrixUserDto(u.Id, u.DisplayName, u.UserName, u.IsActive, [.. userRoles[u.Id].Order()], [.. assignments[u.Id]]))],
             overrides);
     }
 
@@ -80,4 +83,7 @@ public sealed class RoleStore(IDbSession session) : IRoleStore
         byte[] RowVersion);
 
     private sealed record UserRow(int Id, string DisplayName, string UserName, bool IsActive);
+
+    private sealed record AssignmentRow(int UserId, int RoleId, int? CompanyGroupId, string? GroupName, int? CompanyId, string? CompanyName, int? BranchId,
+        string? BranchName, int? LocationId, string? LocationName);
 }

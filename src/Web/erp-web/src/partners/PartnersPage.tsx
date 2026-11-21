@@ -1,3 +1,5 @@
+import { OwnerFilter } from '../org/OwnerFilter';
+import { ownerLabel, useOwnerOptions } from '../org/owner';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router';
 import { downloadFile } from '../api/download';
@@ -51,7 +53,9 @@ export function PartnersPage() {
   const [propertyValue, setPropertyValue] = useState<string | undefined>();
   const debounced = useDebounced(search);
   // Pagina tine de filtrele cu care a fost aleasa: un filtru nou incepe de la prima pagina.
-  const filterKey = JSON.stringify([debounced, chip, showInactive, propertyId, propertyValue]);
+  const [owner, setOwner] = useState('');
+  const ownerOptions = useOwnerOptions('Partner');
+  const filterKey = JSON.stringify([debounced, chip, showInactive, propertyId, propertyValue, owner]);
   const [paging, setPaging] = useState({ key: filterKey, page: 1 });
   const page = paging.key === filterKey ? paging.page : 1;
   const setPage = (next: number) => setPaging({ key: filterKey, page: next });
@@ -70,6 +74,7 @@ export function PartnersPage() {
     propertyDefinitionId: property !== undefined && propertyValue !== undefined ? property.id : undefined,
     propertyOptionId: property !== undefined && property.dataType !== DataType.Bool && propertyValue !== undefined ? Number(propertyValue) : undefined,
     propertyBool: property?.dataType === DataType.Bool && propertyValue !== undefined ? propertyValue === 'true' : undefined,
+    owner,
     page,
   };
   const list = usePartners(criteria);
@@ -141,6 +146,7 @@ export function PartnersPage() {
                 {label}
               </button>
             ))}
+            <OwnerFilter options={ownerOptions.data} value={owner} onChange={setOwner} />
             <button type="button" className={showInactive ? 'chip on' : 'chip'} aria-pressed={showInactive} onClick={() => setShowInactive(!showInactive)}>
               {t('partner.filter.showInactive')}
             </button>
@@ -167,6 +173,7 @@ export function PartnersPage() {
                   <th scope="col">{t('partner.col.type')}</th>
                   <th scope="col">{t('partner.col.role')}</th>
                   <th scope="col">{t('partner.col.anaf')}</th>
+                  <th scope="col">{t('owner.field')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,6 +203,7 @@ export function PartnersPage() {
                         </div>
                       </td>
                       <td>{badge === undefined ? t('common.none') : <span className={`pill ${badge.kind}`}>{badge.text}</span>}</td>
+                      <td className="small">{ownerLabel(item.ownerLevel, item.ownerName)}</td>
                     </tr>
                   );
                 })}

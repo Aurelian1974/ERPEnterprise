@@ -20,7 +20,7 @@ BEGIN
 
     UPDATE core.[User] SET IsActive = 1, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = 1 WHERE Id = @UserId AND IsActive = 0;
 
-    IF NOT EXISTS (SELECT 1 FROM core.UserRoleAssignment WHERE UserId = @UserId AND RoleId = @AdminRoleId AND CompanyId IS NULL)
+    IF NOT EXISTS (SELECT 1 FROM core.UserRoleAssignment WHERE UserId = @UserId AND RoleId = @AdminRoleId AND CompanyId IS NULL AND CompanyGroupId IS NULL)
         INSERT INTO core.UserRoleAssignment (UserId, RoleId, CompanyId, DimensionScope, CreatedBy)
         VALUES (@UserId, @AdminRoleId, NULL /* toată instalarea */, NULL, 1);
 

@@ -28,10 +28,16 @@ BEGIN
     LEFT JOIN ids.v_UserAccountSecurity AS s ON s.SubjectId = u.SubjectId
     WHERE u.Id = @Id AND u.Id <> 1;
 
-    SELECT a.Id, a.RoleId, r.Code AS RoleCode, r.Name AS RoleName, a.CompanyId, c.Name AS CompanyName, a.DimensionScope
+    -- Rolurile pe noduri: instalare (toate NULL), grup, firma, punct de lucru sau locatie (21.11.2026).
+    SELECT a.Id, a.RoleId, r.Code AS RoleCode, r.Name AS RoleName, a.CompanyId, c.Name AS CompanyName, a.DimensionScope,
+           a.CompanyGroupId, g.Name AS GroupName, a.BranchId, b.Name AS BranchName, a.LocationId, l.Name AS LocationName
     FROM core.UserRoleAssignment AS a
     JOIN core.Role AS r ON r.Id = a.RoleId
     LEFT JOIN core.Company AS c ON c.Id = a.CompanyId
+    LEFT JOIN core.CompanyGroup AS g ON g.Id = a.CompanyGroupId
+    LEFT JOIN core.Branch AS b ON b.Id = a.BranchId
+    LEFT JOIN core.Location AS l ON l.Id = a.LocationId
     WHERE a.UserId = @Id AND @Id <> 1
-    ORDER BY CASE WHEN a.CompanyId IS NULL THEN 0 ELSE 1 END, c.Name, r.Name;
+    ORDER BY CASE WHEN a.CompanyId IS NULL AND a.CompanyGroupId IS NULL THEN 0 WHEN a.CompanyGroupId IS NOT NULL THEN 1 ELSE 2 END,
+             g.Name, c.Name, b.Name, l.Name, r.Name;
 END;

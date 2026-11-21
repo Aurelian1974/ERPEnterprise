@@ -14,8 +14,12 @@ public static class ExternalAccessTypes
     public static readonly IReadOnlyList<string> All = [Auditor, Consultant, Accountant, Technical];
 }
 
-/// <summary>O atribuire de rol in randul din lista (macheta 06, coloana „Firme și roluri”); CompanyId null = toata instalarea.</summary>
-public sealed record UserRoleSummaryDto(int? CompanyId, string? CompanyName, string RoleCode, string RoleName);
+/// <summary>
+/// O atribuire de rol in randul din lista (macheta 06, coloana „Firme și roluri”). Nodul (21.11.2026): toate null = toata instalarea;
+/// CompanyGroupId = grupul de firme; CompanyId = firma, cu BranchId (punct de lucru) sau LocationId (locatie) pentru un nod din ea.
+/// </summary>
+public sealed record UserRoleSummaryDto(int? CompanyId, string? CompanyName, string RoleCode, string RoleName, int? CompanyGroupId,
+    string? GroupName, int? BranchId, string? BranchName, int? LocationId, string? LocationName);
 
 /// <summary>
 /// Un rand din lista utilizatorilor (macheta 06). TwoFactorEnabled null = fara cont de autentificare. EmployeeLeaveDate = data
@@ -35,10 +39,13 @@ public sealed record UserCountersDto(int ActiveCount, int? LicensedUsers, int Em
 public sealed record UserPageDto(IReadOnlyList<UserListItemDto> Items, int Total, UserCountersDto Counters);
 
 public sealed record UserRoleAssignmentDto(int Id, int RoleId, string RoleCode, string RoleName, int? CompanyId, string? CompanyName,
-    string? DimensionScope);
+    string? DimensionScope, int? CompanyGroupId, string? GroupName, int? BranchId, string? BranchName, int? LocationId, string? LocationName);
 
-/// <summary>Atribuirea trimisa la salvare: rolul pe firma (null = toata instalarea, doar ADMIN).</summary>
-public sealed record UserRoleInput(int RoleId, int? CompanyId);
+/// <summary>
+/// Atribuirea trimisa la salvare: rolul pe un nod (21.11.2026). Toate null = toata instalarea (doar ADMIN); CompanyGroupId = grupul
+/// de firme (orice rol); CompanyId = firma; BranchId / LocationId = punctul de lucru sau locatia (firma se deduce din nod).
+/// </summary>
+public sealed record UserRoleInput(int RoleId, int? CompanyId, int? CompanyGroupId = null, int? BranchId = null, int? LocationId = null);
 
 /// <summary>
 /// Fisa utilizatorului (machetele 06b, 06c). Datele angajatului legat sunt doar pentru citire (vin din fisa lui). Securitatea vine
@@ -63,7 +70,15 @@ public sealed record CompanyOptionDto(int Id, string Code, string Name);
 /// tipurilor de notificare (tab-ul Preferinte).
 /// </summary>
 public sealed record UserLookupsDto(IReadOnlyList<RoleOptionDto> Roles, IReadOnlyList<CompanyOptionDto> Companies,
-    IReadOnlyList<UserOptionDto> Sponsors, int ExternalAccessMaxMonths, IReadOnlyList<NotificationTypeDto> NotificationTypes);
+    IReadOnlyList<UserOptionDto> Sponsors, int ExternalAccessMaxMonths, IReadOnlyList<NotificationTypeDto> NotificationTypes,
+    IReadOnlyList<GroupOptionDto> Groups, IReadOnlyList<Employees.BranchOptionDto> Branches, IReadOnlyList<LocationOptionDto> Locations);
+
+/// <summary>Un grup de firme pe care se poate atribui un rol (firmele lui si ale subgrupurilor).</summary>
+public sealed record GroupOptionDto(int Id, string Name, int? ParentGroupId);
+
+
+/// <summary>O locatie, direct in firma (BranchId null) sau intr-un punct de lucru.</summary>
+public sealed record LocationOptionDto(int Id, int CompanyId, int? BranchId, string Name);
 
 /// <summary>Rezultatul crearii sau al unei resetari: parola temporara se arata o singura data administratorului (null = fara parola).</summary>
 public sealed record UserSavedDto(int Id, byte[] RowVersion, string? TemporaryPassword);

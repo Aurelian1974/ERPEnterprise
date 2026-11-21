@@ -26,6 +26,14 @@ export function useRoleMatrix(companyId: number | null) {
   });
 }
 
+/** Fisa firmei › Utilizatori: aceeasi matrice, pe firma, doar pentru citire (Core.User.Manage). */
+export function useCompanyAccess(companyId: number) {
+  return useQuery({
+    queryKey: [...roleKeys.all, 'company', companyId] as const,
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/companies/{id}/access', { params: { path: { id: companyId } }, signal })),
+  });
+}
+
 export const roleApi = {
   async save(body: SaveRole): Promise<Saved> {
     return body.id === null

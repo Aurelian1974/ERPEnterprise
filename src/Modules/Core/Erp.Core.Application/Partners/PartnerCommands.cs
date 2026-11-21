@@ -19,7 +19,7 @@ public sealed record SavePartner(int? Id, string? Code, string Name, byte Partne
     int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, string? TradeRegisterNo, string Address, string City,
     string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId, bool IsActive,
     byte[]? RowVersion, bool ChangePersonalId = false, string? PersonalId = null, IReadOnlyList<PartnerPropertyValue>? Properties = null,
-    DateTime? AnafCheckedAt = null) : ICommand<SavedEntity>;
+    DateTime? AnafCheckedAt = null, byte? OwnerLevel = null, int? OwnerNodeId = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
@@ -142,10 +142,14 @@ internal sealed class SavePartnerValidator : AbstractValidator<SavePartner>
 }
 
 internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesService series, IPersonalDataProtector protector, ICurrentContext context,
-    IAuditScope audit, IOutbox outbox, TimeProvider clock) : ICommandHandler<SavePartner, SavedEntity>
+    IAuditScope audit, IOutbox outbox, TimeProvider clock, IOwnerAccess owners) : ICommandHandler<SavePartner, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SavePartner request, CancellationToken cancellationToken)
     {
+        // Proprietarul (21.11.2026): un partener nou fara proprietar ales e comun; la modificare, null il lasa neschimbat.
+        var owner = request.OwnerLevel is { } level ? OwnerRef.From(level, request.OwnerNodeId, context.CompanyId)
+            : request.Id is null ? OwnerRef.Common : null;
+        await owners.EnsureManageAsync(OwnedEntities.Partner, request.Id, owner, CorePermissions.PartnerManage, cancellationToken).ConfigureAwait(false);
         if (request.Properties is not null)
         {
             var lookups = await store.GetLookupsAsync(context.CompanyId, cancellationToken).ConfigureAwait(false);
@@ -175,7 +179,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             request.IsCustomer, request.IsSupplier, request.PartnerGroupId, request.VatPayer, request.VatOnCollection, request.AnafInactive,
             PartnerRules.Clean(request.TradeRegisterNo), request.Address.Trim(), request.City.Trim(), PartnerRules.Clean(request.CountyCode),
             request.CountryCode, PartnerRules.Clean(request.PostalCode), PartnerRules.Clean(request.Phone), PartnerRules.Clean(request.Email),
-            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt));
+            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt), owner);
         var saved = await store.SaveAsync(partner, context.UserId, cancellationToken).ConfigureAwait(false);
 
         // Fara date personale in audit (NET-18): numele unei persoane fizice si CNP-ul nu se scriu, doar faptul ca s-a schimbat.
@@ -189,6 +193,7 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             PersonalIdChanged = partner.PersonalIdChange ? true : (bool?)null,
             PropertiesChanged = partner.Properties is null ? (bool?)null : true,
             CodeSeriesCreated = seriesCreated ? true : (bool?)null,
+            Owner = owner,
         });
         await outbox.EnqueueAsync(new PartenerModificat(saved.Id, partner.Code, partner.Name, partner.FiscalCode, partner.VatPayer,
             partner.VatOnCollection, partner.AnafInactive, partner.IsActive) { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
@@ -316,11 +321,12 @@ internal sealed class SavePartnerAddressValidator : AbstractValidator<SavePartne
     }
 }
 
-internal sealed class SavePartnerAddressHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit)
+internal sealed class SavePartnerAddressHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit, IOwnerAccess owners)
     : ICommandHandler<SavePartnerAddress, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SavePartnerAddress request, CancellationToken cancellationToken)
     {
+        await owners.EnsureManageAsync(OwnedEntities.Partner, request.PartnerId, null, CorePermissions.PartnerManage, cancellationToken).ConfigureAwait(false);
         var command = request with
         {
             Name = PartnerRules.Clean(request.Name),
@@ -350,11 +356,12 @@ internal sealed class SavePartnerBankAccountValidator : AbstractValidator<SavePa
     }
 }
 
-internal sealed class SavePartnerBankAccountHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit)
+internal sealed class SavePartnerBankAccountHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit, IOwnerAccess owners)
     : ICommandHandler<SavePartnerBankAccount, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SavePartnerBankAccount request, CancellationToken cancellationToken)
     {
+        await owners.EnsureManageAsync(OwnedEntities.Partner, request.PartnerId, null, CorePermissions.PartnerManage, cancellationToken).ConfigureAwait(false);
         var command = request with { Iban = Iban.Normalize(request.Iban), BankName = request.BankName.Trim() };
         var saved = await store.SaveBankAccountAsync(command, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Core.PartnerBankAccount", saved.Id, new { command.PartnerId, command.Currency, command.IsDefault, command.IsActive });
@@ -377,11 +384,12 @@ internal sealed class SavePartnerContactValidator : AbstractValidator<SavePartne
     }
 }
 
-internal sealed class SavePartnerContactHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit)
+internal sealed class SavePartnerContactHandler(IPartnerStore store, ICurrentContext context, IAuditScope audit, IOwnerAccess owners)
     : ICommandHandler<SavePartnerContact, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SavePartnerContact request, CancellationToken cancellationToken)
     {
+        await owners.EnsureManageAsync(OwnedEntities.Partner, request.PartnerId, null, CorePermissions.PartnerManage, cancellationToken).ConfigureAwait(false);
         var command = request with
         {
             Name = request.Name.Trim(),
@@ -419,11 +427,12 @@ internal sealed class SavePartnerGroupHandler(IPartnerStore store, ICurrentConte
     }
 }
 
-internal sealed class RevealPartnerPersonalIdHandler(IPartnerStore store, IPersonalDataProtector protector, IAuditScope audit)
+internal sealed class RevealPartnerPersonalIdHandler(IPartnerStore store, IPersonalDataProtector protector, IAuditScope audit, IOwnerAccess owners)
     : ICommandHandler<RevealPartnerPersonalId, PartnerPersonalIdDto>
 {
     public async Task<PartnerPersonalIdDto> Handle(RevealPartnerPersonalId request, CancellationToken cancellationToken)
     {
+        await owners.EnsureVisibleAsync(OwnedEntities.Partner, request.Id, CorePermissions.PartnerView, cancellationToken).ConfigureAwait(false);
         var encrypted = await store.GetPersonalIdAsync(request.Id, cancellationToken).ConfigureAwait(false);
         audit.Describe("Core.Partner", request.Id);
         return new PartnerPersonalIdDto(encrypted is null ? null : protector.Unprotect(encrypted));

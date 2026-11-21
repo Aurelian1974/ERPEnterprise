@@ -7,7 +7,7 @@ BEGIN
     -- @CompanyId: firma din antetul X-Company-Id; 0 = nivelul instalarii (doar atribuirile cu CompanyId NULL);
     -- NULL = ultima firma a utilizatorului, altfel prima firma activa la care are acces.
     -- O firma ceruta la care utilizatorul nu are niciun rol (sau inactiva) nu se accepta: firma efectiva devine 0.
-    -- Atribuirile cu CompanyId NULL (rolul ADMIN la nivel de instalare) se aplica oricarei firme.
+    -- Atribuirile pe instalare (ADMIN) si pe grup se aplica firmelor pe care le acopera; cele pe punct de lucru sau locatie, firmei lor.
     -- Utilizatorii externi sunt valabili doar intre ValidFrom si ValidUntil (inclusiv), angajatii pana la data incetarii.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -39,15 +39,23 @@ BEGIN
     FROM core.[User] AS u
     WHERE u.Id = @UserId;
 
-    -- Rolul de sistem ADMIN are drepturi depline (decizie 15.11.2026): toate permisiunile din catalog, inclusiv cele
-    -- adaugate ulterior de alte module, fara sa depinda de core.RolePermission si fara exceptii pe utilizator.
-    IF EXISTS (
-        SELECT 1
+    -- Atribuirile care se aplica: pe firma, toate cele care o acopera (instalare, grup, firma, punct de lucru, locatie;
+    -- core.fn_AssignmentScope); la nivelul instalarii (firma 0), doar cele pe instalare.
+    DECLARE @Roles TABLE (RoleId int NOT NULL, IsAdmin bit NOT NULL);
+    IF @EffectiveCompanyId = 0
+        INSERT INTO @Roles (RoleId, IsAdmin)
+        SELECT a.RoleId, CAST(CASE WHEN r.Code = N'ADMIN' AND r.IsSystem = 1 THEN 1 ELSE 0 END AS bit)
         FROM core.UserRoleAssignment AS a
         JOIN core.Role AS r ON r.Id = a.RoleId
-        WHERE a.UserId = @UserId
-          AND r.Code = N'ADMIN' AND r.IsSystem = 1
-          AND (a.CompanyId IS NULL OR a.CompanyId = @EffectiveCompanyId))
+        WHERE a.UserId = @UserId AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL;
+    ELSE
+        INSERT INTO @Roles (RoleId, IsAdmin)
+        SELECT s.RoleId, s.IsAdmin FROM core.fn_AssignmentScope(@UserId) AS s WHERE s.CompanyId = @EffectiveCompanyId;
+
+    -- Rolul de sistem ADMIN are drepturi depline (decizie 15.11.2026): toate permisiunile din catalog, inclusiv cele
+    -- adaugate ulterior de alte module, fara sa depinda de core.RolePermission si fara exceptii pe utilizator. Pe un punct de
+    -- lucru sau o locatie, datele raman limitate la nod (core.fn_UserNodeAccess).
+    IF EXISTS (SELECT 1 FROM @Roles WHERE IsAdmin = 1)
     BEGIN
         SELECT p.Code FROM core.Permission AS p;
         RETURN;
@@ -57,10 +65,8 @@ BEGIN
     -- se scad si castiga. O exceptie cu CompanyId NULL se aplica pe toate firmele.
     WITH Granted AS (
         SELECT rp.PermissionId
-        FROM core.UserRoleAssignment AS a
+        FROM @Roles AS a
         JOIN core.RolePermission AS rp ON rp.RoleId = a.RoleId
-        WHERE a.UserId = @UserId
-          AND (a.CompanyId IS NULL OR a.CompanyId = @EffectiveCompanyId)
         UNION
         SELECT o.PermissionId
         FROM core.UserPermissionOverride AS o

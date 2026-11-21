@@ -92,7 +92,8 @@ public sealed partial class InitialAdminCreator(SqlOperator sql)
                 FROM core.UserRoleAssignment AS a
                 JOIN core.[User] AS u ON u.Id = a.UserId
                 JOIN core.Role AS r ON r.Id = a.RoleId
-                WHERE r.Code = N'ADMIN' AND r.IsSystem = 1 AND u.IsActive = 1) THEN 1 ELSE 0 END AS bit);
+                WHERE r.Code = N'ADMIN' AND r.IsSystem = 1 AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL AND u.IsActive = 1)
+                THEN 1 ELSE 0 END AS bit);
             """;
         await using var command = new SqlCommand(query, connection) { CommandTimeout = SqlOperator.CommandTimeoutSeconds };
         return (bool)(await command.ExecuteScalarAsync(ct).ConfigureAwait(false))!;

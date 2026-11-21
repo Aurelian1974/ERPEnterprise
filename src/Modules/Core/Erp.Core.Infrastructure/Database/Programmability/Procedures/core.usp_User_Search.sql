@@ -61,8 +61,7 @@ BEGIN
             OR (@Filter = 2 AND u.IsActive = 1 AND u.IsEmployee = 0 AND u.IsSystem = 0 AND u.ValidUntil BETWEEN @Today AND @Expiring)
             OR (@Filter = 3 AND u.IsActive = 1 AND s.HasPassword = 1 AND s.TwoFactorEnabled = 0))
       AND (@CompanyId IS NULL OR EXISTS (
-            SELECT 1 FROM core.UserRoleAssignment AS a
-            WHERE a.UserId = u.Id AND (a.CompanyId IS NULL OR a.CompanyId = @CompanyId)))
+            SELECT 1 FROM core.fn_AssignmentScope(u.Id) AS a WHERE a.CompanyId = @CompanyId))
       AND (@RoleId IS NULL OR EXISTS (
             SELECT 1 FROM core.UserRoleAssignment AS a WHERE a.UserId = u.Id AND a.RoleId = @RoleId))
     ORDER BY u.NameSearch, u.Id
@@ -74,12 +73,17 @@ BEGIN
     FROM #Page
     ORDER BY SortKey, Id;
 
-    SELECT a.UserId, a.CompanyId, c.Name AS CompanyName, r.Code AS RoleCode, r.Name AS RoleName
+    SELECT a.UserId, a.CompanyId, c.Name AS CompanyName, r.Code AS RoleCode, r.Name AS RoleName, a.CompanyGroupId, g.Name AS GroupName,
+           a.BranchId, b.Name AS BranchName, a.LocationId, l.Name AS LocationName
     FROM core.UserRoleAssignment AS a
+    LEFT JOIN core.CompanyGroup AS g ON g.Id = a.CompanyGroupId
+    LEFT JOIN core.Branch AS b ON b.Id = a.BranchId
+    LEFT JOIN core.Location AS l ON l.Id = a.LocationId
     JOIN #Page AS pg ON pg.Id = a.UserId
     JOIN core.Role AS r ON r.Id = a.RoleId
     LEFT JOIN core.Company AS c ON c.Id = a.CompanyId
-    ORDER BY a.UserId, CASE WHEN a.CompanyId IS NULL THEN 0 ELSE 1 END, c.Name, r.Name;
+    ORDER BY a.UserId, CASE WHEN a.CompanyId IS NULL AND a.CompanyGroupId IS NULL THEN 0 WHEN a.CompanyGroupId IS NOT NULL THEN 1 ELSE 2 END,
+        g.Name, c.Name, b.Name, l.Name, r.Name;
 
     -- Indicatorii din antet. Utilizatorii activi sunt cei care consuma licenta: fara conturile de sistem.
     SELECT SUM(CASE WHEN u.IsActive = 1 AND u.IsSystem = 0 THEN 1 ELSE 0 END) AS ActiveCount,

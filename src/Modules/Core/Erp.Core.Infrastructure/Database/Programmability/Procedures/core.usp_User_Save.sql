@@ -114,13 +114,13 @@ BEGIN
     IF @Id IS NOT NULL AND @IsActive = 0 AND @WasActive = 1
         AND EXISTS (
             SELECT 1 FROM core.UserRoleAssignment AS a JOIN core.Role AS r ON r.Id = a.RoleId
-            WHERE a.UserId = @Id AND a.CompanyId IS NULL AND r.Code = N'ADMIN' AND r.IsSystem = 1)
+            WHERE a.UserId = @Id AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL AND r.Code = N'ADMIN' AND r.IsSystem = 1)
         AND NOT EXISTS (
             SELECT 1
             FROM core.UserRoleAssignment AS a
             JOIN core.Role AS r ON r.Id = a.RoleId
             JOIN core.v_UserLoginStatus AS s ON s.UserId = a.UserId
-            WHERE a.UserId <> @Id AND a.CompanyId IS NULL AND r.Code = N'ADMIN' AND r.IsSystem = 1 AND s.CanSignIn = 1)
+            WHERE a.UserId <> @Id AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL AND r.Code = N'ADMIN' AND r.IsSystem = 1 AND s.CanSignIn = 1)
         THROW 50015, N'Este ultimul administrator activ al instalării; activați întâi alt administrator.', 1;
 
     IF @Id IS NULL

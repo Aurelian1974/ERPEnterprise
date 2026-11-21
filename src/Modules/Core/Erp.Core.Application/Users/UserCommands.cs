@@ -102,10 +102,17 @@ internal sealed class SaveUserValidator : AbstractValidator<SaveUser>
                 .WithMessage("Accesul nu poate expira înainte să înceapă.");
         });
 
-        RuleFor(x => x.Roles).Must(r => r is null || r.Select(a => (a.RoleId, a.CompanyId)).Distinct().Count() == r.Count)
-            .WithMessage("Același rol apare de două ori pe aceeași firmă.");
+        RuleFor(x => x.Roles).Must(r => r is null || r.Select(Key).Distinct().Count() == r.Count)
+            .WithMessage("Același rol apare de două ori pe același nod.");
+        RuleForEach(x => x.Roles).Must(a => a.CompanyGroupId is null || (a.CompanyId is null && a.BranchId is null && a.LocationId is null))
+            .WithMessage("Un rol se atribuie fie pe un grup, fie pe o firmă (cu punctul de lucru sau locația ei).")
+            .Must(a => a.BranchId is null || a.LocationId is null).WithMessage("Alegeți fie punctul de lucru, fie locația.");
         this.ContactDetails(x => x.Phone, x => x.Email);
     }
+
+    /// <summary>Nodul atribuirii; punctul de lucru si locatia contin firma, asa ca firma se ignora langa ele.</summary>
+    internal static (int RoleId, int? GroupId, int? CompanyId, int? BranchId, int? LocationId) Key(UserRoleInput a) =>
+        (a.RoleId, a.CompanyGroupId, a.BranchId is null && a.LocationId is null ? a.CompanyId : null, a.BranchId, a.LocationId);
 }
 
 internal sealed class SaveUserHandler(IUserStore store, IIdentityAccountAdmin identity, ISettingsStore settings, ILicenseInfo license,
@@ -211,7 +218,8 @@ internal sealed class SaveUserHandler(IUserStore store, IIdentityAccountAdmin id
     private async Task<bool> SameRolesAsync(int id, IReadOnlyList<UserRoleInput> roles, CancellationToken ct)
     {
         var current = (await store.GetAsync(id, ct).ConfigureAwait(false))?.Roles ?? [];
-        return current.Select(r => (r.RoleId, r.CompanyId)).ToHashSet().SetEquals(roles.Select(r => (r.RoleId, r.CompanyId)));
+        return current.Select(r => SaveUserValidator.Key(new UserRoleInput(r.RoleId, r.CompanyId, r.CompanyGroupId, r.BranchId, r.LocationId)))
+            .ToHashSet().SetEquals(roles.Select(SaveUserValidator.Key));
     }
 }
 

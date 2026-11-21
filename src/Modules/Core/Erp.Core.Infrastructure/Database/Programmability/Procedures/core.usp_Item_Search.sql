@@ -8,6 +8,11 @@ CREATE OR ALTER PROCEDURE core.usp_Item_Search
     @PropertyDefinitionId int = NULL,
     @PropertyOptionId     int = NULL,
     @PropertyBool         bit = NULL,
+    @UserId               int = NULL,
+    @CompanyId            int = NULL,
+    @OwnerFilter          tinyint = NULL,
+    @OwnerBranchId        int = NULL,
+    @OwnerLocationId      int = NULL,
     @Offset               int = 0,
     @PageSize             int = 50,
     @Export               bit = 0
@@ -17,6 +22,15 @@ BEGIN
     -- sau cod, ori exacta dupa codul de bare (@Barcode = textul cautat, cand poate fi cod de bare); filtre pe stocabil, tip, grupa (cu subgrupele ei), stare si o proprietate filtrabila.
     -- @Export = 1 intoarce toate randurile filtrului, cu coloanele exportului Excel.
     SET NOCOUNT ON;
+
+    -- Vizibilitatea pe proprietar (21.11.2026): cu @UserId, comunele si cele proprii nodurilor accesibile in firma @CompanyId
+    -- (core.fn_UserOwnerNodes). @OwnerFilter: 1 doar comune, 2 doar proprii firmei (oricarui nod al ei); @OwnerBranchId /
+    -- @OwnerLocationId: doar cele ale punctului de lucru (cu locatiile lui) sau ale locatiei. Fara @UserId nu se filtreaza (module).
+    DECLARE @Nodes TABLE (WholeCompany bit NOT NULL, BranchId int NULL, LocationId int NULL);
+    IF @UserId IS NOT NULL
+        INSERT INTO @Nodes (WholeCompany, BranchId, LocationId)
+        SELECT WholeCompany, BranchId, LocationId FROM core.fn_UserOwnerNodes(@UserId, @CompanyId, N'Core.Item.View', 0);
+    DECLARE @AnyNode bit = CASE WHEN EXISTS (SELECT 1 FROM @Nodes) THEN 1 ELSE 0 END;
 
     DECLARE @Groups TABLE (Id int PRIMARY KEY);
     IF @ItemGroupId IS NOT NULL
@@ -31,7 +45,10 @@ BEGIN
            u.Code AS BaseUomCode, g.Code AS GroupCode, g.Name AS GroupName,
            (SELECT TOP (1) b.Barcode FROM core.ItemBarcode AS b WHERE b.ItemId = i.Id AND b.IsActive = 1 ORDER BY b.Id) AS Barcode,
            s.Code AS UomSetCode, i.PricePrecision, i.QuantityPrecision, i.CnCode, d.Code AS DepositItemCode,
-           i.NetWeightKg, i.GrossWeightKg, i.VolumeM3, COUNT(*) OVER () AS TotalCount
+           i.NetWeightKg, i.GrossWeightKg, i.VolumeM3, i.OwnerCompanyId, i.OwnerBranchId, i.OwnerLocationId,
+           CASE WHEN i.OwnerLocationId IS NOT NULL THEN (SELECT x.Name FROM core.Location AS x WHERE x.Id = i.OwnerLocationId)
+                WHEN i.OwnerBranchId IS NOT NULL THEN (SELECT x.Name FROM core.Branch AS x WHERE x.Id = i.OwnerBranchId)
+                WHEN i.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = i.OwnerCompanyId) END AS OwnerName, COUNT(*) OVER () AS TotalCount
     FROM core.Item AS i
     JOIN core.VatRate AS v ON v.Id = i.DefaultVatRateId
     JOIN core.UnitOfMeasure AS u ON u.Id = i.BaseUomId
@@ -49,6 +66,16 @@ BEGIN
             WHERE pv.PropertyDefinitionId = @PropertyDefinitionId AND pv.EntityId = i.Id
               AND (@PropertyOptionId IS NULL OR pv.ValueOptionId = @PropertyOptionId)
               AND (@PropertyBool IS NULL OR pv.ValueBool = @PropertyBool)))
+      AND (@UserId IS NULL
+            OR (i.OwnerCompanyId IS NULL AND @AnyNode = 1)
+            OR (i.OwnerCompanyId = @CompanyId AND EXISTS (
+                    SELECT 1 FROM @Nodes AS n
+                    WHERE n.WholeCompany = 1 OR n.BranchId = i.OwnerBranchId OR n.LocationId = i.OwnerLocationId
+                       OR (n.BranchId IS NULL AND n.LocationId IS NULL AND i.OwnerBranchId IS NULL AND i.OwnerLocationId IS NULL))))
+      AND (@OwnerFilter IS NULL OR (@OwnerFilter = 1 AND i.OwnerCompanyId IS NULL) OR (@OwnerFilter = 2 AND i.OwnerCompanyId = @CompanyId))
+      AND (@OwnerBranchId IS NULL OR i.OwnerBranchId = @OwnerBranchId
+            OR i.OwnerLocationId IN (SELECT l.Id FROM core.Location AS l WHERE l.BranchId = @OwnerBranchId))
+      AND (@OwnerLocationId IS NULL OR i.OwnerLocationId = @OwnerLocationId)
     ORDER BY i.NameSearch, i.Id
     OFFSET CASE WHEN @Export = 1 THEN 0 ELSE @Offset END ROWS
     FETCH NEXT CASE WHEN @Export = 1 THEN 2147483647 ELSE @PageSize END ROWS ONLY

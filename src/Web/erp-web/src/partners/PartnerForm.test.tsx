@@ -74,6 +74,7 @@ const partner = (changes: Partial<PartnerDetail> = {}): PartnerDetail => ({
   address: 'Str. Gării nr. 21', city: 'Suceava', countyCode: 'SV', countryCode: 'RO', postalCode: '720004', phone: null, email: null,
   intraGroupCompanyId: null, isActive: true, createdAt: '2025-02-03T08:00:00Z', modifiedByName: 'Ana Ionescu', lastChangedAt: '2026-11-10T09:12:00Z',
   rowVersion: 'AAAAAAAAB9E=', addresses: [], bankAccounts: [], contacts: [], properties: [{ propertyDefinitionId: 10, valueOptionId: 101 }],
+  ownerLevel: 0, ownerNodeId: null, ownerName: null,
   ...changes,
 });
 

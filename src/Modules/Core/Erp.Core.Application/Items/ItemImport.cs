@@ -100,7 +100,8 @@ public sealed record ItemImportAnalysis(string FileName, int TotalRows, IReadOnl
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemView)]
 public sealed record ExportItems(string? Search = null, bool? IsStockable = null, byte? ItemType = null, int? ItemGroupId = null, bool? IsActive = null,
-    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null) : IQuery<FileDto>;
+    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, byte? Owner = null, int? OwnerBranchId = null,
+    int? OwnerLocationId = null) : IQuery<FileDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.ImportRun)]
@@ -127,8 +128,9 @@ internal sealed class ExportItemsHandler(IItemStore store, IPartnerSpreadsheet s
 {
     public async Task<FileDto> Handle(ExportItems request, CancellationToken cancellationToken)
     {
-        var criteria = ItemRules.Criteria(new SearchItems(request.Search, request.IsStockable, request.ItemType, request.ItemGroupId, request.IsActive,
-            request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool));
+        var criteria = ItemRules.Visible(ItemRules.Criteria(new SearchItems(request.Search, request.IsStockable, request.ItemType, request.ItemGroupId,
+            request.IsActive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, Owner: request.Owner,
+            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId)), context);
         var rows = await store.ExportAsync(criteria, cancellationToken).ConfigureAwait(false);
         string? Number(decimal? value) => value is { } v ? Decimals.Trim(v) : null;
         var values = rows.Select(r => (IReadOnlyList<string?>)
@@ -400,10 +402,12 @@ internal sealed class CreateItemImportJobHandler(IImportJobStore jobs, ICurrentC
 }
 
 internal sealed class ImportItemBatchHandler(IImportJobStore jobs, IItemStore items, INumberSeriesService series, ICurrentContext context, IAuditScope audit,
-    IOutbox outbox, TimeProvider clock) : ICommandHandler<ImportItemBatch, ImportBatchResult>
+    IOutbox outbox, TimeProvider clock, IOwnerAccess owners) : ICommandHandler<ImportItemBatch, ImportBatchResult>
 {
     public async Task<ImportBatchResult> Handle(ImportItemBatch request, CancellationToken cancellationToken)
     {
+        // Importul creeaza articole comune (21.11.2026): cere dreptul de modificare pe toata firma.
+        await owners.EnsureManageAsync(OwnedEntities.Item, null, OwnerRef.Common, CorePermissions.ItemManage, cancellationToken).ConfigureAwait(false);
         var record = await jobs.GetAsync(request.JobId, forUpdate: true, withData: true, cancellationToken).ConfigureAwait(false) ?? throw ImportJson.NotFound();
         var job = record.Job;
         if (job.EntityType != "Item" || job.Status != ImportStatus.Validated)

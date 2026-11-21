@@ -9,7 +9,7 @@ namespace Erp.Core.Application.Items;
 
 /// <summary>Un rand din lista articolelor (macheta 05). ItemType: 1 marfa … 8 mijloc fix; VatPercent sir zecimal invariant.</summary>
 public sealed record ItemListItemDto(int Id, string Code, string Name, byte ItemType, bool IsStockable, bool IsActive, string VatRateCode, string VatPercent,
-    string BaseUomCode, string? GroupName, string? Barcode);
+    string BaseUomCode, string? GroupName, string? Barcode, byte OwnerLevel, string? OwnerName);
 
 public sealed record ItemPageDto(IReadOnlyList<ItemListItemDto> Items, int Total, int ActiveCount);
 
@@ -23,10 +23,12 @@ public sealed record ItemBarcodeDto(int Id, int ItemId, string Barcode, byte Bar
 public sealed record ItemDetailDto(int Id, string Code, string Name, byte ItemType, int UomSetId, int BaseUomId, int DefaultVatRateId, int? ItemGroupId,
     byte? PricePrecision, byte? QuantityPrecision, bool IsStockable, string? CnCode, int? DepositItemId, string? DepositItemCode, string? DepositItemName,
     string? NetWeightKg, string? GrossWeightKg, string? VolumeM3, bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt,
-    byte[] RowVersion, IReadOnlyList<UomLineDto> Uoms, IReadOnlyList<ItemBarcodeDto> Barcodes, IReadOnlyList<PartnerPropertyValue> Properties);
+    byte[] RowVersion, IReadOnlyList<UomLineDto> Uoms, IReadOnlyList<ItemBarcodeDto> Barcodes, IReadOnlyList<PartnerPropertyValue> Properties,
+    byte OwnerLevel, int? OwnerNodeId, string? OwnerName);
 
 public sealed record ItemSearchCriteria(string? Search, string? Barcode, bool? IsStockable, byte? ItemType, int? ItemGroupId, bool? IsActive,
-    int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize);
+    int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize, int? UserId = null, int? CompanyId = null,
+    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null);
 
 /// <summary>Un articol in exportul Excel (coloanele sablonului de import).</summary>
 public sealed record ItemExportRow(string Code, string Name, byte ItemType, bool IsStockable, bool IsActive, string VatRateCode, string BaseUomCode,
@@ -36,7 +38,7 @@ public sealed record ItemExportRow(string Code, string Name, byte ItemType, bool
 /// <summary>Articolul pregatit pentru salvare (cod alocat, valori normalizate). Uoms/Properties null = neschimbate.</summary>
 public sealed record ItemRecord(int? Id, string Code, string Name, byte ItemType, int UomSetId, int DefaultVatRateId, int? ItemGroupId, byte? PricePrecision,
     byte? QuantityPrecision, bool IsStockable, string? CnCode, int? DepositItemId, decimal? NetWeightKg, decimal? GrossWeightKg, decimal? VolumeM3,
-    bool IsActive, IReadOnlyList<UomLineDto>? Uoms, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion);
+    bool IsActive, IReadOnlyList<UomLineDto>? Uoms, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, OwnerRef? Owner = null);
 
 public sealed record ExistingItem(int Id, string Code, string Name, byte[] RowVersion);
 
@@ -95,7 +97,8 @@ public static class ItemCodeSeries
 [Audited("Core.Item.Save")]
 public sealed record SaveItem(int? Id, string? Code, string Name, byte ItemType, int UomSetId, int DefaultVatRateId, int? ItemGroupId, byte? PricePrecision,
     byte? QuantityPrecision, bool IsStockable, string? CnCode, int? DepositItemId, string? NetWeightKg, string? GrossWeightKg, string? VolumeM3, bool IsActive,
-    byte[]? RowVersion, IReadOnlyList<UomLineDto>? Uoms = null, IReadOnlyList<PartnerPropertyValue>? Properties = null) : ICommand<SavedEntity>;
+    byte[]? RowVersion, IReadOnlyList<UomLineDto>? Uoms = null, IReadOnlyList<PartnerPropertyValue>? Properties = null, byte? OwnerLevel = null,
+    int? OwnerNodeId = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemManage)]
@@ -106,7 +109,8 @@ public sealed record SaveItemBarcode(int? Id, int ItemId, string Barcode, byte B
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemView)]
 public sealed record SearchItems(string? Search = null, bool? IsStockable = null, byte? ItemType = null, int? ItemGroupId = null, bool? IsActive = null,
-    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50) : IQuery<ItemPageDto>;
+    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50, byte? Owner = null,
+    int? OwnerBranchId = null, int? OwnerLocationId = null) : IQuery<ItemPageDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemView)]
@@ -129,6 +133,10 @@ internal static class ItemRules
     public static string? BarcodeCandidate(string? search) =>
         search is { Length: >= 4 and <= 50 } && search.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '/' or '-') ? search : null;
 
+    /// <summary>Lista se limiteaza la articolele vizibile pe firma curenta (comune si ale nodurilor utilizatorului; 21.11.2026).</summary>
+    public static ItemSearchCriteria Visible(ItemSearchCriteria criteria, ICurrentContext context) =>
+        context.CompanyId == 0 ? criteria : criteria with { UserId = context.UserId, CompanyId = context.CompanyId };
+
     public static ItemSearchCriteria Criteria(SearchItems request)
     {
         var raw = Clean(request.Search);
@@ -136,7 +144,8 @@ internal static class ItemRules
         var pageSize = Math.Clamp(request.PageSize, 1, 200);
         var page = Math.Max(request.Page, 1);
         return new ItemSearchCriteria(search, BarcodeCandidate(raw), request.IsStockable, request.ItemType, request.ItemGroupId, request.IsActive,
-            request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, (page - 1) * pageSize, pageSize);
+            request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, (page - 1) * pageSize, pageSize, null, null,
+            request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId);
     }
 }
 
@@ -194,11 +203,15 @@ internal sealed class SaveItemValidator : AbstractValidator<SaveItem>
     }
 }
 
-internal sealed class SaveItemHandler(IItemStore store, INumberSeriesService series, ICurrentContext context, IAuditScope audit, IOutbox outbox, TimeProvider clock)
-    : ICommandHandler<SaveItem, SavedEntity>
+internal sealed class SaveItemHandler(IItemStore store, INumberSeriesService series, ICurrentContext context, IAuditScope audit, IOutbox outbox, TimeProvider clock,
+    IOwnerAccess owners) : ICommandHandler<SaveItem, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SaveItem request, CancellationToken cancellationToken)
     {
+        // Proprietarul (21.11.2026): un articol nou fara proprietar ales e comun; la modificare, null il lasa neschimbat.
+        var owner = request.OwnerLevel is { } level ? OwnerRef.From(level, request.OwnerNodeId, context.CompanyId)
+            : request.Id is null ? OwnerRef.Common : null;
+        await owners.EnsureManageAsync(OwnedEntities.Item, request.Id, owner, CorePermissions.ItemManage, cancellationToken).ConfigureAwait(false);
         var lookups = await store.GetLookupsAsync(context.CompanyId, cancellationToken).ConfigureAwait(false);
         if (request.Properties is not null)
         {
@@ -224,7 +237,7 @@ internal sealed class SaveItemHandler(IItemStore store, INumberSeriesService ser
             request.PricePrecision, request.QuantityPrecision, request.IsStockable,
             ItemRules.Clean(request.CnCode) is { } cn ? CombinedNomenclature.Normalize(cn) : null, request.DepositItemId,
             ItemRules.Measure(request.NetWeightKg), ItemRules.Measure(request.GrossWeightKg), ItemRules.Measure(request.VolumeM3), request.IsActive,
-            request.Uoms, request.Properties, request.RowVersion);
+            request.Uoms, request.Properties, request.RowVersion, owner);
         var saved = await store.SaveAsync(item, context.UserId, cancellationToken).ConfigureAwait(false);
 
         var vat = lookups.VatRates.First(v => v.Id == item.DefaultVatRateId);
@@ -233,6 +246,7 @@ internal sealed class SaveItemHandler(IItemStore store, INumberSeriesService ser
         {
             item.Code, item.Name, item.ItemType, item.UomSetId, item.DefaultVatRateId, item.ItemGroupId, item.IsStockable, item.CnCode, item.DepositItemId,
             item.IsActive, UomsChanged = item.Uoms is null ? (bool?)null : true, PropertiesChanged = item.Properties is null ? (bool?)null : true,
+            Owner = owner,
         });
         await outbox.EnqueueAsync(new ArticolModificat(saved.Id, item.Code, item.Name, item.ItemType, baseUom.Code, vat.Code, item.DepositItemId, item.IsActive)
         {
@@ -254,10 +268,12 @@ internal sealed class SaveItemBarcodeValidator : AbstractValidator<SaveItemBarco
     }
 }
 
-internal sealed class SaveItemBarcodeHandler(IItemStore store, ICurrentContext context, IAuditScope audit) : ICommandHandler<SaveItemBarcode, SavedEntity>
+internal sealed class SaveItemBarcodeHandler(IItemStore store, ICurrentContext context, IAuditScope audit, IOwnerAccess owners)
+    : ICommandHandler<SaveItemBarcode, SavedEntity>
 {
     public async Task<SavedEntity> Handle(SaveItemBarcode request, CancellationToken cancellationToken)
     {
+        await owners.EnsureManageAsync(OwnedEntities.Item, request.ItemId, null, CorePermissions.ItemManage, cancellationToken).ConfigureAwait(false);
         var command = request with { Barcode = request.Barcode.Trim() };
         var saved = await store.SaveBarcodeAsync(command, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Core.ItemBarcode", saved.Id, new { command.ItemId, command.Barcode, command.BarcodeType, command.UomId, command.IsActive });
@@ -265,19 +281,27 @@ internal sealed class SaveItemBarcodeHandler(IItemStore store, ICurrentContext c
     }
 }
 
-internal sealed class SearchItemsHandler(IItemStore store) : IQueryHandler<SearchItems, ItemPageDto>
+internal sealed class SearchItemsHandler(IItemStore store, ICurrentContext context) : IQueryHandler<SearchItems, ItemPageDto>
 {
-    public Task<ItemPageDto> Handle(SearchItems request, CancellationToken cancellationToken) => store.SearchAsync(ItemRules.Criteria(request), cancellationToken);
+    public Task<ItemPageDto> Handle(SearchItems request, CancellationToken cancellationToken) =>
+        store.SearchAsync(ItemRules.Visible(ItemRules.Criteria(request), context), cancellationToken);
 }
 
-internal sealed class GetItemHandler(IItemStore store) : IQueryHandler<GetItem, ItemDetailDto>
+internal sealed class GetItemHandler(IItemStore store, IOwnerAccess owners) : IQueryHandler<GetItem, ItemDetailDto>
 {
-    public async Task<ItemDetailDto> Handle(GetItem request, CancellationToken cancellationToken) =>
-        await store.GetAsync(request.Id, cancellationToken).ConfigureAwait(false) ?? throw ErpException.NotFound("CORE_ENTITY_NOT_FOUND", "Articolul nu există.");
+    public async Task<ItemDetailDto> Handle(GetItem request, CancellationToken cancellationToken)
+    {
+        await owners.EnsureVisibleAsync(OwnedEntities.Item, request.Id, CorePermissions.ItemView, cancellationToken).ConfigureAwait(false);
+        return await store.GetAsync(request.Id, cancellationToken).ConfigureAwait(false)
+            ?? throw ErpException.NotFound("CORE_ENTITY_NOT_FOUND", "Articolul nu există.");
+    }
 }
 
-internal sealed class GetItemHistoryHandler(IItemStore store) : IQueryHandler<GetItemHistory, IReadOnlyList<PartnerHistoryEntryDto>>
+internal sealed class GetItemHistoryHandler(IItemStore store, IOwnerAccess owners) : IQueryHandler<GetItemHistory, IReadOnlyList<PartnerHistoryEntryDto>>
 {
-    public Task<IReadOnlyList<PartnerHistoryEntryDto>> Handle(GetItemHistory request, CancellationToken cancellationToken) =>
-        store.GetHistoryAsync(request.Id, cancellationToken);
+    public async Task<IReadOnlyList<PartnerHistoryEntryDto>> Handle(GetItemHistory request, CancellationToken cancellationToken)
+    {
+        await owners.EnsureVisibleAsync(OwnedEntities.Item, request.Id, CorePermissions.ItemView, cancellationToken).ConfigureAwait(false);
+        return await store.GetHistoryAsync(request.Id, cancellationToken).ConfigureAwait(false);
+    }
 }

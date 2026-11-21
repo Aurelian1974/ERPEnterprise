@@ -182,6 +182,9 @@ public static class CoreApiRegistration
     // Parteneri (macheta 04): nomenclator la nivelul instalarii; permisiunile se verifica pe firma curenta (X-Company-Id).
     private static void MapPartners(RouteGroupBuilder core)
     {
+        // Proprietarii posibili (comun, firma curenta, punctele ei de lucru si locatiile; 21.11.2026) pentru Item sau Partner.
+        core.MapGet("/owner-options/{entity}", (string entity, ISender sender, CancellationToken ct) => sender.Send(new GetOwnerOptions(entity), ct))
+            .WithName("GetOwnerOptions").Produces<OwnerOptionsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/partners", ([AsParameters] SearchPartners query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("SearchPartners").Produces<PartnerPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/partners/export", async ([AsParameters] ExportPartners query, ISender sender, CancellationToken ct) =>
@@ -305,6 +308,8 @@ public static class CoreApiRegistration
     {
         core.MapGet("/roles/matrix", ([AsParameters] GetRoleMatrix query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("GetRoleMatrix").Produces<RoleMatrixDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/companies/{id:int}/access", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompanyAccess(id), ct))
+            .WithName("GetCompanyAccess").Produces<RoleMatrixDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapPost("/roles", (SaveRole body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
             .WithName("CreateRole").Saves();
         core.MapPut("/roles/{id:int}", (int id, SaveRole body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))

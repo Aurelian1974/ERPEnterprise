@@ -25,7 +25,7 @@ BEGIN
         SELECT 1
         FROM core.UserRoleAssignment AS a
         JOIN core.[User] AS u ON u.Id = a.UserId
-        WHERE a.RoleId = @AdminRoleId AND u.IsActive = 1)
+        WHERE a.RoleId = @AdminRoleId AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL AND u.IsActive = 1)
         THROW 50014, N'Instalarea are deja un administrator activ.', 1;
 
     INSERT INTO core.[User]

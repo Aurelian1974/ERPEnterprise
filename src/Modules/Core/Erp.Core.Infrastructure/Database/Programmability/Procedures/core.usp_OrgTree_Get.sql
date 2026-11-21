@@ -15,7 +15,7 @@ BEGIN
         SELECT 1
         FROM core.UserRoleAssignment AS a
         JOIN core.Role AS r ON r.Id = a.RoleId
-        WHERE a.UserId = @UserId AND a.CompanyId IS NULL
+        WHERE a.UserId = @UserId AND a.CompanyId IS NULL AND a.CompanyGroupId IS NULL
           AND ((r.Code = N'ADMIN' AND r.IsSystem = 1)
                OR EXISTS (SELECT 1 FROM core.RolePermission AS rp JOIN core.Permission AS p ON p.Id = rp.PermissionId
                           WHERE rp.RoleId = a.RoleId AND p.Code = N'Core.Company.View'))) THEN 1 ELSE 0 END;

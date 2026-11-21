@@ -32,8 +32,8 @@ Entitățile Nucleului se grupează în patru zone. Firma (`Company`) e cheia: d
 
 Reguli de business ale modelului:
 
-1. **Partenerii și articolele sunt la nivel de instalare** (grup), nu de firmă, ca același client să fie recunoscut în toate firmele și la consolidare.
-2. **Drepturile sunt la nivel de firmă**: același utilizator poate fi contabil în firma A și doar consultant în firma B.
+1. **Partenerii și articolele sunt la nivel de instalare** (grup), nu de firmă, ca același client să fie recunoscut în toate firmele și la consolidare. Completare (decizia lui Aurelian din 21.11.2026): un articol sau partener e fie **comun** grupului (implicit, ca până acum), fie **propriu** unei firme, unui punct de lucru sau unei locații; codul și CUI-ul rămân unice în toată baza (vezi 3.4, „Domeniul drepturilor și proprietarul”).
+2. **Drepturile sunt la nivel de firmă**: același utilizator poate fi contabil în firma A și doar consultant în firma B. Un rol se atribuie pe instalare, pe un grup de firme, pe o firmă, pe un punct de lucru sau pe o locație (21.11.2026).
 3. **Seriile de numerotare aparțin unei firme și unui an**; nu există serii comune între firme.
 4. **Un CUI apare o singură dată** între parteneri și o singură dată între firme.
 5. **Nomenclatoarele fiscale au dată de vigoare**; un document folosește întotdeauna valoarea valabilă la data lui (P6).
@@ -89,7 +89,7 @@ Sub firmă: **puncte de lucru** (`Branch`: denumire, adresă, cod), folosite pe 
 | Punct de lucru | `Branch` | Firmă | `Code`, `Name`, adresă, `IsActive` | Apare pe documente și în e-Factura; poate avea serii de numerotare proprii |
 | Locație | `Location` | Punct de lucru sau direct firmă | `Code`, `Name`, `LocationType` (birou, depozit, magazin, fabrică, șantier, punct de livrare), adresă, `IsActive` | Locul fizic folosit de Stocuri, WMS, POS, Construcții și TMS; firma se deduce din părinte. Nu are sub-locații (confirmat 14.11.2026): zonele și rafturile se definesc în WMS |
 
-Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; un nod folosit pe documente nu se șterge, se dezactivează (`SQL-20`); codul e unic în cadrul firmei pentru puncte de lucru și locații și unic în instalare pentru grupuri. Drepturile se pot restrânge pe punct de lucru sau locație prin `DimensionScope`.
+Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; un nod folosit pe documente nu se șterge, se dezactivează (`SQL-20`); codul e unic în cadrul firmei pentru puncte de lucru și locații și unic în instalare pentru grupuri. Drepturile se restrâng pe punct de lucru sau locație atribuind rolul pe acel nod (21.11.2026, vezi 3.4); `DimensionScope` rămâne pentru gestiuni, centre de cost și șantiere.
 
 ![Ecranul Firme și structură](ecrane/03-firme.png)
 
@@ -229,7 +229,7 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | `Role` | `Code`, `Name`, `Description`, `IsSystem` | Rolurile de sistem (de ex. Administrator) nu se pot șterge |
 | `Permission` | `Code` (de ex. `Sales.Invoice.Validate`), `Module`, `Description` | Lista e generată din cod la pornire; nu se editează manual |
 | `RolePermission` | `RoleId`, `PermissionId` | — |
-| `UserRoleAssignment` | `UserId`, `RoleId`, `CompanyId`, `DimensionScope` (JSON: gestiuni, centre de cost, șantiere) | Un rol se atribuie per firmă; scope gol = toată firma. `CompanyId = NULL` = toată instalarea (toate firmele, și cele create ulterior), permis doar pentru rolul de sistem `ADMIN` (verificat în `core.usp_UserRoleAssignment_Save`) |
+| `UserRoleAssignment` | `UserId`, `RoleId`, `CompanyGroupId`, `CompanyId`, `BranchId`, `LocationId`, `DimensionScope` (JSON: gestiuni, centre de cost, șantiere) | Un rol se atribuie pe un nod (21.11.2026): toate nule = toată instalarea (toate firmele, și cele create ulterior), permis doar pentru rolul de sistem `ADMIN` (50034); `CompanyGroupId` = grupul de firme cu subgrupurile lui (orice rol); `CompanyId` = firma; `CompanyId` + `BranchId` sau `LocationId` = punctul de lucru sau locația (verificat în `core.usp_UserRoleAssignment_Save`, `CK_UserRoleAssignment_Scope`) |
 | `UserPermissionOverride` | `UserId`, `PermissionId`, `CompanyId`, `Effect` (`G` adăugat / `R` revocat), `Reason` | Excepție față de drepturile moștenite din roluri (21.11.2026, vezi „Roluri și excepții pe utilizator” mai jos). `CompanyId = NULL` = toate firmele; un drept adăugat cere motivul |
 | `Employee` | `CompanyId`, `BranchId`, `EmployeeNo` (marca), `FirstName`, `LastName`, `Department`, `JobTitle`, `WorkEmail`, `Phone`, `HireDate`, `LeaveDate`, `IsActive` | Fișa minimă de angajat, în Nucleu ca utilizatorii să se poată lega de ea și fără modulul HR; HR o extinde în schema `hr` (contract, salarizare, CNP). UQ `(CompanyId, EmployeeNo)` |
 
@@ -251,6 +251,19 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | Administratorul integrat | Creat de installer (08, secțiunea 5.10): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
 
 Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOARE`, `AUDITOR`, `STANDARD`.
+
+**Domeniul drepturilor și proprietarul** (deciziile lui Aurelian din 21.11.2026). Un utilizator X poate avea drepturi pe o firmă Y din grup (și atunci pe toate punctele ei de lucru și locațiile), doar pe un punct de lucru sau doar pe o locație. Adaugă articole, parteneri etc. doar unde are drepturi, iar înregistrarea adăugată aparține acelui nod. Administratorul se adaugă pe o firmă, pe mai multe sau pe grup (firma-mamă: toate firmele, punctele de lucru și locațiile grupului).
+
+| Regulă | Detaliu |
+| --- | --- |
+| Atribuirea | Pe instalare (doar `ADMIN`), pe grup (firmele grupului și ale subgrupurilor, orice rol), pe firmă, pe punct de lucru (cu locațiile lui) sau pe locație. Funcția `core.fn_AssignmentScope` desface atribuirile pe firmele acoperite; drepturile efective pe o firmă (`usp_User_GetPermissions`) și lista firmelor (`fn_UserCompanies`) le folosesc pe toate. Un rol pe un punct de lucru dă permisiunile lui pe firmă; restrângerea pe nod se aplică datelor care au proprietar |
+| Proprietarul | `Item` și `Partner` au `OwnerCompanyId`, `OwnerBranchId`, `OwnerLocationId`: toate nule = comun grupului; altfel firma, cu punctul de lucru sau locația ei. Proprietarul se alege în fișă („Aparține”) dintre nodurile pe care utilizatorul are drept de modificare; o înregistrare nouă fără proprietar ales e comună |
+| Vizibilitate | Comunele, cele ale firmei curente și ale nodurilor de deasupra nodului utilizatorului (firma, punctul de lucru al locației lui) și tot ce e în nodul lui sau dedesubt. Cine are dreptul pe toată firma vede tot ce aparține firmei. Înregistrările altor firme nu se văd (se schimbă firma curentă). Listele filtrează „Aparține”: toate vizibile, comune, ale firmei, ale unui punct de lucru (cu locațiile lui) sau ale unei locații. O înregistrare nevăzută răspunde 404 |
+| Modificare | Doar în nodul utilizatorului și dedesubt (`core.usp_OwnerAccess_Check`, 50037). Comunele și cele ale firmei cer dreptul pe toată firma. Adresele, conturile bancare, contactele partenerului și codurile de bare ale articolului urmează proprietarul. Importul Excel creează înregistrări comune, deci cere dreptul pe toată firma |
+| CUI | Unic în toată baza: la al doilea partener cu același CUI, mesajul (50002) spune partenerul existent și unde există (comun sau în ce firmă / punct de lucru / locație) și că poate fi folosit pe facturi, NIR și celelalte documente. Modulele cu documente caută partenerul după CUI indiferent de proprietar (de implementat odată cu ele) |
+| Limite actuale | Restrângerea pe nod se aplică articolelor și partenerilor. Celelalte ecrane ale Nucleului (fișa firmei, seriile, setările) folosesc încă permisiunea pe firmă; documentele modulelor vor folosi `core.fn_UserNodeAccess` / `fn_UserOwnerNodes` |
+
+Implementare: migrarea `2026.11.015` (nodul atribuirii, tipul `core.UserRoleAssignmentList` cu nodul, proprietarul pe `core.Item` și `core.Partner`, `UQ_Location_Id_CompanyId` pentru cheile compuse), funcțiile `core.fn_AssignmentScope`, `fn_UserNodeAccess` (unde are utilizatorul o permisiune în firmă), `fn_UserOwnerAccess` (accesul pe un proprietar), `fn_UserOwnerNodes` (nodurile vizibile / modificabile), procedurile `core.usp_OwnerAccess_Check`, `usp_OwnerOptions_Get` (`GET /owner-options/{Item|Partner}`); căutările, exportul, fișele și salvările articolelor și partenerilor primesc utilizatorul și firma curentă. UI: fișa utilizatorului alege nodul fiecărui rol (grup / firmă / punct de lucru / locație); fișa firmei are tab-ul „Utilizatori” (cine are roluri care acoperă firma, pe ce nod, cu matricea de drepturi doar pentru citire, `GET /companies/{id}/access`, `Core.User.Manage`).
 
 **Roluri și excepții pe utilizator** (deciziile lui Aurelian din 21.11.2026). Grupul de utilizatori este rolul: în interfață și în cod se folosește consecvent termenul „rol” (`Role`). Un utilizator moștenește drepturile tuturor rolurilor lui de pe firmă (poate avea mai multe roluri) și poate primi excepții: un drept **adăugat** (`G`) peste roluri sau un drept **revocat** (`R`) dintre cele moștenite.
 
@@ -582,9 +595,9 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.Company` | `Id int` | UQ `Code`, UQ `FiscalCode` | — |
 | `core.Branch` | `Id int` | FK `CompanyId` | `CompanyId` |
 | `core.CompanyBankAccount` | `Id int` | FK `CompanyId`; UQ `Iban` | `CompanyId` |
-| `core.Partner` | `Id int` | UX `CodeKey` (`SQL-24`), UQ filtrat `FiscalCode WHERE FiscalCode IS NOT NULL` | `NameSearch` (căutare, `SQL-25`), full-text opțional |
+| `core.Partner` | `Id int` | UX `CodeKey` (`SQL-24`), UQ filtrat `FiscalCode WHERE FiscalCode IS NOT NULL`; FK proprietar `OwnerCompanyId`, `(OwnerBranchId, OwnerCompanyId)`, `(OwnerLocationId, OwnerCompanyId)` | `NameSearch` (căutare, `SQL-25`), full-text opțional, `(OwnerCompanyId, OwnerBranchId, OwnerLocationId)` filtrat |
 | `core.PartnerAddress`, `PartnerBankAccount`, `PartnerContact` | `Id int` | FK `PartnerId` | `PartnerId` |
-| `core.Item` | `Id int` | UX `CodeKey`; FK `UomSetId`, `BaseUomId`, `DefaultVatRateId`, `ItemGroupId`, `DepositItemId` | `NameSearch`, `ItemGroupId` |
+| `core.Item` | `Id int` | UX `CodeKey`; FK `UomSetId`, `BaseUomId`, `DefaultVatRateId`, `ItemGroupId`, `DepositItemId`, proprietarul ca la `core.Partner` | `NameSearch`, `ItemGroupId`, `(OwnerCompanyId, OwnerBranchId, OwnerLocationId)` filtrat |
 | `core.UomSet`, `core.UomSetLine` | `Id int` | UQ `UomSet.Code`; UQ `UomSetLine (UomSetId, UomId)`; index filtrat unic pe `IsBase = 1` | `UomSetId` |
 | `core.ItemUom`, `ItemBarcode`, `ItemAttribute` | `Id int` | FK `ItemId`; UQ `ItemUom (ItemId, UomId)`; UQ `ItemBarcode.Barcode`; FK opțional `ItemBarcode.UomId` | `ItemId` |
 | `core.ItemGroup` | `Id int` | FK `ParentId` (arbore) | `ParentId` |
@@ -597,7 +610,7 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.Employee` | `Id int` | UQ `(CompanyId, EmployeeNo)`; FK `CompanyId`, `BranchId` | `(CompanyId, LastName)` |
 | `core.Role`, `Permission` | `Id int` | UQ `Code` | — |
 | `core.RolePermission` | `(RoleId, PermissionId)` | FK `RoleId`, `PermissionId` | — |
-| `core.UserRoleAssignment` | `Id int` | FK `UserId`, `RoleId`, `CompanyId` (nullable: `NULL` = toată instalarea, doar pentru `ADMIN`) | `(UserId, CompanyId)` |
+| `core.UserRoleAssignment` | `Id int` | UQ `(UserId, RoleId, CompanyGroupId, CompanyId, BranchId, LocationId)`; FK `UserId`, `RoleId`, `CompanyGroupId`, `CompanyId`, `(BranchId, CompanyId)`, `(LocationId, CompanyId)` (toate nule = toată instalarea, doar pentru `ADMIN`) | `(UserId, CompanyId)`, `CompanyGroupId` (filtrat) |
 | `core.UserPermissionOverride` | `Id int` | UQ `(UserId, PermissionId, CompanyId)`; FK `UserId`, `PermissionId`, `CompanyId` (nullable: `NULL` = toate firmele) | `PermissionId`, `CompanyId` (filtrat) |
 | `core.NumberSeries` | `Id int` | UQ `(CompanyId, BranchId, DocumentType, Prefix, Year)` | — |
 | `core.PrecisionPolicy` | `Id int` | UQ `Code` | — |
@@ -705,6 +718,7 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50034 | `CORE_ROLE_SCOPE_INVALID` | 400 | Atribuire pentru toate firmele a altui rol decât `ADMIN` |
 | 50035 | `CORE_ROLE_PROTECTED` | 409 | Modificarea rolului `ADMIN`, schimbarea codului unui rol de sistem sau ștergerea unui rol de sistem |
 | 50036 | `CORE_PERMISSION_OVERRIDE_INVALID` | 400 | Drept adăugat fără motiv sau excepție pentru un utilizator cu rolul `ADMIN` |
+| 50037 | `CORE_OWNER_ACCESS_DENIED` | 403 | Adăugare sau modificare a unui articol / partener într-un nod (comun, firmă, punct de lucru, locație) pe care utilizatorul nu are drept de modificare |
 
 Cod API fără cod SQL (etapa 4): `CORE_COMPANY_NOT_LICENSED` (409), CUI-ul unei firme active nu este în licență (4.4).
 
@@ -805,12 +819,12 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 | Parolă: recuperare și schimbare | Email cu link de resetare valabil 30 de minute; schimbare obligatorie la prima autentificare și după resetare de către administrator; reguli de complexitate configurabile. | Doar pentru conturile locale; conturile Active Directory își schimbă parola în Windows. |
 | Activare 2FA | Cod QR pentru o aplicație de autentificare (TOTP) și coduri de rezervă de unică folosință. | Obligatoriu pentru rolul Administrator, opțional pentru restul (configurabil). Valorile de 5 încercări și 30 de minute sunt propuneri. |
 | Selector de firmă | În antetul aplicației; schimbă firma curentă pentru toate ecranele | Doar firmele pe care utilizatorul are roluri |
-| Firme | Arbore în stânga (grupuri → firme → puncte de lucru → locații, cu căutare și filtre); în dreapta fișa nodului selectat, cu tab-uri: Date generale, Structură, Conturi bancare, Serii, Setări, Certificat ANAF, Istoric | Certificatul se configurează aici, se folosește în Integrări |
+| Firme | Arbore în stânga (grupuri → firme → puncte de lucru → locații, cu căutare și filtre); în dreapta fișa nodului selectat, cu tab-uri: Date generale, Structură, Conturi bancare, Serii, Setări, Certificat ANAF, Istoric | Certificatul se configurează aici, se folosește în Integrări. Tab „Utilizatori” (21.11.2026, cu `Core.User.Manage`): utilizatorii cu roluri care acoperă firma, nodul fiecărei atribuiri și matricea de drepturi doar pentru citire |
 | Parteneri | Listă cu căutare după nume, cod, CUI; fișă: Date, Adrese, Conturi bancare, Contacte, Istoric | Buton „Preia de la ANAF” după CUI |
 | Articole | Listă cu filtre pe stocabil, grupă și tip; fișă: Date generale, UM și conversii, Proprietăți, Coduri de bare, Istoric, plus Contabilitate și Stoc pentru firma curentă (tab-uri ale modulelor Finanțe și Stocuri) | Tab-urile de modul apar doar dacă modulul e licențiat |
 | Nomenclatoare | Valute, cote TVA, UM, țări, județe, localități, grupe de articole | Editare în tabel, cu validare la salvare |
 | Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | — |
-| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): Preferințe = matricea de notificări (limba și firma implicită rămân în Cont, ca în 06b); fără export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
+| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): Roluri și firme = rolul pe un nod (instalare, grup, firmă, punct de lucru, locație), cu coloana „Se aplică pe”; Preferințe = matricea de notificări (limba și firma implicită rămân în Cont, ca în 06b); fără export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
 | Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
 | Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate. Implementat (21.11.2026, `/admin/config/roluri`, familia „Securitate”): comutatorul „Pe rol” (macheta 07e: listă de roluri, matricea resursă × acțiune, copiere, ștergere pentru rolurile clientului) / „Roluri și utilizatori” (rândurile sunt rolurile cu utilizatorii lor dedesubt, coloanele sunt resursele și acțiunile; filtru pe firmă — sau „Toate firmele” —, pe modul și „Doar cu excepții”; clic pe celula unui utilizator revocă un drept moștenit sau adaugă unul lipsă; lista „Modificări nesalvate” cere motivul drepturilor adăugate). Drepturile rolului se schimbă doar din „Pe rol”. Fără „Raport utilizatori și drepturi” și „Compară cu alt rol” (rămân de făcut) |
 | Serii de numerotare | Pe firmă și tip de document | Avertizare la modificarea unei serii fiscale folosite |

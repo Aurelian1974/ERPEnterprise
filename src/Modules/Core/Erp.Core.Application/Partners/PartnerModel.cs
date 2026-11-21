@@ -4,7 +4,8 @@ namespace Erp.Core.Application.Partners;
 
 /// <summary>Un rand din lista partenerilor (macheta 04). PartnerType: 1 juridica RO, 2 juridica UE, 3 juridica non-UE, 4 persoana fizica.</summary>
 public sealed record PartnerListItemDto(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool IsCustomer, bool IsSupplier,
-    bool VatPayer, bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive);
+    bool VatPayer, bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive, byte OwnerLevel,
+    string? OwnerName);
 
 /// <summary>O pagina de parteneri: Total = toate rezultatele filtrului; ActiveCount = partenerii activi din nomenclator (antetul ecranului).</summary>
 public sealed record PartnerPageDto(IReadOnlyList<PartnerListItemDto> Items, int Total, int ActiveCount);
@@ -29,7 +30,8 @@ public sealed record PartnerDetailDto(int Id, string Code, string Name, byte Par
     bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,
     string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
     bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, IReadOnlyList<PartnerAddressDto> Addresses,
-    IReadOnlyList<PartnerBankAccountDto> BankAccounts, IReadOnlyList<PartnerContactDto> Contacts, IReadOnlyList<PartnerPropertyValue> Properties);
+    IReadOnlyList<PartnerBankAccountDto> BankAccounts, IReadOnlyList<PartnerContactDto> Contacts, IReadOnlyList<PartnerPropertyValue> Properties,
+    byte OwnerLevel, int? OwnerNodeId, string? OwnerName);
 
 public sealed record PartnerGroupDto(int Id, string Code, string Name, int SortOrder, bool IsActive, byte[] RowVersion);
 
@@ -56,7 +58,8 @@ public sealed record PartnerExportRow(string Code, string Name, byte PartnerType
     string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, bool IsActive);
 
 public sealed record PartnerSearchCriteria(string? Search, string? FiscalSearch, byte? Role, byte? PartnerType, bool? IsActive, bool? AnafInactive,
-    int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize);
+    int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize, int? UserId = null, int? CompanyId = null,
+    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null);
 
 /// <summary>Accesul la date pentru parteneri (implementat in Infrastructure, NET-06).</summary>
 public interface IPartnerStore
@@ -98,7 +101,8 @@ public interface IPartnerStore
 public sealed record PartnerRecord(int? Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool PersonalIdChange,
     byte[]? PersonalIdEncrypted, bool IsCustomer, bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive,
     string? TradeRegisterNo, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email,
-    int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, DateTime? AnafCheckedAt = null);
+    int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, DateTime? AnafCheckedAt = null,
+    OwnerRef? Owner = null);
 
 /// <summary>Criptarea datelor personale ale partenerilor (CNP, GDPR; 02.01, 9), cu cheile Data Protection ale instalarii.</summary>
 public interface IPersonalDataProtector

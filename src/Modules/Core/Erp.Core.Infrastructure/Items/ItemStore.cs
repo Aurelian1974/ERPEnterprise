@@ -90,7 +90,8 @@ public sealed class ItemStore(IDbSession session) : IItemStore
         }
 
         return new ItemPageDto([.. rows.Select(r => new ItemListItemDto(r.Id, r.Code, r.Name, r.ItemType, r.IsStockable, r.IsActive, r.VatRateCode,
-            Decimals.Format(r.VatPercent, 2), r.BaseUomCode, r.GroupName, r.Barcode))], total, active);
+            Decimals.Format(r.VatPercent, 2), r.BaseUomCode, r.GroupName, r.Barcode, OwnerRef.LevelOf(r.OwnerCompanyId, r.OwnerBranchId, r.OwnerLocationId).Level,
+            r.OwnerName))], total, active);
     }
 
     public async Task<IReadOnlyList<ItemExportRow>> ExportAsync(ItemSearchCriteria criteria, CancellationToken ct)
@@ -116,7 +117,9 @@ public sealed class ItemStore(IDbSession session) : IItemStore
         return row is null ? null : new ItemDetailDto(row.Id, row.Code, row.Name, row.ItemType, row.UomSetId, row.BaseUomId, row.DefaultVatRateId, row.ItemGroupId,
             row.PricePrecision, row.QuantityPrecision, row.IsStockable, row.CnCode, row.DepositItemId, row.DepositItemCode, row.DepositItemName,
             Measure(row.NetWeightKg), Measure(row.GrossWeightKg), Measure(row.VolumeM3), row.IsActive, DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc),
-            row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc), row.RowVersion, uoms, barcodes, properties);
+            row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc), row.RowVersion, uoms, barcodes, properties,
+            OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).Level,
+            OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).NodeId, row.OwnerName);
     }
 
     public Task<SavedEntity> SaveAsync(ItemRecord item, int userId, CancellationToken ct)
@@ -126,6 +129,8 @@ public sealed class ItemStore(IDbSession session) : IItemStore
             item.Id, item.Code, item.Name, item.ItemType, item.UomSetId, item.DefaultVatRateId, item.ItemGroupId, item.PricePrecision, item.QuantityPrecision,
             item.IsStockable, item.CnCode, item.DepositItemId, item.NetWeightKg, item.GrossWeightKg, item.VolumeM3, item.IsActive,
             SaveUoms = item.Uoms is not null, SaveProperties = item.Properties is not null, item.RowVersion, UserId = userId,
+            SaveOwner = item.Owner is not null, OwnerCompanyId = item.Owner?.CompanyId, OwnerBranchId = item.Owner?.BranchId,
+            OwnerLocationId = item.Owner?.LocationId,
         });
         parameters.Add("Uoms", LineTable(item.Uoms ?? []).AsTableValuedParameter("core.UomLineList"));
         parameters.Add("Properties", PropertyTable(item.Properties ?? []).AsTableValuedParameter("core.PropertyValueList"));
@@ -208,7 +213,7 @@ public sealed class ItemStore(IDbSession session) : IItemStore
         var parameters = new DynamicParameters(new
         {
             c.Search, c.IsStockable, c.ItemType, c.ItemGroupId, c.IsActive, c.PropertyDefinitionId, c.PropertyOptionId, c.PropertyBool, c.Offset,
-            c.PageSize, Export = export,
+            c.PageSize, Export = export, c.UserId, c.CompanyId, OwnerFilter = c.Owner, c.OwnerBranchId, c.OwnerLocationId,
         });
         parameters.Add("Barcode", c.Barcode, DbType.AnsiString, size: 50);
         return parameters;
@@ -276,12 +281,13 @@ public sealed class ItemStore(IDbSession session) : IItemStore
 
     private sealed record SearchRow(int Id, string Code, string Name, byte ItemType, bool IsStockable, bool IsActive, string VatRateCode, decimal VatPercent,
         string BaseUomCode, string? GroupCode, string? GroupName, string? Barcode, string UomSetCode, byte? PricePrecision, byte? QuantityPrecision,
-        string? CnCode, string? DepositItemCode, decimal? NetWeightKg, decimal? GrossWeightKg, decimal? VolumeM3, int TotalCount);
+        string? CnCode, string? DepositItemCode, decimal? NetWeightKg, decimal? GrossWeightKg, decimal? VolumeM3, int? OwnerCompanyId, int? OwnerBranchId,
+        int? OwnerLocationId, string? OwnerName, int TotalCount);
 
     private sealed record ItemRow(int Id, string Code, string Name, byte ItemType, int UomSetId, int BaseUomId, int DefaultVatRateId, int? ItemGroupId,
         byte? PricePrecision, byte? QuantityPrecision, bool IsStockable, string? CnCode, int? DepositItemId, string? DepositItemCode, string? DepositItemName,
         decimal? NetWeightKg, decimal? GrossWeightKg, decimal? VolumeM3, bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt,
-        byte[] RowVersion);
+        byte[] RowVersion, int? OwnerCompanyId, int? OwnerBranchId, int? OwnerLocationId, string? OwnerName);
 
     private sealed record ValueRow(int PropertyDefinitionId, string? ValueText, decimal? ValueNumber, DateTime? ValueDate, bool? ValueBool, int? ValueOptionId,
         int? ValueUserId);

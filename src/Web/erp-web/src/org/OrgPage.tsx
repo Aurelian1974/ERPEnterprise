@@ -6,6 +6,7 @@ import { companyStore } from '../app/company';
 import { tabKeyTarget } from '../components/tabs';
 import { t } from '../i18n';
 import { AddressesTab, BankAccountsTab, CompanySeriesTab, ContactsSection, ContactsTab } from './CompanyTabs';
+import { CompanyUsersTab } from '../roles/CompanyUsersTab';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
 import { useCompany, useOrgLookups, useOrgTree, type OrgLookups, type Saved } from './orgApi';
 import { buildTree, countNodes, nodeId, type NodeKind, type OrgTree, type TreeNode } from './orgTree';
@@ -210,7 +211,7 @@ function parseNode(value: string | undefined): { kind: NodeKind; id: number } | 
   return { kind: kinds[match[1] ?? 'g'] ?? 'group', id: Number(match[2]) };
 }
 
-type CompanyTab = 'general' | 'addresses' | 'contacts' | 'bank' | 'series';
+type CompanyTab = 'general' | 'addresses' | 'contacts' | 'bank' | 'series' | 'users';
 
 function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   readonly tree: OrgTree;
@@ -226,6 +227,7 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   const tabButtons = useRef(new Map<CompanyTab, HTMLButtonElement>());
   const user = useOutletContext<CurrentUser>();
   const canSeeSeries = user.permissions.includes('Core.NumberSeries.Manage');
+  const canSeeUsers = user.permissions.includes('Core.User.Manage');
 
   if (company.data === undefined) {
     return <p role="status">{company.isError ? company.error.message : t('app.loading')}</p>;
@@ -240,6 +242,7 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
     ['contacts', t('org.tab.contacts')],
     ['bank', t('org.tab.bank')],
     ...(canSeeSeries ? [['series', t('org.tab.series')] as [CompanyTab, string]] : []),
+    ...(canSeeUsers ? [['users', t('org.tab.users')] as [CompanyTab, string]] : []),
   ];
   const open = (next: CompanyTab, focus = false) => {
     setTab(next);
@@ -322,6 +325,7 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
       {panel('contacts', <ContactsTab company={data} canManage={canManage} />)}
       {panel('bank', <BankAccountsTab company={data} canManage={canManage} />)}
       {canSeeSeries && panel('series', <CompanySeriesTab companyId={companyId} canManage={canSeeSeries} />)}
+      {canSeeUsers && panel('users', <CompanyUsersTab companyId={companyId} currentUserId={user.userId} />)}
     </div>
   );
 }

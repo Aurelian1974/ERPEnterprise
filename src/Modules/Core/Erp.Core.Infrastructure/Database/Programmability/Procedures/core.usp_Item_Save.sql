@@ -19,6 +19,10 @@ CREATE OR ALTER PROCEDURE core.usp_Item_Save
     @Uoms              core.UomLineList READONLY,
     @SaveProperties    bit = 0,
     @Properties        core.PropertyValueList READONLY,
+    @SaveOwner         bit = 0,
+    @OwnerCompanyId    int = NULL,
+    @OwnerBranchId     int = NULL,
+    @OwnerLocationId   int = NULL,
     @RowVersion        binary(8) = NULL,
     @UserId            int
 AS
@@ -26,6 +30,9 @@ BEGIN
     -- Articolul (02.01, 3.3): cod unic fara diferenta de majuscule; UM de baza copiata din set (linia de baza); cota TVA in vigoare;
     -- ambalajul SGR e un articol activ de tip ambalaj. Cu @SaveUoms, exceptiile de UM (doar UM din afara bazei setului) se inlocuiesc;
     -- cu @SaveProperties, valorile proprietatilor articolului se inlocuiesc. Ruleaza in tranzactia comenzii.
+    -- Proprietarul (21.11.2026): NULL = comun; altfel firma, cu punctul de lucru sau locatia ei. Un articol / partener nou il
+    -- primeste mereu; la modificare se schimba doar cu @SaveOwner = 1 (importul il pastreaza). Accesul se verifica inainte, in
+    -- core.usp_OwnerAccess_Check.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -70,9 +77,10 @@ BEGIN
     IF @Id IS NULL
     BEGIN
         INSERT INTO core.Item (Code, Name, ItemType, UomSetId, BaseUomId, DefaultVatRateId, ItemGroupId, PricePrecision, QuantityPrecision,
-            IsStockable, CnCode, DepositItemId, NetWeightKg, GrossWeightKg, VolumeM3, IsActive, CreatedBy)
+            IsStockable, CnCode, DepositItemId, NetWeightKg, GrossWeightKg, VolumeM3, IsActive, OwnerCompanyId, OwnerBranchId, OwnerLocationId, CreatedBy)
         VALUES (@Code, @Name, @ItemType, @UomSetId, @BaseUomId, @DefaultVatRateId, @ItemGroupId, @PricePrecision, @QuantityPrecision,
-            @IsStockable, @CnCode, @DepositItemId, @NetWeightKg, @GrossWeightKg, @VolumeM3, @IsActive, @UserId);
+            @IsStockable, @CnCode, @DepositItemId, @NetWeightKg, @GrossWeightKg, @VolumeM3, @IsActive, @OwnerCompanyId, @OwnerBranchId, @OwnerLocationId,
+            @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -84,7 +92,11 @@ BEGIN
         SET Code = @Code, Name = @Name, ItemType = @ItemType, UomSetId = @UomSetId, BaseUomId = @BaseUomId, DefaultVatRateId = @DefaultVatRateId,
             ItemGroupId = @ItemGroupId, PricePrecision = @PricePrecision, QuantityPrecision = @QuantityPrecision, IsStockable = @IsStockable,
             CnCode = @CnCode, DepositItemId = @DepositItemId, NetWeightKg = @NetWeightKg, GrossWeightKg = @GrossWeightKg, VolumeM3 = @VolumeM3,
-            IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            IsActive = @IsActive,
+            OwnerCompanyId = CASE WHEN @SaveOwner = 1 THEN @OwnerCompanyId ELSE OwnerCompanyId END,
+            OwnerBranchId = CASE WHEN @SaveOwner = 1 THEN @OwnerBranchId ELSE OwnerBranchId END,
+            OwnerLocationId = CASE WHEN @SaveOwner = 1 THEN @OwnerLocationId ELSE OwnerLocationId END,
+            ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id AND RowVersion = @RowVersion;
 
         IF @@ROWCOUNT = 0

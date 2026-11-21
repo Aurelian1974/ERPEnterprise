@@ -1,3 +1,4 @@
+using Erp.Core.Application.Organization;
 using Erp.Core.Contracts;
 
 namespace Erp.Core.Application.Partners;
@@ -9,7 +10,8 @@ namespace Erp.Core.Application.Partners;
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record SearchPartners(string? Search = null, byte? Role = null, byte? PartnerType = null, bool? IsActive = null, bool? AnafInactive = null,
-    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50) : IQuery<PartnerPageDto>;
+    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50, byte? Owner = null,
+    int? OwnerBranchId = null, int? OwnerLocationId = null) : IQuery<PartnerPageDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerView)]
@@ -24,10 +26,14 @@ public sealed record GetPartnerLookups : IQuery<PartnerLookupsDto>;
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record GetPartnerHistory(int Id) : IQuery<IReadOnlyList<PartnerHistoryEntryDto>>;
 
-internal sealed class SearchPartnersHandler(IPartnerStore store) : IQueryHandler<SearchPartners, PartnerPageDto>
+internal sealed class SearchPartnersHandler(IPartnerStore store, ICurrentContext context) : IQueryHandler<SearchPartners, PartnerPageDto>
 {
     public Task<PartnerPageDto> Handle(SearchPartners request, CancellationToken cancellationToken) =>
-        store.SearchAsync(Criteria(request), cancellationToken);
+        store.SearchAsync(Visible(Criteria(request), context), cancellationToken);
+
+    /// <summary>Lista se limiteaza la partenerii vizibili pe firma curenta (comuni si ai nodurilor utilizatorului; 21.11.2026).</summary>
+    internal static PartnerSearchCriteria Visible(PartnerSearchCriteria criteria, ICurrentContext context) =>
+        context.CompanyId == 0 ? criteria : criteria with { UserId = context.UserId, CompanyId = context.CompanyId };
 
     /// <summary>Filtrele cererii in forma procedurii; folosite si de exportul Excel, ca exportul sa contina exact lista filtrata.</summary>
     internal static PartnerSearchCriteria Criteria(SearchPartners request)
@@ -39,7 +45,7 @@ internal sealed class SearchPartnersHandler(IPartnerStore store) : IQueryHandler
         var page = Math.Max(request.Page, 1);
         return new PartnerSearchCriteria(search, fiscal, request.Role is 1 or 2 ? request.Role : null, request.PartnerType,
             request.IsActive, request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool,
-            (page - 1) * pageSize, pageSize);
+            (page - 1) * pageSize, pageSize, null, null, request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId);
     }
 
     // Textul cautat ajunge intr-un LIKE: caracterele speciale se cauta literal.
@@ -47,11 +53,14 @@ internal sealed class SearchPartnersHandler(IPartnerStore store) : IQueryHandler
         value.Replace("[", "[[]", StringComparison.Ordinal).Replace("%", "[%]", StringComparison.Ordinal).Replace("_", "[_]", StringComparison.Ordinal);
 }
 
-internal sealed class GetPartnerHandler(IPartnerStore store) : IQueryHandler<GetPartner, PartnerDetailDto>
+internal sealed class GetPartnerHandler(IPartnerStore store, IOwnerAccess owners) : IQueryHandler<GetPartner, PartnerDetailDto>
 {
-    public async Task<PartnerDetailDto> Handle(GetPartner request, CancellationToken cancellationToken) =>
-        await store.GetAsync(request.Id, cancellationToken).ConfigureAwait(false)
+    public async Task<PartnerDetailDto> Handle(GetPartner request, CancellationToken cancellationToken)
+    {
+        await owners.EnsureVisibleAsync(OwnedEntities.Partner, request.Id, CorePermissions.PartnerView, cancellationToken).ConfigureAwait(false);
+        return await store.GetAsync(request.Id, cancellationToken).ConfigureAwait(false)
             ?? throw ErpException.NotFound("CORE_ENTITY_NOT_FOUND", "Partenerul nu există.");
+    }
 }
 
 internal sealed class GetPartnerLookupsHandler(IPartnerStore store, ICurrentContext context) : IQueryHandler<GetPartnerLookups, PartnerLookupsDto>
@@ -60,30 +69,35 @@ internal sealed class GetPartnerLookupsHandler(IPartnerStore store, ICurrentCont
         store.GetLookupsAsync(context.CompanyId, cancellationToken);
 }
 
-internal sealed class GetPartnerHistoryHandler(IPartnerStore store) : IQueryHandler<GetPartnerHistory, IReadOnlyList<PartnerHistoryEntryDto>>
+internal sealed class GetPartnerHistoryHandler(IPartnerStore store, IOwnerAccess owners) : IQueryHandler<GetPartnerHistory, IReadOnlyList<PartnerHistoryEntryDto>>
 {
-    public Task<IReadOnlyList<PartnerHistoryEntryDto>> Handle(GetPartnerHistory request, CancellationToken cancellationToken) =>
-        store.GetHistoryAsync(request.Id, cancellationToken);
+    public async Task<IReadOnlyList<PartnerHistoryEntryDto>> Handle(GetPartnerHistory request, CancellationToken cancellationToken)
+    {
+        await owners.EnsureVisibleAsync(OwnedEntities.Partner, request.Id, CorePermissions.PartnerView, cancellationToken).ConfigureAwait(false);
+        return await store.GetHistoryAsync(request.Id, cancellationToken).ConfigureAwait(false);
+    }
 }
 
 /// <summary>Exportul Excel al listei (macheta 04, „Export Excel”; 02.01, 10): aceleasi filtre, coloanele sablonului de import.</summary>
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record ExportPartners(string? Search = null, byte? Role = null, byte? PartnerType = null, bool? IsActive = null, bool? AnafInactive = null,
-    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null) : IQuery<FileDto>;
+    int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, byte? Owner = null, int? OwnerBranchId = null,
+    int? OwnerLocationId = null) : IQuery<FileDto>;
 
 /// <summary>Sablonul Excel de import parteneri (02.01, 4.8 pasul 1): antetul, un rand exemplu si listele de valori.</summary>
 [Module("Core")]
 [RequiresPermission(CorePermissions.ImportRun)]
 public sealed record GetPartnerImportTemplate : IQuery<FileDto>;
 
-internal sealed class ExportPartnersHandler(IPartnerStore store, IPartnerSpreadsheet spreadsheet, PartnerSheetListsProvider lists, TimeProvider clock)
-    : IQueryHandler<ExportPartners, FileDto>
+internal sealed class ExportPartnersHandler(IPartnerStore store, IPartnerSpreadsheet spreadsheet, PartnerSheetListsProvider lists, TimeProvider clock,
+    ICurrentContext context) : IQueryHandler<ExportPartners, FileDto>
 {
     public async Task<FileDto> Handle(ExportPartners request, CancellationToken cancellationToken)
     {
-        var criteria = SearchPartnersHandler.Criteria(new SearchPartners(request.Search, request.Role, request.PartnerType, request.IsActive,
-            request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool));
+        var criteria = SearchPartnersHandler.Visible(SearchPartnersHandler.Criteria(new SearchPartners(request.Search, request.Role, request.PartnerType,
+            request.IsActive, request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool, Owner: request.Owner,
+            OwnerBranchId: request.OwnerBranchId, OwnerLocationId: request.OwnerLocationId)), context);
         var rows = await store.ExportAsync(criteria, cancellationToken).ConfigureAwait(false);
         var values = rows.Select(r => (IReadOnlyList<string?>)
         [

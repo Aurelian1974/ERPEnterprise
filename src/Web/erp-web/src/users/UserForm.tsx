@@ -14,7 +14,7 @@ import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
 import { UserKind, externalAccessTypes, userApi, userKeys, type UserDetail, type UserLookups, type UserSaved } from './userApi';
-import { accessTypeLabel, isoToday, kindOf } from './userModel';
+import { accessTypeLabel, INSTALLATION, isoToday, kindOf, nodeGroups, nodeInput, nodeKey, scopeText, type NodeGroup } from './userModel';
 
 const roDate = z.string().trim().refine((v) => v === '' || roToIso(v) !== undefined, t('validation.date'));
 
@@ -37,7 +37,7 @@ function userSchema(maxMonths: number) {
       language: z.string(),
       lastCompanyId: z.number().nullable(),
       isActive: z.boolean(),
-      roles: z.array(z.object({ roleId: z.number().nullable(), companyId: z.string() })),
+      roles: z.array(z.object({ roleId: z.number().nullable(), node: z.string() })),
       notificationPreferences: z.array(z.object({ code: z.string(), inApp: z.boolean(), email: z.boolean(), emailMode: z.string() })),
     })
     .superRefine((v, ctx) => {
@@ -76,7 +76,7 @@ function userSchema(maxMonths: number) {
           ctx.addIssue({ code: 'custom', path: ['roles', index, 'roleId'], message: t('common.required') });
         }
       });
-      const keys = v.roles.map((r) => `${r.roleId}|${r.companyId}`);
+      const keys = v.roles.map((r) => `${r.roleId}|${r.node}`);
       keys.forEach((key, index) => {
         if (keys.indexOf(key) !== index) {
           ctx.addIssue({ code: 'custom', path: ['roles', index, 'roleId'], message: t('user.validation.duplicateRole') });
@@ -101,9 +101,6 @@ export function addMonths(iso: string, months: number): string {
 const fields = ['kind', 'userName', 'employeeId', 'firstName', 'lastName', 'email', 'phone', 'externalAccessType', 'externalPartnerId', 'sponsorUserId',
   'accessReason', 'validFrom', 'validUntil', 'language', 'lastCompanyId', 'isActive'];
 
-/** Valoarea firmei in randul de rol: id-ul ca text, sau „” pentru toata instalarea (doar Administrator). */
-const ALL_COMPANIES = '';
-
 function defaultsFor(user: UserDetail | undefined, lookups: UserLookups): UserInput {
   if (user === undefined) {
     return {
@@ -120,7 +117,7 @@ function defaultsFor(user: UserDetail | undefined, lookups: UserLookups): UserIn
     externalPartnerId: user.externalPartnerId ?? null, sponsorUserId: user.sponsorUserId ?? null, accessReason: user.accessReason ?? null,
     validFrom: user.validFrom == null ? '' : isoToRo(user.validFrom), validUntil: user.validUntil == null ? '' : isoToRo(user.validUntil),
     language: user.language, lastCompanyId: user.lastCompanyId ?? null, isActive: user.isActive,
-    roles: user.roles.map((r) => ({ roleId: r.roleId, companyId: r.companyId == null ? ALL_COMPANIES : String(r.companyId) })),
+    roles: user.roles.map((r) => ({ roleId: r.roleId, node: nodeKey(r) })),
     notificationPreferences: user.notificationPreferences.map((p) => ({ code: p.code, inApp: p.inApp, email: p.email, emailMode: p.emailMode })),
   };
 }
@@ -188,7 +185,7 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
         lastCompanyId: values.lastCompanyId,
         isActive: values.isActive,
         // Propriile roluri nu se trimit: serverul refuza schimbarea lor (separarea drepturilor, 02.01, 8).
-        roles: self ? null : values.roles.map((r) => ({ roleId: r.roleId ?? 0, companyId: r.companyId === ALL_COMPANIES ? null : Number(r.companyId) })),
+        roles: self ? null : values.roles.map((r) => ({ roleId: r.roleId ?? 0, ...nodeInput(r.node) })),
         // Preferintele se trimit doar daca s-au schimbat: tipurile neatinse raman pe implicitele catalogului.
         notificationPreferences: form.formState.dirtyFields.notificationPreferences === undefined ? null : values.notificationPreferences,
       });
@@ -213,8 +210,7 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
   const languages = useMemo<Option[]>(() => [{ value: 'ro', text: t('user.language.ro') }, { value: 'en', text: t('user.language.en') }], []);
   const roleOptions = useMemo<Option[]>(() => lookups.roles.map((r) => ({ value: String(r.id), text: r.name })), [lookups.roles]);
   const adminRoleId = lookups.roles.find((r) => r.code === 'ADMIN' && r.isSystem)?.id;
-  const companyOptions = (roleId: number | null): Option[] =>
-    roleId !== null && roleId === adminRoleId ? [{ value: ALL_COMPANIES, text: t('user.roles.allCompanies') }, ...companies] : companies;
+  const nodeOptions = (roleId: number | null): NodeGroup[] => nodeGroups(lookups, roleId !== null && roleId === adminRoleId);
   const employeeCurrent = user?.employeeId == null ? undefined
     : { value: String(user.employeeId), text: `${user.displayName} · ${t('user.employeeNo', { no: user.employeeNo ?? '' })} · ${user.employeeCompanyName ?? ''}` };
   const partnerCurrent = user?.externalPartnerId == null ? undefined
@@ -318,12 +314,12 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
               </tr>
             )}
             {roles.fields.map((row, index) => (
-              <RoleRow key={row.id} index={index} form={form} roleOptions={roleOptions} companyOptions={companyOptions} onRemove={() => roles.remove(index)} />
+              <RoleRow key={row.id} index={index} form={form} roleOptions={roleOptions} nodeOptions={nodeOptions} onRemove={() => roles.remove(index)} />
             ))}
           </tbody>
         </table>
         {!self && (
-          <button type="button" className="btn ghost" onClick={() => roles.append({ roleId: null, companyId: companies[0]?.value ?? ALL_COMPANIES })}>
+          <button type="button" className="btn ghost" onClick={() => roles.append({ roleId: null, node: companies[0] === undefined ? INSTALLATION : `c${companies[0].value}` })}>
             {t('user.roles.add')}
           </button>
         )}
@@ -351,29 +347,34 @@ export function UserForm({ user, lookups, section, currentUserId, onSaved, onCan
 
 type UserFormApi = ReturnType<typeof useForm<UserInput, unknown, UserValues>>;
 
-function RoleRow({ index, form, roleOptions, companyOptions, onRemove }: {
+function RoleRow({ index, form, roleOptions, nodeOptions, onRemove }: {
   readonly index: number;
   readonly form: UserFormApi;
   readonly roleOptions: readonly Option[];
-  readonly companyOptions: (roleId: number | null) => Option[];
+  readonly nodeOptions: (roleId: number | null) => NodeGroup[];
   readonly onRemove: () => void;
 }) {
   const roleId = useWatch({ control: form.control, name: `roles.${index}.roleId` });
-  const companyId = useWatch({ control: form.control, name: `roles.${index}.companyId` });
-  const options = companyOptions(roleId);
-  // „Toate firmele” e permis doar Administratorului; la schimbarea rolului se alege o firma.
+  const node = useWatch({ control: form.control, name: `roles.${index}.node` });
+  const groups = nodeOptions(roleId);
+  const first = groups.flatMap((g) => g.options).find((o) => o.value !== INSTALLATION);
+  // „Toate firmele” e permis doar Administratorului; la schimbarea rolului se alege primul nod al unei firme.
   useEffect(() => {
-    if (companyId === ALL_COMPANIES && !options.some((o) => o.value === ALL_COMPANIES) && options[0] !== undefined) {
-      form.setValue(`roles.${index}.companyId`, options[0].value, { shouldDirty: true });
+    if (node === INSTALLATION && !groups.some((g) => g.options.some((o) => o.value === INSTALLATION)) && first !== undefined) {
+      form.setValue(`roles.${index}.node`, first.value, { shouldDirty: true });
     }
-  }, [companyId, options, form, index]);
+  }, [node, groups, first, form, index]);
   const error = form.formState.errors.roles?.[index]?.roleId?.message;
   return (
     <tr>
       <td>
-        <select className="cell-input" aria-label={t('user.roles.company')} {...form.register(`roles.${index}.companyId`)}>
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.text}</option>
+        <select className="cell-input" aria-label={t('user.roles.company')} {...form.register(`roles.${index}.node`)}>
+          {groups.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value}>{o.text}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </td>
@@ -393,7 +394,7 @@ function RoleRow({ index, form, roleOptions, companyOptions, onRemove }: {
         />
         {error !== undefined && <span className="field-error" role="alert">{error}</span>}
       </td>
-      <td className="muted">{t('user.roles.wholeCompany')}</td>
+      <td className="muted">{scopeText(node)}</td>
       <td>
         <button type="button" className="btn ghost small" onClick={onRemove} aria-label={t('user.roles.remove')}>
           ✕

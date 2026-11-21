@@ -15,12 +15,14 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         using var grid = await session.Connection.QueryMultipleAsync(Command("core.usp_Partner_Search", new
         {
             criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
-            criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.Offset, criteria.PageSize,
+            criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.Offset, criteria.PageSize, criteria.UserId,
+            criteria.CompanyId, OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId,
         }, ct)).ConfigureAwait(false);
         var rows = (await grid.ReadAsync<SearchRow>().ConfigureAwait(false)).ToList();
         var active = await grid.ReadSingleAsync<int>().ConfigureAwait(false);
         var items = rows.Select(r => new PartnerListItemDto(r.Id, r.Code, r.Name, r.PartnerType, r.FiscalCode, r.IsCustomer, r.IsSupplier, r.VatPayer,
-            r.VatOnCollection, r.AnafInactive, r.CountryCode, r.City, r.IsActive)).ToList();
+            r.VatOnCollection, r.AnafInactive, r.CountryCode, r.City, r.IsActive, OwnerRef.LevelOf(r.OwnerCompanyId, r.OwnerBranchId, r.OwnerLocationId).Level,
+            r.OwnerName)).ToList();
         var total = rows.Count > 0 ? rows[0].TotalCount : 0;
         if (rows.Count == 0 && criteria.Offset > 0)
         {
@@ -48,14 +50,16 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             row.IsSupplier, row.PartnerGroupId, row.VatPayer, row.VatOnCollection, row.AnafInactive, Utc(row.AnafCheckedAt), row.TradeRegisterNo,
             row.Address, row.City, row.CountyCode, row.CountryCode, row.PostalCode, row.Phone, row.Email, row.IntraGroupCompanyId, row.IsActive,
             DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc), row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc),
-            row.RowVersion, addresses, accounts, contacts, properties);
+            row.RowVersion, addresses, accounts, contacts, properties, OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).Level,
+            OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).NodeId, row.OwnerName);
     }
 
     public async Task<IReadOnlyList<PartnerExportRow>> ExportAsync(PartnerSearchCriteria criteria, CancellationToken ct) =>
         [.. await session.Connection.QueryAsync<PartnerExportRow>(new CommandDefinition("core.usp_Partner_Export", new
         {
             criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
-            criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool,
+            criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.UserId, criteria.CompanyId,
+            OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId,
         }, session.Transaction, commandType: CommandType.StoredProcedure, commandTimeout: 300, cancellationToken: ct)).ConfigureAwait(false)];
 
     public async Task<PartnerLookupsDto> GetLookupsAsync(int companyId, CancellationToken ct)
@@ -87,6 +91,8 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             partner.AnafInactive, partner.TradeRegisterNo, partner.Address, partner.City, partner.CountyCode, CountryCode = Ansi(partner.CountryCode, 2),
             partner.PostalCode, partner.Phone, partner.Email, partner.IntraGroupCompanyId, partner.IsActive,
             SaveProperties = partner.Properties is not null, partner.RowVersion, partner.AnafCheckedAt, UserId = userId,
+            SaveOwner = partner.Owner is not null, OwnerCompanyId = partner.Owner?.CompanyId, OwnerBranchId = partner.Owner?.BranchId,
+            OwnerLocationId = partner.Owner?.LocationId,
         });
         parameters.Add("PersonalIdEncrypted", partner.PersonalIdEncrypted, DbType.Binary, size: 256);
         parameters.Add("Properties", PropertyTable(partner.Properties ?? []).AsTableValuedParameter("core.PropertyValueList"));
@@ -159,12 +165,14 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
     private static DateTime? Utc(DateTime? value) => value is { } v ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : null;
 
     private sealed record SearchRow(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool IsCustomer, bool IsSupplier, bool VatPayer,
-        bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive, int TotalCount);
+        bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive, int? OwnerCompanyId, int? OwnerBranchId,
+        int? OwnerLocationId, string? OwnerName, int TotalCount);
 
     private sealed record PartnerRow(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool HasPersonalId, bool IsCustomer,
         bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,
         string Address, string City, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
-        bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion);
+        bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, int? OwnerCompanyId, int? OwnerBranchId,
+        int? OwnerLocationId, string? OwnerName);
 
     private sealed record ValueRow(int PropertyDefinitionId, string? ValueText, decimal? ValueNumber, DateTime? ValueDate, bool? ValueBool,
         int? ValueOptionId, int? ValueUserId);

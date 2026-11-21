@@ -21,7 +21,8 @@ public sealed class UserStore(IDbSession session) : IUserStore
         var counters = await grid.ReadSingleAsync<CounterRow>().ConfigureAwait(false);
         var items = rows.Select(r => new UserListItemDto(r.Id, r.UserName, r.DisplayName, r.Email, r.IsActive, r.IsSystem, r.IsEmployee, r.EmployeeNo,
             Date(r.EmployeeLeaveDate), r.ExternalAccessType, r.OrganizationName, Date(r.ValidUntil), r.TwoFactorEnabled, Utc(r.LastLoginAt),
-            [.. roles[r.Id].Select(x => new UserRoleSummaryDto(x.CompanyId, x.CompanyName, x.RoleCode, x.RoleName))])).ToList();
+            [.. roles[r.Id].Select(x => new UserRoleSummaryDto(x.CompanyId, x.CompanyName, x.RoleCode, x.RoleName, x.CompanyGroupId, x.GroupName,
+                x.BranchId, x.BranchName, x.LocationId, x.LocationName))])).ToList();
         var total = rows.Count > 0 ? rows[0].TotalCount : 0;
         if (rows.Count == 0 && criteria.Offset > 0)
         {
@@ -56,7 +57,10 @@ public sealed class UserStore(IDbSession session) : IUserStore
         var roles = (await grid.ReadAsync<RoleOptionDto>().ConfigureAwait(false)).ToList();
         var companies = (await grid.ReadAsync<CompanyOptionDto>().ConfigureAwait(false)).ToList();
         var sponsors = (await grid.ReadAsync<UserOptionDto>().ConfigureAwait(false)).ToList();
-        return new UserLookupsDto(roles, companies, sponsors, externalAccessMaxMonths, NotificationTypes.All);
+        var groups = (await grid.ReadAsync<GroupOptionDto>().ConfigureAwait(false)).ToList();
+        var branches = (await grid.ReadAsync<Application.Employees.BranchOptionDto>().ConfigureAwait(false)).ToList();
+        var locations = (await grid.ReadAsync<LocationOptionDto>().ConfigureAwait(false)).ToList();
+        return new UserLookupsDto(roles, companies, sponsors, externalAccessMaxMonths, NotificationTypes.All, groups, branches, locations);
     }
 
     public async Task<IReadOnlyList<PartnerHistoryEntryDto>> GetHistoryAsync(int id, CancellationToken ct) =>
@@ -78,10 +82,14 @@ public sealed class UserStore(IDbSession session) : IUserStore
     {
         var table = new DataTable();
         table.Columns.Add("RoleId", typeof(int));
+        table.Columns.Add("CompanyGroupId", typeof(int));
         table.Columns.Add("CompanyId", typeof(int));
+        table.Columns.Add("BranchId", typeof(int));
+        table.Columns.Add("LocationId", typeof(int));
         foreach (var role in roles)
         {
-            table.Rows.Add(role.RoleId, (object?)role.CompanyId ?? DBNull.Value);
+            table.Rows.Add(role.RoleId, (object?)role.CompanyGroupId ?? DBNull.Value, (object?)role.CompanyId ?? DBNull.Value,
+                (object?)role.BranchId ?? DBNull.Value, (object?)role.LocationId ?? DBNull.Value);
         }
 
         return session.Connection.QuerySingleAsync<bool>(Command("core.usp_UserRoleAssignment_Save", new
@@ -107,7 +115,8 @@ public sealed class UserStore(IDbSession session) : IUserStore
         string? EmployeeNo, DateTime? EmployeeLeaveDate, string? ExternalAccessType, string? OrganizationName, DateTime? ValidUntil,
         bool? TwoFactorEnabled, DateTime? LastLoginAt, int TotalCount);
 
-    private sealed record RoleRow(int UserId, int? CompanyId, string? CompanyName, string RoleCode, string RoleName);
+    private sealed record RoleRow(int UserId, int? CompanyId, string? CompanyName, string RoleCode, string RoleName, int? CompanyGroupId,
+        string? GroupName, int? BranchId, string? BranchName, int? LocationId, string? LocationName);
 
     private sealed record CounterRow(int? ActiveCount, int? EmployeeCount, int? ExternalCount, int? ExpiringCount, int? WithoutTwoFactorCount,
         int? InactiveCount);

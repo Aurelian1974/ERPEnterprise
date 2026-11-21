@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { OWNER_COMMON, ownerChoices, ownerFields, ownerKey, useOwnerOptions } from '../org/owner';
 import { Controller, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -40,6 +41,7 @@ function partnerSchema(definitions: readonly PropertyDefinition[], isNew: boolea
       email: optionalEmail,
       intraGroupCompanyId: z.number().nullable(),
       isActive: z.boolean(),
+      owner: z.string(),
       changePersonalId: z.boolean(),
       personalId: optionalText,
       anafCheckedAt: z.string().nullable(),
@@ -81,7 +83,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
     return {
       code: null, name: '', partnerType: PartnerType.LegalRomania, fiscalCode: null, isCustomer: true, isSupplier: false, partnerGroupId: null,
       vatPayer: false, vatOnCollection: false, anafInactive: false, tradeRegisterNo: null, address: '', countryCode: ROMANIA, countyCode: null,
-      city: '', postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, changePersonalId: true, personalId: null,
+      city: '', postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, owner: OWNER_COMMON, changePersonalId: true, personalId: null,
       anafCheckedAt: null, props: toFormProps(definitions, []),
     };
   }
@@ -91,6 +93,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
     anafInactive: partner.anafInactive, tradeRegisterNo: partner.tradeRegisterNo ?? null, address: partner.address, countryCode: partner.countryCode,
     countyCode: partner.countyCode ?? null, city: partner.city, postalCode: partner.postalCode ?? null, phone: partner.phone ?? null,
     email: partner.email ?? null, intraGroupCompanyId: partner.intraGroupCompanyId ?? null, isActive: partner.isActive,
+    owner: ownerKey(partner.ownerLevel, partner.ownerNodeId),
     changePersonalId: !partner.hasPersonalId, personalId: null, anafCheckedAt: null, props: toFormProps(definitions, partner.properties),
   };
 }
@@ -130,6 +133,18 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
   const schema = useMemo(() => partnerSchema(definitions, isNew), [definitions, isNew]);
   const defaults = useMemo(() => defaultsFor(partner, definitions), [partner, definitions]);
   const form = useForm<PartnerInput, unknown, PartnerValues>({ resolver: zodResolver(schema) as Resolver<PartnerInput, unknown, PartnerValues>, defaultValues: defaults });
+  const ownerOptions = useOwnerOptions('Partner');
+  const owners = useMemo(
+    () => ownerChoices(ownerOptions.data, partner === undefined ? undefined
+      : { key: ownerKey(partner.ownerLevel, partner.ownerNodeId), name: partner.ownerName ?? null }),
+    [ownerOptions.data, partner],
+  );
+  // Un partener nou primeste primul proprietar permis (comun doar cu dreptul pe toata firma).
+  useEffect(() => {
+    if (partner === undefined && owners.length > 0 && !owners.some((o) => o.value === form.getValues('owner'))) {
+      form.setValue('owner', owners[0]?.value ?? OWNER_COMMON);
+    }
+  }, [form, partner, owners]);
   // Dupa salvare sau reincarcare (alt RowVersion) formularul preia datele serverului.
   useEffect(() => form.reset(defaults), [partner?.id, partner?.rowVersion]); // eslint-disable-line react-hooks/exhaustive-deps
   const queryClient = useQueryClient();
@@ -166,13 +181,14 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
 
   const submit = form.handleSubmit(async (values) => {
     setError(undefined);
-    const { props, ...rest } = values;
+    const { props, owner, ...rest } = values;
     const individual = rest.partnerType === PartnerType.Individual;
     try {
       const saved = await partnerApi.save({
         ...rest,
         id: partner?.id ?? null,
         rowVersion: partner?.rowVersion ?? null,
+        ...ownerFields(owner),
         fiscalCode: individual ? null : rest.fiscalCode,
         changePersonalId: individual && rest.changePersonalId,
         personalId: individual && rest.changePersonalId ? rest.personalId : null,
@@ -318,8 +334,10 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
           <TextField control={form.control} name="email" label={t('field.email')} />
           <SelectField control={form.control} name="intraGroupCompanyId" label={t('partner.field.intraGroup')} options={companies}
             allowEmpty={t('partner.field.noIntraGroup')} numeric />
+          <SelectField control={form.control} name="owner" label={t('owner.field')} options={owners} />
           <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
         </div>
+        <p className="muted small">{t('owner.hint')}</p>
       </fieldset>
       <fieldset className="form-body plain" disabled={readOnly} hidden={section !== 'properties'}>
         <PropertiesSection form={form} definitions={definitions} lookups={lookups} isCustomer={isCustomer} isSupplier={isSupplier} />

@@ -1381,6 +1381,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/owner-options/{entity}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetOwnerOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCompanyAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1967,6 +1999,11 @@ export interface components {
             bankAccounts: components["schemas"]["PartnerBankAccountDto"][];
             contacts: components["schemas"]["PartnerContactDto"][];
             properties: components["schemas"]["PartnerPropertyValue"][];
+            /** Format: uint8 */
+            ownerLevel: number;
+            /** Format: int32 */
+            ownerNodeId: null | number;
+            ownerName: null | string;
         };
         PartnerGroupDto: {
             /** Format: int32 */
@@ -2007,6 +2044,9 @@ export interface components {
             countryCode: string;
             city: string;
             isActive: boolean;
+            /** Format: uint8 */
+            ownerLevel: number;
+            ownerName: null | string;
         };
         PartnerLookupsDto: {
             groups: components["schemas"]["PartnerGroupDto"][];
@@ -2096,6 +2136,10 @@ export interface components {
             properties?: null | components["schemas"]["PartnerPropertyValue"][];
             /** Format: date-time */
             anafCheckedAt?: null | string;
+            /** Format: uint8 */
+            ownerLevel?: null | number;
+            /** Format: int32 */
+            ownerNodeId?: null | number;
         };
         SavePartnerAddress: {
             /** Format: int32 */
@@ -2349,6 +2393,11 @@ export interface components {
             uoms: components["schemas"]["UomLineDto"][];
             barcodes: components["schemas"]["ItemBarcodeDto"][];
             properties: components["schemas"]["PartnerPropertyValue"][];
+            /** Format: uint8 */
+            ownerLevel: number;
+            /** Format: int32 */
+            ownerNodeId: null | number;
+            ownerName: null | string;
         };
         ItemGroupDto: {
             /** Format: int32 */
@@ -2379,6 +2428,9 @@ export interface components {
             baseUomCode: string;
             groupName: null | string;
             barcode: null | string;
+            /** Format: uint8 */
+            ownerLevel: number;
+            ownerName: null | string;
         };
         ItemLookupsDto: {
             vatRates: components["schemas"]["VatRateDto"][];
@@ -2426,6 +2478,10 @@ export interface components {
             rowVersion: null | string;
             uoms?: null | components["schemas"]["UomLineDto"][];
             properties?: null | components["schemas"]["PartnerPropertyValue"][];
+            /** Format: uint8 */
+            ownerLevel?: null | number;
+            /** Format: int32 */
+            ownerNodeId?: null | number;
         };
         SaveItemBarcode: {
             /** Format: int32 */
@@ -2815,6 +2871,9 @@ export interface components {
             /** Format: int32 */
             externalAccessMaxMonths: number;
             notificationTypes: components["schemas"]["NotificationTypeDto"][];
+            groups: components["schemas"]["GroupOptionDto"][];
+            branches: components["schemas"]["BranchOptionDto"][];
+            locations: components["schemas"]["LocationOptionDto"][];
         };
         UserPageDto: {
             items: components["schemas"]["UserListItemDto"][];
@@ -2833,12 +2892,27 @@ export interface components {
             companyId: null | number;
             companyName: null | string;
             dimensionScope: null | string;
+            /** Format: int32 */
+            companyGroupId: null | number;
+            groupName: null | string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            /** Format: int32 */
+            locationId: null | number;
+            locationName: null | string;
         };
         UserRoleInput: {
             /** Format: int32 */
             roleId: number;
             /** Format: int32 */
             companyId: null | number;
+            /** Format: int32 */
+            companyGroupId?: null | number;
+            /** Format: int32 */
+            branchId?: null | number;
+            /** Format: int32 */
+            locationId?: null | number;
         };
         UserRoleSummaryDto: {
             /** Format: int32 */
@@ -2846,6 +2920,15 @@ export interface components {
             companyName: null | string;
             roleCode: string;
             roleName: string;
+            /** Format: int32 */
+            companyGroupId: null | number;
+            groupName: null | string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            /** Format: int32 */
+            locationId: null | number;
+            locationName: null | string;
         };
         UserSavedDto: {
             /** Format: int32 */
@@ -2886,6 +2969,7 @@ export interface components {
             userName: string;
             isActive: boolean;
             roleIds: number[];
+            assignments: components["schemas"]["MatrixAssignmentDto"][];
         };
         PermissionDto: {
             /** Format: int32 */
@@ -2947,6 +3031,59 @@ export interface components {
             /** Format: int32 */
             companyId: null | number;
             overrides: components["schemas"]["PermissionOverrideInput"][];
+        };
+        GroupOptionDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            /** Format: int32 */
+            parentGroupId: null | number;
+        };
+        LocationOptionDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            branchId: null | number;
+            name: string;
+        };
+        MatrixAssignmentDto: {
+            /** Format: int32 */
+            roleId: number;
+            /** Format: int32 */
+            companyGroupId: null | number;
+            groupName: null | string;
+            /** Format: int32 */
+            companyId: null | number;
+            companyName: null | string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            /** Format: int32 */
+            locationId: null | number;
+            locationName: null | string;
+        };
+        OwnerNodeDto: {
+            /** Format: int32 */
+            branchId: null | number;
+            /** Format: int32 */
+            locationId: null | number;
+            /** Format: int32 */
+            parentBranchId: null | number;
+            code: string;
+            name: string;
+            isActive: boolean;
+            canView: boolean;
+            canManage: boolean;
+        };
+        OwnerOptionsDto: {
+            /** Format: int32 */
+            companyId: number;
+            companyName: string;
+            viewWholeCompany: boolean;
+            manageWholeCompany: boolean;
+            nodes: components["schemas"]["OwnerNodeDto"][];
         };
     };
     responses: never;
@@ -4419,6 +4556,9 @@ export interface operations {
                 PropertyBool?: boolean;
                 Page?: number;
                 PageSize?: number;
+                Owner?: number;
+                OwnerBranchId?: number;
+                OwnerLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -5354,6 +5494,9 @@ export interface operations {
                 PropertyDefinitionId?: number;
                 PropertyOptionId?: number;
                 PropertyBool?: boolean;
+                Owner?: number;
+                OwnerBranchId?: number;
+                OwnerLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -5871,6 +6014,9 @@ export interface operations {
                 PropertyBool?: boolean;
                 Page?: number;
                 PageSize?: number;
+                Owner?: number;
+                OwnerBranchId?: number;
+                OwnerLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -5969,6 +6115,9 @@ export interface operations {
                 PropertyDefinitionId?: number;
                 PropertyOptionId?: number;
                 PropertyBool?: boolean;
+                Owner?: number;
+                OwnerBranchId?: number;
+                OwnerLocationId?: number;
             };
             header?: never;
             path?: never;
@@ -7641,6 +7790,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PartnerHistoryEntryDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOwnerOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entity: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerOptionsDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCompanyAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleMatrixDto"];
                 };
             };
             /** @description Forbidden */

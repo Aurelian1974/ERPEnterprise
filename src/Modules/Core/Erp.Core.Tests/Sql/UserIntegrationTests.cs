@@ -68,7 +68,7 @@ public sealed class UserDatabase(SqlServerFixture sql) : IAsyncLifetime
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class UserIntegrationTests(UserDatabase database) : IClassFixture<UserDatabase>
+public sealed partial class UserIntegrationTests(UserDatabase database) : IClassFixture<UserDatabase>
 {
     private readonly FakeLicense license = new();
 
@@ -83,8 +83,11 @@ public sealed class UserIntegrationTests(UserDatabase database) : IClassFixture<
         services.AddSingleton<ILicenseInfo>(license);
         services.AddSingleton<IPasswordHasher<UserAccount>>(new PasswordHasher<UserAccount>());
         services.AddScoped<IIdentityAccountAdmin, IdentityAccountAdmin>();
+        services.AddSingleton<Erp.Core.Application.Partners.IPersonalDataProtector>(
+            new Erp.Core.Api.PersonalDataProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
         var context = new FakeContext { UserId = userId ?? database.AdminId, CompanyId = database.CompanyId };
-        context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.RoleManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage]);
+        context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.RoleManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage,
+            CorePermissions.ItemView, CorePermissions.ItemManage, CorePermissions.PartnerView, CorePermissions.PartnerManage]);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();

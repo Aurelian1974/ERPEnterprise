@@ -7,6 +7,7 @@ import { useNotifier } from '../components/Notifier';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { moduleName, t, type TextKey } from '../i18n';
 import { ro } from '../i18n/ro';
+import { nodeName } from '../users/userModel';
 import { roleApi, roleKeys, useRoleMatrix, type MatrixUser, type Permission, type Role, type RoleMatrix } from './roleApi';
 import {
   cellState, globalOverrides, groupPermissions, localOverrides, sameDraft, splitCode, STANDARD_ACTIONS, toggle, toInput,
@@ -332,11 +333,15 @@ function columnsOf(groups: readonly ModuleGroup[]): Column[] {
   }))));
 }
 
-function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
+/**
+ * Rolurile cu utilizatorii lor si exceptiile. readOnly (fisa firmei): firma e fixa, fara clic pe celule si fara salvare.
+ */
+export function RolesByUser({ matrix, companyId, onCompany, currentUserId, readOnly = false }: {
   readonly matrix: RoleMatrix;
   readonly companyId: number | null;
-  readonly onCompany: (id: number | null) => void;
+  readonly onCompany?: (id: number | null) => void;
   readonly currentUserId: number;
+  readonly readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
   const { notify } = useNotifier();
@@ -367,6 +372,9 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
     cellState(inherited(u, permissionId), draftOf(u).get(permissionId)?.effect, globalOverrides(matrix.overrides, u.id, companyId).get(permissionId));
 
   const click = (u: MatrixUser, p: Permission) => {
+    if (readOnly) {
+      return;
+    }
     if (isAdmin(u)) {
       setStatus(t('role.lock.admin'));
       return;
@@ -473,14 +481,16 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
   return (
     <section className="card user-matrix">
       <div className="matrix-toolbar">
-        <label className="field inline">
-          <span className="label">{t('role.company')}</span>
-          <select className="cell-input" value={companyId ?? ''} disabled={drafts.size > 0} title={drafts.size > 0 ? t('role.lock.company') : undefined}
-            onChange={(e) => onCompany(e.target.value === '' ? null : Number(e.target.value))}>
-            <option value="">{t('role.allCompanies')}</option>
-            {matrix.companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        {onCompany !== undefined && (
+          <label className="field inline">
+            <span className="label">{t('role.company')}</span>
+            <select className="cell-input" value={companyId ?? ''} disabled={drafts.size > 0} title={drafts.size > 0 ? t('role.lock.company') : undefined}
+              onChange={(e) => onCompany(e.target.value === '' ? null : Number(e.target.value))}>
+              <option value="">{t('role.allCompanies')}</option>
+              {matrix.companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+        )}
         <label className="field inline">
           <span className="label">{t('role.module')}</span>
           <select className="cell-input" value={module} onChange={(e) => setModule(e.target.value)}>
@@ -563,6 +573,7 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
                     </tr>
                     {open && members.map((u) => {
                       const others = u.roleIds.filter((id) => id !== role.id).map((id) => roleNames.get(id)).filter((n) => n !== undefined);
+                      const nodes = u.assignments.filter((a) => a.roleId === role.id).map(nodeName);
                       const count = overrideCount(u);
                       const locked = isAdmin(u) || u.id === currentUserId;
                       const edited = drafts.get(u.id);
@@ -576,7 +587,8 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
                               {!u.isActive && <span className="pill off">{t('role.inactive')}</span>}
                             </span>
                             <span className="muted small">
-                              {u.userName}{others.length > 0 ? ` · ${t('role.alsoIn', { roles: others.join(', ') })}` : ''}
+                              {u.userName}{nodes.length > 0 ? ` · ${t('role.on', { nodes: nodes.join(', ') })}` : ''}
+                              {others.length > 0 ? ` · ${t('role.alsoIn', { roles: others.join(', ') })}` : ''}
                             </span>
                           </th>
                           {columns.map((c) => {
@@ -593,7 +605,7 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
                                   className={['cell', kind, s.redundant ? 'redundant' : '', changed ? 'changed' : '', locked || s.global !== undefined ? 'locked' : ''].join(' ').trim()}
                                   aria-label={`${u.displayName} · ${resourceLabel(splitCode(c.permission.code).resource)} · ${actionLabel(splitCode(c.permission.code).action)}: ${text}${s.redundant ? ` (${t('role.state.redundant')})` : ''}`}
                                   title={s.global !== undefined ? t('role.lock.global') : s.redundant ? t('role.state.redundant') : c.permission.description}
-                                  disabled={busy}
+                                  disabled={busy || readOnly}
                                   onClick={() => click(u, c.permission)}>
                                   {symbol}
                                 </button>
@@ -619,7 +631,7 @@ function RolesByUser({ matrix, companyId, onCompany, currentUserId }: {
         <span><span className="cell grant redundant">+</span> {t('role.legend.redundant')}</span>
         <span><span className="cell" /> {t('role.legend.none')}</span>
       </div>
-      <p className="matrix-status" aria-live="polite">{status}</p>
+      {readOnly ? <p className="muted small">{t('role.hint.readOnly')}</p> : <p className="matrix-status" aria-live="polite">{status}</p>}
       {pending.length > 0 && (
         <div className="pending-changes">
           <h3 className="section">{t('role.pending.title')}</h3>

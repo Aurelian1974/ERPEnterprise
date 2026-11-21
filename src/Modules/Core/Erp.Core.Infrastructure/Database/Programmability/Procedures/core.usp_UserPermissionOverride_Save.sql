@@ -32,7 +32,8 @@ BEGIN
         JOIN core.UserRoleAssignment AS a ON a.UserId = x.Id
         JOIN core.Role AS r ON r.Id = a.RoleId
         WHERE r.Code = N'ADMIN' AND r.IsSystem = 1
-          AND (@CompanyId IS NULL OR a.CompanyId IS NULL OR a.CompanyId = @CompanyId)
+          AND (@CompanyId IS NULL
+               OR EXISTS (SELECT 1 FROM core.fn_AssignmentScope(x.Id) AS s WHERE s.AssignmentId = a.Id AND s.CompanyId = @CompanyId))
           AND EXISTS (SELECT 1 FROM @Overrides AS o WHERE o.UserId = x.Id))
         THROW 50036, N'Un utilizator cu rolul Administrator are toate drepturile și nu primește excepții.', 1;
 
