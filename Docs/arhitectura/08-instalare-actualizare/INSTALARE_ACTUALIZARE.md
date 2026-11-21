@@ -1372,7 +1372,7 @@ Dacă installer-ul e închis forțat în timpul actualizării, la redeschidere e
 Două mecanisme, cu roluri diferite:
 
 - **`app_offline.htm`** (mecanismul standard al modulului ASP.NET Core pentru IIS): cât timp fișierul e în folderul aplicației, procesul aplicației e oprit și IIS servește conținutul fișierului cu `503`. Se folosește când aplicația nu trebuie să ruleze deloc (U-03 … U-08, R-01 … R-03).
-- **`maintenance.flag`**: `Erp.Host` are un middleware, primul în pipeline: dacă fișierul `MaintenanceFlagPath` există (verificat cel mult o dată la 2 s), orice cerere care **nu** este `/health/*` de pe loopback primește `503`, antetul `Retry-After: 300` și pagina `maintenance.html` („Aplicația se actualizează. Reveniți în câteva minute.”). Se folosește când aplicația rulează, dar utilizatorii nu trebuie să intre încă (U-09, R-04). `Erp.Worker` nu pornește joburi noi cât timp fișierul există.
+- **`maintenance.flag`**: `Erp.Host` are un middleware, primul în pipeline: dacă fișierul `MaintenanceFlagPath` există (verificat cel mult o dată la 2 s), orice cerere care **nu** vine de pe loopback primește `503`, antetul `Retry-After: 300` și pagina `maintenance.html` („Aplicația se actualizează. Reveniți în câteva minute.”). Cererile de pe loopback trec, pentru că health-check-ul installer-ului (5.14) cere și `/`, `/account/login` cu `200` la U-09, când flag-ul e încă prezent. Se folosește când aplicația rulează, dar utilizatorii nu trebuie să intre încă (U-09, R-04). `Erp.Worker` nu pornește joburi noi cât timp fișierul există.
 
 ### 10.4 Protecția versiune program ↔ versiune bază (D30)
 

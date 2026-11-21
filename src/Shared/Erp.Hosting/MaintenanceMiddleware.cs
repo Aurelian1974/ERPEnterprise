@@ -38,8 +38,9 @@ public sealed class MaintenanceFlag(string? flagPath, TimeProvider time)
 }
 
 /// <summary>
-/// Primul middleware din pipeline (10.4): cat timp exista maintenance.flag, orice cerere care nu e /health/* de pe loopback
-/// primeste 503, Retry-After: 300 si pagina maintenance.html.
+/// Primul middleware din pipeline (10.4): cat timp exista maintenance.flag, orice cerere care nu vine de pe loopback primeste
+/// 503, Retry-After: 300 si pagina maintenance.html. Loopback-ul trece (health-check-ul installer-ului cere / si /account/login
+/// la U-09, cu flag-ul inca prezent).
 /// </summary>
 public sealed class MaintenanceMiddleware(RequestDelegate next, MaintenanceFlag flag)
 {
@@ -47,7 +48,7 @@ public sealed class MaintenanceMiddleware(RequestDelegate next, MaintenanceFlag 
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!flag.IsActive || (IsHealthPath(context.Request.Path) && IsLoopback(context)))
+        if (!flag.IsActive || IsLoopback(context))
         {
             await next(context);
             return;
@@ -59,8 +60,6 @@ public sealed class MaintenanceMiddleware(RequestDelegate next, MaintenanceFlag 
         context.Response.ContentType = "text/html; charset=utf-8";
         await context.Response.Body.WriteAsync(Page.Value, context.RequestAborted);
     }
-
-    internal static bool IsHealthPath(PathString path) => path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
 
     internal static bool IsLoopback(HttpContext context) =>
         context.Connection.RemoteIpAddress is { } address && IPAddress.IsLoopback(address);

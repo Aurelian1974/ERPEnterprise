@@ -95,13 +95,14 @@ public sealed class HostingTests : IDisposable
          new FixedCheck("license", HealthStatus.Healthy), new FixedCheck("worker", HealthStatus.Healthy)];
 
     [Fact]
-    public async Task Maintenance_flag_returns_503_with_retry_after_and_page_except_loopback_health()
+    public async Task Maintenance_flag_returns_503_with_retry_after_and_page_except_loopback()
     {
         using var host = await StartAsync(AllHealthy());
         File.WriteAllText(FlagPath, string.Empty);
 
         var page = await Send(host, "/", IPAddress.Parse("10.0.0.5"));
         var api = await Send(host, "/api/ping", IPAddress.Loopback);
+        var localPage = await Send(host, "/", IPAddress.Loopback);
         var remoteHealth = await Send(host, "/health/ready", IPAddress.Parse("10.0.0.5"));
         var localHealth = await Send(host, "/health/ready", IPAddress.Loopback);
         var localIpv6 = await Send(host, "/health/live", IPAddress.IPv6Loopback);
@@ -109,7 +110,9 @@ public sealed class HostingTests : IDisposable
         Assert.Equal(503, page.Response.StatusCode);
         Assert.Equal("300", page.Response.Headers.RetryAfter.ToString());
         Assert.Contains("Aplicația se actualizează.", await Body(page));
-        Assert.Equal(503, api.Response.StatusCode);
+        // Loopback-ul trece de pagina de mentenanta: health-check-ul installer-ului cere / si /account/login la U-09.
+        Assert.Equal(200, api.Response.StatusCode);
+        Assert.Equal(200, localPage.Response.StatusCode);
         Assert.Equal(503, remoteHealth.Response.StatusCode);
         Assert.Equal(200, localHealth.Response.StatusCode);
         Assert.Equal(200, localIpv6.Response.StatusCode);
