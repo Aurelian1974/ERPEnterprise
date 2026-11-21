@@ -23,7 +23,7 @@ BEGIN
     WHERE x.ItemId = @Id
     ORDER BY x.FactorToBase;
 
-    SELECT b.Id, b.ItemId, b.Barcode, b.BarcodeType, b.UomId, b.IsActive, b.RowVersion
+    SELECT b.Id, b.ItemId, b.Barcode, b.BarcodeType, b.UomId, b.IsActive, b.RowVersion, b.VariantId
     FROM core.ItemBarcode AS b
     WHERE b.ItemId = @Id
     ORDER BY b.IsActive DESC, b.Id;

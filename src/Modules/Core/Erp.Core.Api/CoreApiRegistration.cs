@@ -235,6 +235,20 @@ public static class CoreApiRegistration
         core.MapPut("/partners/{id:int}/credit-limit", (int id, SetPartnerCreditLimit body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { PartnerId = id }, ct))
             .WithName("SetPartnerCreditLimit").Saves();
+        core.MapGet("/item-attributes", (ISender sender, CancellationToken ct) => sender.Send(new GetItemAttributes(), ct))
+            .WithName("GetItemAttributes").Produces<ItemAttributePageDto>();
+        core.MapPost("/item-attributes", (SaveItemAttribute body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateItemAttribute").Saves();
+        core.MapPut("/item-attributes/{id:int}", (int id, SaveItemAttribute body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateItemAttribute").Saves();
+        core.MapGet("/items/{id:int}/variants", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemVariants(id), ct))
+            .WithName("GetItemVariants").Produces<ItemVariantPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/items/{id:int}/variants/generate", (int id, GenerateItemVariants body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ItemId = id }, ct))
+            .WithName("GenerateItemVariants").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPut("/items/{id:int}/variants/{variantId:int}", (int id, int variantId, SaveItemVariant body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = variantId, ItemId = id }, ct))
+            .WithName("UpdateItemVariant").Saves();
         core.MapGet("/items/{id:int}/references", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemReferences(id), ct))
             .WithName("GetItemReferences").Produces<IReadOnlyList<ItemReferenceItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapPost("/items/{id:int}/references", (int id, SaveItemReference body, ISender sender, CancellationToken ct) =>

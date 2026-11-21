@@ -14,7 +14,7 @@ public sealed record ItemListItemDto(int Id, string Code, string Name, byte Item
 public sealed record ItemPageDto(IReadOnlyList<ItemListItemDto> Items, int Total, int ActiveCount);
 
 /// <summary>BarcodeType: 1 EAN-13, 2 EAN-8, 3 GTIN-14, 4 intern; UomId = UM adusa de scanare (null = UM de baza).</summary>
-public sealed record ItemBarcodeDto(int Id, int ItemId, string Barcode, byte BarcodeType, int? UomId, bool IsActive, byte[] RowVersion);
+public sealed record ItemBarcodeDto(int Id, int ItemId, string Barcode, byte BarcodeType, int? UomId, bool IsActive, byte[] RowVersion, int? VariantId);
 
 /// <summary>
 /// Fisa articolului. Greutatile si volumul sunt siruri zecimale invariante, pe UM de baza; Uoms = exceptiile articolului de la set
@@ -103,7 +103,8 @@ public sealed record SaveItem(int? Id, string? Code, string Name, byte ItemType,
 [Module("Core")]
 [RequiresPermission(CorePermissions.ItemManage)]
 [Audited("Core.ItemBarcode.Save")]
-public sealed record SaveItemBarcode(int? Id, int ItemId, string Barcode, byte BarcodeType, int? UomId, bool IsActive, byte[]? RowVersion) : ICommand<SavedEntity>;
+public sealed record SaveItemBarcode(int? Id, int ItemId, string Barcode, byte BarcodeType, int? UomId, bool IsActive, byte[]? RowVersion,
+    int? VariantId = null) : ICommand<SavedEntity>;
 
 /// <summary>Lista articolelor: cautare dupa inceputul denumirii (fara diacritice) sau al codului, ori dupa codul de bare exact.</summary>
 [Module("Core")]

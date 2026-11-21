@@ -141,7 +141,7 @@ public sealed class ItemStore(IDbSession session) : IItemStore
         session.Connection.QuerySingleAsync<SavedEntity>(Command("core.usp_ItemBarcode_Save", new
         {
             command.Id, command.ItemId, Barcode = new DbString { Value = command.Barcode, Length = 50, IsAnsi = true }, command.BarcodeType, command.UomId,
-            command.IsActive, command.RowVersion, UserId = userId,
+            command.IsActive, command.RowVersion, UserId = userId, command.VariantId,
         }, ct));
 
     public async Task<IReadOnlyList<PartnerHistoryEntryDto>> GetHistoryAsync(int id, CancellationToken ct) =>

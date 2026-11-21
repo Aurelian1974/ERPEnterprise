@@ -21,6 +21,8 @@ import { DataType } from '../partners/partnerApi';
 import { HistoryView } from '../partners/PartnerTabs';
 import { ItemBlockTab } from '../partners/BlockTab';
 import { ItemReferencesTab, ItemTranslationsTab } from './ItemCatalogTabs';
+import { VariantsTab } from './VariantsTab';
+import { useItemVariants } from './variantsApi';
 import { DefaultDimensionsTab } from '../dimensions/DefaultDimensions';
 import { ItemForm, effectiveLines, type ItemSection } from './ItemForm';
 import {
@@ -307,7 +309,7 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
   );
 }
 
-type ItemTab = ItemSection | 'barcodes' | 'references' | 'translations' | 'block' | 'dimensions' | 'history';
+type ItemTab = ItemSection | 'barcodes' | 'variants' | 'references' | 'translations' | 'block' | 'dimensions' | 'history';
 
 function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; readonly lookups: ItemLookups; readonly canManage: boolean }) {
   const canManageDimensions = useOutletContext<CurrentUser>().permissions.includes('Core.Dimension.Manage');
@@ -326,6 +328,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
     ['uom', t('item.tab.uom')],
     ['properties', t('item.tab.properties')],
     ['barcodes', t('item.tab.barcodes')],
+    ['variants', t('item.tab.variants')],
     ['references', t('item.tab.references')],
     ['translations', t('item.tab.translations')],
     ['block', t('item.tab.block')],
@@ -400,6 +403,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
         <ItemForm item={data} lookups={lookups} section={formSection} canManage={canManage} onSaved={() => undefined} onCancel={() => undefined} />
       </div>
       {panel('barcodes', <BarcodesTab item={data} lookups={lookups} canManage={canManage} />)}
+      {panel('variants', <VariantsTab itemId={itemId} canManage={canManage} active={tab === 'variants'} />)}
       {panel('references', <ItemReferencesTab item={data} lookups={lookups} canManage={canManage} active={tab === 'references'} />)}
       {panel('translations', <ItemTranslationsTab itemId={itemId} itemName={data.name} canManage={canManage} active={tab === 'translations'} />)}
       {panel('block', <ItemBlockTab itemId={itemId} active={tab === 'block'} canManage={canManage} />)}
@@ -413,6 +417,7 @@ const barcodeSchema = z.object({
   barcode: required.max(50),
   barcodeType: z.number().int().min(1).max(4),
   uomId: z.number().nullable(),
+  variantId: z.number().nullable(),
   isActive: z.boolean(),
 });
 type BarcodeValues = z.infer<typeof barcodeSchema>;
@@ -425,8 +430,8 @@ function BarcodesTab({ item, lookups, canManage }: { readonly item: ItemDetail; 
   const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
   const defaults: BarcodeValues = barcode === undefined
-    ? { barcode: '', barcodeType: 1, uomId: null, isActive: true }
-    : { barcode: barcode.barcode, barcodeType: barcode.barcodeType, uomId: barcode.uomId ?? null, isActive: barcode.isActive };
+    ? { barcode: '', barcodeType: 1, uomId: null, variantId: null, isActive: true }
+    : { barcode: barcode.barcode, barcodeType: barcode.barcodeType, uomId: barcode.uomId ?? null, variantId: barcode.variantId ?? null, isActive: barcode.isActive };
   const form = useForm<BarcodeValues>({ resolver: zodResolver(barcodeSchema) as Resolver<BarcodeValues>, defaultValues: defaults });
   useEffect(() => form.reset(defaults), [selected]); // eslint-disable-line react-hooks/exhaustive-deps
   const guard = useUnsavedChanges(selected !== undefined && form.formState.isDirty);
@@ -437,6 +442,11 @@ function BarcodesTab({ item, lookups, canManage }: { readonly item: ItemDetail; 
     [set, item.uoms, units],
   );
   const typeOptions = useMemo<Option[]>(() => [1, 2, 3, 4].map((type) => ({ value: String(type), text: t(`item.barcode.type.${type}` as TextKey) })), []);
+  const variants = useItemVariants(item.id);
+  const variantOptions = useMemo<Option[]>(
+    () => (variants.data?.variants ?? []).filter((v) => v.isActive || v.id === barcode?.variantId).map((v) => ({ value: String(v.id), text: `${v.code} · ${v.name}` })),
+    [variants.data, barcode?.variantId],
+  );
   const rows = useMemo(
     () => item.barcodes.map((b) => ({ ...b, typeText: t(`item.barcode.type.${b.barcodeType}` as TextKey), uomText: b.uomId == null ? t('item.barcode.baseUom') : (units.get(b.uomId)?.code ?? '') })),
     [item.barcodes, units],
@@ -495,6 +505,9 @@ function BarcodesTab({ item, lookups, canManage }: { readonly item: ItemDetail; 
               <TextField control={form.control} name="barcode" label={t('item.barcode.code')} />
               <SelectField control={form.control} name="barcodeType" label={t('item.barcode.type')} options={typeOptions} numeric />
               <SelectField control={form.control} name="uomId" label={t('item.barcode.uom')} options={uomOptions} allowEmpty={t('item.barcode.baseUom')} numeric />
+              {variantOptions.length > 0 && (
+                <SelectField control={form.control} name="variantId" label={t('item.barcode.variant')} options={variantOptions} allowEmpty={t('item.barcode.noVariant')} numeric />
+              )}
               <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
             </div>
             <div className="actions end">

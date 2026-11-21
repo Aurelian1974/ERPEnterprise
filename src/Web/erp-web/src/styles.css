@@ -2370,3 +2370,27 @@ td .pill.warn {
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* ---------- Variante de articol (3.6 punctul 13) ---------- */
+
+.variants-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variant-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.variant-attributes fieldset {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}

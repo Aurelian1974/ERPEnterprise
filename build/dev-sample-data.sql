@@ -22,6 +22,18 @@ ENABLE TRIGGER core.tr_AuditEntry_Immutable ON core.AuditEntry;
 DELETE FROM core.Outbox WHERE CompanyId IS NOT NULL;
 UPDATE core.[User] SET LastCompanyId = NULL WHERE LastCompanyId IS NOT NULL;
 DELETE FROM core.UserRoleAssignment WHERE CompanyId IS NOT NULL;
+-- Datele legate de firme (3.6 si celelalte etape ale Nucleului), ca reincarcarea sa mearga si pe o baza folosita.
+DELETE FROM core.DefaultDimension;
+DELETE FROM core.DimensionCombination;
+UPDATE core.DimensionValue SET ParentId = NULL WHERE ParentId IS NOT NULL;
+DELETE FROM core.DimensionValue;
+DELETE FROM core.PartnerCredit;
+DELETE FROM core.NumberSeriesRule;
+DELETE FROM core.CompanyVersion;
+DELETE FROM core.CompanyContact;
+DELETE FROM core.CompanyAddress;
+UPDATE core.Partner SET OwnerCompanyId = NULL, OwnerBranchId = NULL, OwnerLocationId = NULL WHERE OwnerCompanyId IS NOT NULL;
+UPDATE core.Item SET OwnerCompanyId = NULL, OwnerBranchId = NULL, OwnerLocationId = NULL WHERE OwnerCompanyId IS NOT NULL;
 DELETE FROM core.NumberSeries;
 DELETE FROM core.CompanyBankAccount;
 DELETE FROM core.Location;

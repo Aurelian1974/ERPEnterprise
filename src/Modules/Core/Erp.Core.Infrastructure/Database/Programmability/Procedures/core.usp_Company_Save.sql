@@ -105,8 +105,7 @@ BEGIN
         @CountyCode, @CountryCode, @PostalCode, SYSUTCDATETIME(), @UserId);
 
     -- O schimbare programata pentru viitor nu se vede inca pe firma: firma ramane la versiunea de azi.
-    DECLARE @Applied TABLE (CompanyId int);
-    INSERT INTO @Applied (CompanyId) EXEC core.usp_CompanyVersion_Apply @Today, @Id;
+    EXEC core.usp_CompanyVersion_Apply @Today, @Id, @ReturnRows = 0;
 
     SELECT Id, RowVersion FROM core.Company WHERE Id = @Id;
 END;
