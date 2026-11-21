@@ -9060,6 +9060,292 @@
           }
         }
       }
+    },
+    "/api/core/duplicates/{entityType}": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "FindDuplicates",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicatePairDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/duplicates/1/merge": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "MergePartners",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergePartners"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/duplicates/2/merge": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "MergeItems",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeItems"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/duplicates/1/ignore": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "IgnorePartnerDuplicate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IgnorePartnerDuplicate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/core/duplicates/2/ignore": {
+      "post": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "IgnoreItemDuplicate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IgnoreItemDuplicate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -17907,6 +18193,125 @@
           "modifiedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DuplicatePairDto": {
+        "required": [
+          "firstId",
+          "secondId",
+          "reasons",
+          "firstCode",
+          "firstName",
+          "firstFiscalCode",
+          "secondCode",
+          "secondName",
+          "secondFiscalCode"
+        ],
+        "type": "object",
+        "properties": {
+          "firstId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secondId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reasons": {
+            "type": "string"
+          },
+          "firstCode": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "firstFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secondCode": {
+            "type": "string"
+          },
+          "secondName": {
+            "type": "string"
+          },
+          "secondFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "IgnoreItemDuplicate": {
+        "required": [
+          "firstId",
+          "secondId"
+        ],
+        "type": "object",
+        "properties": {
+          "firstId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secondId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "IgnorePartnerDuplicate": {
+        "required": [
+          "firstId",
+          "secondId"
+        ],
+        "type": "object",
+        "properties": {
+          "firstId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secondId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MergeItems": {
+        "required": [
+          "keepId",
+          "removeId"
+        ],
+        "type": "object",
+        "properties": {
+          "keepId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "removeId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MergePartners": {
+        "required": [
+          "keepId",
+          "removeId"
+        ],
+        "type": "object",
+        "properties": {
+          "keepId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "removeId": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

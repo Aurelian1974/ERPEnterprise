@@ -29,6 +29,7 @@ public static class CoreApplicationRegistration
         services.AddValidatorsFromAssemblies(assemblies, ServiceLifetime.Scoped, includeInternalTypes: true);
         services.AddScoped<AuditScope>();
         services.AddScoped<Partners.PartnerSheetListsProvider>();
+        services.AddScoped<Partners.DuplicateActions>();
         services.AddScoped<IAuditScope>(sp => sp.GetRequiredService<AuditScope>());
         services.TryAddSingleton(TimeProvider.System);
         return services;

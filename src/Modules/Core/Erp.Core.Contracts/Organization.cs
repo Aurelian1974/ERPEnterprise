@@ -67,3 +67,12 @@ public interface ICompanyDirectory
 {
     Task<CompanySnapshotDto> GetAtAsync(int companyId, DateOnly date, CancellationToken ct);
 }
+
+/// <summary>
+/// Doi parteneri au fost uniti (02.01, 3.6 punctul 7): MergedPartnerId e inactiv si trimite la KeptPartnerId. Modulele (Vanzari,
+/// Achizitii, Finante, CRM) isi muta pe KeptPartnerId documentele deschise, soldurile si conditiile comerciale.
+/// </summary>
+public sealed record PartenerUnificat(int KeptPartnerId, int MergedPartnerId) : IntegrationEvent;
+
+/// <summary>Doua articole au fost unite (3.6 punctul 7): Stocuri, Vanzari, Achizitii, Productie, POS isi muta datele pe KeptItemId.</summary>
+public sealed record ArticolUnificat(int KeptItemId, int MergedItemId) : IntegrationEvent;

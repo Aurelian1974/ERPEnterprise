@@ -35,6 +35,7 @@ export const routes = [
       { path: 'admin/config/dimensiuni', element: <ConfigPage /> },
       { path: 'admin/config/precizie', element: <ConfigPage /> },
       { path: 'admin/config/audit', element: <ConfigPage /> },
+      { path: 'admin/config/dubluri', element: <ConfigPage /> },
       { path: 'admin/config', element: <ConfigPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },

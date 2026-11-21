@@ -217,6 +217,16 @@ public static class CoreApiRegistration
             .WithName("GetPartner").Produces<PartnerDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
         core.MapGet("/partners/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartnerHistory(id), ct))
             .WithName("GetPartnerHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/duplicates/{entityType:int}", (byte entityType, ISender sender, CancellationToken ct) => sender.Send(new FindDuplicates(entityType), ct))
+            .WithName("FindDuplicates").Produces<IReadOnlyList<DuplicatePairDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/duplicates/1/merge", (MergePartners body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("MergePartners").Saves();
+        core.MapPost("/duplicates/2/merge", (MergeItems body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("MergeItems").Saves();
+        core.MapPost("/duplicates/1/ignore", (IgnorePartnerDuplicate body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("IgnorePartnerDuplicate").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/duplicates/2/ignore", (IgnoreItemDuplicate body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("IgnoreItemDuplicate").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/partners/{id:int}/block", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartnerBlock(id), ct))
             .WithName("GetPartnerBlock").Produces<PartnerBlockDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
         core.MapPut("/partners/{id:int}/block", (int id, SetPartnerBlock body, ISender sender, CancellationToken ct) =>

@@ -25,6 +25,7 @@ import { DimensionsTab } from '../dimensions/DimensionsTab';
 import { PrecisionTab } from '../precision/PrecisionTab';
 import { AuditTab } from '../audit/AuditTab';
 import { SeriesRules } from './SeriesRules';
+import { DuplicatesTab } from './DuplicatesTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -42,6 +43,7 @@ export function ConfigPage() {
   const canDimensions = user.permissions.includes('Core.Dimension.Manage');
   const canPrecision = user.permissions.includes('Core.Precision.Manage');
   const canAudit = user.permissions.includes('Core.Audit.View');
+  const canDuplicates = user.permissions.includes('Core.Partner.Manage') || user.permissions.includes('Core.Item.Manage');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
@@ -54,12 +56,13 @@ export function ConfigPage() {
                   : path.endsWith('/cursuri') && canRates ? 'rates'
                     : path.endsWith('/dimensiuni') && canDimensions ? 'dimensions'
                       : path.endsWith('/precizie') && canPrecision ? 'precision'
-                        : path.endsWith('/audit') && canAudit ? 'audit' : 'series';
+                        : path.endsWith('/audit') && canAudit ? 'audit'
+                          : path.endsWith('/dubluri') && canDuplicates ? 'duplicates' : 'series';
   // Fara tab cerut (sau fara dreptul lui), primul tab permis: un auditor ajunge direct in Audit.
   const first = ([
     [canSeries, 'serii'], [canPrecision, 'precizie'], [canNomenclatures, 'nomenclatoare'], [canRates, 'cursuri'], [canDimensions, 'dimensiuni'],
     [canAddressTypes, 'tipuri-adrese'], [canPartnerGroups, 'grupe-parteneri'], [canProperties, 'proprietati'], [canRoles, 'roluri'], [canAudit, 'audit'],
-    [canSettings, 'setari'], [canImport, 'import'], [canLicense, 'licenta'],
+    [canSettings, 'setari'], [canImport, 'import'], [canLicense, 'licenta'], [canDuplicates, 'dubluri'],
   ] as const).find(([allowed]) => allowed)?.[1];
   if (tab === 'series' && !canSeries && first !== undefined) {
     return <Navigate to={`/admin/config/${first}`} replace />;
@@ -67,7 +70,7 @@ export function ConfigPage() {
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
     : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings')
       : tab === 'properties' ? t('config.tab.properties') : tab === 'import' ? t('config.tab.import')
-        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : tab === 'audit' ? t('config.tab.audit') : t('config.tab.series');
+        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : tab === 'audit' ? t('config.tab.audit') : tab === 'duplicates' ? t('config.tab.duplicates') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -93,7 +96,7 @@ export function ConfigPage() {
             )}
           </div>
         )}
-        {(canAddressTypes || canPartnerGroups || canProperties || canNomenclatures || canRates || canDimensions) && (
+        {(canAddressTypes || canPartnerGroups || canProperties || canNomenclatures || canRates || canDimensions || canDuplicates) && (
           <div className="family">
             <span className="family-name">{t('config.family.nomenclature')}</span>
             {canNomenclatures && (
@@ -124,6 +127,11 @@ export function ConfigPage() {
             {canProperties && (
               <NavLink to="/admin/config/proprietati" className="tab">
                 ≡ {t('config.tab.properties')}
+              </NavLink>
+            )}
+            {canDuplicates && (
+              <NavLink to="/admin/config/dubluri" className="tab">
+                ⧉ {t('config.tab.duplicates')}
               </NavLink>
             )}
           </div>
@@ -166,7 +174,7 @@ export function ConfigPage() {
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
         : tab === 'settings' ? <SettingsTab /> : tab === 'properties' ? <PropertiesTab /> : tab === 'import' ? <ImportTab />
-        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab /> : tab === 'audit' ? <AuditTab />
+        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab /> : tab === 'audit' ? <AuditTab /> : tab === 'duplicates' ? <DuplicatesTab user={user} />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

@@ -2356,3 +2356,17 @@ td .pill.bad {
 td .pill.warn {
   margin-left: 6px;
 }
+
+/* ---------- Configurare › Dubluri (3.6 punctul 7) ---------- */
+
+.duplicates {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
