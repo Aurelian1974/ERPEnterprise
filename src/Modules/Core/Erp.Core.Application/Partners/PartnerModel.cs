@@ -5,7 +5,7 @@ namespace Erp.Core.Application.Partners;
 /// <summary>Un rand din lista partenerilor (macheta 04). PartnerType: 1 juridica RO, 2 juridica UE, 3 juridica non-UE, 4 persoana fizica.</summary>
 public sealed record PartnerListItemDto(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool IsCustomer, bool IsSupplier,
     bool VatPayer, bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive, byte OwnerLevel,
-    string? OwnerName);
+    string? OwnerName, byte BlockedFor);
 
 /// <summary>O pagina de parteneri: Total = toate rezultatele filtrului; ActiveCount = partenerii activi din nomenclator (antetul ecranului).</summary>
 public sealed record PartnerPageDto(IReadOnlyList<PartnerListItemDto> Items, int Total, int ActiveCount);
@@ -59,7 +59,7 @@ public sealed record PartnerExportRow(string Code, string Name, byte PartnerType
 
 public sealed record PartnerSearchCriteria(string? Search, string? FiscalSearch, byte? Role, byte? PartnerType, bool? IsActive, bool? AnafInactive,
     int? PropertyDefinitionId, int? PropertyOptionId, bool? PropertyBool, int Offset, int PageSize, int? UserId = null, int? CompanyId = null,
-    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null);
+    byte? Owner = null, int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null, bool? Blocked = null);
 
 /// <summary>Accesul la date pentru parteneri (implementat in Infrastructure, NET-06).</summary>
 public interface IPartnerStore

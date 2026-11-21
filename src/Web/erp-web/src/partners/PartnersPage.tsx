@@ -14,9 +14,11 @@ import { useOrgLookups, type OrgLookups } from '../org/orgApi';
 import { DataType, PAGE_SIZE, PartnerType, searchQuery, usePartner, usePartnerLookups, usePartners, type PartnerCriteria, type PartnerLookups } from './partnerApi';
 import { PartnerForm, type PartnerSection } from './PartnerForm';
 import { anafBadge, displayFiscalCode } from './partnerModel';
+import { PartnerBlockTab } from './BlockTab';
+import { blockedText } from './blockApi';
 import { PartnerAddressesTab, PartnerBankAccountsTab, PartnerContactsTab, PartnerHistoryTab } from './PartnerTabs';
 
-type Chip = 'all' | 'customers' | 'suppliers' | 'individuals' | 'anafInactive';
+type Chip = 'all' | 'customers' | 'suppliers' | 'individuals' | 'anafInactive' | 'blocked';
 
 /** Textul cautat ajunge la server dupa o scurta pauza, nu la fiecare tasta. */
 export function useDebounced(value: string, delay = 250): string {
@@ -72,6 +74,7 @@ export function PartnersPage() {
     role: chip === 'customers' ? 1 : chip === 'suppliers' ? 2 : undefined,
     partnerType: chip === 'individuals' ? PartnerType.Individual : undefined,
     anafInactive: chip === 'anafInactive' ? true : undefined,
+    blocked: chip === 'blocked' ? true : undefined,
     showInactive,
     propertyDefinitionId: property !== undefined && propertyValue !== undefined ? property.id : undefined,
     propertyOptionId: property !== undefined && property.dataType !== DataType.Bool && propertyValue !== undefined ? Number(propertyValue) : undefined,
@@ -106,6 +109,7 @@ export function PartnersPage() {
     ['suppliers', t('partner.filter.suppliers')],
     ['individuals', t('partner.filter.individuals')],
     ['anafInactive', t('partner.filter.anafInactive')],
+    ['blocked', t('partner.filter.blocked')],
   ];
   const data = list.data;
 
@@ -193,6 +197,7 @@ export function PartnersPage() {
                         }}>
                           {item.name}
                         </button>
+                        {item.blockedFor > 0 && <span className="pill bad" title={blockedTitle(item.blockedFor)}>{t('block.badge')}</span>}
                         <div className="muted small">
                           {item.code}
                           {item.partnerType === PartnerType.Individual ? ` · ${t('partner.typeShort.4').toLocaleLowerCase('ro-RO')}` : ` · ${displayFiscalCode(item)}`}
@@ -330,7 +335,12 @@ function NewPartnerPanel({ lookups, orgLookups, canManage, onSaved, onCancel }: 
   );
 }
 
-type PartnerTab = PartnerSection | 'addresses' | 'bank' | 'contacts' | 'history';
+/** Ce e blocat la partener, pentru eticheta din lista. */
+function blockedTitle(mask: number): string {
+  return blockedText(mask, 7, (f) => t(`block.partner.${f as 1 | 2 | 4}`), t('block.all')).toLocaleLowerCase('ro-RO');
+}
+
+type PartnerTab = PartnerSection | 'addresses' | 'bank' | 'contacts' | 'block' | 'history';
 
 /** Fisa partenerului cu tab-urile machetei; un panou se monteaza la prima vizita si apoi doar se ascunde (UI-18). */
 function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
@@ -356,6 +366,7 @@ function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
     ['addresses', t('partner.tab.addresses')],
     ['bank', t('partner.tab.bank')],
     ['contacts', t('partner.tab.contacts')],
+    ['block', t('partner.tab.block')],
     ['history', t('partner.tab.history')],
   ];
   const open = (next: PartnerTab, focus = false) => {
@@ -428,6 +439,8 @@ function PartnerPanel({ partnerId, lookups, orgLookups, user }: {
       {panel('addresses', <PartnerAddressesTab partner={data} orgLookups={orgLookups} canManage={canManage} />)}
       {panel('bank', <PartnerBankAccountsTab partner={data} canManage={canManage} />)}
       {panel('contacts', <PartnerContactsTab partner={data} canManage={canManage} />)}
+      {panel('block', <PartnerBlockTab partnerId={partnerId} active={tab === 'block'} canManage={canManage} isCustomer={data.isCustomer}
+        canCredit={user.permissions.includes('Core.Partner.ManageCredit')} />)}
       {panel('history', <PartnerHistoryTab partnerId={partnerId} active={tab === 'history'} />)}
     </div>
   );

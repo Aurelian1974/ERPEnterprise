@@ -17,13 +17,13 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             criteria.Search, criteria.FiscalSearch, criteria.Role, criteria.PartnerType, criteria.IsActive, criteria.AnafInactive,
             criteria.PropertyDefinitionId, criteria.PropertyOptionId, criteria.PropertyBool, criteria.Offset, criteria.PageSize, criteria.UserId,
             criteria.CompanyId, OwnerFilter = criteria.Owner, criteria.OwnerBranchId, criteria.OwnerLocationId, criteria.ContextBranchId,
-            criteria.ContextLocationId,
+            criteria.ContextLocationId, criteria.Blocked,
         }, ct)).ConfigureAwait(false);
         var rows = (await grid.ReadAsync<SearchRow>().ConfigureAwait(false)).ToList();
         var active = await grid.ReadSingleAsync<int>().ConfigureAwait(false);
         var items = rows.Select(r => new PartnerListItemDto(r.Id, r.Code, r.Name, r.PartnerType, r.FiscalCode, r.IsCustomer, r.IsSupplier, r.VatPayer,
             r.VatOnCollection, r.AnafInactive, r.CountryCode, r.City, r.IsActive, OwnerRef.LevelOf(r.OwnerCompanyId, r.OwnerBranchId, r.OwnerLocationId).Level,
-            r.OwnerName)).ToList();
+            r.OwnerName, r.BlockedFor)).ToList();
         var total = rows.Count > 0 ? rows[0].TotalCount : 0;
         if (rows.Count == 0 && criteria.Offset > 0)
         {
@@ -168,7 +168,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
 
     private sealed record SearchRow(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool IsCustomer, bool IsSupplier, bool VatPayer,
         bool VatOnCollection, bool AnafInactive, string CountryCode, string City, bool IsActive, int? OwnerCompanyId, int? OwnerBranchId,
-        int? OwnerLocationId, string? OwnerName, int TotalCount);
+        int? OwnerLocationId, string? OwnerName, byte BlockedFor, int TotalCount);
 
     private sealed record PartnerRow(int Id, string Code, string Name, byte PartnerType, string? FiscalCode, bool HasPersonalId, bool IsCustomer,
         bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,

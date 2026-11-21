@@ -206,6 +206,18 @@ public static class CoreApiRegistration
             .WithName("GetPartner").Produces<PartnerDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
         core.MapGet("/partners/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartnerHistory(id), ct))
             .WithName("GetPartnerHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/partners/{id:int}/block", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPartnerBlock(id), ct))
+            .WithName("GetPartnerBlock").Produces<PartnerBlockDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapPut("/partners/{id:int}/block", (int id, SetPartnerBlock body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { PartnerId = id }, ct))
+            .WithName("SetPartnerBlock").Saves();
+        core.MapPut("/partners/{id:int}/credit-limit", (int id, SetPartnerCreditLimit body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { PartnerId = id }, ct))
+            .WithName("SetPartnerCreditLimit").Saves();
+        core.MapGet("/items/{id:int}/block", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemBlock(id), ct))
+            .WithName("GetItemBlock").Produces<ItemBlockDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapPut("/items/{id:int}/block", (int id, SetItemBlock body, ISender sender, CancellationToken ct) => sender.Send(body with { ItemId = id }, ct))
+            .WithName("SetItemBlock").Saves();
         core.MapPost("/partners/{id:int}/personal-id", (int id, ISender sender, CancellationToken ct) => sender.Send(new RevealPartnerPersonalId(id), ct))
             .WithName("RevealPartnerPersonalId").Produces<PartnerPersonalIdDto>()
             .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);

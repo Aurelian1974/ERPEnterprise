@@ -11,7 +11,8 @@ namespace Erp.Core.Application.Partners;
 [RequiresPermission(CorePermissions.PartnerView)]
 public sealed record SearchPartners(string? Search = null, byte? Role = null, byte? PartnerType = null, bool? IsActive = null, bool? AnafInactive = null,
     int? PropertyDefinitionId = null, int? PropertyOptionId = null, bool? PropertyBool = null, int Page = 1, int PageSize = 50, byte? Owner = null,
-    int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null) : IQuery<PartnerPageDto>;
+    int? OwnerBranchId = null, int? OwnerLocationId = null, int? ContextBranchId = null, int? ContextLocationId = null, bool? Blocked = null)
+    : IQuery<PartnerPageDto>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerView)]
@@ -46,7 +47,7 @@ internal sealed class SearchPartnersHandler(IPartnerStore store, ICurrentContext
         return new PartnerSearchCriteria(search, fiscal, request.Role is 1 or 2 ? request.Role : null, request.PartnerType,
             request.IsActive, request.AnafInactive, request.PropertyDefinitionId, request.PropertyOptionId, request.PropertyBool,
             (page - 1) * pageSize, pageSize, null, null, request.Owner is 1 or 2 ? request.Owner : null, request.OwnerBranchId, request.OwnerLocationId,
-            request.ContextBranchId, request.ContextLocationId);
+            request.ContextBranchId, request.ContextLocationId, request.Blocked);
     }
 
     // Textul cautat ajunge intr-un LIKE: caracterele speciale se cauta literal.

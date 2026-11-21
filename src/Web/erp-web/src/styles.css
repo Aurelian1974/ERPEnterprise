@@ -2274,3 +2274,37 @@ button.cell:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Blocare și credit (02.01, 3.6 punctul 6) ---------- */
+
+.block-tab {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.block-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block-flags {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.block-flags .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+td .pill.bad {
+  margin-left: 6px;
+}

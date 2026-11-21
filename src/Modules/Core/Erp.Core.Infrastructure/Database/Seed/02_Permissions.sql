@@ -10,6 +10,7 @@ USING (VALUES
     (N'Core.Partner.Manage',               N'Creare și modificare parteneri'),
     (N'Core.Partner.ViewPersonalData',     N'Vizualizare CNP și date personale ale persoanelor fizice (jurnalizată)'),
     (N'Core.Partner.Anonymize',            N'Export și anonimizare GDPR a datelor unei persoane fizice'),
+    (N'Core.Partner.ManageCredit',         N'Limitele de credit ale clienților, pe firmă'),
     (N'Core.Item.View',                    N'Vizualizare articole'),
     (N'Core.Item.Manage',                  N'Creare și modificare articole'),
     (N'Core.Nomenclature.Manage',          N'Valute, cote TVA, UM, țări, județe'),

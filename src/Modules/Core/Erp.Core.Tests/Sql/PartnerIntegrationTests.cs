@@ -70,6 +70,21 @@ public sealed partial class PartnerIntegrationTests(PartnerDatabase database) : 
 
     private async Task<T> Send<T>(IRequest<T> request, int? companyId = null, params string[] without)
     {
+        using var provider = Services(companyId, without);
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
+    }
+
+    /// <summary>Un serviciu al Nucleului (de exemplu IMasterDataBlockCheck), cu acelasi context ca Send.</summary>
+    private async Task<T> Use<TService, T>(Func<TService, Task<T>> action) where TService : notnull
+    {
+        using var provider = Services(null, []);
+        using var scope = provider.CreateScope();
+        return await action(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
+    private ServiceProvider Services(int? companyId, string[] without)
+    {
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddErpMediator(typeof(PartnerIntegrationTests).Assembly);
@@ -79,13 +94,12 @@ public sealed partial class PartnerIntegrationTests(PartnerDatabase database) : 
         var context = new FakeContext { UserId = database.AdminId, CompanyId = companyId ?? database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.PartnerView, CorePermissions.PartnerManage, CorePermissions.PartnerViewPersonalData,
             CorePermissions.NomenclatureManage, CorePermissions.NumberSeriesManage, CorePermissions.SettingsManage, CorePermissions.PropertyManage,
-            CorePermissions.ImportRun, CorePermissions.ItemView, CorePermissions.ItemManage]);
+            CorePermissions.ImportRun, CorePermissions.ItemView, CorePermissions.ItemManage, CorePermissions.PartnerManageCredit]);
         context.Permissions.ExceptWith(without);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();
-        using var scope = services.BuildServiceProvider().CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
+        return services.BuildServiceProvider();
     }
 
     private static int nextFiscal = 300;

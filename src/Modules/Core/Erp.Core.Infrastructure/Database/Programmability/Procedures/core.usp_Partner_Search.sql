@@ -5,6 +5,7 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Search
     @PartnerType          tinyint = NULL,
     @IsActive             bit = NULL,
     @AnafInactive         bit = NULL,
+    @Blocked              bit = NULL,
     @PropertyDefinitionId int = NULL,
     @PropertyOptionId     int = NULL,
     @PropertyBool         bit = NULL,
@@ -38,8 +39,9 @@ BEGIN
            p.AnafInactive, p.CountryCode, p.City, p.IsActive, p.OwnerCompanyId, p.OwnerBranchId, p.OwnerLocationId,
            CASE WHEN p.OwnerLocationId IS NOT NULL THEN (SELECT x.Name FROM core.Location AS x WHERE x.Id = p.OwnerLocationId)
                 WHEN p.OwnerBranchId IS NOT NULL THEN (SELECT x.Name FROM core.Branch AS x WHERE x.Id = p.OwnerBranchId)
-                WHEN p.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = p.OwnerCompanyId) END AS OwnerName, COUNT(*) OVER () AS TotalCount
+                WHEN p.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = p.OwnerCompanyId) END AS OwnerName, ISNULL(pb.BlockedFor, 0) AS BlockedFor, COUNT(*) OVER () AS TotalCount
     FROM core.Partner AS p
+    LEFT JOIN core.PartnerBlock AS pb ON pb.PartnerId = p.Id
     WHERE (@Search IS NULL
             OR p.NameSearch LIKE @Search + N'%'
             OR p.CodeKey LIKE UPPER(@Search) + N'%'
@@ -48,6 +50,7 @@ BEGIN
       AND (@PartnerType IS NULL OR p.PartnerType = @PartnerType)
       AND (@IsActive IS NULL OR p.IsActive = @IsActive)
       AND (@AnafInactive IS NULL OR p.AnafInactive = @AnafInactive)
+      AND (@Blocked IS NULL OR (@Blocked = 1 AND pb.BlockedFor > 0) OR (@Blocked = 0 AND ISNULL(pb.BlockedFor, 0) = 0))
       AND (@PropertyDefinitionId IS NULL OR EXISTS (
             SELECT 1 FROM core.PropertyValue AS v
             WHERE v.PropertyDefinitionId = @PropertyDefinitionId AND v.EntityId = p.Id

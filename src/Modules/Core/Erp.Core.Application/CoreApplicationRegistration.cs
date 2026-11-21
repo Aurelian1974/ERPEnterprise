@@ -44,6 +44,7 @@ public static class CorePermissions
     public const string PartnerManage = "Core.Partner.Manage";
     public const string PartnerViewPersonalData = "Core.Partner.ViewPersonalData";
     public const string PartnerAnonymize = "Core.Partner.Anonymize";
+    public const string PartnerManageCredit = "Core.Partner.ManageCredit";
     public const string ItemView = "Core.Item.View";
     public const string ItemManage = "Core.Item.Manage";
     public const string NomenclatureManage = "Core.Nomenclature.Manage";

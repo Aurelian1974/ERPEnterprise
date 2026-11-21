@@ -44,6 +44,10 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Precision.IPrecisionStore, Precision.PrecisionStore>();
         services.AddScoped<Application.Audit.IAuditLogStore, Audit.AuditLogStore>();
         services.AddScoped<Application.Organization.ICityStore, Organization.CityStore>();
+        services.AddScoped<Application.Partners.IMasterDataBlockStore, Partners.MasterDataBlockStore>();
+        services.AddScoped<IMasterDataBlockCheck, Application.Partners.MasterDataBlockCheck>();
+        // Modulul care tine soldurile clientilor (Finante / Vanzari) isi inregistreaza propriul IPartnerExposureProvider inainte de Nucleu.
+        services.TryAddScoped<IPartnerExposureProvider, Application.Partners.NoPartnerExposure>();
         services.AddScoped<IPrecisionService, Precision.PrecisionService>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));

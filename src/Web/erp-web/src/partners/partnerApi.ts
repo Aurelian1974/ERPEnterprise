@@ -37,6 +37,7 @@ export interface PartnerCriteria {
   readonly role?: 1 | 2 | undefined;
   readonly partnerType?: number | undefined;
   readonly anafInactive?: boolean | undefined;
+  readonly blocked?: boolean | undefined;
   readonly showInactive: boolean;
   readonly propertyDefinitionId?: number | undefined;
   readonly propertyOptionId?: number | undefined;
@@ -71,6 +72,7 @@ export function searchQuery(criteria: PartnerCriteria): SearchQuery {
     ['PartnerType', criteria.partnerType],
     ['IsActive', criteria.showInactive ? undefined : true],
     ['AnafInactive', criteria.anafInactive],
+    ['Blocked', criteria.blocked],
     ['PropertyDefinitionId', criteria.propertyDefinitionId],
     ['PropertyOptionId', criteria.propertyOptionId],
     ['PropertyBool', criteria.propertyBool],
