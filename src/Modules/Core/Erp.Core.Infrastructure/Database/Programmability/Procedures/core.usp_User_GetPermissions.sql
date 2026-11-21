@@ -40,7 +40,7 @@ BEGIN
     WHERE u.Id = @UserId;
 
     -- Rolul de sistem ADMIN are drepturi depline (decizie 15.11.2026): toate permisiunile din catalog, inclusiv cele
-    -- adaugate ulterior de alte module, fara sa depinda de core.RolePermission.
+    -- adaugate ulterior de alte module, fara sa depinda de core.RolePermission si fara exceptii pe utilizator.
     IF EXISTS (
         SELECT 1
         FROM core.UserRoleAssignment AS a
@@ -53,10 +53,26 @@ BEGIN
         RETURN;
     END;
 
-    SELECT DISTINCT p.Code
-    FROM core.UserRoleAssignment AS a
-    JOIN core.RolePermission AS rp ON rp.RoleId = a.RoleId
-    JOIN core.Permission AS p ON p.Id = rp.PermissionId
-    WHERE a.UserId = @UserId
-      AND (a.CompanyId IS NULL OR a.CompanyId = @EffectiveCompanyId);
+    -- Drepturile rolurilor pe firma, plus exceptiile utilizatorului (21.11.2026): cele adaugate (G) se aduna, cele revocate (R)
+    -- se scad si castiga. O exceptie cu CompanyId NULL se aplica pe toate firmele.
+    WITH Granted AS (
+        SELECT rp.PermissionId
+        FROM core.UserRoleAssignment AS a
+        JOIN core.RolePermission AS rp ON rp.RoleId = a.RoleId
+        WHERE a.UserId = @UserId
+          AND (a.CompanyId IS NULL OR a.CompanyId = @EffectiveCompanyId)
+        UNION
+        SELECT o.PermissionId
+        FROM core.UserPermissionOverride AS o
+        WHERE o.UserId = @UserId AND o.Effect = 'G'
+          AND (o.CompanyId IS NULL OR o.CompanyId = @EffectiveCompanyId)
+    )
+    SELECT p.Code
+    FROM Granted AS g
+    JOIN core.Permission AS p ON p.Id = g.PermissionId
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM core.UserPermissionOverride AS o
+        WHERE o.UserId = @UserId AND o.PermissionId = g.PermissionId AND o.Effect = 'R'
+          AND (o.CompanyId IS NULL OR o.CompanyId = @EffectiveCompanyId));
 END;

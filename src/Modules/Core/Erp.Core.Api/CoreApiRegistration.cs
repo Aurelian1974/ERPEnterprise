@@ -55,6 +55,7 @@ public static class CoreApiRegistration
         MapSettings(core);
         MapItems(core);
         MapUsers(core);
+        MapRoles(core);
         MapEmployees(core);
         MapLicense(core);
         return endpoints;
@@ -297,6 +298,23 @@ public static class CoreApiRegistration
         core.MapPost("/users/{id:int}/revoke-sessions", (int id, RevokeUserSessionsBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new RevokeUserSessions(id, body.SessionId), ct))
             .WithName("RevokeUserSessions").Produces<bool>().SecurityAction();
+    }
+
+    // Configurare › Roluri (02.01, 8; macheta 07e si vederea „Roluri și utilizatori”): Core.Role.Manage.
+    private static void MapRoles(RouteGroupBuilder core)
+    {
+        core.MapGet("/roles/matrix", ([AsParameters] GetRoleMatrix query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetRoleMatrix").Produces<RoleMatrixDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/roles", (SaveRole body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateRole").Saves();
+        core.MapPut("/roles/{id:int}", (int id, SaveRole body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateRole").Saves();
+        core.MapPost("/roles/{id:int}/delete", (int id, DeleteRoleBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new DeleteRole(id, body.RowVersion), ct))
+            .WithName("DeleteRole").Produces<bool>().SecurityAction();
+        core.MapPut("/users/{id:int}/permission-overrides", (int id, SaveUserPermissionOverridesBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new SaveUserPermissionOverrides(id, body.CompanyId, body.Overrides), ct))
+            .WithName("SaveUserPermissionOverrides").Produces<bool>().ProducesValidationProblem().SecurityAction();
     }
 
     // Angajati: fisa minima din Nucleu (02.01, 3.4), de care se leaga utilizatorii angajati; modulul HR o extinde.

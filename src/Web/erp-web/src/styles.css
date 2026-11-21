@@ -1545,3 +1545,399 @@ table.preferences-table td:not(:first-child),
 table.preferences-table th:not(:first-child) {
   text-align: center;
 }
+
+/* ---------- Configurare › Roluri (macheta 07e si vederea „Roluri și utilizatori”) ---------- */
+
+.roles-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roles-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.roles-split {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 3fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.role-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.role-list li button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.role-list li button:hover {
+  background: var(--surface-input);
+}
+
+.role-list li button.current {
+  background: var(--info-bg);
+  color: var(--action-hover);
+  font-weight: 600;
+}
+
+.role-list li button:focus-visible,
+.user-perm-matrix .cell:focus-visible,
+.user-perm-matrix .twisty:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.role-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.role-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-filter,
+.matrix-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.matrix-toolbar .field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.matrix-toolbar select.cell-input {
+  width: auto;
+  min-width: 160px;
+}
+
+.matrix-scroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.perm-table th.resource {
+  font-weight: 600;
+}
+
+.perm-table th.resource code {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.perm-table th.c,
+.perm-table td.c {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.perm-table tr.section-row th {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: var(--surface-muted);
+}
+
+.perm-table td.others > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.other-perm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.na {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.legend-na {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn.danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--on-dark);
+}
+
+.pill.info {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.user-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-perm-matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+}
+
+.user-perm-matrix th,
+.user-perm-matrix td {
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.user-perm-matrix thead th {
+  background: var(--surface-muted);
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+.user-perm-matrix thead tr.mod th {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  border-bottom: 0;
+}
+
+.user-perm-matrix thead tr.res th {
+  border-bottom: 0;
+}
+
+.user-perm-matrix thead tr.act th {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.user-perm-matrix .sep {
+  border-left: 2px solid var(--line-strong);
+}
+
+.user-perm-matrix .rsep {
+  border-left: 1px solid var(--line);
+}
+
+.user-perm-matrix th.name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 240px;
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--surface-card);
+  border-right: 1px solid var(--line-strong);
+}
+
+.user-perm-matrix thead th.name {
+  background: var(--surface-muted);
+  vertical-align: bottom;
+}
+
+.user-perm-matrix tr.matrix-role-row th.name,
+.user-perm-matrix tr.matrix-role-row td {
+  background: var(--surface-input);
+}
+
+.user-perm-matrix tr.matrix-role-row th.name {
+  font-weight: 600;
+}
+
+.user-perm-matrix tr.matrix-role-row .pill {
+  margin-left: 6px;
+}
+
+.user-perm-matrix tr.matrix-user-row th.name {
+  padding-left: 34px;
+  font-weight: 400;
+}
+
+.user-perm-matrix tr.matrix-user-row th.name > span {
+  display: block;
+}
+
+.user-perm-matrix .user-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-perm-matrix tr.inactive .user-name {
+  color: var(--muted);
+}
+
+.user-perm-matrix td {
+  width: 40px;
+  height: 34px;
+}
+
+.twisty {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  width: 18px;
+  padding: 0;
+  margin-right: 4px;
+}
+
+.cell {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-input);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  vertical-align: middle;
+}
+
+button.cell {
+  cursor: pointer;
+}
+
+button.cell.locked {
+  cursor: not-allowed;
+}
+
+.cell.role-on {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-dark);
+}
+
+.cell.inherited {
+  background: var(--surface-muted);
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.cell.grant {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.cell.revoke {
+  background: var(--error-bg);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.cell.global {
+  border-style: dashed;
+}
+
+.cell.redundant {
+  opacity: 0.55;
+}
+
+.cell.changed {
+  box-shadow: 0 0 0 2px var(--warn);
+}
+
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.matrix-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.matrix-legend .cell {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+
+.matrix-status {
+  background: var(--surface-input);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.pending-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.pending-changes td.reason {
+  width: 40%;
+}
+
+.pending-changes .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .roles-split {
+    grid-template-columns: 1fr;
+  }
+}

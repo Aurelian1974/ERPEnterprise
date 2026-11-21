@@ -29,6 +29,7 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Partners.IImportJobStore, ImportJobStore>();
         services.AddScoped<Application.Items.IItemStore, Items.ItemStore>();
         services.AddScoped<Application.Users.IUserStore, UserStore>();
+        services.AddScoped<Application.Users.IRoleStore, RoleStore>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));
         services.AddScoped<Application.Anaf.IAnafVatRegistry, Anaf.AnafVatRegistry>();

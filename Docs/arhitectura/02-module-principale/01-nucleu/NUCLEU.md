@@ -230,6 +230,7 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | `Permission` | `Code` (de ex. `Sales.Invoice.Validate`), `Module`, `Description` | Lista e generată din cod la pornire; nu se editează manual |
 | `RolePermission` | `RoleId`, `PermissionId` | — |
 | `UserRoleAssignment` | `UserId`, `RoleId`, `CompanyId`, `DimensionScope` (JSON: gestiuni, centre de cost, șantiere) | Un rol se atribuie per firmă; scope gol = toată firma. `CompanyId = NULL` = toată instalarea (toate firmele, și cele create ulterior), permis doar pentru rolul de sistem `ADMIN` (verificat în `core.usp_UserRoleAssignment_Save`) |
+| `UserPermissionOverride` | `UserId`, `PermissionId`, `CompanyId`, `Effect` (`G` adăugat / `R` revocat), `Reason` | Excepție față de drepturile moștenite din roluri (21.11.2026, vezi „Roluri și excepții pe utilizator” mai jos). `CompanyId = NULL` = toate firmele; un drept adăugat cere motivul |
 | `Employee` | `CompanyId`, `BranchId`, `EmployeeNo` (marca), `FirstName`, `LastName`, `Department`, `JobTitle`, `WorkEmail`, `Phone`, `HireDate`, `LeaveDate`, `IsActive` | Fișa minimă de angajat, în Nucleu ca utilizatorii să se poată lega de ea și fără modulul HR; HR o extinde în schema `hr` (contract, salarizare, CNP). UQ `(CompanyId, EmployeeNo)` |
 
 **Utilizator angajat sau extern** (adăugat pe 14.11.2026). Pe `User` se adaugă `IsEmployee` `bit`, `EmployeeId` `int` (FK `core.Employee`), `ExternalPartnerId` `int` (organizația, FK `core.Partner`), `SponsorUserId` (responsabilul intern), `AccessReason`, `ValidFrom`, `ValidUntil` `date`, `FirstName`, `LastName`. Constrângerea `CK_User_Kind` cere: angajat ⇒ `EmployeeId` completat; extern ⇒ `EmployeeId` gol și `ValidUntil`, `SponsorUserId`, `AccessReason` completate.
@@ -250,6 +251,19 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | Administratorul integrat | Creat de installer (08, secțiunea 5.10): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
 
 Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOARE`, `AUDITOR`, `STANDARD`.
+
+**Roluri și excepții pe utilizator** (deciziile lui Aurelian din 21.11.2026). Grupul de utilizatori este rolul: în interfață și în cod se folosește consecvent termenul „rol” (`Role`). Un utilizator moștenește drepturile tuturor rolurilor lui de pe firmă (poate avea mai multe roluri) și poate primi excepții: un drept **adăugat** (`G`) peste roluri sau un drept **revocat** (`R`) dintre cele moștenite.
+
+| Regulă | Detaliu |
+| --- | --- |
+| Calcul | Drepturi efective pe firmă = reuniunea drepturilor rolurilor + drepturile adăugate − drepturile revocate (`core.usp_User_GetPermissions`). Revocarea câștigă, chiar dacă alt rol sau o excepție pentru toate firmele dă dreptul |
+| Domeniu | Excepția e pe firmă sau pe toate firmele (`CompanyId = NULL`); pe o firmă se aplică ambele. Unic pe `(UserId, PermissionId, CompanyId)` |
+| Motiv | Obligatoriu pentru un drept adăugat (50036, `CK_UserPermissionOverride_GrantReason`); opțional la revocare |
+| Administrator | Cine are rolul `ADMIN` pe firmă are toate drepturile și nu primește excepții (50036); rolul `ADMIN` nu se editează (50035) |
+| Separare | Nimeni nu-și schimbă propriile excepții (`CORE_USER_SELF_ROLES`); excepțiile cer `Core.Role.Manage` |
+| Audit | Salvarea excepțiilor unui utilizator: `Core.User.PermissionOverride` pe `Core.User`, vizibilă în istoricul fișei; rolurile: `Core.Role.Save` / `Core.Role.Delete` pe `Core.Role` |
+
+Implementare: migrarea `2026.11.014` (`core.UserPermissionOverride`, tipurile `core.PermissionIdList`, `core.UserPermissionOverrideList`, `core.IdList`), procedurile `core.usp_RoleMatrix_Get`, `usp_Role_Save` (lista înlocuiește permisiunile; codul unui rol de sistem nu se schimbă), `usp_Role_Delete` (doar rolurile clientului, neatribuite: 50010), `usp_UserPermissionOverride_Save` (lista înlocuiește excepțiile utilizatorului pe firma aleasă; cele neschimbate își păstrează autorul și data). API: `GET /roles/matrix?companyId=`, `POST /roles`, `PUT /roles/{id}`, `POST /roles/{id}/delete`, `PUT /users/{id}/permission-overrides`. Drepturile se recalculează la fiecare cerere, deci o schimbare se aplică imediat, fără închiderea sesiunilor.
 
 **Detalii de implementare (administrarea utilizatorilor, 21.11.2026).** Deciziile lui Aurelian din 21.11.2026: parola inițială a unui utilizator nou e o parolă temporară generată de server, arătată o singură dată administratorului (schimbare obligatorie la prima autentificare), până când invitația pe email devine posibilă (notificările, etapa 10); fișa minimă de angajat rămâne `core.Employee` în Nucleu, cu ecran propriu „Angajați” (listă și fișă, fără machetă aprobată; macheta se face odată cu modulul HR); utilizatorul extern primește coloanele `ExternalAccessType` (`AUDITOR`, `CONSULTANT`, `ACCOUNTANT`, `TECHNICAL` = cont tehnic, fără parolă interactivă) și `Phone`, din macheta 06c.
 
@@ -584,6 +598,7 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.Role`, `Permission` | `Id int` | UQ `Code` | — |
 | `core.RolePermission` | `(RoleId, PermissionId)` | FK `RoleId`, `PermissionId` | — |
 | `core.UserRoleAssignment` | `Id int` | FK `UserId`, `RoleId`, `CompanyId` (nullable: `NULL` = toată instalarea, doar pentru `ADMIN`) | `(UserId, CompanyId)` |
+| `core.UserPermissionOverride` | `Id int` | UQ `(UserId, PermissionId, CompanyId)`; FK `UserId`, `PermissionId`, `CompanyId` (nullable: `NULL` = toate firmele) | `PermissionId`, `CompanyId` (filtrat) |
 | `core.NumberSeries` | `Id int` | UQ `(CompanyId, BranchId, DocumentType, Prefix, Year)` | — |
 | `core.PrecisionPolicy` | `Id int` | UQ `Code` | — |
 | `core.Dimension`, `DimensionValue` | `Id int` | UQ `(CompanyId, DimensionType, Code)` | — |
@@ -688,6 +703,8 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50032 | `CORE_USER_LICENSE_LIMIT` | 409 | Utilizatorul nou sau reactivat ar depăși limita `users` din licență |
 | 50033 | `CORE_SYSTEM_USER_PROTECTED` | 409 | Modificarea contului `system` sau a tipului / numelui administratorului integrat |
 | 50034 | `CORE_ROLE_SCOPE_INVALID` | 400 | Atribuire pentru toate firmele a altui rol decât `ADMIN` |
+| 50035 | `CORE_ROLE_PROTECTED` | 409 | Modificarea rolului `ADMIN`, schimbarea codului unui rol de sistem sau ștergerea unui rol de sistem |
+| 50036 | `CORE_PERMISSION_OVERRIDE_INVALID` | 400 | Drept adăugat fără motiv sau excepție pentru un utilizator cu rolul `ADMIN` |
 
 Cod API fără cod SQL (etapa 4): `CORE_COMPANY_NOT_LICENSED` (409), CUI-ul unei firme active nu este în licență (4.4).
 
@@ -742,7 +759,7 @@ Roluri de sistem livrate implicit (clientul le poate copia și adapta):
 | Auditor | Toate permisiunile `*.View` + `Core.Audit.View`, fără modificări |
 | Utilizator standard | `Partner.View`, `Item.View`, `Company.View` |
 
-Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separat, ca nimeni să nu-și poată acorda singur drepturi noi (configurabil).
+Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separat, ca nimeni să nu-și poată acorda singur drepturi noi (configurabil). Excepțiile de drepturi pe utilizator (adăugate sau revocate față de roluri) sunt descrise în 3.4 și cer `Core.Role.Manage`.
 
 ## 9. Cerințe legale și integrări
 
@@ -795,7 +812,7 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 | Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | — |
 | Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): Preferințe = matricea de notificări (limba și firma implicită rămân în Cont, ca în 06b); fără export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
 | Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
-| Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate |
+| Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate. Implementat (21.11.2026, `/admin/config/roluri`, familia „Securitate”): comutatorul „Pe rol” (macheta 07e: listă de roluri, matricea resursă × acțiune, copiere, ștergere pentru rolurile clientului) / „Roluri și utilizatori” (rândurile sunt rolurile cu utilizatorii lor dedesubt, coloanele sunt resursele și acțiunile; filtru pe firmă — sau „Toate firmele” —, pe modul și „Doar cu excepții”; clic pe celula unui utilizator revocă un drept moștenit sau adaugă unul lipsă; lista „Modificări nesalvate” cere motivul drepturilor adăugate). Drepturile rolului se schimbă doar din „Pe rol”. Fără „Raport utilizatori și drepturi” și „Compară cu alt rol” (rămân de făcut) |
 | Serii de numerotare | Pe firmă și tip de document | Avertizare la modificarea unei serii fiscale folosite |
 | Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale |
 | Audit | Căutare și detaliu de modificare (înainte / după) | Doar citire |

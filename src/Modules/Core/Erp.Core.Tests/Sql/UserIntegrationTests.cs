@@ -84,7 +84,7 @@ public sealed class UserIntegrationTests(UserDatabase database) : IClassFixture<
         services.AddSingleton<IPasswordHasher<UserAccount>>(new PasswordHasher<UserAccount>());
         services.AddScoped<IIdentityAccountAdmin, IdentityAccountAdmin>();
         var context = new FakeContext { UserId = userId ?? database.AdminId, CompanyId = database.CompanyId };
-        context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage]);
+        context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.RoleManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage]);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();
@@ -390,6 +390,111 @@ public sealed class UserIntegrationTests(UserDatabase database) : IClassFixture<
         await Send(UpdateOf(detail) with { Phone = null });
         Assert.False(Assert.Single((await Send(new GetUser(created.Id))).NotificationPreferences, p => p.Code == NotificationTypes.ImportCompleted).IsDefault);
         Assert.Contains(await Send(new GetUserLookups()).ContinueWith(t => t.Result.NotificationTypes), t => t.Code == NotificationTypes.OutboxFailed && t.Critical);
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.01-8")]
+    public async Task Role_save_replaces_permissions_and_system_roles_are_protected()
+    {
+        var code = Unique("OPV");
+        var saved = await Send(new SaveRole(null, code, "Operatori vânzări", null,
+            [await PermissionId(CorePermissions.PartnerView), await PermissionId(CorePermissions.ItemView)], null));
+        var role = (await Send(new GetRoleMatrix())).Roles.Single(r => r.Id == saved.Id);
+        Assert.Equal(new[] { await PermissionId(CorePermissions.PartnerView), await PermissionId(CorePermissions.ItemView) }.Order(), role.PermissionIds);
+
+        var updated = await Send(new SaveRole(saved.Id, code, "Operatori vânzări", "Facturare",
+            [await PermissionId(CorePermissions.PartnerView), await PermissionId(CorePermissions.PartnerManage)], saved.RowVersion));
+        role = (await Send(new GetRoleMatrix())).Roles.Single(r => r.Id == saved.Id);
+        Assert.Equal(new[] { await PermissionId(CorePermissions.PartnerView), await PermissionId(CorePermissions.PartnerManage) }.Order(), role.PermissionIds);
+        Assert.Equal("Facturare", role.Description);
+
+        var stale = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveRole(saved.Id, code, "Alt nume", null, [], saved.RowVersion)));
+        Assert.Equal(CoreErrorCodes.ConcurrencyConflict, stale.Code);
+        var duplicate = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveRole(null, code.ToLowerInvariant(), "Dublură", null, [], null)));
+        Assert.Equal("CORE_DUPLICATE_CODE", duplicate.Code);
+
+        var matrix = await Send(new GetRoleMatrix());
+        var admin = matrix.Roles.Single(r => r.Code == "ADMIN");
+        Assert.True(admin.HasAllPermissions);
+        var adminChange = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveRole(admin.Id, "ADMIN", admin.Name, null, [], admin.RowVersion)));
+        Assert.Equal("CORE_ROLE_PROTECTED", adminChange.Code);
+        var standard = matrix.Roles.Single(r => r.Code == "STANDARD");
+        var codeChange = await Assert.ThrowsAsync<ErpException>(() =>
+            Send(new SaveRole(standard.Id, "STANDARD2", standard.Name, null, standard.PermissionIds, standard.RowVersion)));
+        Assert.Equal("CORE_ROLE_PROTECTED", codeChange.Code);
+        var systemDelete = await Assert.ThrowsAsync<ErpException>(() => Send(new DeleteRole(standard.Id, standard.RowVersion)));
+        Assert.Equal("CORE_ROLE_PROTECTED", systemDelete.Code);
+
+        var user = await Send(Employee(await NewEmployee(), roles: [new UserRoleInput(saved.Id, database.CompanyId)]));
+        var inUse = await Assert.ThrowsAsync<ErpException>(() => Send(new DeleteRole(saved.Id, updated.RowVersion)));
+        Assert.Equal("CORE_ENTITY_IN_USE", inUse.Code);
+        Assert.Equal(1, (await Send(new GetRoleMatrix(database.CompanyId))).Roles.Single(r => r.Id == saved.Id).UserCount);
+
+        await Send(UpdateOf(await Send(new GetUser(user.Id))) with { Roles = [] });
+        Assert.True(await Send(new DeleteRole(saved.Id, updated.RowVersion)));
+        Assert.DoesNotContain((await Send(new GetRoleMatrix())).Roles, r => r.Id == saved.Id);
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.01-3.4")]
+    public async Task Permission_overrides_add_and_revoke_rights_on_top_of_roles_and_revocation_wins()
+    {
+        var role = await Send(new SaveRole(null, Unique("GEST"), "Gestionari", null,
+            [await PermissionId(CorePermissions.PartnerView), await PermissionId(CorePermissions.ItemView)], null));
+        var user = await Send(Employee(await NewEmployee(), roles: [new UserRoleInput(role.Id, database.CompanyId)]));
+        Assert.Equal([CorePermissions.ItemView, CorePermissions.PartnerView], await Effective(user.Id));
+
+        var noReason = await Assert.ThrowsAsync<ErpValidationException>(async () => await Send(new SaveUserPermissionOverrides(user.Id, database.CompanyId,
+            [new PermissionOverrideInput(await PermissionId(CorePermissions.PartnerManage), "G", " ")])));
+        Assert.Contains(noReason.Errors.Values.SelectMany(v => v), m => m.Contains("Motivul", StringComparison.Ordinal));
+
+        // Pe firma: Parteneri › modificare adaugat, Articole › vizualizare revocat.
+        await Send(new SaveUserPermissionOverrides(user.Id, database.CompanyId,
+        [
+            new PermissionOverrideInput(await PermissionId(CorePermissions.PartnerManage), "G", "Înlocuiește colega în concediu"),
+            new PermissionOverrideInput(await PermissionId(CorePermissions.ItemView), "R", null),
+        ]));
+        Assert.Equal([CorePermissions.PartnerManage, CorePermissions.PartnerView], await Effective(user.Id));
+
+        // Pe toate firmele: revocarea castiga si asupra rolului; un drept adaugat se aplica pe orice firma.
+        await Send(new SaveUserPermissionOverrides(user.Id, null,
+        [
+            new PermissionOverrideInput(await PermissionId(CorePermissions.PartnerView), "R", "Fără acces la parteneri"),
+            new PermissionOverrideInput(await PermissionId(CorePermissions.CompanyView), "G", "Vede datele firmei"),
+        ]));
+        Assert.Equal([CorePermissions.CompanyView, CorePermissions.PartnerManage], await Effective(user.Id));
+
+        var matrix = await Send(new GetRoleMatrix(database.CompanyId));
+        var mine = matrix.Overrides.Where(o => o.UserId == user.Id).ToList();
+        Assert.Equal(4, mine.Count);
+        Assert.Equal(2, mine.Count(o => o.CompanyId is null));
+        Assert.Contains(matrix.Users, u => u.Id == user.Id && u.RoleIds.SequenceEqual([role.Id]));
+        Assert.Equal(2, (await Send(new GetRoleMatrix())).Overrides.Count(o => o.UserId == user.Id));
+
+        // Lista goala pe firma sterge doar exceptiile firmei; cele pentru toate firmele raman.
+        await Send(new SaveUserPermissionOverrides(user.Id, database.CompanyId, []));
+        Assert.Equal([CorePermissions.CompanyView, CorePermissions.ItemView], await Effective(user.Id));
+
+        var self = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveUserPermissionOverrides(user.Id, null, []), user.Id));
+        Assert.Equal("CORE_USER_SELF_ROLES", self.Code);
+        var admin = await Assert.ThrowsAsync<ErpException>(async () => await Send(new SaveUserPermissionOverrides(database.AdminId, null,
+            [new PermissionOverrideInput(await PermissionId(CorePermissions.PartnerView), "R", null)]), user.Id));
+        Assert.Equal("CORE_PERMISSION_OVERRIDE_INVALID", admin.Code);
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.AuditEntry WHERE EntityType = N'Core.User' AND EntityId = @Id AND Action = N'Core.User.PermissionOverride' AND Changes LIKE N'%concediu%'",
+            new { user.Id }));
+    }
+
+    private async Task<int> PermissionId(string code) => await Query<int>("SELECT Id FROM core.Permission WHERE Code = @code", new { code });
+
+    /// <summary>Drepturile efective calculate la autentificare (core.usp_User_GetPermissions) pe firma de test, sortate.</summary>
+    private async Task<string[]> Effective(int userId)
+    {
+        await using var connection = new SqlConnection(database.ConnectionString);
+        var subjectId = await connection.ExecuteScalarAsync<Guid>("SELECT SubjectId FROM core.[User] WHERE Id = @userId", new { userId });
+        await using var grid = await connection.QueryMultipleAsync("core.usp_User_GetPermissions", new { SubjectId = subjectId, database.CompanyId },
+            commandType: System.Data.CommandType.StoredProcedure);
+        Assert.NotNull(await grid.ReadSingleOrDefaultAsync());
+        return [.. (await grid.ReadAsync<string>()).Order(StringComparer.Ordinal)];
     }
 
     private static SaveUser UpdateOf(UserDetailDto d) =>
