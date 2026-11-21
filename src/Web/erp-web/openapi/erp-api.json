@@ -9016,6 +9016,50 @@
           }
         }
       }
+    },
+    "/api/core/companies/{id}/versions": {
+      "get": {
+        "tags": [
+          "Core"
+        ],
+        "operationId": "GetCompanyVersions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyVersionDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10568,6 +10612,13 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -17773,6 +17824,89 @@
               "string"
             ],
             "format": "byte"
+          }
+        }
+      },
+      "CompanyVersionDto": {
+        "required": [
+          "id",
+          "validFrom",
+          "validTo",
+          "name",
+          "vatPayer",
+          "vatOnCollection",
+          "tradeRegisterNo",
+          "shareCapital",
+          "address",
+          "city",
+          "countyCode",
+          "countryCode",
+          "postalCode",
+          "modifiedByName",
+          "modifiedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "name": {
+            "type": "string"
+          },
+          "vatPayer": {
+            "type": "boolean"
+          },
+          "vatOnCollection": {
+            "type": "boolean"
+          },
+          "tradeRegisterNo": {
+            "type": "string"
+          },
+          "shareCapital": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "countyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "modifiedByName": {
+            "type": "string"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

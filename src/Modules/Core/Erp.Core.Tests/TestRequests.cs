@@ -307,6 +307,7 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Items.IItemCatalogStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.NumberSeries.INumberSeriesRuleStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Dimensions.IDimensionRuleStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.Organization.ICompanyVersionStore>(_ => throw new NotSupportedException());
         services.AddSingleton<IPrecisionService>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Employees.IEmployeeStore>(_ => throw new NotSupportedException());
         services.AddSingleton<IIdentityAccountAdmin>(_ => throw new NotSupportedException());

@@ -16,6 +16,8 @@ CREATE OR ALTER PROCEDURE core.usp_Company_Save
     @Phone                    nvarchar(30) = NULL,
     @Email                    nvarchar(254) = NULL,
     @CitySirutaCode           int = NULL,
+    @EffectiveFrom            date = NULL,
+    @Today                    date = NULL,
     @DefaultPrecisionPolicyId int,
     @IncludeInConsolidation   bit,
     @IsActive                 bit,
@@ -25,6 +27,8 @@ AS
 BEGIN
     -- Firma (02.01, 3.1): cod unic in instalare (fara diferenta de majuscule), CUI unic, adresa din nomenclatoare;
     -- o firma cu puncte de lucru sau locatii active nu se dezactiveaza. Ruleaza in tranzactia comenzii.
+    -- Datele cu istoric (3.6 punctul 2: denumire, sediu, regim TVA, registru, capital) se salveaza ca versiune de la @EffectiveFrom
+    -- (implicit azi; o firma noua incepe la 01.01.1900); core.Company ramane la versiunea valabila azi (usp_CompanyVersion_Apply).
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -84,6 +88,25 @@ BEGIN
             THROW 50006, N'Firma a fost modificată de alt utilizator; reîncărcați datele.', 1;
         END;
     END;
+
+    SET @Today = ISNULL(@Today, CAST(SYSUTCDATETIME() AS date));
+    IF NOT EXISTS (SELECT 1 FROM core.CompanyVersion WHERE CompanyId = @Id)
+        SET @EffectiveFrom = '19000101';
+    SET @EffectiveFrom = ISNULL(@EffectiveFrom, @Today);
+
+    MERGE core.CompanyVersion AS target
+    USING (SELECT @Id AS CompanyId, @EffectiveFrom AS ValidFrom) AS source ON target.CompanyId = source.CompanyId AND target.ValidFrom = source.ValidFrom
+    WHEN MATCHED THEN UPDATE SET Name = @Name, VatPayer = @VatPayer, VatOnCollection = @VatOnCollection, TradeRegisterNo = @TradeRegisterNo,
+        ShareCapital = @ShareCapital, Address = @Address, City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode,
+        CountryCode = @CountryCode, PostalCode = @PostalCode, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    WHEN NOT MATCHED THEN INSERT (CompanyId, ValidFrom, Name, VatPayer, VatOnCollection, TradeRegisterNo, ShareCapital, Address, City, CitySirutaCode,
+        CountyCode, CountryCode, PostalCode, ModifiedAt, ModifiedBy)
+        VALUES (@Id, @EffectiveFrom, @Name, @VatPayer, @VatOnCollection, @TradeRegisterNo, @ShareCapital, @Address, @City, @CitySirutaCode,
+        @CountyCode, @CountryCode, @PostalCode, SYSUTCDATETIME(), @UserId);
+
+    -- O schimbare programata pentru viitor nu se vede inca pe firma: firma ramane la versiunea de azi.
+    DECLARE @Applied TABLE (CompanyId int);
+    INSERT INTO @Applied (CompanyId) EXEC core.usp_CompanyVersion_Apply @Today, @Id;
 
     SELECT Id, RowVersion FROM core.Company WHERE Id = @Id;
 END;

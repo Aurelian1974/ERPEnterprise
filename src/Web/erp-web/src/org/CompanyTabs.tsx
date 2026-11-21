@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDirective, ColumnsDirective, GridComponent } from '@syncfusion/ej2-react-grids';
 import { Link } from 'react-router';
 import { z } from 'zod';
@@ -11,6 +11,9 @@ import { currencyOptions, useCurrencies } from '../rates/ratesApi';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { t } from '../i18n';
+import { api } from '../api/client';
+import { unwrap } from '../api/problem';
+import { formatDate } from '../format/date';
 import { CityField } from './CityField';
 import { useCompanyHistory } from '../audit/auditApi';
 import { HistoryView } from '../partners/PartnerTabs';
@@ -416,5 +419,54 @@ export function CompanyHistoryTab({ companyId, active, canAudit }: { readonly co
         </p>
       )}
     </>
+  );
+}
+
+/**
+ * Tab-ul „Date pe perioade” al firmei (02.01, 3.6 punctul 2): versiunile datelor legale (denumire, sediu, regim TVA, registru,
+ * capital), cu perioada fiecareia; o versiune care incepe dupa azi e programata si se aplica singura la data ei.
+ */
+export function CompanyVersionsTab({ companyId, active }: { readonly companyId: number; readonly active: boolean }) {
+  const query = useQuery({
+    queryKey: ['core', 'companies', companyId, 'versions'],
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/core/companies/{id}/versions', { params: { path: { id: companyId } }, signal })),
+    enabled: active,
+  });
+  if (query.data === undefined) {
+    return query.isError ? <ErrorBanner message={query.error.message} /> : <p className="muted" role="status">{t('app.loading')}</p>;
+  }
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
+  const day = (iso: string) => (iso.startsWith('1900') ? t('company.version.always') : formatDate(new Date(`${iso}T12:00:00Z`)));
+  return (
+    <div className="tab-body">
+      <table className="simple">
+        <thead>
+          <tr>
+            <th scope="col">{t('company.version.period')}</th>
+            <th scope="col">{t('field.legalName')}</th>
+            <th scope="col">{t('company.version.vat')}</th>
+            <th scope="col">{t('section.registeredOffice')}</th>
+            <th scope="col">{t('field.tradeRegisterNo')}</th>
+            <th scope="col">{t('company.version.by')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {query.data.map((v) => (
+            <tr key={v.id} className={v.validFrom <= today && (v.validTo == null || v.validTo >= today) ? 'current' : ''}>
+              <td className="nowrap">
+                {day(v.validFrom)} – {v.validTo == null ? t('company.version.open') : day(v.validTo)}
+                {v.validFrom > today && <span className="pill warn">{t('company.version.scheduled')}</span>}
+              </td>
+              <td>{v.name}</td>
+              <td>{v.vatPayer ? t('field.vatPayer') : t('company.version.noVat')}{v.vatOnCollection ? ` · ${t('field.vatOnCollection')}` : ''}</td>
+              <td>{v.address}, {v.city}{v.countyCode == null ? '' : `, ${v.countyCode}`}</td>
+              <td>{v.tradeRegisterNo}{v.shareCapital == null ? '' : ` · ${Number(v.shareCapital).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} lei`}</td>
+              <td className="muted small">{v.modifiedByName}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="banner dashed small">{t('company.version.hint')}</p>
+    </div>
   );
 }

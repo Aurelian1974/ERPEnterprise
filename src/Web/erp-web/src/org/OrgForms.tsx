@@ -244,11 +244,14 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
       form.setValue('vatOnCollection', false, { shouldDirty: true });
     }
   }, [form, vatPayer]);
+  // Data de la care se aplica modificarile datelor legale (3.6 punctul 2); implicit azi, iar o data viitoare le programeaza.
+  const [effectiveFrom, setEffectiveFrom] = useState(todayIso);
   const save = useSave(
     form,
     Object.keys(defaults),
-    (v) => orgApi.saveCompany({ ...v, id: company?.id ?? null, rowVersion: company?.rowVersion ?? null }),
-    onSaved,
+    (v) => orgApi.saveCompany({ ...v, id: company?.id ?? null, rowVersion: company?.rowVersion ?? null,
+      effectiveFrom: company === undefined || effectiveFrom === '' ? null : effectiveFrom }),
+    (saved) => { setEffectiveFrom(todayIso()); onSaved(saved); },
     company?.id,
   );
 
@@ -262,6 +265,15 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
       footer={<Footer info={info} onCancel={() => (company === undefined ? onCancel() : form.reset(defaults))} submitting={form.formState.isSubmitting} />}
     >
       {company === undefined && <h2 className="form-title">{t('org.newCompany')}</h2>}
+      {company !== undefined && (
+        <div className="banner dashed small effective-from">
+          <label>
+            {t('company.effectiveFrom')}{' '}
+            <input className="cell-input" type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} aria-label={t('company.effectiveFrom')} />
+          </label>
+          <span>{effectiveFrom > todayIso() ? t('company.effectiveLater') : t('company.effectiveHint')}</span>
+        </div>
+      )}
       <div className="grid g3">
         <TextField control={form.control} name="code" label={t('field.code')} upper />
         <TextField control={form.control} name="name" label={t('field.legalName')} className="span2" />
@@ -298,6 +310,11 @@ export function CompanyForm({ company, lookups, tree, groupId, onSaved, onCancel
       </div>
     </FormShell>
   );
+}
+
+/** Ziua de azi in fusul Romaniei, ca yyyy-mm-dd (valoarea campului de tip data). */
+function todayIso(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date());
 }
 
 // ---------- Punct de lucru ----------

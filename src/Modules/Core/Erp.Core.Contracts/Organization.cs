@@ -53,3 +53,17 @@ public sealed record ArticolModificat(int ItemId, string Code, string Name, byte
 
 /// <summary>Adaugarea sau modificarea unei cote TVA ori a unei UM (02.01, 5). Kind: VatRate sau Uom; ValidFrom doar la cote.</summary>
 public sealed record NomenclatorFiscalModificat(string Kind, string Code, DateOnly? ValidFrom) : IntegrationEvent;
+
+/// <summary>
+/// Datele firmei valabile la o data (02.01, 3.6 punctul 2 si 9), de copiat pe un document fiscal: denumirea, sediul, regimul TVA,
+/// registrul si capitalul de atunci. ValidFrom = inceputul versiunii folosite.
+/// </summary>
+public sealed record CompanySnapshotDto(int CompanyId, string Code, string FiscalCode, string Name, bool VatPayer, bool VatOnCollection,
+    string TradeRegisterNo, decimal? ShareCapital, string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode,
+    string? PostalCode, DateOnly ValidFrom);
+
+/// <summary>Datele firmei pentru documente, la data lor (versiunile din core.CompanyVersion).</summary>
+public interface ICompanyDirectory
+{
+    Task<CompanySnapshotDto> GetAtAsync(int companyId, DateOnly date, CancellationToken ct);
+}

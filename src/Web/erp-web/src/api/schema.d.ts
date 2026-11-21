@@ -1909,6 +1909,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/companies/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCompanyVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2299,6 +2315,8 @@ export interface components {
             email?: null | string;
             /** Format: int32 */
             citySirutaCode?: null | number;
+            /** Format: date */
+            effectiveFrom?: null | string;
         };
         SaveCompanyAddress: {
             /** Format: int32 */
@@ -4139,6 +4157,27 @@ export interface components {
             isNew: boolean;
             /** Format: byte */
             rowVersion: null | string;
+        };
+        CompanyVersionDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: null | string;
+            name: string;
+            vatPayer: boolean;
+            vatOnCollection: boolean;
+            tradeRegisterNo: string;
+            shareCapital: null | string;
+            address: string;
+            city: string;
+            countyCode: null | string;
+            countryCode: string;
+            postalCode: null | string;
+            modifiedByName: string;
+            /** Format: date-time */
+            modifiedAt: string;
         };
     };
     responses: never;
@@ -10741,6 +10780,37 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCompanyVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyVersionDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

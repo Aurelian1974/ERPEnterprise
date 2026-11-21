@@ -46,6 +46,7 @@ var storage = new SqlServerStorage(() => new SqlConnection(connectionString), ne
 builder.Services.AddSingleton<JobStorage>(storage);
 builder.Services.AddSingleton<Func<SqlConnection>>(() => new SqlConnection(connectionString));
 builder.Services.AddTransient<UserAccessExpirationJob>();
+builder.Services.AddTransient<CompanyVersionJob>();
 // Cursurile BNR (02.01, 4.3): aceleasi adrese ca Erp.Host (Bnr:DailyUrl), clientul HTTP partajat.
 builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
     new Uri(builder.Configuration["Bnr:DailyUrl"] ?? Erp.Bnr.BnrOptions.Default.DailyUrl.ToString()),
@@ -71,6 +72,8 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         var jobs = new RecurringJobManager(storage);
         // 02.01, 3.4: zilnic, imediat dupa miezul noptii UTC (ziua folosita si de autentificare, core.v_UserLoginStatus).
         jobs.AddOrUpdate<UserAccessExpirationJob>(UserAccessExpirationJob.Id, job => job.RunAsync(CancellationToken.None), "5 0 * * *",
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        jobs.AddOrUpdate<CompanyVersionJob>(CompanyVersionJob.Id, job => job.RunAsync(CancellationToken.None), "2 0 * * *",
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         // 02.01, 4.3: cursurile BNR, in zilele lucratoare dupa ora publicarii (ora Romaniei).
         jobs.AddOrUpdate<BnrRatesJob>(BnrRatesJob.Id, job => job.RunAsync(CancellationToken.None), BnrRatesJob.Schedule,

@@ -71,6 +71,7 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
         ShareCapital = command.ShareCapital is null ? (decimal?)null : decimal.Parse(command.ShareCapital, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture),
         command.Address, command.City, command.CitySirutaCode, command.CountyCode, CountryCode = Ansi(command.CountryCode, 2), command.PostalCode, command.Phone, command.Email,
         command.DefaultPrecisionPolicyId, command.IncludeInConsolidation, command.IsActive, command.RowVersion, UserId = userId,
+        EffectiveFrom = command.EffectiveFrom?.ToDateTime(TimeOnly.MinValue),
     }, ct);
 
     public Task<SavedEntity> SaveBranchAsync(SaveBranch command, int userId, CancellationToken ct) => SaveAsync("core.usp_Branch_Save", new

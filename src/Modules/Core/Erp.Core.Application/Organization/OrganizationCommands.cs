@@ -18,7 +18,7 @@ public sealed record SaveCompanyGroup(int? Id, string Code, string Name, int? Pa
 public sealed record SaveCompany(int? Id, int? GroupId, string Code, string Name, string FiscalCode, bool VatPayer, bool VatOnCollection,
     string TradeRegisterNo, string? ShareCapital, string Address, string City, string? CountyCode, string CountryCode, string? PostalCode,
     int DefaultPrecisionPolicyId, bool IncludeInConsolidation, bool IsActive, byte[]? RowVersion, string? Phone = null, string? Email = null,
-    int? CitySirutaCode = null) : ICommand<SavedEntity>;
+    int? CitySirutaCode = null, DateOnly? EffectiveFrom = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.CompanyManage)]
@@ -116,6 +116,8 @@ internal sealed class SaveCompanyValidator : AbstractValidator<SaveCompany>
     public SaveCompanyValidator()
     {
         RuleFor(x => x.Code).Code();
+        RuleFor(x => x.EffectiveFrom).Must(d => d is null || (d.Value.Year >= 2000 && d.Value.Year <= 2100))
+            .WithMessage("Data de la care se aplică modificările nu este validă.");
         RuleFor(x => x.Name).Name();
         RuleFor(x => x.FiscalCode).Must(RomanianFiscalCode.IsValid).WithMessage("CUI-ul nu este valid (cifra de control greșită).");
         RuleFor(x => x.TradeRegisterNo).Must(TradeRegisterNumber.IsValid)

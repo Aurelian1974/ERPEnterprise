@@ -5,7 +5,7 @@ import type { CurrentUser } from '../api/session';
 import { companyStore } from '../app/company';
 import { tabKeyTarget } from '../components/tabs';
 import { t } from '../i18n';
-import { AddressesTab, BankAccountsTab, CompanyHistoryTab, CompanySeriesTab, ContactsSection, ContactsTab } from './CompanyTabs';
+import { AddressesTab, BankAccountsTab, CompanyHistoryTab, CompanyVersionsTab, CompanySeriesTab, ContactsSection, ContactsTab } from './CompanyTabs';
 import { CompanyUsersTab } from '../roles/CompanyUsersTab';
 import { DefaultDimensionsTab } from '../dimensions/DefaultDimensions';
 import { BranchForm, CompanyForm, GroupForm, LocationForm, OrgReadOnly } from './OrgForms';
@@ -219,7 +219,7 @@ function parseNode(value: string | undefined): { kind: NodeKind; id: number } | 
   return { kind: kinds[match[1] ?? 'g'] ?? 'group', id: Number(match[2]) };
 }
 
-type CompanyTab = 'general' | 'addresses' | 'contacts' | 'bank' | 'series' | 'users' | 'history';
+type CompanyTab = 'general' | 'versions' | 'addresses' | 'contacts' | 'bank' | 'series' | 'users' | 'history';
 
 function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   readonly tree: OrgTree;
@@ -246,6 +246,7 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
   const locations = tree.locations.filter((l) => l.companyId === companyId).length;
   const tabs: [CompanyTab, string][] = [
     ['general', t('org.tab.general')],
+    ['versions', t('org.tab.versions')],
     ['addresses', t('org.tab.addresses')],
     ['contacts', t('org.tab.contacts')],
     ['bank', t('org.tab.bank')],
@@ -335,6 +336,7 @@ function CompanyPanel({ tree, lookups, companyId, selection, canManage }: {
       {panel('bank', <BankAccountsTab company={data} canManage={canManage} />)}
       {canSeeSeries && panel('series', <CompanySeriesTab companyId={companyId} canManage={canSeeSeries} />)}
       {canSeeUsers && panel('users', <CompanyUsersTab companyId={companyId} currentUserId={user.userId} />)}
+      {panel('versions', <CompanyVersionsTab companyId={companyId} active={tab === 'versions'} />)}
       {panel('history', <CompanyHistoryTab companyId={companyId} active={tab === 'history'} canAudit={user.permissions.includes('Core.Audit.View')} />)}
     </div>
   );

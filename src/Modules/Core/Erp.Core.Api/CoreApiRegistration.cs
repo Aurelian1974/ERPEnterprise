@@ -373,6 +373,8 @@ public static class CoreApiRegistration
             .ProducesProblem(StatusCodes.Status404NotFound);
         core.MapGet("/audit/logins", ([AsParameters] SearchLoginEvents query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("SearchLoginEvents").Produces<LoginEventPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/companies/{id:int}/versions", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompanyVersions(id), ct))
+            .WithName("GetCompanyVersions").Produces<IReadOnlyList<CompanyVersionDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/companies/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompanyHistory(id), ct))
             .WithName("GetCompanyHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
     }
