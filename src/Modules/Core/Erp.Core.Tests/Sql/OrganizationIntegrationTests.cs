@@ -46,7 +46,7 @@ public sealed class OrgDatabase(SqlServerFixture sql) : IAsyncLifetime
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class OrganizationIntegrationTests(OrgDatabase database) : IClassFixture<OrgDatabase>
+public sealed partial class OrganizationIntegrationTests(OrgDatabase database) : IClassFixture<OrgDatabase>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -280,12 +280,13 @@ public sealed class OrganizationIntegrationTests(OrgDatabase database) : IClassF
         return (company.Id, series);
     }
 
-    private async Task<DocumentNumber> NextInTransactionAsync(int companyId, DateOnly date, bool commit = true, string documentType = "Sales.Invoice")
+    private async Task<DocumentNumber> NextInTransactionAsync(int companyId, DateOnly date, bool commit = true, string documentType = "Sales.Invoice",
+        NumberSeriesChoice? choice = null)
     {
         await using var session = new DbSession(database.ConnectionString);
         var unitOfWork = (Application.Abstractions.IUnitOfWork)session;
         await unitOfWork.BeginAsync(Ct);
-        var number = await new Infrastructure.Organization.NumberSeriesService(session).NextAsync(companyId, documentType, date, Ct);
+        var number = await new Infrastructure.Organization.NumberSeriesService(session).NextAsync(companyId, documentType, date, Ct, choice: choice);
         if (commit)
         {
             await unitOfWork.CommitAsync(Ct);

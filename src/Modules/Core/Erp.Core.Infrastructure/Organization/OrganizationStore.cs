@@ -140,18 +140,40 @@ public sealed class OrganizationStore(IDbSession session) : IOrganizationStore
 /// <summary>INumberSeriesService (02.01, 4.2) peste core.usp_NumberSeries_Next, in tranzactia documentului.</summary>
 public sealed class NumberSeriesService(IDbSession session) : INumberSeriesService
 {
-    public async Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null)
+    public async Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null,
+        NumberSeriesChoice? choice = null)
     {
         if (session.Transaction is null)
         {
             throw new InvalidOperationException("Numărul se alocă doar în tranzacția documentului (4.2).");
         }
 
-        var row = await session.Connection.QuerySingleAsync<AllocatedNumber>(new CommandDefinition("core.usp_NumberSeries_Next",
-            new { CompanyId = companyId, BranchId = branchId, DocumentTypeCode = documentType, DocumentDate = documentDate.ToDateTime(TimeOnly.MinValue) },
+        var row = await session.Connection.QuerySingleAsync<AllocatedNumber>(new CommandDefinition("core.usp_NumberSeries_Next", new
+            {
+                CompanyId = companyId, BranchId = branchId, DocumentTypeCode = documentType, DocumentDate = documentDate.ToDateTime(TimeOnly.MinValue),
+                choice?.SeriesId, choice?.UserId, choice?.LocationId, PartnerScope = (byte?)choice?.PartnerScope,
+            },
             session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false);
         return new DocumentNumber(row.Prefix, row.Year, row.Number, DocumentNumberFormat.Format(row.Prefix, row.Year, row.Number, row.Padding));
     }
+
+    public async Task<NumberSeriesOptions> GetOptionsAsync(int companyId, string documentType, DateOnly documentDate, int? branchId,
+        NumberSeriesChoice? choice, CancellationToken ct)
+    {
+        var rows = (await session.Connection.QueryAsync<OptionRow>(new CommandDefinition("core.usp_NumberSeries_Options", new
+            {
+                CompanyId = companyId, BranchId = branchId, DocumentTypeCode = documentType, DocumentDate = documentDate.ToDateTime(TimeOnly.MinValue),
+                choice?.UserId, choice?.LocationId, PartnerScope = (byte?)choice?.PartnerScope,
+            },
+            session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false)).ToList();
+        var options = rows.Select(r => new NumberSeriesOption(r.SeriesId, r.Prefix, r.Year, DocumentNumberFormat.Format(r.Prefix, r.Year, r.NextNumber, r.Padding),
+            r.IsFiscal, r.IsDefault, r.BranchId)).ToList();
+        var proposed = rows.FirstOrDefault(r => r.MatchesRule) ?? rows.FirstOrDefault(r => r.IsDefault);
+        return new NumberSeriesOptions(options, proposed?.SeriesId);
+    }
+
+    private sealed record OptionRow(int SeriesId, string Prefix, short Year, long NextNumber, byte Padding, bool IsFiscal, bool IsDefault, int? BranchId,
+        bool MatchesRule);
 
     private sealed record AllocatedNumber(int SeriesId, string Prefix, short Year, long Number, byte Padding);
 }

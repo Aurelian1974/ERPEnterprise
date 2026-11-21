@@ -305,6 +305,7 @@ public static class FakePartnerServices
         services.AddSingleton<Erp.Core.Application.Organization.ICityStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Partners.IMasterDataBlockStore>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Items.IItemCatalogStore>(_ => throw new NotSupportedException());
+        services.AddSingleton<Erp.Core.Application.NumberSeries.INumberSeriesRuleStore>(_ => throw new NotSupportedException());
         services.AddSingleton<IPrecisionService>(_ => throw new NotSupportedException());
         services.AddSingleton<Erp.Core.Application.Employees.IEmployeeStore>(_ => throw new NotSupportedException());
         services.AddSingleton<IIdentityAccountAdmin>(_ => throw new NotSupportedException());
@@ -342,7 +343,10 @@ public static class FakePartnerServices
 
     private sealed class FakeNumberSeries : INumberSeriesService
     {
-        public Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null) =>
-            throw new NotSupportedException();
+        public Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null,
+            NumberSeriesChoice? choice = null) => throw new NotSupportedException();
+
+        public Task<NumberSeriesOptions> GetOptionsAsync(int companyId, string documentType, DateOnly documentDate, int? branchId,
+            NumberSeriesChoice? choice, CancellationToken ct) => throw new NotSupportedException();
     }
 }

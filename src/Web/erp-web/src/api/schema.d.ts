@@ -1781,6 +1781,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/companies/{companyId}/number-series-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListNumberSeriesRules"];
+        put?: never;
+        post: operations["CreateNumberSeriesRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{companyId}/number-series-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateNumberSeriesRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/number-series/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetNumberSeriesOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3871,6 +3919,73 @@ export interface components {
             /** Format: int32 */
             itemId: number;
             translations: components["schemas"]["ItemTranslationDto"][];
+        };
+        NumberSeriesOption: {
+            /** Format: int32 */
+            seriesId: number;
+            prefix: string;
+            /** Format: int32 */
+            year: number;
+            nextFormatted: string;
+            isFiscal: boolean;
+            isDefault: boolean;
+            /** Format: int32 */
+            branchId: null | number;
+        };
+        NumberSeriesOptions: {
+            series: components["schemas"]["NumberSeriesOption"][];
+            /** Format: int32 */
+            proposedSeriesId: null | number;
+        };
+        NumberSeriesRuleDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            documentTypeCode: string;
+            documentTypeName: string;
+            /** Format: int32 */
+            priority: number;
+            /** Format: int32 */
+            userId: null | number;
+            userName: null | string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            /** Format: int32 */
+            locationId: null | number;
+            locationName: null | string;
+            /** Format: uint8 */
+            partnerScope: null | number;
+            prefix: string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        NumberSeriesRulePageDto: {
+            rules: components["schemas"]["NumberSeriesRuleDto"][];
+            users: components["schemas"]["UserOptionDto"][];
+        };
+        SaveNumberSeriesRule: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            companyId: number;
+            documentTypeCode: string;
+            /** Format: int32 */
+            priority: number;
+            /** Format: int32 */
+            userId: null | number;
+            /** Format: int32 */
+            branchId: null | number;
+            /** Format: int32 */
+            locationId: null | number;
+            /** Format: uint8 */
+            partnerScope: null | number;
+            prefix: string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: null | string;
         };
     };
     responses: never;
@@ -9968,6 +10083,188 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListNumberSeriesRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberSeriesRulePageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateNumberSeriesRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveNumberSeriesRule"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateNumberSeriesRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: number;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveNumberSeriesRule"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntity"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetNumberSeriesOptions: {
+        parameters: {
+            query: {
+                DocumentType: string;
+                Date?: string;
+                BranchId?: number;
+                LocationId?: number;
+                PartnerScope?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberSeriesOptions"];
                 };
             };
         };

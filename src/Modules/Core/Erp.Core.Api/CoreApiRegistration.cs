@@ -157,6 +157,17 @@ public static class CoreApiRegistration
                 (int companyId, int id, SaveNumberSeries body, ISender sender, CancellationToken ct) =>
                     sender.Send(body with { Id = id, CompanyId = companyId }, ct))
             .WithName("UpdateNumberSeries").Saves();
+        core.MapGet("/companies/{companyId:int}/number-series-rules", (int companyId, ISender sender, CancellationToken ct) =>
+                sender.Send(new ListNumberSeriesRules(companyId), ct))
+            .WithName("ListNumberSeriesRules").Produces<NumberSeriesRulePageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/companies/{companyId:int}/number-series-rules", (int companyId, SaveNumberSeriesRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, CompanyId = companyId }, ct))
+            .WithName("CreateNumberSeriesRule").Saves();
+        core.MapPut("/companies/{companyId:int}/number-series-rules/{id:int}",
+                (int companyId, int id, SaveNumberSeriesRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id, CompanyId = companyId }, ct))
+            .WithName("UpdateNumberSeriesRule").Saves();
+        core.MapGet("/number-series/options", ([AsParameters] GetNumberSeriesOptions query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetNumberSeriesOptions").Produces<NumberSeriesOptions>();
         core.MapPost("/companies/{companyId:int}/number-series/{id:int}/close",
                 (int companyId, int id, CloseNumberSeriesBody body, ISender sender, CancellationToken ct) =>
                     sender.Send(new CloseNumberSeries(id, companyId, body.RowVersion), ct))

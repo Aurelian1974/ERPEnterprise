@@ -24,6 +24,7 @@ import { ExchangeRatesTab } from '../rates/ExchangeRatesTab';
 import { DimensionsTab } from '../dimensions/DimensionsTab';
 import { PrecisionTab } from '../precision/PrecisionTab';
 import { AuditTab } from '../audit/AuditTab';
+import { SeriesRules } from './SeriesRules';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -251,6 +252,10 @@ function SeriesTab({ user }: { readonly user: CurrentUser }) {
           />
         )}
       </section>
+      {companyId !== undefined && tree.data !== undefined && lookups.data !== undefined && (
+        <SeriesRules companyId={companyId} series={series.data ?? []} tree={tree.data}
+          documentTypes={lookups.data.documentTypes.map((d) => ({ value: d.code, text: d.name }))} />
+      )}
     </div>
   );
 }

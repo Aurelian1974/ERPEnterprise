@@ -2308,3 +2308,12 @@ button.cell:disabled {
 td .pill.bad {
   margin-left: 6px;
 }
+
+/* ---------- Configurare › Serii: reguli de alegere (3.6 punctul 16) ---------- */
+
+.split.series .series-rules {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

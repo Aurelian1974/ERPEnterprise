@@ -6,8 +6,33 @@ namespace Erp.Core.Contracts;
 /// </summary>
 public interface INumberSeriesService
 {
-    Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null);
+    /// <param name="choice">Seria aleasa de utilizator pe document sau datele pentru regulile de alegere (3.6 punctul 16); null = seria implicita.</param>
+    Task<DocumentNumber> NextAsync(int companyId, string documentType, DateOnly documentDate, CancellationToken ct, int? branchId = null,
+        NumberSeriesChoice? choice = null);
+
+    /// <summary>Seriile din care se poate alege pe document si cea propusa de reguli (doar citire; numarul se aloca la validare).</summary>
+    Task<NumberSeriesOptions> GetOptionsAsync(int companyId, string documentType, DateOnly documentDate, int? branchId, NumberSeriesChoice? choice,
+        CancellationToken ct);
 }
+
+/// <summary>Tipul partenerului pentru regulile de alegere a seriei: Romania, UE, non-UE (de exemplu facturile de export).</summary>
+public enum PartnerScope : byte
+{
+    Romania = 1,
+    EuropeanUnion = 2,
+    NonEu = 3,
+}
+
+/// <summary>
+/// Alegerea seriei (02.01, 3.6 punctul 16): SeriesId = seria aleasa de utilizator (din GetOptionsAsync); fara ea, prima regula
+/// potrivita dupa utilizator, locatie si tipul partenerului, apoi seria implicita.
+/// </summary>
+public sealed record NumberSeriesChoice(int? SeriesId = null, int? UserId = null, int? LocationId = null, PartnerScope? PartnerScope = null);
+
+/// <summary>O serie deschisa pe care o poate folosi documentul; NextFormatted = numarul pe care l-ar primi acum.</summary>
+public sealed record NumberSeriesOption(int SeriesId, string Prefix, int Year, string NextFormatted, bool IsFiscal, bool IsDefault, int? BranchId);
+
+public sealed record NumberSeriesOptions(IReadOnlyList<NumberSeriesOption> Series, int? ProposedSeriesId);
 
 /// <summary>Numarul alocat; Formatted = {Prefix}-{An}-{Numar} (macheta 07c).</summary>
 public sealed record DocumentNumber(string Prefix, int Year, long Number, string Formatted);
