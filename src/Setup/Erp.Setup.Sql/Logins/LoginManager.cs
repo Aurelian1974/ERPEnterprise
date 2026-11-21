@@ -50,6 +50,7 @@ public static partial class LoginScripts
     /// <summary>
     /// Utilizatorul din baza, legat de login; refacut daca legatura s-a pierdut (dupa o restaurare sau o recuperare).
     /// Un utilizator existent al aceluiasi login, cu alt nume (o instalare anterioara), se redenumeste: un login are un singur utilizator pe baza.
+    /// La remapare, NAME se pastreaza explicit: altfel ALTER USER ... WITH LOGIN redenumeste utilizatorul Windows dupa numele loginului.
     /// </summary>
     public static string CreateOrRemapUser(string user, string login, string? defaultSchema)
     {
@@ -68,7 +69,7 @@ public static partial class LoginScripts
                     CREATE USER {SqlText.QuoteName(user)} FOR LOGIN {SqlText.QuoteName(login)}{schema};
             END
             ELSE
-                ALTER USER {SqlText.QuoteName(user)} WITH LOGIN = {SqlText.QuoteName(login)};
+                ALTER USER {SqlText.QuoteName(user)} WITH LOGIN = {SqlText.QuoteName(login)}, NAME = {SqlText.QuoteName(user)};
             """;
     }
 

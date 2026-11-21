@@ -143,7 +143,7 @@ public sealed class LoginScriptsTests
         var script = LoginScripts.CreateOrRemapUser("erp_app", @"GRUPULEXEMPLU\erp-prod$", "core").Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains(@"CREATE USER [erp_app] FOR LOGIN [GRUPULEXEMPLU\erp-prod$] WITH DEFAULT_SCHEMA = [core];", script);
-        Assert.Contains(@"ALTER USER [erp_app] WITH LOGIN = [GRUPULEXEMPLU\erp-prod$];", script);
+        Assert.Contains(@"ALTER USER [erp_app] WITH LOGIN = [GRUPULEXEMPLU\erp-prod$], NAME = [erp_app];", script);
         Assert.Contains("N'[erp_app]'", script);
     }
 
