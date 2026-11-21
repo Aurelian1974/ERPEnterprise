@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { moduleAccent, moduleForPath, visibleGroups, type MenuGroup } from './menu';
+import { canSee, moduleAccent, moduleForPath, visibleGroups, type MenuGroup } from './menu';
 
 const groups: MenuGroup[] = [
   {
@@ -50,5 +50,11 @@ describe('accentul modulului (10 Interfață și temă vizuală)', () => {
     expect(moduleForPath(groups, '/')).toBe('Core');
     // „/notebook” nu e sub „/note”: potrivirea e pe segmente, nu pe prefix de text.
     expect(moduleForPath(groups, '/notebook')).toBe('Core');
+  });
+
+  it('o intrare cu mai multe permisiuni apare cu oricare dintre ele (Configurare pentru auditor)', () => {
+    const config = { id: 'config', label: 'menu.home', path: '/admin/config', icon: '', module: 'Core', permission: ['Core.NumberSeries.Manage', 'Core.Audit.View'] } as const;
+    expect(canSee(config, { modules: ['Core'], permissions: ['Core.Audit.View'] })).toBe(true);
+    expect(canSee(config, { modules: ['Core'], permissions: ['Core.Partner.View'] })).toBe(false);
   });
 });

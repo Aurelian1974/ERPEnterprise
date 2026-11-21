@@ -1,3 +1,4 @@
+using Erp.Core.Application.Audit;
 using Erp.Core.Application.Dimensions;
 using Erp.Core.Application.ExchangeRates;
 using Erp.Core.Application.Licensing;
@@ -62,6 +63,7 @@ public static class CoreApiRegistration
         MapExchangeRates(core);
         MapDimensions(core);
         MapPrecision(core);
+        MapAudit(core);
         MapEmployees(core);
         MapLicense(core);
         return endpoints;
@@ -321,6 +323,20 @@ public static class CoreApiRegistration
         core.MapPut("/precision-policies/{id:int}", (int id, SavePrecisionPolicy body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { Id = id }, ct))
             .WithName("UpdatePrecisionPolicy").Saves();
+    }
+
+    // Configurare › Audit (02.01, 11; macheta 07h): jurnalul de audit si de autentificari, doar citire; Istoricul fisei firmei.
+    private static void MapAudit(RouteGroupBuilder core)
+    {
+        core.MapGet("/audit", ([AsParameters] SearchAudit query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchAudit").Produces<AuditPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/audit/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new GetAuditEntry(id), ct))
+            .WithName("GetAuditEntry").Produces<AuditEntryDetailDto>().ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+        core.MapGet("/audit/logins", ([AsParameters] SearchLoginEvents query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchLoginEvents").Produces<LoginEventPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapGet("/companies/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompanyHistory(id), ct))
+            .WithName("GetCompanyHistory").Produces<IReadOnlyList<PartnerHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
     }
 
     // Configurare › Dimensiuni (02.01, 3.5; macheta 07k): centre de cost, proiecte, gestiuni, santiere.

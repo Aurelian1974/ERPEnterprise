@@ -8,8 +8,8 @@ export interface MenuItem {
   readonly icon: string;
   /** Codul modulului din licenta; lipsa = disponibila oricarui utilizator autentificat. */
   readonly module?: string;
-  /** Permisiunea de vizualizare a ecranului; lipsa = fara permisiune speciala. */
-  readonly permission?: string;
+  /** Permisiunea de vizualizare a ecranului (o lista = oricare dintre ele); lipsa = fara permisiune speciala. */
+  readonly permission?: string | readonly string[];
 }
 
 /** Un grup de meniu pe modul; apare numai daca are cel putin o intrare vizibila. */
@@ -25,6 +25,13 @@ export interface MenuAccess {
   readonly modules: readonly string[];
   readonly permissions: readonly string[];
 }
+
+/** Permisiunile tab-urilor din Administrare › Configurare: intrarea de meniu apare cu oricare dintre ele. */
+export const CONFIG_PERMISSIONS = [
+  'Core.NumberSeries.Manage', 'Core.Precision.Manage', 'Core.Nomenclature.Manage', 'Core.ExchangeRate.ManageManual', 'Core.Dimension.Manage',
+  'Core.Company.Manage', 'Core.Property.Manage', 'Core.Role.Manage', 'Core.Audit.View', 'Core.Settings.Manage', 'Core.Import.Run',
+  'Core.License.Manage',
+] as const;
 
 export const homeItem: MenuItem = { id: 'home', label: 'menu.home', path: '/', icon: '⌂' };
 
@@ -47,7 +54,7 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'users', label: 'menu.users', path: '/admin/utilizatori', icon: '', module: 'Core', permission: 'Core.User.Manage' },
       { id: 'employees', label: 'menu.employees', path: '/admin/angajati', icon: '', module: 'Core', permission: 'Core.Employee.View' },
       { id: 'companies', label: 'menu.companies', path: '/admin/firme', icon: '', module: 'Core', permission: 'Core.Company.View' },
-      { id: 'config', label: 'menu.config', path: '/admin/config/serii', icon: '', module: 'Core', permission: 'Core.NumberSeries.Manage' },
+      { id: 'config', label: 'menu.config', path: '/admin/config', icon: '', module: 'Core', permission: CONFIG_PERMISSIONS },
     ],
   },
 ];
@@ -97,7 +104,7 @@ export function moduleForPath(groups: readonly MenuGroup[], pathname: string): s
 export function canSee(item: MenuItem, access: MenuAccess): boolean {
   return (
     (item.module === undefined || access.modules.includes(item.module)) &&
-    (item.permission === undefined || access.permissions.includes(item.permission))
+    (item.permission === undefined || (typeof item.permission === 'string' ? [item.permission] : item.permission).some((p) => access.permissions.includes(p)))
   );
 }
 

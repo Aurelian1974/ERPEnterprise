@@ -11,6 +11,8 @@ import { currencyOptions, useCurrencies } from '../rates/ratesApi';
 import { useUnsavedChanges } from '../components/UnsavedChanges';
 import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required, requireCountyForRomania, ROMANIA } from '../components/forms';
 import { t } from '../i18n';
+import { useCompanyHistory } from '../audit/auditApi';
+import { HistoryView } from '../partners/PartnerTabs';
 import { countryOptions, countyOptions, useCountyFollowsCountry } from './OrgForms';
 import { orgApi, orgKeys, useNumberSeries, type BankAccount, type CompanyAddress, type CompanyContact, type CompanyDetail, type OrgLookups } from './orgApi';
 
@@ -394,5 +396,23 @@ export function CompanySeriesTab({ companyId, canManage }: { readonly companyId:
         </GridComponent>
       )}
     </div>
+  );
+}
+
+/**
+ * Tab-ul Istoric al fisei firmei (02.01, 11): auditul firmei si al punctelor de lucru, locatiilor, adreselor, contactelor,
+ * conturilor, seriilor si dimensiunilor ei. Cu dreptul de audit, legatura spre Configurare › Audit (inainte / dupa).
+ */
+export function CompanyHistoryTab({ companyId, active, canAudit }: { readonly companyId: number; readonly active: boolean; readonly canAudit: boolean }) {
+  const history = useCompanyHistory(companyId, active);
+  return (
+    <>
+      {history.data !== undefined && history.data.length === 0 ? <p className="muted">{t('org.history.empty')}</p> : <HistoryView history={history} />}
+      {canAudit && (
+        <p className="muted small">
+          <Link to={`/admin/config/audit?entitate=Core.Company&id=${companyId}`}>{t('org.history.link')}</Link>
+        </p>
+      )}
+    </>
   );
 }

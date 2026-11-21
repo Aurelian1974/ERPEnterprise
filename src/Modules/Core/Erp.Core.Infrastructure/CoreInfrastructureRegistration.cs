@@ -42,6 +42,7 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Dimensions.IDimensionStore, Dimensions.DimensionStore>();
         services.AddScoped<IDimensionLookup, Dimensions.DimensionLookup>();
         services.AddScoped<Application.Precision.IPrecisionStore, Precision.PrecisionStore>();
+        services.AddScoped<Application.Audit.IAuditLogStore, Audit.AuditLogStore>();
         services.AddScoped<IPrecisionService, Precision.PrecisionService>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));

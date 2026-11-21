@@ -12,6 +12,7 @@ import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required
 import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
 import { ro } from '../i18n/ro';
+import { actionOption, fieldLabel } from '../audit/auditModel';
 import { addressSchema } from '../org/CompanyTabs';
 import { countryOptions, countyOptions, useCountyFollowsCountry } from '../org/OrgForms';
 import type { OrgLookups } from '../org/orgApi';
@@ -332,7 +333,7 @@ const dateTime = new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest'
 /** Textul actiunii din audit; o actiune necunoscuta ramane cu codul ei. */
 export function actionLabel(action: string): string {
   const key = `partner.action.${action}`;
-  return key in ro ? t(key as TextKey) : action;
+  return key in ro ? t(key as TextKey) : actionOption(action);
 }
 
 /** Detaliile unei intrari: campurile JSON ca „camp: valoare”, fara campurile goale. */
@@ -344,7 +345,7 @@ export function changeSummary(changes: string | null | undefined): string {
     const parsed = JSON.parse(changes) as Record<string, unknown>;
     return Object.entries(parsed)
       .filter(([, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => `${key}: ${typeof value === 'boolean' ? t(value ? 'common.yes' : 'common.no') : typeof value === 'object' ? JSON.stringify(value) : String(value)}`)
+      .map(([key, value]) => `${fieldLabel(key)}: ${typeof value === 'boolean' ? t(value ? 'common.yes' : 'common.no') : typeof value === 'object' ? JSON.stringify(value) : String(value)}`)
       .join(' · ');
   } catch {
     return changes;

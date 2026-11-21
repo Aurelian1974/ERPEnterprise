@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation, useOutletContext, useSearchParams } from 'react-router';
+import { Navigate, NavLink, useLocation, useOutletContext, useSearchParams } from 'react-router';
 import { useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { RolesTab } from '../roles/RolesTab';
 import { ExchangeRatesTab } from '../rates/ExchangeRatesTab';
 import { DimensionsTab } from '../dimensions/DimensionsTab';
 import { PrecisionTab } from '../precision/PrecisionTab';
+import { AuditTab } from '../audit/AuditTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
 export function ConfigPage() {
@@ -39,6 +40,7 @@ export function ConfigPage() {
   const canRates = canNomenclatures || user.permissions.includes('Core.ExchangeRate.ManageManual');
   const canDimensions = user.permissions.includes('Core.Dimension.Manage');
   const canPrecision = user.permissions.includes('Core.Precision.Manage');
+  const canAudit = user.permissions.includes('Core.Audit.View');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
@@ -50,11 +52,21 @@ export function ConfigPage() {
                 : path.endsWith('/roluri') && canRoles ? 'roles'
                   : path.endsWith('/cursuri') && canRates ? 'rates'
                     : path.endsWith('/dimensiuni') && canDimensions ? 'dimensions'
-                      : path.endsWith('/precizie') && canPrecision ? 'precision' : 'series';
+                      : path.endsWith('/precizie') && canPrecision ? 'precision'
+                        : path.endsWith('/audit') && canAudit ? 'audit' : 'series';
+  // Fara tab cerut (sau fara dreptul lui), primul tab permis: un auditor ajunge direct in Audit.
+  const first = ([
+    [canSeries, 'serii'], [canPrecision, 'precizie'], [canNomenclatures, 'nomenclatoare'], [canRates, 'cursuri'], [canDimensions, 'dimensiuni'],
+    [canAddressTypes, 'tipuri-adrese'], [canPartnerGroups, 'grupe-parteneri'], [canProperties, 'proprietati'], [canRoles, 'roluri'], [canAudit, 'audit'],
+    [canSettings, 'setari'], [canImport, 'import'], [canLicense, 'licenta'],
+  ] as const).find(([allowed]) => allowed)?.[1];
+  if (tab === 'series' && !canSeries && first !== undefined) {
+    return <Navigate to={`/admin/config/${first}`} replace />;
+  }
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
     : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings')
       : tab === 'properties' ? t('config.tab.properties') : tab === 'import' ? t('config.tab.import')
-        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : t('config.tab.series');
+        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : tab === 'audit' ? t('config.tab.audit') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -65,19 +77,21 @@ export function ConfigPage() {
         </div>
       </div>
       <nav className="config-tabs" aria-label={t('menu.config')}>
-        <div className="family">
-          <span className="family-name">{t('config.family.documents')}</span>
-          {canSeries && (
-            <NavLink to="/admin/config/serii" className="tab">
-              # {t('config.tab.series')}
-            </NavLink>
-          )}
-          {canPrecision && (
-            <NavLink to="/admin/config/precizie" className="tab">
-              .00 {t('config.tab.precision')}
-            </NavLink>
-          )}
-        </div>
+        {(canSeries || canPrecision) && (
+          <div className="family">
+            <span className="family-name">{t('config.family.documents')}</span>
+            {canSeries && (
+              <NavLink to="/admin/config/serii" className="tab">
+                # {t('config.tab.series')}
+              </NavLink>
+            )}
+            {canPrecision && (
+              <NavLink to="/admin/config/precizie" className="tab">
+                .00 {t('config.tab.precision')}
+              </NavLink>
+            )}
+          </div>
+        )}
         {(canAddressTypes || canPartnerGroups || canProperties || canNomenclatures || canRates || canDimensions) && (
           <div className="family">
             <span className="family-name">{t('config.family.nomenclature')}</span>
@@ -113,12 +127,19 @@ export function ConfigPage() {
             )}
           </div>
         )}
-        {canRoles && (
+        {(canRoles || canAudit) && (
           <div className="family">
             <span className="family-name">{t('config.family.security')}</span>
-            <NavLink to="/admin/config/roluri" className="tab">
-              ◫ {t('config.tab.roles')}
-            </NavLink>
+            {canRoles && (
+              <NavLink to="/admin/config/roluri" className="tab">
+                ◫ {t('config.tab.roles')}
+              </NavLink>
+            )}
+            {canAudit && (
+              <NavLink to="/admin/config/audit" className="tab">
+                ◷ {t('config.tab.audit')}
+              </NavLink>
+            )}
           </div>
         )}
         {(canSettings || canImport || canLicense) && (
@@ -144,7 +165,7 @@ export function ConfigPage() {
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
         : tab === 'settings' ? <SettingsTab /> : tab === 'properties' ? <PropertiesTab /> : tab === 'import' ? <ImportTab />
-        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab />
+        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab /> : tab === 'audit' ? <AuditTab />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

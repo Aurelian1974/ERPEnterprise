@@ -2170,3 +2170,107 @@ button.cell:disabled {
   background: var(--info-bg);
   font-weight: 600;
 }
+
+/* ---------- Configurare › Audit (macheta 07h) ---------- */
+
+.audit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.audit-list,
+.audit-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.audit-filters .search {
+  flex: 1 1 240px;
+}
+
+.audit-table tbody tr {
+  cursor: pointer;
+}
+
+.audit-table tbody tr.current td {
+  background: var(--info-bg);
+}
+
+.audit-table tbody tr.current td:first-child {
+  box-shadow: inset 3px 0 0 var(--action);
+}
+
+.audit-table td.nowrap {
+  white-space: nowrap;
+}
+
+.audit-table td.strong,
+.audit-kv dd.strong {
+  font-weight: 600;
+}
+
+.pill.tag {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.audit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.audit-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.audit-kv {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) 1fr;
+  gap: 6px 14px;
+  margin: 0;
+}
+
+.audit-kv dt {
+  color: var(--muted);
+}
+
+.audit-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.audit-kv .mono,
+.audit-table .mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+.audit-diff td.before {
+  background: var(--error-bg);
+  color: var(--error);
+  text-decoration: line-through;
+}
+
+.audit-diff td.after {
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .audit-layout {
+    grid-template-columns: 1fr;
+  }
+}

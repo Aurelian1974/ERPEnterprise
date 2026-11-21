@@ -89,7 +89,8 @@ public sealed partial class UserIntegrationTests(UserDatabase database) : IClass
         var context = new FakeContext { UserId = userId ?? database.AdminId, CompanyId = database.CompanyId };
         context.Permissions.UnionWith([CorePermissions.UserManage, CorePermissions.RoleManage, CorePermissions.EmployeeView, CorePermissions.EmployeeManage,
             CorePermissions.ItemView, CorePermissions.ItemManage, CorePermissions.PartnerView, CorePermissions.PartnerManage,
-            CorePermissions.ExchangeRateManageManual, CorePermissions.NomenclatureManage, CorePermissions.DimensionManage, CorePermissions.PrecisionManage]);
+            CorePermissions.ExchangeRateManageManual, CorePermissions.NomenclatureManage, CorePermissions.DimensionManage, CorePermissions.PrecisionManage,
+            CorePermissions.AuditView, CorePermissions.CompanyView]);
         services.AddSingleton<ICurrentContext>(context);
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();

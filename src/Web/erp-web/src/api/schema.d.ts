@@ -1605,6 +1605,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/core/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/audit/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAuditEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/audit/logins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchLoginEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/core/companies/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCompanyHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3489,6 +3553,76 @@ export interface components {
             isActive: boolean;
             /** Format: byte */
             rowVersion: null | string;
+        };
+        AuditEntryDetailDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: int32 */
+            userId: number;
+            userName: string;
+            login: string;
+            /** Format: int32 */
+            companyId: null | number;
+            companyName: null | string;
+            action: string;
+            entityType: string;
+            /** Format: int64 */
+            entityId: null | number;
+            recordLabel: null | string;
+            changes: null | string;
+            previousChanges: null | string;
+            /** Format: date-time */
+            previousAt: null | string;
+            ipAddress: null | string;
+            /** Format: uuid */
+            correlationId: string;
+        };
+        AuditEntryItemDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: int32 */
+            userId: number;
+            userName: string;
+            action: string;
+            entityType: string;
+            /** Format: int64 */
+            entityId: null | number;
+            recordLabel: null | string;
+            companyName: null | string;
+            isFirst: boolean;
+        };
+        AuditPageDto: {
+            entries: components["schemas"]["AuditEntryItemDto"][];
+            /** Format: int32 */
+            total: number;
+            allCompanies: boolean;
+            users: components["schemas"]["UserOptionDto"][];
+            entityTypes: string[];
+            actions: string[];
+        };
+        LoginEventDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            occurredAt: string;
+            userName: string;
+            /** Format: int32 */
+            userId: null | number;
+            displayName: null | string;
+            success: boolean;
+            failureReason: null | string;
+            ipAddress: null | string;
+            userAgent: null | string;
+        };
+        LoginEventPageDto: {
+            events: components["schemas"]["LoginEventDto"][];
+            /** Format: int32 */
+            total: number;
+            allCompanies: boolean;
         };
     };
     responses: never;
@@ -8913,6 +9047,152 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchAudit: {
+        parameters: {
+            query?: {
+                From?: string;
+                To?: string;
+                UserId?: number;
+                EntityType?: string;
+                EntityId?: number;
+                Action?: string;
+                Search?: string;
+                Page?: number;
+                PageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAuditEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryDetailDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchLoginEvents: {
+        parameters: {
+            query?: {
+                From?: string;
+                To?: string;
+                Search?: string;
+                Success?: boolean;
+                Page?: number;
+                PageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginEventPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCompanyHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerHistoryEntryDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
