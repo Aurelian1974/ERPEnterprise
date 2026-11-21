@@ -77,6 +77,21 @@ public sealed partial class UserIntegrationTests(UserDatabase database) : IClass
 
     private async Task<T> Send<T>(IRequest<T> request, int? userId = null)
     {
+        using var provider = Services(userId);
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
+    }
+
+    /// <summary>Un serviciu al Nucleului (de exemplu IItemCatalog), cu acelasi context ca Send.</summary>
+    private async Task<T> Use<TService, T>(Func<TService, Task<T>> action) where TService : notnull
+    {
+        using var provider = Services(null);
+        using var scope = provider.CreateScope();
+        return await action(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
+    private ServiceProvider Services(int? userId)
+    {
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddErpMediator(typeof(UserIntegrationTests).Assembly);
@@ -95,8 +110,7 @@ public sealed partial class UserIntegrationTests(UserDatabase database) : IClass
         services.AddSingleton<Erp.Core.Application.Me.ICurrentUserProfile>(context);
         services.AddScoped<HandlerCalls>();
         services.AddSingleton<Erp.Core.Application.ExchangeRates.IBnrRatesSource>(bnr);
-        using var scope = services.BuildServiceProvider().CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
+        return services.BuildServiceProvider();
     }
 
     private static string Unique(string prefix) => prefix + Guid.NewGuid().ToString("N")[..6];

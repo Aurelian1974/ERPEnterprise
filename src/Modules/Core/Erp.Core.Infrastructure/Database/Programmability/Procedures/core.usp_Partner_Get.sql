@@ -13,7 +13,8 @@ BEGIN
            p.OwnerCompanyId, p.OwnerBranchId, p.OwnerLocationId,
            CASE WHEN p.OwnerLocationId IS NOT NULL THEN (SELECT x.Name FROM core.Location AS x WHERE x.Id = p.OwnerLocationId)
                 WHEN p.OwnerBranchId IS NOT NULL THEN (SELECT x.Name FROM core.Branch AS x WHERE x.Id = p.OwnerBranchId)
-                WHEN p.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = p.OwnerCompanyId) END AS OwnerName
+                WHEN p.OwnerCompanyId IS NOT NULL THEN (SELECT x.Name FROM core.Company AS x WHERE x.Id = p.OwnerCompanyId) END AS OwnerName,
+           p.DocumentLanguage
     FROM core.Partner AS p
     JOIN core.[User] AS cr ON cr.Id = p.CreatedBy
     LEFT JOIN core.[User] AS m ON m.Id = p.ModifiedBy

@@ -13,6 +13,9 @@ import { applyServerErrors, optionalEmail, optionalPhone, optionalText, required
 import { formatDate } from '../format/date';
 import { t, type TextKey } from '../i18n';
 import { CityField } from '../org/CityField';
+import { LANGUAGES } from '../items/catalogApi';
+
+const languageOptions = LANGUAGES.map((l) => ({ value: l, text: t(`lang.${l}` as TextKey) }));
 import { countryOptions, countyOptions, useCountyFollowsCountry } from '../org/OrgForms';
 import type { OrgLookups } from '../org/orgApi';
 import { DataType, PartnerType, partnerApi, partnerKeys, type AnafCompany, type PartnerDetail, type PartnerLookups, type PropertyDefinition, type Saved } from './partnerApi';
@@ -43,6 +46,7 @@ function partnerSchema(definitions: readonly PropertyDefinition[], isNew: boolea
       phone: optionalPhone,
       email: optionalEmail,
       intraGroupCompanyId: z.number().nullable(),
+      documentLanguage: z.string().nullable().default(null),
       isActive: z.boolean(),
       changePersonalId: z.boolean(),
       personalId: optionalText,
@@ -78,14 +82,14 @@ type PartnerInput = z.input<Schema>;
 type PartnerValues = z.output<Schema>;
 
 const fields = ['code', 'name', 'partnerType', 'fiscalCode', 'isCustomer', 'isSupplier', 'partnerGroupId', 'vatPayer', 'vatOnCollection', 'anafInactive',
-  'tradeRegisterNo', 'address', 'countryCode', 'countyCode', 'city', 'citySirutaCode', 'postalCode', 'phone', 'email', 'intraGroupCompanyId', 'isActive', 'personalId'];
+  'tradeRegisterNo', 'address', 'countryCode', 'countyCode', 'city', 'citySirutaCode', 'postalCode', 'phone', 'email', 'intraGroupCompanyId', 'documentLanguage', 'isActive', 'personalId'];
 
 function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly PropertyDefinition[]): PartnerInput {
   if (partner === undefined) {
     return {
       code: null, name: '', partnerType: PartnerType.LegalRomania, fiscalCode: null, isCustomer: true, isSupplier: false, partnerGroupId: null,
       vatPayer: false, vatOnCollection: false, anafInactive: false, tradeRegisterNo: null, address: '', countryCode: ROMANIA, countyCode: null,
-      city: '', citySirutaCode: null, postalCode: null, phone: null, email: null, intraGroupCompanyId: null, isActive: true, changePersonalId: true, personalId: null,
+      city: '', citySirutaCode: null, postalCode: null, phone: null, email: null, intraGroupCompanyId: null, documentLanguage: null, isActive: true, changePersonalId: true, personalId: null,
       anafCheckedAt: null, props: toFormProps(definitions, []),
     };
   }
@@ -94,7 +98,7 @@ function defaultsFor(partner: PartnerDetail | undefined, definitions: readonly P
     isSupplier: partner.isSupplier, partnerGroupId: partner.partnerGroupId ?? null, vatPayer: partner.vatPayer, vatOnCollection: partner.vatOnCollection,
     anafInactive: partner.anafInactive, tradeRegisterNo: partner.tradeRegisterNo ?? null, address: partner.address, countryCode: partner.countryCode,
     countyCode: partner.countyCode ?? null, city: partner.city, citySirutaCode: partner.citySirutaCode, postalCode: partner.postalCode ?? null, phone: partner.phone ?? null,
-    email: partner.email ?? null, intraGroupCompanyId: partner.intraGroupCompanyId ?? null, isActive: partner.isActive,
+    email: partner.email ?? null, intraGroupCompanyId: partner.intraGroupCompanyId ?? null, documentLanguage: partner.documentLanguage ?? null, isActive: partner.isActive,
     changePersonalId: !partner.hasPersonalId, personalId: null, anafCheckedAt: null, props: toFormProps(definitions, partner.properties),
   };
 }
@@ -326,6 +330,8 @@ export function PartnerForm({ partner, lookups, orgLookups, section, canManage, 
           <TextField control={form.control} name="email" label={t('field.email')} />
           <SelectField control={form.control} name="intraGroupCompanyId" label={t('partner.field.intraGroup')} options={companies}
             allowEmpty={t('partner.field.noIntraGroup')} numeric />
+          <SelectField control={form.control} name="documentLanguage" label={t('partner.field.documentLanguage')} options={languageOptions}
+            allowEmpty={t('lang.ro')} />
           <OwnerDisplay text={partner === undefined ? (newOwner?.name ?? '') : ownerLabel(partner.ownerLevel, partner.ownerName)} />
           <SwitchField control={form.control} name="isActive" label={t('field.isActive')} />
         </div>

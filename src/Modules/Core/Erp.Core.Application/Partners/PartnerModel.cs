@@ -31,7 +31,7 @@ public sealed record PartnerDetailDto(int Id, string Code, string Name, byte Par
     string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
     bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, IReadOnlyList<PartnerAddressDto> Addresses,
     IReadOnlyList<PartnerBankAccountDto> BankAccounts, IReadOnlyList<PartnerContactDto> Contacts, IReadOnlyList<PartnerPropertyValue> Properties,
-    byte OwnerLevel, int? OwnerNodeId, string? OwnerName);
+    byte OwnerLevel, int? OwnerNodeId, string? OwnerName, string? DocumentLanguage);
 
 public sealed record PartnerGroupDto(int Id, string Code, string Name, int SortOrder, bool IsActive, byte[] RowVersion);
 
@@ -102,7 +102,7 @@ public sealed record PartnerRecord(int? Id, string Code, string Name, byte Partn
     byte[]? PersonalIdEncrypted, bool IsCustomer, bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive,
     string? TradeRegisterNo, string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email,
     int? IntraGroupCompanyId, bool IsActive, IReadOnlyList<PartnerPropertyValue>? Properties, byte[]? RowVersion, DateTime? AnafCheckedAt = null,
-    OwnerRef? Owner = null);
+    OwnerRef? Owner = null, bool SaveLanguage = false, string? DocumentLanguage = null);
 
 /// <summary>Criptarea datelor personale ale partenerilor (CNP, GDPR; 02.01, 9), cu cheile Data Protection ale instalarii.</summary>
 public interface IPersonalDataProtector

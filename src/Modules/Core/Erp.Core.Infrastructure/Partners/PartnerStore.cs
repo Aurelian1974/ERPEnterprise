@@ -52,7 +52,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             row.Address, row.City, row.CitySirutaCode, row.CountyCode, row.CountryCode, row.PostalCode, row.Phone, row.Email, row.IntraGroupCompanyId, row.IsActive,
             DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc), row.ModifiedByName, DateTime.SpecifyKind(row.LastChangedAt, DateTimeKind.Utc),
             row.RowVersion, addresses, accounts, contacts, properties, OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).Level,
-            OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).NodeId, row.OwnerName);
+            OwnerRef.LevelOf(row.OwnerCompanyId, row.OwnerBranchId, row.OwnerLocationId).NodeId, row.OwnerName, row.DocumentLanguage);
     }
 
     public async Task<IReadOnlyList<PartnerExportRow>> ExportAsync(PartnerSearchCriteria criteria, CancellationToken ct) =>
@@ -94,7 +94,8 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
             partner.PostalCode, partner.Phone, partner.Email, partner.IntraGroupCompanyId, partner.IsActive,
             SaveProperties = partner.Properties is not null, partner.RowVersion, partner.AnafCheckedAt, UserId = userId,
             SaveOwner = partner.Owner is not null, OwnerCompanyId = partner.Owner?.CompanyId, OwnerBranchId = partner.Owner?.BranchId,
-            OwnerLocationId = partner.Owner?.LocationId,
+            OwnerLocationId = partner.Owner?.LocationId, partner.SaveLanguage,
+            DocumentLanguage = new DbString { Value = partner.DocumentLanguage, Length = 2, IsAnsi = true, IsFixedLength = true },
         });
         parameters.Add("PersonalIdEncrypted", partner.PersonalIdEncrypted, DbType.Binary, size: 256);
         parameters.Add("Properties", PropertyTable(partner.Properties ?? []).AsTableValuedParameter("core.PropertyValueList"));
@@ -174,7 +175,7 @@ public sealed class PartnerStore(IDbSession session) : IPartnerStore
         bool IsSupplier, int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, DateTime? AnafCheckedAt, string? TradeRegisterNo,
         string Address, string City, int? CitySirutaCode, string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId,
         bool IsActive, DateTime CreatedAt, string ModifiedByName, DateTime LastChangedAt, byte[] RowVersion, int? OwnerCompanyId, int? OwnerBranchId,
-        int? OwnerLocationId, string? OwnerName);
+        int? OwnerLocationId, string? OwnerName, string? DocumentLanguage);
 
     private sealed record ValueRow(int PropertyDefinitionId, string? ValueText, decimal? ValueNumber, DateTime? ValueDate, bool? ValueBool,
         int? ValueOptionId, int? ValueUserId);

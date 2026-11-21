@@ -27,6 +27,8 @@ CREATE OR ALTER PROCEDURE core.usp_Partner_Save
     @SaveProperties      bit = 0,
     @Properties          core.PropertyValueList READONLY,
     @SaveOwner           bit = 0,
+    @DocumentLanguage    char(2) = NULL,
+    @SaveLanguage        bit = 0,
     @OwnerCompanyId      int = NULL,
     @OwnerBranchId       int = NULL,
     @OwnerLocationId     int = NULL,
@@ -95,10 +97,10 @@ BEGIN
     BEGIN
         INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, PersonalIdEncrypted, IsCustomer, IsSupplier, PartnerGroupId,
             VatPayer, VatOnCollection, AnafInactive, AnafCheckedAt, TradeRegisterNo, Address, City, CitySirutaCode, CountyCode, CountryCode, PostalCode, Phone, Email,
-            IntraGroupCompanyId, IsActive, OwnerCompanyId, OwnerBranchId, OwnerLocationId, CreatedBy)
+            IntraGroupCompanyId, IsActive, OwnerCompanyId, OwnerBranchId, OwnerLocationId, DocumentLanguage, CreatedBy)
         VALUES (@Code, @Name, @PartnerType, @FiscalCode, @PersonalIdEncrypted, @IsCustomer, @IsSupplier, @PartnerGroupId,
             @VatPayer, @VatOnCollection, @AnafInactive, @AnafCheckedAt, @TradeRegisterNo, @Address, @City, @CitySirutaCode, @CountyCode, @CountryCode, @PostalCode, @Phone, @Email,
-            @IntraGroupCompanyId, @IsActive, @OwnerCompanyId, @OwnerBranchId, @OwnerLocationId, @UserId);
+            @IntraGroupCompanyId, @IsActive, @OwnerCompanyId, @OwnerBranchId, @OwnerLocationId, @DocumentLanguage, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -110,6 +112,7 @@ BEGIN
             VatOnCollection = @VatOnCollection, AnafInactive = @AnafInactive, AnafCheckedAt = COALESCE(@AnafCheckedAt, AnafCheckedAt), TradeRegisterNo = @TradeRegisterNo, Address = @Address,
             City = @City, CitySirutaCode = @CitySirutaCode, CountyCode = @CountyCode, CountryCode = @CountryCode, PostalCode = @PostalCode, Phone = @Phone, Email = @Email,
             IntraGroupCompanyId = @IntraGroupCompanyId, IsActive = @IsActive,
+            DocumentLanguage = CASE WHEN @SaveLanguage = 1 THEN @DocumentLanguage ELSE DocumentLanguage END,
             OwnerCompanyId = CASE WHEN @SaveOwner = 1 THEN @OwnerCompanyId ELSE OwnerCompanyId END,
             OwnerBranchId = CASE WHEN @SaveOwner = 1 THEN @OwnerBranchId ELSE OwnerBranchId END,
             OwnerLocationId = CASE WHEN @SaveOwner = 1 THEN @OwnerLocationId ELSE OwnerLocationId END,

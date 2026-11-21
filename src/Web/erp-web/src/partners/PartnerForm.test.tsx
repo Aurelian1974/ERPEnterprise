@@ -84,7 +84,7 @@ const lookups: PartnerLookups = {
 const partner = (changes: Partial<PartnerDetail> = {}): PartnerDetail => ({
   id: 5, code: 'AGN', name: 'Agro Nord Distribuție SRL', partnerType: 1, fiscalCode: '33445566', hasPersonalId: false, isCustomer: true, isSupplier: false,
   partnerGroupId: null, vatPayer: true, vatOnCollection: false, anafInactive: false, anafCheckedAt: null, tradeRegisterNo: 'J33/567/2012',
-  address: 'Str. Gării nr. 21', city: 'Suceava', citySirutaCode: null, countyCode: 'SV', countryCode: 'RO', postalCode: '720004', phone: null, email: null,
+  address: 'Str. Gării nr. 21', city: 'Suceava', citySirutaCode: null, documentLanguage: null, countyCode: 'SV', countryCode: 'RO', postalCode: '720004', phone: null, email: null,
   intraGroupCompanyId: null, isActive: true, createdAt: '2025-02-03T08:00:00Z', modifiedByName: 'Ana Ionescu', lastChangedAt: '2026-11-10T09:12:00Z',
   rowVersion: 'AAAAAAAAB9E=', addresses: [], bankAccounts: [], contacts: [], properties: [{ propertyDefinitionId: 10, valueOptionId: 101 }],
   ownerLevel: 0, ownerNodeId: null, ownerName: null,

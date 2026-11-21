@@ -214,6 +214,19 @@ public static class CoreApiRegistration
         core.MapPut("/partners/{id:int}/credit-limit", (int id, SetPartnerCreditLimit body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { PartnerId = id }, ct))
             .WithName("SetPartnerCreditLimit").Saves();
+        core.MapGet("/items/{id:int}/references", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemReferences(id), ct))
+            .WithName("GetItemReferences").Produces<IReadOnlyList<ItemReferenceItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPost("/items/{id:int}/references", (int id, SaveItemReference body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ItemId = id }, ct))
+            .WithName("CreateItemReference").Saves();
+        core.MapPut("/items/{id:int}/references/{referenceId:int}", (int id, int referenceId, SaveItemReference body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = referenceId, ItemId = id }, ct))
+            .WithName("UpdateItemReference").Saves();
+        core.MapGet("/items/{id:int}/translations", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemTranslations(id), ct))
+            .WithName("GetItemTranslations").Produces<IReadOnlyList<ItemTranslationDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPut("/items/{id:int}/translations", (int id, SaveItemTranslations body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ItemId = id }, ct))
+            .WithName("SaveItemTranslations").Produces<int>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapGet("/items/{id:int}/block", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetItemBlock(id), ct))
             .WithName("GetItemBlock").Produces<ItemBlockDto>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
         core.MapPut("/items/{id:int}/block", (int id, SetItemBlock body, ISender sender, CancellationToken ct) => sender.Send(body with { ItemId = id }, ct))

@@ -59,7 +59,9 @@ BEGIN
     LEFT JOIN core.ItemGroup AS g ON g.Id = i.ItemGroupId
     LEFT JOIN core.Item AS d ON d.Id = i.DepositItemId
     WHERE (@Search IS NULL OR i.NameSearch LIKE @Search + N'%' OR i.CodeKey LIKE UPPER(@Search) + N'%'
-             OR (@Barcode IS NOT NULL AND EXISTS (SELECT 1 FROM core.ItemBarcode AS b WHERE b.ItemId = i.Id AND b.Barcode = @Barcode)))
+             OR (@Barcode IS NOT NULL AND EXISTS (SELECT 1 FROM core.ItemBarcode AS b WHERE b.ItemId = i.Id AND b.Barcode = @Barcode))
+             -- codul articolului la un client sau furnizor (3.6 punctul 11), exact, fara majuscule
+             OR EXISTS (SELECT 1 FROM core.ItemPartnerReference AS r WHERE r.ItemId = i.Id AND r.IsActive = 1 AND r.CodeKey = UPPER(@Search)))
       AND (@IsStockable IS NULL OR i.IsStockable = @IsStockable)
       AND (@ItemType IS NULL OR i.ItemType = @ItemType)
       AND (@ItemGroupId IS NULL OR i.ItemGroupId IN (SELECT Id FROM @Groups))

@@ -20,6 +20,7 @@ import { t, type TextKey } from '../i18n';
 import { DataType } from '../partners/partnerApi';
 import { HistoryView } from '../partners/PartnerTabs';
 import { ItemBlockTab } from '../partners/BlockTab';
+import { ItemReferencesTab, ItemTranslationsTab } from './ItemCatalogTabs';
 import { ItemForm, effectiveLines, type ItemSection } from './ItemForm';
 import {
   groupPath, ITEM_TYPES, itemApi, itemKeys, itemSearchQuery, PAGE_SIZE, percentText, useItem, useItemHistory, useItemLookups, useItems,
@@ -305,7 +306,7 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
   );
 }
 
-type ItemTab = ItemSection | 'barcodes' | 'block' | 'history';
+type ItemTab = ItemSection | 'barcodes' | 'references' | 'translations' | 'block' | 'history';
 
 function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; readonly lookups: ItemLookups; readonly canManage: boolean }) {
   const item = useItem(itemId);
@@ -323,6 +324,8 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
     ['uom', t('item.tab.uom')],
     ['properties', t('item.tab.properties')],
     ['barcodes', t('item.tab.barcodes')],
+    ['references', t('item.tab.references')],
+    ['translations', t('item.tab.translations')],
     ['block', t('item.tab.block')],
     ['history', t('item.tab.history')],
   ];
@@ -394,6 +397,8 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
         <ItemForm item={data} lookups={lookups} section={formSection} canManage={canManage} onSaved={() => undefined} onCancel={() => undefined} />
       </div>
       {panel('barcodes', <BarcodesTab item={data} lookups={lookups} canManage={canManage} />)}
+      {panel('references', <ItemReferencesTab item={data} lookups={lookups} canManage={canManage} active={tab === 'references'} />)}
+      {panel('translations', <ItemTranslationsTab itemId={itemId} itemName={data.name} canManage={canManage} active={tab === 'translations'} />)}
       {panel('block', <ItemBlockTab itemId={itemId} active={tab === 'block'} canManage={canManage} />)}
       {panel('history', <HistoryView history={history} />)}
     </div>

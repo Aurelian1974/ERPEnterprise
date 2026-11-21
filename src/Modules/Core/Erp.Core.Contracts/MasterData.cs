@@ -44,3 +44,20 @@ public interface IPartnerExposureProvider
 {
     Task<decimal> GetExposureAsync(int companyId, int partnerId, CancellationToken ct);
 }
+
+/// <summary>Codul unui articol la un client (ReferenceType 1) sau furnizor (2), cu denumirea si UM de la el (02.01, 3.6 punctul 11).</summary>
+public sealed record ItemReferenceDto(int ItemId, int PartnerId, byte ReferenceType, string Code, string? Description, int? UomId);
+
+/// <summary>
+/// Catalogul articolelor pentru documente: articolul dupa codul furnizorului (receptii, import de facturi e-Factura), codul clientului
+/// de tiparit pe factura (BuyersItemIdentification) si denumirea in limba documentelor partenerului (3.6 punctul 12).
+/// </summary>
+public interface IItemCatalog
+{
+    Task<ItemReferenceDto?> FindByPartnerCodeAsync(int partnerId, byte referenceType, string code, CancellationToken ct);
+
+    Task<ItemReferenceDto?> GetPartnerCodeAsync(int itemId, int partnerId, byte referenceType, CancellationToken ct);
+
+    /// <summary>Traducerea in limba data (ISO 639-1), altfel denumirea in romana; language null sau „ro” = romana.</summary>
+    Task<string> GetItemNameAsync(int itemId, string? language, CancellationToken ct);
+}

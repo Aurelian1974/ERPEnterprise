@@ -19,7 +19,8 @@ public sealed record SavePartner(int? Id, string? Code, string Name, byte Partne
     int? PartnerGroupId, bool VatPayer, bool VatOnCollection, bool AnafInactive, string? TradeRegisterNo, string Address, string City,
     string? CountyCode, string CountryCode, string? PostalCode, string? Phone, string? Email, int? IntraGroupCompanyId, bool IsActive,
     byte[]? RowVersion, bool ChangePersonalId = false, string? PersonalId = null, IReadOnlyList<PartnerPropertyValue>? Properties = null,
-    DateTime? AnafCheckedAt = null, byte? OwnerLevel = null, int? OwnerNodeId = null, int? CitySirutaCode = null) : ICommand<SavedEntity>;
+    DateTime? AnafCheckedAt = null, byte? OwnerLevel = null, int? OwnerNodeId = null, int? CitySirutaCode = null,
+    string? DocumentLanguage = null) : ICommand<SavedEntity>;
 
 [Module("Core")]
 [RequiresPermission(CorePermissions.PartnerManage)]
@@ -136,6 +137,8 @@ internal sealed class SavePartnerValidator : AbstractValidator<SavePartner>
         RuleFor(x => x.TradeRegisterNo).MaximumLength(30).WithMessage("Numărul de la registrul comerțului are cel mult 30 de caractere.");
         RuleFor(x => x.CountyCode).NotEmpty().When(x => x.CountryCode == "RO").WithMessage("Județul este obligatoriu pentru România.");
         RuleFor(x => x.RowVersion).NotNull().When(x => x.Id is not null).WithMessage("Lipsește versiunea înregistrării.");
+        RuleFor(x => x.DocumentLanguage).Matches("^[a-z]{2}$").When(x => !string.IsNullOrWhiteSpace(x.DocumentLanguage) && x.DocumentLanguage != "ro")
+            .WithMessage("Limba documentelor e un cod ISO de două litere (en, de, fr …).");
         this.Address(x => x.Address, x => x.City, x => x.CountryCode, x => x.PostalCode, required: true);
         this.ContactDetails(x => x.Phone, x => x.Email);
     }
@@ -179,7 +182,8 @@ internal sealed class SavePartnerHandler(IPartnerStore store, INumberSeriesServi
             request.IsCustomer, request.IsSupplier, request.PartnerGroupId, request.VatPayer, request.VatOnCollection, request.AnafInactive,
             PartnerRules.Clean(request.TradeRegisterNo), request.Address.Trim(), request.City.Trim(), request.CitySirutaCode, PartnerRules.Clean(request.CountyCode),
             request.CountryCode, PartnerRules.Clean(request.PostalCode), PartnerRules.Clean(request.Phone), PartnerRules.Clean(request.Email),
-            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt), owner);
+            request.IntraGroupCompanyId, request.IsActive, request.Properties, request.RowVersion, CheckedAt(request.AnafCheckedAt), owner, SaveLanguage: true,
+            DocumentLanguage: string.IsNullOrWhiteSpace(request.DocumentLanguage) || request.DocumentLanguage.Trim() == "ro" ? null : request.DocumentLanguage.Trim().ToLowerInvariant());
         var saved = await store.SaveAsync(partner, context.UserId, cancellationToken).ConfigureAwait(false);
 
         // Fara date personale in audit (NET-18): numele unei persoane fizice si CNP-ul nu se scriu, doar faptul ca s-a schimbat.
