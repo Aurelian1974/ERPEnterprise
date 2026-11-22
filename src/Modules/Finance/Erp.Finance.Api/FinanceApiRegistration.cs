@@ -156,6 +156,30 @@ public static class FinanceApiRegistration
         finance.MapPost("/bank-statement-lines/{id:long}/unvalidate", (long id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new UnvalidateBankStatementLine(id, body.Reason, body.RowVersion), ct))
             .WithName("UnvalidateBankStatementLine").Produces<BankLineSaved>().Problems();
+        finance.MapGet("/payment-orders", ([AsParameters] GetPaymentOrders query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetPaymentOrders").Produces<IReadOnlyList<PaymentOrderItemDto>>().Problems();
+        finance.MapGet("/payment-orders/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPaymentOrder(id), ct))
+            .WithName("GetPaymentOrder").Produces<PaymentOrderDetailDto>().Problems();
+        finance.MapPost("/payment-orders", (SavePaymentOrder body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePaymentOrder").Saves();
+        finance.MapPut("/payment-orders/{id:int}", (int id, SavePaymentOrder body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePaymentOrder").Saves();
+        finance.MapPost("/payment-orders/{id:int}/delete", (int id, RowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new DeletePaymentOrder(id, body.RowVersion), ct))
+            .WithName("DeletePaymentOrder").Produces<bool>().Problems();
+        finance.MapPost("/payment-orders/{id:int}/validate", (int id, ValidateOrderBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidatePaymentOrder(id, body.RowVersion, body.ConfirmAnafInactive), ct))
+            .WithName("ValidatePaymentOrder").Saves();
+        finance.MapPost("/payment-orders/{id:int}/reverse", (int id, RowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ReversePaymentOrder(id, body.RowVersion), ct))
+            .WithName("ReversePaymentOrder").Saves();
+        finance.MapPost("/payment-orders/approve", (ApprovePaymentOrders body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ApprovePaymentOrders").Produces<IReadOnlyList<PaymentOrderVersion>>().Problems();
+        finance.MapPost("/payment-orders/unapprove", (UnapprovePaymentOrders body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("UnapprovePaymentOrders").Produces<IReadOnlyList<PaymentOrderVersion>>().Problems();
+        finance.MapPost("/bank-statement-lines/{id:long}/payment-order", (long id, CreatePaymentOrderFromStatementLine body, ISender sender,
+                CancellationToken ct) => sender.Send(body with { BankStatementLineId = id }, ct))
+            .WithName("CreatePaymentOrderFromStatementLine").Saves();
         finance.MapGet("/bank-format-profiles", (ISender sender, CancellationToken ct) => sender.Send(new GetBankFormatProfiles(), ct))
             .WithName("GetBankFormatProfiles").Produces<IReadOnlyList<BankFormatProfileDto>>().Problems();
         finance.MapPost("/bank-format-profiles", (SaveBankFormatProfile body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
@@ -193,6 +217,9 @@ public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? Settlemen
 
 /// <summary>O actiune cu motiv (acceptarea golului, desfacerea validarii): motivul si versiunea vazuta.</summary>
 public sealed record AcceptGapBody(string Reason, byte[] RowVersion);
+
+/// <summary>Validarea unui OP: versiunea si confirmarea platii catre un partener inactiv la ANAF.</summary>
+public sealed record ValidateOrderBody(byte[] RowVersion, bool ConfirmAnafInactive = false);
 
 /// <summary>Explicatia unei linii de extras: partile si versiunea liniei.</summary>
 public sealed record ExplainLineBody(IReadOnlyList<BankLinePartInput> Parts, byte[] RowVersion);

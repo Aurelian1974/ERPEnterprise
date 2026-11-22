@@ -77,7 +77,7 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
                 INSERT INTO core.NumberSeries (CompanyId, BranchId, DocumentTypeId, Prefix, [Year], NextNumber, Padding, IsFiscal, IsDefault, FirstNumber,
                     CreatedBy)
                 SELECT @CompanyId, NULL, t.Id, v.Prefix, 2026, 1, 6, v.IsFiscal, 1, 1, 1
-                FROM (VALUES (N'Finance.Receipt', N'CH', 1), (N'Finance.CashIn', N'DI', 0), (N'Finance.Payment', N'DP', 0), (N'Finance.ExpenseReport', N'DC', 0)) AS v (Code, Prefix, IsFiscal)
+                FROM (VALUES (N'Finance.Receipt', N'CH', 1), (N'Finance.CashIn', N'DI', 0), (N'Finance.Payment', N'DP', 0), (N'Finance.ExpenseReport', N'DC', 0), (N'Finance.PaymentOrder', N'OP', 0)) AS v (Code, Prefix, IsFiscal)
                 JOIN core.DocumentType AS t ON t.Code = v.Code;
                 """, new { CompanyId = company });
         }

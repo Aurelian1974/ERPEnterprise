@@ -9,7 +9,9 @@ BEGIN
     -- Explicarea unei linii de extras (02.02, F2 3.4 si 4.4): partile o inlocuiesc pe cea anterioara; datele bancii nu se ating. Fara
     -- parti, linia revine la Nepotrivita. Partile acopera exact suma liniei (51205); tipurile sunt bancare, active, cu sensul partii
     -- (51021) si cu ce cer: partener, angajat, cont pereche al firmei, referinta obligatiei la buget, text la sumele de clarificat,
-    -- documentul de casa validat la depuneri si ridicari, nefolosit de alta linie (51220). O linie validata nu se mai explica (51211).
+    -- documentul de casa validat la depuneri si ridicari, nefolosit de alta linie (51220). O parte care confirma un OP (PaymentOrderId) e o
+    -- iesire pe OP-ul validat al aceluiasi cont, iar liniile legate de OP nu depasesc suma lui (51219; un OP executat in transe se leaga de
+    -- mai multe linii). O linie validata nu se mai explica (51211).
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -65,19 +67,31 @@ BEGIN
         IF EXISTS (SELECT 1 FROM @Parts AS p JOIN fin.BankStatementLinePart AS x ON x.CashDocumentId = p.CashDocumentId
                    WHERE p.CashDocumentId IS NOT NULL AND x.BankStatementLineId <> @BankStatementLineId)
             THROW 51220, N'Documentul de casă este deja potrivit cu altă linie de extras.', 1;
+        IF EXISTS (SELECT 1 FROM @Parts AS p LEFT JOIN fin.PaymentOrder AS o ON o.Id = p.PaymentOrderId
+                   WHERE p.PaymentOrderId IS NOT NULL AND (o.Id IS NULL OR o.CompanyId <> @CompanyId OR o.TreasuryAccountId <> @AccountId OR o.Status <> 2
+                         OR o.ReversalOfId IS NOT NULL OR o.ConfirmationStatus = 3 OR p.Amount >= 0))
+            THROW 51021, N'Ordinul de plată nu este un OP validat al contului extrasului, sau partea nu este o ieșire.', 1;
+        IF EXISTS (SELECT 1 FROM fin.PaymentOrder AS o WITH (UPDLOCK)
+                   JOIN (SELECT PaymentOrderId, -SUM(Amount) AS Linked FROM @Parts WHERE PaymentOrderId IS NOT NULL GROUP BY PaymentOrderId) AS n
+                        ON n.PaymentOrderId = o.Id
+                   OUTER APPLY (SELECT -SUM(x.Amount) AS Other FROM fin.BankStatementLinePart AS x
+                                WHERE x.PaymentOrderId = o.Id AND x.BankStatementLineId <> @BankStatementLineId) AS e
+                   WHERE n.Linked + ISNULL(e.Other, 0) > o.Amount)
+            THROW 51219, N'Ordinul de plată este deja acoperit de alte linii de extras.', 1;
     END;
 
     DELETE FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId;
     INSERT INTO fin.BankStatementLinePart (BankStatementLineId, PartNumber, TreasuryOperationTypeId, Amount, PartnerId, EmployeeId, SettlementRef,
-        CashDocumentId, CounterTreasuryAccountId, BudgetObligationRef, CostCenterId, ProjectId, Note)
-    SELECT @BankStatementLineId, PartNumber, TreasuryOperationTypeId, Amount, PartnerId, EmployeeId, SettlementRef, CashDocumentId,
+        PaymentOrderId, CashDocumentId, CounterTreasuryAccountId, BudgetObligationRef, CostCenterId, ProjectId, Note)
+    SELECT @BankStatementLineId, PartNumber, TreasuryOperationTypeId, Amount, PartnerId, EmployeeId, SettlementRef, PaymentOrderId, CashDocumentId,
         CounterTreasuryAccountId, BudgetObligationRef, CostCenterId, ProjectId, Note
     FROM @Parts;
 
     DECLARE @HasParts bit = CASE WHEN EXISTS (SELECT 1 FROM @Parts) THEN 1 ELSE 0 END;
     DECLARE @Partner int = (SELECT CASE WHEN COUNT(DISTINCT PartnerId) = 1 THEN MAX(PartnerId) END FROM @Parts WHERE PartnerId IS NOT NULL);
     UPDATE fin.BankStatementLine
-    SET MatchStatus = CASE WHEN @HasParts = 1 THEN 3 ELSE 1 END, MatchSource = CASE WHEN @HasParts = 1 THEN 6 END,
+    SET MatchStatus = CASE WHEN @HasParts = 1 THEN 3 ELSE 1 END,
+        MatchSource = CASE WHEN @HasParts = 0 THEN NULL WHEN EXISTS (SELECT 1 FROM @Parts WHERE PaymentOrderId IS NOT NULL) THEN 1 ELSE 6 END,
         PartnerId = COALESCE(@Partner, PartnerId), ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @BankStatementLineId;
 

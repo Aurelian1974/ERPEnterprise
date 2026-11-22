@@ -10,10 +10,17 @@ namespace Erp.Finance.Application.Bank;
 
 /// <summary>O parte a explicatiei unei linii (F2 3.4): suma cu semn (intrare +, iesire −), ce stinge si cu ce pereche.</summary>
 public sealed record BankLinePartInput(int OperationTypeId, string Amount, int? PartnerId, int? EmployeeId, string? SettlementRef, int? CashDocumentId,
-    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note);
+    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note, int? PaymentOrderId = null);
 
 public sealed record BankLinePartRecord(short PartNumber, int OperationTypeId, decimal Amount, int? PartnerId, int? EmployeeId, string? SettlementRef,
-    int? CashDocumentId, int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note);
+    int? CashDocumentId, int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note)
+{
+    /// <summary>OP-ul pe care partea il confirma (F2 3.4); o astfel de parte nu mai publica o plata.</summary>
+    public int? PaymentOrderId { get; init; }
+}
+
+/// <summary>Un OP confirmat la validarea liniilor (F2 4.2 pasul 7): linia de confirmare si data ei.</summary>
+public sealed record PaymentOrderConfirmed(int PaymentOrderId, long BankStatementLineId, decimal Amount, DateOnly BookingDate);
 
 public sealed record BankLineVersion(long Id, byte[] RowVersion);
 
@@ -46,7 +53,8 @@ public interface IBankStatementLineStore
 
     Task<byte[]> ExplainAsync(int companyId, long lineId, IReadOnlyList<BankLinePartRecord> parts, byte[] rowVersion, int userId, CancellationToken ct);
 
-    Task<IReadOnlyList<BankLineSaved>> ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines, int userId, CancellationToken ct);
+    Task<(IReadOnlyList<BankLineSaved> Saved, IReadOnlyList<PaymentOrderConfirmed> Confirmed)> ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines,
+        int userId, CancellationToken ct);
 
     Task<byte[]> UnvalidateAsync(int companyId, long lineId, byte[] rowVersion, int userId, CancellationToken ct);
 }
@@ -117,11 +125,14 @@ internal sealed class ExplainBankStatementLineHandler(IBankStatementLineStore st
         static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         var parts = request.Parts.Select((p, i) => new BankLinePartRecord((short)(i + 1), p.OperationTypeId, Money.ParseOptional(p.Amount) ?? 0, p.PartnerId,
             p.EmployeeId, Clean(p.SettlementRef), p.CashDocumentId, p.CounterTreasuryAccountId, Clean(p.BudgetObligationRef), p.CostCenterId, p.ProjectId,
-            Clean(p.Note))).ToList();
+            Clean(p.Note)) { PaymentOrderId = p.PaymentOrderId }).ToList();
         var version = await store.ExplainAsync(context.CompanyId, request.Id, parts, request.RowVersion, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.BankStatementLine", request.Id, new
         {
-            Parts = parts.Select(p => new { p.OperationTypeId, p.Amount, p.PartnerId, p.EmployeeId, p.SettlementRef, p.CashDocumentId, p.CounterTreasuryAccountId }),
+            Parts = parts.Select(p => new
+            {
+                p.OperationTypeId, p.Amount, p.PartnerId, p.EmployeeId, p.SettlementRef, p.PaymentOrderId, p.CashDocumentId, p.CounterTreasuryAccountId,
+            }),
         });
         return new BankLineSaved(request.Id, version);
     }
@@ -130,7 +141,8 @@ internal sealed class ExplainBankStatementLineHandler(IBankStatementLineStore st
 /// <summary>
 /// Valideaza un grup de linii explicate (F2 4.4; SP-08): perioada fiecarei zile contabile deschisa (CORE_PERIOD_CLOSED), apoi validarea pe
 /// seturi (51201–51205, 51223) si, in aceeasi tranzactie, cate un eveniment pe linie: IncasareInregistrata pentru intrari,
-/// PlataInregistrata pentru iesirile fara ordin de plata (partile care confirma un OP nu republica plata).
+/// PlataInregistrata pentru iesirile fara ordin de plata (partile care confirma un OP nu republica plata), OrdinPlataConfirmat pentru OP-urile
+/// acoperite integral de liniile validate (si in transe).
 /// </summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.BankStatementValidate)]
@@ -164,7 +176,14 @@ internal sealed class ValidateBankStatementLinesHandler(IBankStatementLineStore 
             await CashAccess.EnsureOpenPeriodAsync(periods, context.CompanyId, day, cancellationToken).ConfigureAwait(false);
         }
 
-        var saved = await store.ValidateAsync(context.CompanyId, request.Lines, context.UserId, cancellationToken).ConfigureAwait(false);
+        var (saved, confirmed) = await store.ValidateAsync(context.CompanyId, request.Lines, context.UserId, cancellationToken).ConfigureAwait(false);
+        foreach (var c in confirmed)
+        {
+            await outbox.EnqueueAsync(new Contracts.Bank.OrdinPlataConfirmat(c.PaymentOrderId, c.BankStatementLineId, c.BookingDate, c.Amount)
+            {
+                CompanyId = context.CompanyId,
+            }, cancellationToken).ConfigureAwait(false);
+        }
 
         var policy = await precision.ResolveAsync(context.CompanyId, null, null, cancellationToken).ConfigureAwait(false);
         var rateCache = new Dictionary<(string, DateOnly), decimal>();

@@ -32,6 +32,7 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
         table.Columns.Add("PartnerId", typeof(int));
         table.Columns.Add("EmployeeId", typeof(int));
         table.Columns.Add("SettlementRef", typeof(string));
+        table.Columns.Add("PaymentOrderId", typeof(int));
         table.Columns.Add("CashDocumentId", typeof(int));
         table.Columns.Add("CounterTreasuryAccountId", typeof(int));
         table.Columns.Add("BudgetObligationRef", typeof(string));
@@ -41,7 +42,7 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
         foreach (var p in parts)
         {
             table.Rows.Add(p.PartNumber, p.OperationTypeId, p.Amount, (object?)p.PartnerId ?? DBNull.Value, (object?)p.EmployeeId ?? DBNull.Value,
-                (object?)p.SettlementRef ?? DBNull.Value, (object?)p.CashDocumentId ?? DBNull.Value, (object?)p.CounterTreasuryAccountId ?? DBNull.Value,
+                (object?)p.SettlementRef ?? DBNull.Value, (object?)p.PaymentOrderId ?? DBNull.Value, (object?)p.CashDocumentId ?? DBNull.Value, (object?)p.CounterTreasuryAccountId ?? DBNull.Value,
                 (object?)p.BudgetObligationRef ?? DBNull.Value, (object?)p.CostCenterId ?? DBNull.Value, (object?)p.ProjectId ?? DBNull.Value,
                 (object?)p.Note ?? DBNull.Value);
         }
@@ -53,10 +54,16 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
         }, ct))!;
     }
 
-    public async Task<IReadOnlyList<BankLineSaved>> ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines, int userId, CancellationToken ct) =>
-        (await session.Connection.QueryAsync<(long Id, byte[] RowVersion)>(Command("fin.usp_BankStatementLine_Validate",
-            new { CompanyId = companyId, Lines = Versions(lines), UserId = userId }, ct)).ConfigureAwait(false))
-        .Select(r => new BankLineSaved(r.Id, r.RowVersion)).ToList();
+    public async Task<(IReadOnlyList<BankLineSaved> Saved, IReadOnlyList<PaymentOrderConfirmed> Confirmed)> ValidateAsync(int companyId,
+        IReadOnlyList<BankLineVersion> lines, int userId, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_BankStatementLine_Validate",
+            new { CompanyId = companyId, Lines = Versions(lines), UserId = userId }, ct)).ConfigureAwait(false);
+        var saved = (await grid.ReadAsync<(long Id, byte[] RowVersion)>().ConfigureAwait(false)).Select(r => new BankLineSaved(r.Id, r.RowVersion)).ToList();
+        var confirmed = (await grid.ReadAsync<(int PaymentOrderId, long BankStatementLineId, decimal Amount, DateTime BookingDate)>().ConfigureAwait(false))
+            .Select(c => new PaymentOrderConfirmed(c.PaymentOrderId, c.BankStatementLineId, c.Amount, DateOnly.FromDateTime(c.BookingDate))).ToList();
+        return (saved, confirmed);
+    }
 
     public Task<byte[]> UnvalidateAsync(int companyId, long lineId, byte[] rowVersion, int userId, CancellationToken ct) =>
         session.Connection.ExecuteScalarAsync<byte[]>(Command("fin.usp_BankStatementLine_Unvalidate",

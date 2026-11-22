@@ -516,6 +516,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/payment-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPaymentOrders"];
+        put?: never;
+        post: operations["CreatePaymentOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPaymentOrder"];
+        put: operations["UpdatePaymentOrder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/{id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeletePaymentOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidatePaymentOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReversePaymentOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApprovePaymentOrders"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/payment-orders/unapprove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UnapprovePaymentOrders"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/bank-statement-lines/{id}/payment-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreatePaymentOrderFromStatementLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/bank-format-profiles": {
         parameters: {
             query?: never;
@@ -5978,6 +6106,8 @@ export interface components {
             /** Format: int32 */
             projectId: null | number;
             note: null | string;
+            /** Format: int32 */
+            paymentOrderId?: null | number;
         };
         BankLineSaved: {
             /** Format: int64 */
@@ -5998,6 +6128,181 @@ export interface components {
         };
         ValidateBankStatementLines: {
             lines: components["schemas"]["BankLineVersion"][];
+        };
+        ApprovePaymentOrders: {
+            orders: components["schemas"]["PaymentOrderVersion"][];
+        };
+        CreatePaymentOrderFromStatementLine: {
+            /** Format: int64 */
+            bankStatementLineId: number;
+            /** Format: byte */
+            lineRowVersion: string;
+            purpose: components["schemas"]["PaymentPurpose"];
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            /** Format: int32 */
+            partnerBankAccountId: null | number;
+            beneficiaryFiscalCode: null | string;
+            budgetObligationRef: null | string;
+            lines: components["schemas"]["PaymentOrderLineInput"][];
+            /** @default false */
+            confirmAnafInactive: boolean;
+        };
+        PaymentConfirmationStatus: number;
+        PaymentOrderDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            accountCode: string;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            requestedExecutionDate: string;
+            isUrgent: boolean;
+            origin: components["schemas"]["PaymentOrderOrigin"];
+            purpose: components["schemas"]["PaymentPurpose"];
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            partnerAnafInactive: boolean;
+            /** Format: int32 */
+            employeeId: null | number;
+            /** Format: int32 */
+            partnerBankAccountId: null | number;
+            beneficiaryName: string;
+            beneficiaryIban: string;
+            beneficiaryBic: null | string;
+            beneficiaryFiscalCode: null | string;
+            isFreeIban: boolean;
+            currencyCode: string;
+            amount: string;
+            remittanceInfo: null | string;
+            endToEndId: null | string;
+            budgetObligationRef: null | string;
+            status: components["schemas"]["PaymentOrderStatus"];
+            confirmationStatus: null | components["schemas"]["PaymentConfirmationStatus"];
+            /** Format: int64 */
+            bankStatementLineId: null | number;
+            /** Format: int32 */
+            paymentBatchId: null | number;
+            /** Format: date-time */
+            validatedAt: null | string;
+            validatedByName: null | string;
+            /** Format: date-time */
+            approvedAt: null | string;
+            approvedByName: null | string;
+            /** Format: int32 */
+            reversalOfId: null | number;
+            /** Format: int32 */
+            reversedById: null | number;
+            lines: components["schemas"]["PaymentOrderLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        PaymentOrderItemDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            accountCode: string;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            requestedExecutionDate: string;
+            origin: components["schemas"]["PaymentOrderOrigin"];
+            purpose: components["schemas"]["PaymentPurpose"];
+            /** Format: int32 */
+            partnerId: null | number;
+            beneficiaryName: string;
+            beneficiaryIban: string;
+            currencyCode: string;
+            amount: string;
+            remittanceInfo: null | string;
+            status: components["schemas"]["PaymentOrderStatus"];
+            confirmationStatus: null | components["schemas"]["PaymentConfirmationStatus"];
+            isApproved: boolean;
+            /** Format: int32 */
+            paymentBatchId: null | number;
+            /** Format: int32 */
+            reversalOfId: null | number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        PaymentOrderLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int16 */
+            lineNumber: number;
+            /** Format: int32 */
+            operationTypeId: number;
+            operationTypeCode: string;
+            operationTypeName: string;
+            settlementRef: null | string;
+            amount: string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+        };
+        PaymentOrderLineInput: {
+            /** Format: int32 */
+            operationTypeId: number;
+            amount: string;
+            settlementRef: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+        };
+        PaymentOrderOrigin: number;
+        PaymentOrderStatus: number;
+        PaymentOrderVersion: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        PaymentPurpose: number;
+        SavePaymentOrder: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            requestedExecutionDate: string;
+            isUrgent: boolean;
+            purpose: components["schemas"]["PaymentPurpose"];
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            /** Format: int32 */
+            partnerBankAccountId: null | number;
+            beneficiaryName: null | string;
+            beneficiaryIban: null | string;
+            beneficiaryBic: null | string;
+            beneficiaryFiscalCode: null | string;
+            remittanceInfo: null | string;
+            budgetObligationRef: null | string;
+            lines: components["schemas"]["PaymentOrderLineInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        UnapprovePaymentOrders: {
+            orders: components["schemas"]["PaymentOrderVersion"][];
+        };
+        ValidateOrderBody: {
+            /** Format: byte */
+            rowVersion: string;
+            /** @default false */
+            confirmAnafInactive: boolean;
         };
     };
     responses: never;
@@ -8309,6 +8614,616 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BankLineSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPaymentOrders: {
+        parameters: {
+            query?: {
+                TreasuryAccountId?: number;
+                Status?: components["schemas"]["PaymentOrderStatus"];
+                Unconfirmed?: boolean;
+                From?: string;
+                To?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreatePaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePaymentOrder"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePaymentOrder"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeletePaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidatePaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateOrderBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReversePaymentOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ApprovePaymentOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovePaymentOrders"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderVersion"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnapprovePaymentOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnapprovePaymentOrders"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderVersion"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreatePaymentOrderFromStatementLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePaymentOrderFromStatementLine"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
                 };
             };
             /** @description Bad Request */

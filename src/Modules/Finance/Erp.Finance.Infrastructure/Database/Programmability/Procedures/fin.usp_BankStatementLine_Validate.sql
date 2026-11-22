@@ -49,5 +49,22 @@ BEGIN
     FROM fin.BankStatement AS s
     WHERE s.Id IN (SELECT BankStatementId FROM @Locked);
 
+    -- Confirmarea OP-urilor: Confirmat cand liniile validate legate de OP acopera suma lui (si in transe); linia de confirmare e ultima.
+    DECLARE @Confirmed TABLE (PaymentOrderId int PRIMARY KEY, BankStatementLineId bigint, Amount decimal(19,2));
+    UPDATE po
+    SET ConfirmationStatus = 2, BankStatementLineId = c.LastLineId, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    OUTPUT inserted.Id, inserted.BankStatementLineId, inserted.Amount INTO @Confirmed (PaymentOrderId, BankStatementLineId, Amount)
+    FROM fin.PaymentOrder AS po
+    JOIN (SELECT p.PaymentOrderId, -SUM(p.Amount) AS ConfirmedAmount, MAX(p.BankStatementLineId) AS LastLineId
+          FROM fin.BankStatementLinePart AS p
+          JOIN fin.BankStatementLine AS l ON l.Id = p.BankStatementLineId AND l.MatchStatus = 4
+          WHERE p.PaymentOrderId IN (SELECT x.PaymentOrderId FROM fin.BankStatementLinePart AS x JOIN @Locked AS k ON k.Id = x.BankStatementLineId
+                                     WHERE x.PaymentOrderId IS NOT NULL)
+            AND p.Amount < 0
+          GROUP BY p.PaymentOrderId) AS c ON c.PaymentOrderId = po.Id
+    WHERE po.Status = 2 AND po.ConfirmationStatus = 1 AND c.ConfirmedAmount = po.Amount;
+
     SELECT l.Id, l.RowVersion FROM fin.BankStatementLine AS l JOIN @Locked AS k ON k.Id = l.Id;
+    SELECT c.PaymentOrderId, c.BankStatementLineId, c.Amount, l.BookingDate
+    FROM @Confirmed AS c JOIN fin.BankStatementLine AS l ON l.Id = c.BankStatementLineId;
 END;

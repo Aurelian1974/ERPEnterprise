@@ -29,6 +29,9 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
         services.AddScoped<IBankStatementLineStore, BankStatementLineStore>();
+        services.AddScoped<IPaymentOrderStore, PaymentOrderStore>();
+        services.AddScoped<IFinanceSettings, FinanceSettings>();
+        services.AddScoped<PaymentOrderWorkflow>();
         services.AddSingleton<IStatementParser, Camt053Parser>();
         services.AddSingleton<IStatementParser, Mt940Parser>();
         services.AddSingleton<IStatementParser, CsvStatementParser>();
@@ -37,7 +40,7 @@ public static class FinanceInfrastructureRegistration
 }
 
 /// <summary>
-/// Codurile THROW ale Finantelor (02.02, F1 7): plaja 51000–51999, impartita pe sub-parti (F1 51000–51199, F2 51200–51399; 51224 e adaugat la implementare). 51010 e retras
+/// Codurile THROW ale Finantelor (02.02, F1 7): plaja 51000–51999, impartita pe sub-parti (F1 51000–51199, F2 51200–51399; 51224–51225 adaugate la implementare). 51010 e retras
 /// (anularea chitantei nu mai exista, decizia din 15.11.2026) si nu se refoloseste.
 /// </summary>
 public sealed class FinanceSqlErrors : ISqlErrorMap
@@ -92,5 +95,6 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51222] = (ErpErrorKind.Conflict, "FIN_PAYMENT_BATCH_NOT_READY"),
         [51223] = (ErpErrorKind.Validation, "FIN_BANK_PARTNER_PAYMENT_WITHOUT_OP"),
         [51224] = (ErpErrorKind.NotFound, "FIN_BANK_STATEMENT_NOT_FOUND"),
+        [51225] = (ErpErrorKind.NotFound, "FIN_PAYMENT_ORDER_NOT_FOUND"),
     };
 }

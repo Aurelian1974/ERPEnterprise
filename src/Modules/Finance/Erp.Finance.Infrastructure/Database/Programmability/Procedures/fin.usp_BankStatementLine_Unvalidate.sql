@@ -26,6 +26,11 @@ BEGIN
     UPDATE fin.BankStatementLine
     SET MatchStatus = 3, ValidatedAt = NULL, ValidatedBy = NULL, ReversedAt = SYSUTCDATETIME(), ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @BankStatementLineId;
+    -- Un OP confirmat de linie redevine Neconfirmat (F2 3.6: Confirmat → Neconfirmat doar prin desfacerea potrivirii pe extras).
+    UPDATE fin.PaymentOrder
+    SET ConfirmationStatus = 1, BankStatementLineId = NULL, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    WHERE ConfirmationStatus = 2
+      AND Id IN (SELECT PaymentOrderId FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId AND PaymentOrderId IS NOT NULL);
     UPDATE fin.BankStatement SET Status = 2, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @StatementId AND Status = 3;
 
     SELECT RowVersion FROM fin.BankStatementLine WHERE Id = @BankStatementLineId;
