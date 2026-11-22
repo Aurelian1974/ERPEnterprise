@@ -17,6 +17,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<ITreasuryAccountQueries, TreasuryAccountQueries>();
         services.AddScoped<ICashDocumentStore, CashDocumentStore>();
         services.AddScoped<ICashLimitLog, CashLimitLog>();
+        services.AddScoped<ICashRegisterStore, CashRegisterStore>();
+        services.AddTransient<CashDayAutoClose>();
         return services;
     }
 }

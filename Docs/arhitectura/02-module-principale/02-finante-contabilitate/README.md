@@ -31,6 +31,7 @@ Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, 
 | F1.2 | Ecranul Conturi de trezorerie (macheta f1-01): lista grupată pe tip cu filtre, fișa cu datele generale (lucru zilnic, plafon, serii) și tab-ul Casieri; meniul Finanțe | Implementat (soldurile din listă și tab-ul Istoric vin cu documentele de casă) |
 | F1.3 | Documentele de casă (backend): ciornă, validare cu plafoane, serie și registrul zilei, storno în ziua curentă, sold inițial, evenimentele în outbox; API `/api/finance/cash-desk` și `/api/finance/cash-documents` | Implementat |
 | F1.3 UI | Ecranele Casa (macheta f1-02: casa și ziua, soldurile, Încasare F2 / Plată F3, documentele zilei cu filtre) și Document de casă (f1-03: felul, plătitorul, liniile, ciornă / validare F9 cu confirmarea avertizărilor / storno) | Implementat (facturile deschise vin cu F3; panoul de plafoane și închiderea zilei cu F1.4) |
+| F1.4 | Închiderea zilei de casă (la cerere și jobul Worker de la 00:05, ora României), redeschiderea cu motiv a zilei și a celor ulterioare, paginile registrului, avertizarea de sold la închidere, `RegistruCasaInchis`; API `/api/finance/cash-register`, `/api/finance/cash-days/close`, `/reopen` | Implementat (PDF-ul semnat al registrului și notificările vin cu atașamentele și notificările Nucleului) |
 
 ## Machete de ecran (`ecrane/`)
 

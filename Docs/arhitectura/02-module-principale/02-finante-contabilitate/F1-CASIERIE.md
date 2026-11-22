@@ -219,6 +219,8 @@ Reguli:
 4. Se publică `RegistruCasaInchis`.
 5. Redeschiderea cere `Fin.Cash.ReopenDay`, un motiv scris și condiția ca perioada contabilă să nu fie închisă; se redeschid automat și zilele ulterioare închise, în ordine inversă. Toate se auditează.
 
+Implementare (22.11.2026): o zi viitoare nu se închide (`FIN_CASH_DAY_IN_FUTURE`, 409, verificat în C#); paginile se alocă câte una la 25 de documente, continuu pe casă și an, și se păstrează la redeschidere; avertizarea de sold compară soldul final cu cel mai mic dintre plafonul legal `SoldCasa` și plafonul propriu al casei. Jobul de la miezul nopții (`fin-cash-day-autoclose`, în `Erp.Worker`, care compune modulele ca `Erp.Host`) închide zilele deschise până ieri, în ordine, fiecare în tranzacția ei, și se oprește pe casă la prima zi care nu îndeplinește condițiile; motivul se jurnalizează. Notificarea casierului și a contabilului și PDF-ul atașat zilei vin odată cu notificările (02.01, 4.7) și atașamentele Nucleului.
+
 Moduri de închidere (decizia lui Aurelian, 15.11.2026), setate pe fiecare casă în `TreasuryAccount.CloseMode`:
 
 - **La cerere**: casierul închide ziua din ecranul Casa, oricând.

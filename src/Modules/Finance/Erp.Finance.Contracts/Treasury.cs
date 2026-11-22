@@ -48,3 +48,7 @@ public sealed record PlataInregistrata(int TreasuryAccountId, TreasuryAccountKin
 
 /// <summary>Validarea unei stornari de document de trezorerie (F1 5.1). Consumatori: F3, partea contabila.</summary>
 public sealed record DocumentTrezorerieStornat(int OriginalDocumentId, int ReversalDocumentId, DateOnly DocumentDate) : IntegrationEvent;
+
+/// <summary>Inchiderea unei zile de casa (F1 5.1). Consumatori: Raportare, partea contabila.</summary>
+public sealed record RegistruCasaInchis(int TreasuryAccountId, DateOnly Day, decimal OpeningBalance, decimal TotalIn, decimal TotalOut,
+    decimal ClosingBalance) : IntegrationEvent;

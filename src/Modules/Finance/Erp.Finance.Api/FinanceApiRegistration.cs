@@ -23,6 +23,7 @@ public static class FinanceApiRegistration
         var finance = endpoints.MapGroup("/api/finance").WithTags("Finance");
         MapTreasuryAccounts(finance);
         MapCash(finance);
+        MapCashRegister(finance);
         return endpoints;
     }
 
@@ -63,6 +64,17 @@ public static class FinanceApiRegistration
         finance.MapPost("/cash-documents/{id:int}/reverse", (int id, RowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new ReverseCashDocument(id, body.RowVersion), ct))
             .WithName("ReverseCashDocument").Produces<CashValidatedDto>().Problems();
+    }
+
+    // Trezorerie › Registrul de casa: inchiderea si redeschiderea zilei (02.02, F1 3.4 si 4.2; macheta f1-04).
+    private static void MapCashRegister(RouteGroupBuilder finance)
+    {
+        finance.MapGet("/cash-register", ([AsParameters] GetCashRegister query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetCashRegister").Produces<CashRegisterDto>().Problems();
+        finance.MapPost("/cash-days/close", (CloseCashDay body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CloseCashDay").Produces<CashDayClosedDto>().Problems();
+        finance.MapPost("/cash-days/reopen", (ReopenCashDay body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ReopenCashDay").Produces<IReadOnlyList<DateOnly>>().Problems();
     }
 
     private static RouteHandlerBuilder Problems(this RouteHandlerBuilder builder) => builder

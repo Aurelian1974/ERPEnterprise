@@ -46,6 +46,9 @@ var storage = new SqlServerStorage(() => new SqlConnection(connectionString), ne
 builder.Services.AddSingleton<JobStorage>(storage);
 builder.Services.AddSingleton<Func<SqlConnection>>(() => new SqlConnection(connectionString));
 builder.Services.AddTransient<UserAccessExpirationJob>();
+// Finante (02.02, F1 4.2): inchiderea automata a zilelor de casa, cu aceeasi conexiune.
+builder.Services.AddSingleton(new Erp.Finance.Infrastructure.Treasury.FinanceConnection(connectionString));
+builder.Services.AddTransient<Erp.Finance.Infrastructure.Treasury.CashDayAutoClose>();
 builder.Services.AddTransient<CompanyVersionJob>();
 // Cursurile BNR (02.01, 4.3): aceleasi adrese ca Erp.Host (Bnr:DailyUrl), clientul HTTP partajat.
 builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
@@ -77,6 +80,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
             new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         // 02.01, 4.3: cursurile BNR, in zilele lucratoare dupa ora publicarii (ora Romaniei).
         jobs.AddOrUpdate<BnrRatesJob>(BnrRatesJob.Id, job => job.RunAsync(CancellationToken.None), BnrRatesJob.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, F1 4.2: inchiderea automata a zilelor de casa, la 00:05 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Treasury.CashDayAutoClose>(Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions
