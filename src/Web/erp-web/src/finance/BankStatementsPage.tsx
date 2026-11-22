@@ -38,7 +38,7 @@ export function BankStatementsPage() {
           <Link to="/finante/banca/extras-de-cont" className="btn ghost">{t('menu.bankReconcile')}</Link>
         </div>
       </div>
-      <div className="split cash-document">
+      <div className="split cash-document bank-list">
         <section className="card" aria-label={t('bank.statements.title')}>
           <div className="chips-row" role="group" aria-label={t('bank.account')}>
             <button type="button" className={account === undefined ? 'chip on' : 'chip'} aria-pressed={account === undefined}
@@ -71,7 +71,7 @@ export function BankStatementsPage() {
             </table>
           )}
           {gaps.map((g) => (
-            <div key={g.id} className="banner bad" role="alert">{t('bank.gapBanner', { account: g.accountCode, number: g.statementNo ?? String(g.id) })}</div>
+            <div key={g.id} className="banner error" role="alert">{t('bank.gapBanner', { account: g.accountCode, number: g.statementNo ?? String(g.id) })}</div>
           ))}
         </section>
         <aside className="card cash-side">
@@ -158,7 +158,7 @@ function ImportPanel({ accounts, onImported }: { readonly accounts: readonly { i
         <span>⇧</span>
         <strong>{t('bank.import.drop')}</strong>
         <span className="muted small">{t('bank.import.formats')}</span>
-        <input ref={input} type="file" accept=".xml,.sta,.txt,.940,.csv" className="visually-hidden" disabled={busy}
+        <input ref={input} type="file" accept=".xml,.sta,.txt,.940,.csv" className="sr-only" disabled={busy}
           aria-label={t('bank.import.file')} onChange={(e) => void upload(e.target.files?.[0])} />
       </label>
       <label>{t('bank.account')}

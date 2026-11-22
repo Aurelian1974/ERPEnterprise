@@ -119,7 +119,7 @@ export function BankReconcilePage() {
       {bankAccounts.length === 0 && accounts.data !== undefined ? <p className="muted">{t('bank.noAccounts')}</p> : (
         <>
           <section className="card cash-summary bank-summary" aria-label={t('bank.reconcile.title')}>
-            <label>{t('bank.account')}
+            <label className="cash-pick">{t('bank.account')}
               <select className="cell-input" value={account ?? ''} onChange={(e) => { setParams({ cont: e.target.value }); setSelected(undefined); setChecked(new Set()); }}>
                 {bankAccounts.map((a) => <option key={a.id} value={a.id}>{`${a.code} · ${a.name}`}</option>)}
               </select>
@@ -128,7 +128,7 @@ export function BankReconcilePage() {
           </section>
           {screen.isError && <ErrorBanner message={screen.error.message} />}
           {data !== undefined && (
-            <div className="split cash-document">
+            <div className="split cash-document bank-split">
               <section className="card" aria-label={t('bank.openLines')}>
                 <div className="chips-row" role="group" aria-label={t('bank.filter.label')}>
                   {lineFilters.map((f) => (
@@ -140,7 +140,7 @@ export function BankReconcilePage() {
                   <table className="partner-list cash-list" aria-busy={screen.isFetching}>
                     <thead>
                       <tr>
-                        <th scope="col"><span className="visually-hidden">{t('bank.select')}</span></th>
+                        <th scope="col"><span className="sr-only">{t('bank.select')}</span></th>
                         <th scope="col">{t('bank.col.date')}</th>
                         <th scope="col">{t('bank.col.counterparty')}</th>
                         <th scope="col" className="num">{t('bank.col.amount')}</th>
@@ -209,11 +209,11 @@ function toggle(set: ReadonlySet<number>, id: number): ReadonlySet<number> {
 function Summary({ data }: { readonly data: BankReconciliation }) {
   return (
     <>
-      <div><span className="label">{t('bank.statement')}</span><strong>{data.statementNo == null ? '—'
+      <div className="cash-stat"><span className="label">{t('bank.statement')}</span><strong>{data.statementNo == null ? '—'
         : `nr. ${data.statementNo} · ${data.statementDate == null ? '' : isoToRo(data.statementDate)}`}</strong></div>
-      <div><span className="label">{t('bank.statementBalance')}</span><strong>{formatAmount(data.statementBalance)}</strong></div>
-      <div><span className="label">{t('bank.unconfirmed')}</span><strong className="neg">{formatAmount(data.unconfirmedAmount)}</strong></div>
-      <div className="highlight"><span className="label">{t('bank.bookBalance')}</span><strong>{formatAmount(data.bookBalance)}</strong></div>
+      <div className="cash-stat"><span className="label">{t('bank.statementBalance')}</span><strong>{formatAmount(data.statementBalance)}</strong></div>
+      <div className="cash-stat out"><span className="label">{t('bank.unconfirmed')}</span><strong>{formatAmount(data.unconfirmedAmount)}</strong></div>
+      <div className="cash-stat current"><span className="label">{t('bank.bookBalance')}</span><strong>{formatAmount(data.bookBalance)}</strong></div>
       <div className="muted small">{t('bank.openLineCount', { count: data.openLineCount })}</div>
     </>
   );
@@ -299,7 +299,7 @@ function LineEditor({ line, data, canReconcile, onChanged }: { readonly line: Ba
             <th scope="col">{t('bank.col.type')}</th>
             <th scope="col">{t('bank.col.detail')}</th>
             <th scope="col" className="num">{t('bank.col.amount')}</th>
-            <th scope="col"><span className="visually-hidden">{t('bank.removePart')}</span></th>
+            <th scope="col"><span className="sr-only">{t('bank.removePart')}</span></th>
           </tr>
         </thead>
         <tbody>
