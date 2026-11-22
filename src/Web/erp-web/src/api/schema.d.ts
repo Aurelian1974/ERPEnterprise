@@ -36,6 +36,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/cash-desk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashDesk"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashDocument"];
+        put: operations["UpdateCashDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateCashDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-documents/{id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeleteCashDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-documents/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateCashDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-documents/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReverseCashDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/antiforgery": {
         parameters: {
             query?: never;
@@ -4639,6 +4735,200 @@ export interface components {
             /** Format: int32 */
             branchId: null | number;
         };
+        CashAccountOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            currencyCode: string;
+            canValidate: boolean;
+        };
+        CashDayDocumentDto: {
+            /** Format: int32 */
+            id: number;
+            kind: components["schemas"]["CashDocumentKind"];
+            number: null | string;
+            status: components["schemas"]["CashDocumentStatus"];
+            personName: null | string;
+            operationName: null | string;
+            totalAmount: string;
+            description: null | string;
+            /** Format: int32 */
+            reversalOfId: null | number;
+            /** Format: int32 */
+            reversedById: null | number;
+            /** Format: date-time */
+            validatedAt: null | string;
+        };
+        CashDaySummaryDto: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            code: string;
+            name: string;
+            currencyCode: string;
+            /** Format: date */
+            day: string;
+            openingBalance: string;
+            totalIn: string;
+            totalOut: string;
+            closingBalance: string;
+            isClosed: boolean;
+            /** Format: date */
+            firstOpenDay: null | string;
+            /** Format: date */
+            lastClosedDay: null | string;
+            maxClosingBalance: null | string;
+        };
+        CashDeskDto: {
+            lookups: components["schemas"]["CashDeskLookupsDto"];
+            day: null | components["schemas"]["CashDaySummaryDto"];
+            documents: components["schemas"]["CashDayDocumentDto"][];
+        };
+        CashDeskLookupsDto: {
+            accounts: components["schemas"]["CashAccountOptionDto"][];
+            operationTypes: components["schemas"]["CashOperationTypeDto"][];
+            counterAccounts: components["schemas"]["TreasuryOptionDto"][];
+            employees: components["schemas"]["CashEmployeeOptionDto"][];
+        };
+        CashDirection: number;
+        CashDocumentDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            treasuryAccountCode: string;
+            treasuryAccountName: string;
+            kind: components["schemas"]["CashDocumentKind"];
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            status: components["schemas"]["CashDocumentStatus"];
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            /** Format: int32 */
+            employeeId: null | number;
+            employeeName: null | string;
+            personName: null | string;
+            hasPersonId: boolean;
+            currencyCode: string;
+            exchangeRate: string;
+            /** Format: date */
+            rateDate: string;
+            totalAmount: string;
+            totalAmountRon: string;
+            description: null | string;
+            /** Format: int32 */
+            reversalOfId: null | number;
+            reversalOfNumber: null | string;
+            /** Format: int32 */
+            reversedById: null | number;
+            reversedByNumber: null | string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            validatedByName: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            modifiedAt: null | string;
+            modifiedByName: null | string;
+            lines: components["schemas"]["CashDocumentLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        CashDocumentKind: number;
+        CashDocumentLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int16 */
+            lineNumber: number;
+            /** Format: int32 */
+            operationTypeId: number;
+            operationTypeCode: string;
+            operationTypeName: string;
+            direction: components["schemas"]["CashDirection"];
+            amount: string;
+            amountRon: string;
+            /** Format: int32 */
+            counterTreasuryAccountId: null | number;
+            counterTreasuryAccountCode: null | string;
+            settlementRef: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            note: null | string;
+        };
+        CashDocumentStatus: number;
+        CashEmployeeOptionDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            employeeNo: string;
+        };
+        CashLineInput: {
+            /** Format: int32 */
+            operationTypeId: number;
+            amount: string;
+            /** Format: int32 */
+            counterTreasuryAccountId: null | number;
+            settlementRef: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            note: null | string;
+        };
+        CashOperationTypeDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            direction: components["schemas"]["CashDirection"];
+            requiresPartner: boolean;
+            requiresEmployee: boolean;
+            requiresCounterAccount: boolean;
+            cashLimitCategory: null | string;
+        };
+        CashValidatedDto: {
+            /** Format: int32 */
+            cashDocumentId: number;
+            number: null | string;
+            dayClosingBalance: string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        RowVersionBody: {
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveCashDocument: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            kind: components["schemas"]["CashDocumentKind"];
+            /** Format: date */
+            documentDate: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            personName: null | string;
+            personIdDocument: null | string;
+            description: null | string;
+            openingAmount: null | string;
+            lines: components["schemas"]["CashLineInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
+            /** Format: date */
+            accountingDate?: string;
+        };
+        ValidateCashBody: {
+            /** Format: byte */
+            rowVersion: string;
+            confirmWarnings: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -4802,6 +5092,386 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashDesk: {
+        parameters: {
+            query?: {
+                TreasuryAccountId?: number;
+                Day?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashDeskDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashDocumentDetailDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCashDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCashDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateCashBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashValidatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseCashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashValidatedDto"];
                 };
             };
             /** @description Bad Request */

@@ -9,6 +9,8 @@ import { ItemsPage } from '../items/ItemsPage';
 import { UsersPage } from '../users/UsersPage';
 import { EmployeesPage } from '../employees/EmployeesPage';
 import { TreasuryAccountsPage } from '../finance/TreasuryAccountsPage';
+import { CashDeskPage } from '../finance/CashDeskPage';
+import { CashDocumentPage } from '../finance/CashDocumentPage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -30,6 +32,8 @@ export const routes = [
       { path: 'admin/config/import', element: <ConfigPage /> },
       { path: 'nomenclatoare/parteneri', element: <PartnersPage /> },
       { path: 'finante/trezorerie/conturi', element: <TreasuryAccountsPage /> },
+      { path: 'finante/trezorerie/casa', element: <CashDeskPage /> },
+      { path: 'finante/trezorerie/casa/document', element: <CashDocumentPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

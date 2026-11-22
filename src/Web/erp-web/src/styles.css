@@ -2414,3 +2414,159 @@ table.treasury-list tr.group-row th {
 .list-foot {
   padding-top: 8px;
 }
+
+/* ---------- Finanțe › Casa și documentul de casă (machetele f1-02, f1-03) ---------- */
+
+.card.cash-summary {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.cash-pick {
+  display: grid;
+  gap: 4px;
+  padding-right: 24px;
+  border-right: 1px solid var(--line);
+}
+
+.cash-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.cash-stat .label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cash-stat strong {
+  font-size: 22px;
+}
+
+.cash-stat.in strong {
+  color: var(--ok);
+}
+
+.cash-stat.out strong {
+  color: var(--error);
+}
+
+.cash-stat.current {
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--info-bg);
+}
+
+.cash-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cash-action {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cash-action span {
+  display: grid;
+}
+
+.cash-action .ic {
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cash-action.in .ic {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.cash-action.out .ic {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.cash-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cash-action:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+table.cash-list td.num,
+table.cash-list th.num,
+table.cash-lines th.num {
+  text-align: right;
+}
+
+table.cash-list td.amount-in {
+  color: var(--ok);
+}
+
+table.cash-list td.amount-out {
+  color: var(--error);
+}
+
+.split.cash-document {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.cash-side {
+  display: grid;
+  gap: 8px;
+}
+
+.cash-total {
+  font-size: 32px;
+}
+
+.field.compact > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 1100px) {
+  .split.cash-document,
+  .cash-actions {
+    grid-template-columns: 1fr;
+  }
+}

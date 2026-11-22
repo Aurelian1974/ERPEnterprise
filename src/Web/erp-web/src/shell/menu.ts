@@ -54,6 +54,7 @@ export const menuGroups: readonly MenuGroup[] = [
         id: 'treasury-accounts', label: 'menu.treasuryAccounts', path: '/finante/trezorerie/conturi', icon: '', module: 'Finance',
         permission: 'Fin.TreasuryAccount.View',
       },
+      { id: 'cash-desk', label: 'menu.cashDesk', path: '/finante/trezorerie/casa', icon: '', module: 'Finance', permission: 'Fin.Cash.View' },
     ],
   },
   {
