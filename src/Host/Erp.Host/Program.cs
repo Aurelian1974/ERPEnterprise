@@ -61,7 +61,8 @@ builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
     new Uri(builder.Configuration["Bnr:TenDaysUrl"] ?? Erp.Bnr.BnrOptions.Default.TenDaysUrl.ToString())));
 builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(development));
 // Finante si contabilitate (02.02): store-urile modulului si codurile lui de eroare SQL.
-builder.Services.AddFinanceInfrastructure();
+builder.Services.AddFinanceInfrastructure(connectionString);
+builder.Services.AddFinanceApi();
 builder.Services.AddErpApi();
 
 // Autentificarea (08, sectiunea 8): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile

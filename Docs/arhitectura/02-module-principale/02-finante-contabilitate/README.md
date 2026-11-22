@@ -29,6 +29,7 @@ Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, 
 | --- | --- | --- |
 | F1.1 | Proiectele `Erp.Finance.*` în gazdă; conturile de trezorerie (`fin.TreasuryAccount`, casierii, tipurile de operațiuni livrate), permisiunile și rolurile F1; API `/api/finance/treasury-accounts` | Implementat |
 | F1.2 | Ecranul Conturi de trezorerie (macheta f1-01): lista grupată pe tip cu filtre, fișa cu datele generale (lucru zilnic, plafon, serii) și tab-ul Casieri; meniul Finanțe | Implementat (soldurile din listă și tab-ul Istoric vin cu documentele de casă) |
+| F1.3 | Documentele de casă (backend): ciornă, validare cu plafoane, serie și registrul zilei, storno în ziua curentă, sold inițial, evenimentele în outbox; API `/api/finance/cash-desk` și `/api/finance/cash-documents` | Implementat (ecranele Casa și Document de casă în pasul următor) |
 
 ## Machete de ecran (`ecrane/`)
 

@@ -28,6 +28,8 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'CASIER',              N'Fin.Cash.Create'),
         (N'CASIER',              N'Fin.Cash.Validate'),
         (N'CASIER',              N'Fin.Cash.CloseDay'),
+        -- Casierul alege partenerul documentului din lista Nucleului (doar consultare).
+        (N'CASIER',              N'Core.Partner.View'),
         (N'CONTABIL_TREZORERIE', N'Fin.TreasuryAccount.View'),
         (N'CONTABIL_TREZORERIE', N'Fin.Cash.View'),
         (N'CONTABIL_TREZORERIE', N'Fin.Cash.ViewAll'),

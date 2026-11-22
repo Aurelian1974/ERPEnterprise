@@ -8,7 +8,7 @@ BEGIN
 
     SELECT a.Id, a.CompanyId, a.Kind, a.Code, a.Name, a.BranchId, a.CurrencyCode, a.CompanyBankAccountId, a.GlAccountCode, a.ResponsibleUserId,
            a.ReceiptSeriesId, a.CashInSeriesId, a.CashOutSeriesId, a.MaxClosingBalance, a.CloseMode, a.OpeningDate, a.IsActive,
-           CAST(0 AS bit) AS HasDocuments, a.CreatedAt, a.ModifiedAt, m.DisplayName AS ModifiedByName, a.RowVersion
+           CAST(CASE WHEN EXISTS (SELECT 1 FROM fin.CashDocument AS d WHERE d.TreasuryAccountId = a.Id) THEN 1 ELSE 0 END AS bit) AS HasDocuments, a.CreatedAt, a.ModifiedAt, m.DisplayName AS ModifiedByName, a.RowVersion
     FROM fin.TreasuryAccount AS a
     LEFT JOIN core.[User] AS m ON m.Id = ISNULL(a.ModifiedBy, a.CreatedBy)
     WHERE a.Id = @Id AND a.CompanyId = @CompanyId;

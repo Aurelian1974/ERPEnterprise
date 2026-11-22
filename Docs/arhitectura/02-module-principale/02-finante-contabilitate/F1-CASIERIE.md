@@ -532,6 +532,8 @@ BEGIN
 END;
 ```
 
+Implementare (22.11.2026), pe lângă schema de mai sus: linia are `LineNumber` (`LINENO` e cuvânt rezervat în T-SQL); documentul are `ReversedById` (legătura inversă a stornării, cu index unic pe `ReversalOfId`) și `ConfirmedWarnings`; `fin.CashLimitRule` are `CompanyId` (gol = plafonul legal livrat, altfel plafonul propriu al firmei; se verifică amândouă). Validarea refuză și un document datat într-o zi anterioară unei zile închise a casei (51004), ca soldul de început al zilei închise să nu se schimbe, și un document datat înaintea soldului inițial. Refuzurile de plafon se scriu în `fin.CashLimitCheck` pe o conexiune proprie, în afara tranzacției care se anulează; avertizările confirmate, în tranzacția validării. Validarea cere atribuirea cu `CanValidate` și utilizatorilor cu `Fin.Cash.ViewAll`. Actul de identitate al persoanei fără fișă se criptează cu Data Protection-ul instalării (scopul `Erp.Finance.CashDocument.PersonId.v1`). `ICashDocumentWriter` (POS) vine odată cu modulul POS. Plafoanele legale livrate au `ValidFrom` 01.01.2024; data și forma în vigoare a Legii 70/2015 **rămân de verificat pe legislatie.just.ro înainte de livrare** (căutarea din 22.11.2026 a găsit doar modificările OUG 98/2023 și OUG 115/2023).
+
 `fin.CashRegisterDay.ClosingBalance` e coloană calculată persistată `AS (OpeningBalance + TotalIn - TotalOut) PERSISTED`, ca să nu existe două surse pentru sold. Documentul de stornare are sume negative, deci intră pe aceeași formulă.
 
 Proceduri stocate principale:

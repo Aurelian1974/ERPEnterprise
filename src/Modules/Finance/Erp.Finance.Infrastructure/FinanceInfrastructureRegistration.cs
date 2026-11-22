@@ -9,11 +9,14 @@ namespace Erp.Finance.Infrastructure;
 public static class FinanceInfrastructureRegistration
 {
     /// <summary>Accesul la date al Finantelor si codurile de eroare SQL ale modulului (51000–51999). Conexiunea si tranzactia sunt ale Nucleului.</summary>
-    public static IServiceCollection AddFinanceInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddFinanceInfrastructure(this IServiceCollection services, string connectionString)
     {
+        services.AddSingleton(new FinanceConnection(connectionString));
         services.AddSingleton<ISqlErrorMap, FinanceSqlErrors>();
         services.AddScoped<ITreasuryAccountStore, TreasuryAccountStore>();
         services.AddScoped<ITreasuryAccountQueries, TreasuryAccountQueries>();
+        services.AddScoped<ICashDocumentStore, CashDocumentStore>();
+        services.AddScoped<ICashLimitLog, CashLimitLog>();
         return services;
     }
 }

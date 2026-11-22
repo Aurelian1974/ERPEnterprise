@@ -10,6 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Erp.Testing.Sql" />
   </ItemGroup>
@@ -17,6 +21,7 @@
   <!-- Pipeline-ul comun si infrastructura Nucleului (conexiune, tranzactie, audit) compuse ca in Erp.Host, plus modulul Finante. -->
   <ItemGroup>
     <ProjectReference Include="..\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
+    <ProjectReference Include="..\Erp.Finance.Api\Erp.Finance.Api.csproj" />
     <ProjectReference Include="..\..\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
   </ItemGroup>

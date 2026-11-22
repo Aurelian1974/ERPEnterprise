@@ -24,7 +24,7 @@ BEGIN
     -- Contul de trezorerie al firmei curente (02.02, F1 3.1; macheta f1-01) si casierii lui (lista inlocuieste atribuirile).
     -- Firma si tipul nu se schimba dupa creare. Referintele (punct de lucru, cont bancar, gestionar, serii, casieri) trebuie sa fie ale
     -- firmei si active: 51021. Cod duplicat pe firma: 51022. Contul altei firme sau inexistent: 51023. Versiune diferita: 51002.
-    -- Moneda blocata dupa primul document (51015) si dezactivarea cu sold (51016) se verifica odata cu documentele de casa.
+    -- Moneda se blocheaza dupa primul document (51015); un cont cu sold diferit de zero nu se dezactiveaza (51016).
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -74,6 +74,13 @@ BEGIN
     END
     ELSE
     BEGIN
+        IF EXISTS (SELECT 1 FROM fin.TreasuryAccount WHERE Id = @Id AND CurrencyCode <> @CurrencyCode)
+           AND EXISTS (SELECT 1 FROM fin.CashDocument WHERE TreasuryAccountId = @Id)
+            THROW 51015, N'Moneda contului nu se schimbă după primul document.', 1;
+        IF @IsActive = 0 AND EXISTS (SELECT TOP (1) 1 FROM (SELECT TOP (1) ClosingBalance FROM fin.CashRegisterDay WHERE TreasuryAccountId = @Id
+                                                             ORDER BY [Day] DESC) AS last WHERE last.ClosingBalance <> 0)
+            THROW 51016, N'Un cont cu sold diferit de zero nu se poate dezactiva.', 1;
+
         UPDATE fin.TreasuryAccount
         SET BranchId = @BranchId, Code = @Code, Name = @Name, CurrencyCode = @CurrencyCode, CompanyBankAccountId = @CompanyBankAccountId,
             GlAccountCode = @GlAccountCode, ResponsibleUserId = @ResponsibleUserId, ReceiptSeriesId = @ReceiptSeriesId,

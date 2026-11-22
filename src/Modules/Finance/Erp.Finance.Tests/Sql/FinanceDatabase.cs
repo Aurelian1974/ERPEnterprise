@@ -49,9 +49,18 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
 
     public int BcrRonId { get; private set; }
 
+    /// <summary>Un client persoana juridica (plafoanele PJ).</summary>
+    public int LegalPartnerId { get; private set; }
+
+    /// <summary>Firma testelor de plafon, cu plafoanele proprii: IncasarePJ 2.000 lei din 15.11.2026, IncasarePF 100 lei avertizare din 20.11.2026.</summary>
+    public int LimitCompanyId { get; private set; }
+
+    public int LimitBranchId { get; private set; }
+
     public async ValueTask InitializeAsync()
     {
-        ConnectionString = await sql.CreateErpDatabaseAsync("ERP_IT_FINANCE", CancellationToken.None);
+        // O baza per clasa de teste (fixture de clasa), ca testele claselor sa nu se vada intre ele.
+        ConnectionString = await sql.CreateErpDatabaseAsync("ERP_IT_FIN_" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), CancellationToken.None);
         await using var connection = new SqlConnection(ConnectionString);
         CompanyId = await NewCompany(connection, "EXDIST", "Exemplu Distribuție SRL", "18547290");
         AdminId = await NewUser(connection, "administrator", "Administrator", "ADMIN", null);
@@ -60,6 +69,29 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
         OtherCompanyId = await NewCompany(connection, "EXPROD", "Exemplu Producție SRL", "14399840");
         HeadOfficeId = await NewBranch(connection, CompanyId, "SEDIU", "Sediu București", "București", "B");
         ClujId = await NewBranch(connection, CompanyId, "PL-CLUJ", "PL Cluj", "Cluj-Napoca", "CJ");
+        LimitCompanyId = await NewCompany(connection, "EXLIM", "Exemplu Plafoane SRL", "33445566");
+        LimitBranchId = await NewBranch(connection, LimitCompanyId, "SEDIU", "Sediu Iași", "Iași", "IS");
+        foreach (var company in new[] { CompanyId, LimitCompanyId })
+        {
+            await connection.ExecuteAsync("""
+                INSERT INTO core.NumberSeries (CompanyId, BranchId, DocumentTypeId, Prefix, [Year], NextNumber, Padding, IsFiscal, IsDefault, FirstNumber,
+                    CreatedBy)
+                SELECT @CompanyId, NULL, t.Id, v.Prefix, 2026, 1, 6, v.IsFiscal, 1, 1, 1
+                FROM (VALUES (N'Finance.Receipt', N'CH', 1), (N'Finance.CashIn', N'DI', 0), (N'Finance.Payment', N'DP', 0)) AS v (Code, Prefix, IsFiscal)
+                JOIN core.DocumentType AS t ON t.Code = v.Code;
+                """, new { CompanyId = company });
+        }
+
+        await connection.ExecuteAsync("""
+            INSERT INTO fin.CashLimitRule (CompanyId, Category, CurrencyCode, Amount, Action, ValidFrom, CreatedBy)
+            VALUES (@CompanyId, 'IncasarePJ', 'RON', 2000, 1, '20261115', 1), (@CompanyId, 'IncasarePF', 'RON', 100, 2, '20261120', 1);
+            """, new { CompanyId = LimitCompanyId });
+        LegalPartnerId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, IsCustomer, IsSupplier, VatPayer, Address, City, CountyCode, CountryCode,
+                IsActive, CreatedBy)
+            VALUES (N'AGRONORD', N'Agro Nord Distribuție SRL', 1, N'14399840', 1, 0, 1, N'Str. Gării 21', N'Suceava', N'SV', 'RO', 1, 1);
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """);
         BcrRonId = await connection.ExecuteScalarAsync<int>("""
             INSERT INTO core.CompanyBankAccount (CompanyId, Iban, BankName, Currency, IsDefault, IsActive, CreatedBy)
             VALUES (@CompanyId, 'RO49RNCB0082004530120001', N'BCR', 'RON', 1, 1, 1);
@@ -140,7 +172,8 @@ public abstract class FinanceTestBase(FinanceDatabase database)
         services.AddLogging();
         services.AddErpMediator(FinanceApplication.Assembly);
         services.AddCoreInfrastructure(Database.ConnectionString, new LicenseOptions(Development: true));
-        services.AddFinanceInfrastructure();
+        services.AddFinanceInfrastructure(Database.ConnectionString);
+        services.AddSingleton<Application.Treasury.IPersonIdProtector>(new Api.PersonIdProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
         services.AddSingleton<ILicenseInfo>(new FakeLicense());
         var context = new FakeContext { UserId = userId ?? Database.AdminId, CompanyId = companyId ?? Database.CompanyId };
         context.Permissions.UnionWith(Permissions);

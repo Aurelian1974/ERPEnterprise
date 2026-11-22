@@ -91,9 +91,24 @@ public sealed class TreasuryAccountStore(IDbSession session) : ITreasuryAccountS
     private sealed record CashierRow(int UserId, string DisplayName, bool CanValidate, DateTime? ValidFrom, DateTime? ValidTo);
 }
 
-/// <summary>ITreasuryAccountQueries (F1 6): conturile active ale unei firme, pentru celelalte module.</summary>
-public sealed class TreasuryAccountQueries(IDbSession session) : ITreasuryAccountQueries
+/// <summary>ITreasuryAccountQueries (F1 6): conturile active ale unei firme si soldul unui cont, pentru celelalte module.</summary>
+public sealed class TreasuryAccountQueries(IDbSession session, IExchangeRateProvider rates, IPrecisionService precision) : ITreasuryAccountQueries
 {
+    public async Task<TreasuryBalanceDto> GetBalanceAsync(int treasuryAccountId, DateOnly day, CancellationToken ct)
+    {
+        var row = await session.Connection.QuerySingleOrDefaultAsync<BalanceRow>(new CommandDefinition("fin.usp_TreasuryAccount_GetBalance",
+            new { TreasuryAccountId = treasuryAccountId, Day = TreasuryAccountStore.DateTime(day) }, session.Transaction, commandType: CommandType.StoredProcedure,
+            cancellationToken: ct)).ConfigureAwait(false)
+            ?? throw ErpException.NotFound(FinanceErrorCodes.TreasuryAccountNotFound, "Contul de trezorerie nu există.");
+        var currency = row.CurrencyCode.Trim();
+        var rate = await rates.GetRateAsync(currency, day, ct).ConfigureAwait(false);
+        var policy = await precision.ResolveAsync(row.CompanyId, null, null, ct).ConfigureAwait(false);
+        return new TreasuryBalanceDto(row.TreasuryAccountId, day, currency, row.Balance, precision.RoundAmount(row.Balance * rate.PerUnit, policy),
+            row.IsDayClosed);
+    }
+
+    private sealed record BalanceRow(int TreasuryAccountId, int CompanyId, string CurrencyCode, decimal Balance, bool IsDayClosed);
+
     public async Task<IReadOnlyList<TreasuryAccountDto>> GetByCompanyAsync(int companyId, TreasuryAccountKind? kind, CancellationToken ct) =>
         (await new TreasuryAccountStore(session).ListAsync(companyId, null, includeInactive: false, ct).ConfigureAwait(false))
         .Where(a => kind is null || a.Kind == kind)
