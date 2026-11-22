@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/finance/treasury-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTreasuryAccounts"];
+        put?: never;
+        post: operations["CreateTreasuryAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/treasury-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTreasuryAccount"];
+        put: operations["UpdateTreasuryAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/antiforgery": {
         parameters: {
             query?: never;
@@ -4461,6 +4493,152 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
         };
+        CashCloseMode: number;
+        FinanceSaved: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveTreasuryAccount: {
+            /** Format: int32 */
+            id: null | number;
+            kind: components["schemas"]["TreasuryAccountKind"];
+            code: string;
+            name: string;
+            /** Format: int32 */
+            branchId: null | number;
+            currencyCode: string;
+            /** Format: int32 */
+            companyBankAccountId: null | number;
+            glAccountCode: null | string;
+            /** Format: int32 */
+            responsibleUserId: null | number;
+            /** Format: int32 */
+            receiptSeriesId: null | number;
+            /** Format: int32 */
+            cashInSeriesId: null | number;
+            /** Format: int32 */
+            cashOutSeriesId: null | number;
+            maxClosingBalance: null | string;
+            closeMode: components["schemas"]["CashCloseMode"];
+            /** Format: date */
+            openingDate: null | string;
+            isActive: boolean;
+            cashiers: null | components["schemas"]["TreasuryCashierInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        TreasuryAccountDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: number;
+            kind: components["schemas"]["TreasuryAccountKind"];
+            code: string;
+            name: string;
+            /** Format: int32 */
+            branchId: null | number;
+            currencyCode: string;
+            /** Format: int32 */
+            companyBankAccountId: null | number;
+            glAccountCode: null | string;
+            /** Format: int32 */
+            responsibleUserId: null | number;
+            /** Format: int32 */
+            receiptSeriesId: null | number;
+            /** Format: int32 */
+            cashInSeriesId: null | number;
+            /** Format: int32 */
+            cashOutSeriesId: null | number;
+            maxClosingBalance: null | string;
+            closeMode: components["schemas"]["CashCloseMode"];
+            /** Format: date */
+            openingDate: null | string;
+            isActive: boolean;
+            hasDocuments: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            modifiedAt: null | string;
+            modifiedByName: null | string;
+            cashiers: components["schemas"]["TreasuryCashierDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        TreasuryAccountItemDto: {
+            /** Format: int32 */
+            id: number;
+            kind: components["schemas"]["TreasuryAccountKind"];
+            code: string;
+            name: string;
+            /** Format: int32 */
+            branchId: null | number;
+            branchName: null | string;
+            currencyCode: string;
+            glAccountCode: null | string;
+            /** Format: int32 */
+            companyBankAccountId: null | number;
+            bankName: null | string;
+            iban: null | string;
+            isActive: boolean;
+            /** Format: int32 */
+            cashierCount: number;
+        };
+        TreasuryAccountKind: number;
+        TreasuryAccountPageDto: {
+            accounts: components["schemas"]["TreasuryAccountItemDto"][];
+            lookups: components["schemas"]["TreasuryLookupsDto"];
+        };
+        TreasuryBankAccountOptionDto: {
+            /** Format: int32 */
+            id: number;
+            iban: string;
+            bankName: string;
+            currencyCode: string;
+        };
+        TreasuryCashierDto: {
+            /** Format: int32 */
+            userId: number;
+            displayName: string;
+            canValidate: boolean;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        TreasuryCashierInput: {
+            /** Format: int32 */
+            userId: number;
+            canValidate: boolean;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        TreasuryLookupsDto: {
+            branches: components["schemas"]["TreasuryOptionDto"][];
+            bankAccounts: components["schemas"]["TreasuryBankAccountOptionDto"][];
+            currencies: string[];
+            users: components["schemas"]["TreasuryOptionDto"][];
+            series: components["schemas"]["TreasurySeriesOptionDto"][];
+        };
+        TreasuryOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+        };
+        TreasurySeriesOptionDto: {
+            /** Format: int32 */
+            id: number;
+            documentType: string;
+            prefix: string;
+            /** Format: int16 */
+            year: number;
+            /** Format: int32 */
+            branchId: null | number;
+        };
     };
     responses: never;
     parameters: never;
@@ -4470,6 +4648,200 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    GetTreasuryAccounts: {
+        parameters: {
+            query?: {
+                Search?: string;
+                IncludeInactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TreasuryAccountPageDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateTreasuryAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveTreasuryAccount"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTreasuryAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TreasuryAccountDetailDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateTreasuryAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveTreasuryAccount"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     GetCurrentUser: {
         parameters: {
             query?: never;

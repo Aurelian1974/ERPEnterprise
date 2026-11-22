@@ -2394,3 +2394,23 @@ td .pill.warn {
   gap: 4px;
   min-width: 160px;
 }
+
+/* ---------- Finanțe › Conturi de trezorerie (macheta f1-01) ---------- */
+
+.segmented.five {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+table.treasury-list tr.group-row th {
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  cursor: default;
+}
+
+.list-foot {
+  padding-top: 8px;
+}

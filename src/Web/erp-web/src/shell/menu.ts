@@ -47,6 +47,16 @@ export const menuGroups: readonly MenuGroup[] = [
     ],
   },
   {
+    module: 'Finance',
+    icon: '▥',
+    items: [
+      {
+        id: 'treasury-accounts', label: 'menu.treasuryAccounts', path: '/finante/trezorerie/conturi', icon: '', module: 'Finance',
+        permission: 'Fin.TreasuryAccount.View',
+      },
+    ],
+  },
+  {
     module: 'Core',
     label: 'menu.admin',
     icon: '⛭',

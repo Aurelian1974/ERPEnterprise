@@ -28,6 +28,7 @@ Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, 
 | Pas | Ce conține | Stare |
 | --- | --- | --- |
 | F1.1 | Proiectele `Erp.Finance.*` în gazdă; conturile de trezorerie (`fin.TreasuryAccount`, casierii, tipurile de operațiuni livrate), permisiunile și rolurile F1; API `/api/finance/treasury-accounts` | Implementat |
+| F1.2 | Ecranul Conturi de trezorerie (macheta f1-01): lista grupată pe tip cu filtre, fișa cu datele generale (lucru zilnic, plafon, serii) și tab-ul Casieri; meniul Finanțe | Implementat (soldurile din listă și tab-ul Istoric vin cu documentele de casă) |
 
 ## Machete de ecran (`ecrane/`)
 
