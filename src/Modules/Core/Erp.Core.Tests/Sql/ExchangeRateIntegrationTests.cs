@@ -41,7 +41,7 @@ public sealed partial class UserIntegrationTests
         await using var connection = new SqlConnection(database.ConnectionString);
         Assert.False(await connection.ExecuteScalarAsync<bool>("SELECT IsActive FROM core.Currency WHERE Code = 'XYZ'"));
         Assert.Equal(2, await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM core.Outbox WHERE EventType = @Type AND Payload LIKE '%2027-03-1%'", new { Type = typeof(CursValutarActualizat).FullName }));
+            "SELECT COUNT(*) FROM core.Outbox WHERE EventType = @Type AND Payload LIKE '%2027-03-1[12]%'", new { Type = typeof(CursValutarActualizat).FullName }));
 
         var page = await Send(new GetExchangeRates(new DateOnly(2027, 3, 12), new DateOnly(2027, 3, 14)));
         Assert.Contains(page.BnrRates, r => r.CurrencyCode == "EUR" && r.Rate == "5.0812");
