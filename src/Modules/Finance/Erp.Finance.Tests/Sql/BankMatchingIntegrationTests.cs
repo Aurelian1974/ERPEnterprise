@@ -202,6 +202,14 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
         Assert.Equal((BankLineMatchStatus.Unmatched, byCode), (lines[1].MatchStatus, lines[1].PartnerId));
         Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM fin.MatchSuggestion WHERE BankStatementLineId = @Id AND PaymentOrderId = @Order",
             new { lines[0].Id, Order = order.Id }));
+        Assert.Equal(order.Id, Assert.Single((await Send(new GetBankStatementLine(lines[0].Id))).Suggestions).PaymentOrderId);
+
+        // Ecranul Extras de cont: liniile nevalidate, OP-ul de confirmat si soldul scriptic = soldul extrasului − OP-urile neconfirmate.
+        Assert.Contains(await Send(new GetBankAccounts()), a => a.Id == account && a.Kind == 1);
+        var screen = await Send(new GetBankReconciliation(account));
+        Assert.Equal(2, screen.Lines.Count);
+        Assert.Equal(order.Id, Assert.Single(screen.UnconfirmedOrders).Id);
+        Assert.Equal(("9250.00", "-3000.00", "6250.00"), (screen.StatementBalance, screen.UnconfirmedAmount, screen.BookBalance));
     }
 
     [Fact]

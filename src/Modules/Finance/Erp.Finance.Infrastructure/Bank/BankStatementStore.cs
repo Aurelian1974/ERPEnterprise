@@ -3,6 +3,7 @@ using Dapper;
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Domain;
 using Erp.Finance.Domain.Bank;
 
 namespace Erp.Finance.Infrastructure.Bank;
@@ -104,6 +105,44 @@ public sealed class BankStatementStore(IDbSession session) : IBankStatementStore
         return new BankStatementDetailRow(statement, head.FileName, head.GapReason, head.GapAcceptedAt, head.GapAcceptedByName, head.PreviousClosingBalance,
             lines);
     }
+
+    public async Task<BankReconciliationDto?> GetReconciliationAsync(int companyId, int treasuryAccountId, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_BankReconciliation_Get",
+            new { CompanyId = companyId, TreasuryAccountId = treasuryAccountId }, ct)).ConfigureAwait(false);
+        if (grid.IsConsumed)
+        {
+            return null;
+        }
+
+        var h = await grid.ReadSingleAsync<ReconciliationRow>().ConfigureAwait(false);
+        var lines = (await grid.ReadAsync<ReconciliationLineRow>().ConfigureAwait(false)).Select(l => new ReconciliationLineDto(l.Id, l.BankStatementId,
+            l.StatementNo, l.LineNumber, DateOnly.FromDateTime(l.BookingDate), Money.Format(l.Amount), l.CounterpartyName, l.CounterpartyIban, l.RemittanceInfo,
+            (BankLineMatchStatus)l.MatchStatus, l.PartnerId, l.PartnerName, (ContinuityStatus)l.ContinuityStatus, l.SuggestionCount, l.RowVersion)).ToList();
+        var orders = (await grid.ReadAsync<OrderRow>().ConfigureAwait(false)).Select(o => new UnconfirmedOrderDto(o.Id, o.Number,
+            DateOnly.FromDateTime(o.DocumentDate), o.BeneficiaryName, Money.Format(-o.Amount), o.ApprovedAt is not null, o.PaymentBatchId, o.BatchNumber,
+            o.BatchStatus)).ToList();
+        var types = (await grid.ReadAsync<BankOperationTypeDto>().ConfigureAwait(false)).ToList();
+        var accounts = (await grid.ReadAsync<BankAccountOptionDto>().ConfigureAwait(false)).ToList();
+        return new BankReconciliationDto(h.TreasuryAccountId, h.AccountCode, h.AccountName, h.CurrencyCode.Trim(), h.BankStatementId, h.StatementNo,
+            h.StatementDate is { } d ? DateOnly.FromDateTime(d) : null, h.ClosingBalance is { } c ? Money.Format(c) : null, Money.Format(-h.UnconfirmedAmount),
+            h.ClosingBalance is { } b ? Money.Format(b - h.UnconfirmedAmount) : null, h.OpenLineCount, lines, orders, types, accounts);
+    }
+
+    public async Task<IReadOnlyList<BankAccountLookupDto>> ListAccountsAsync(int companyId, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<(int Id, string Code, string Name, byte Kind, string CurrencyCode)>(Command("fin.usp_BankAccount_Options",
+            new { CompanyId = companyId }, ct)).ConfigureAwait(false)).Select(a => new BankAccountLookupDto(a.Id, a.Code, a.Name, a.Kind, a.CurrencyCode.Trim()))
+        .ToList();
+
+    private sealed record ReconciliationRow(int TreasuryAccountId, string AccountCode, string AccountName, string CurrencyCode, int? BankStatementId,
+        string? StatementNo, DateTime? StatementDate, decimal? ClosingBalance, decimal UnconfirmedAmount, int OpenLineCount);
+
+    private sealed record ReconciliationLineRow(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateTime BookingDate, decimal Amount,
+        string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, byte MatchStatus, int? PartnerId, string? PartnerName, byte ContinuityStatus,
+        int SuggestionCount, byte[] RowVersion);
+
+    private sealed record OrderRow(int Id, string? Number, DateTime DocumentDate, string BeneficiaryName, decimal Amount, DateTime? ApprovedAt,
+        int? PaymentBatchId, string? BatchNumber, byte? BatchStatus);
 
     private static BankStatementRow Map(StatementRow r) => new(r.Id, r.TreasuryAccountId, r.AccountCode, r.AccountName, r.StatementNo,
         DateOnly.FromDateTime(r.StatementDate), DateOnly.FromDateTime(r.PeriodFrom), DateOnly.FromDateTime(r.PeriodTo), r.CurrencyCode.Trim(), r.OpeningBalance,

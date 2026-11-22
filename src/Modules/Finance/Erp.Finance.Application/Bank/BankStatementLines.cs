@@ -38,7 +38,14 @@ public sealed record BankLinePartDto(short PartNumber, int OperationTypeId, stri
 public sealed record BankLineDetailDto(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateOnly BookingDate, DateOnly? ValueDate,
     string Amount, string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, string? EndToEndId, string BankReference,
     BankLineMatchStatus MatchStatus, int? PartnerId, string? PartnerName, int TreasuryAccountId, string CurrencyCode, DateTime? ValidatedAt,
-    IReadOnlyList<BankLinePartDto> Parts, byte[] RowVersion);
+    IReadOnlyList<BankLinePartDto> Parts, byte[] RowVersion)
+{
+    /// <summary>Propunerile motorului de potrivire pentru linie (F2 4.3 pasul 6), cu scor.</summary>
+    public IReadOnlyList<BankSuggestionDto> Suggestions { get; init; } = [];
+}
+
+/// <summary>O propunere pentru o linie: Kind 1 = OP neconfirmat al partenerului identificat.</summary>
+public sealed record BankSuggestionDto(byte Kind, int? PaymentOrderId, int? PartnerId, string Amount, byte Score, string Description);
 
 public sealed record BankLineRow(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateOnly BookingDate, DateOnly? ValueDate, decimal Amount,
     string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, string? EndToEndId, string BankReference, BankLineMatchStatus MatchStatus,
@@ -54,6 +61,8 @@ public interface IBankStatementLineStore
 {
     /// <summary>Liniile firmei cerute, cu partile lor; cele inexistente sau ale altei firme lipsesc.</summary>
     Task<(IReadOnlyList<BankLineRow> Lines, IReadOnlyList<BankLinePartRow> Parts)> GetAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct);
+
+    Task<IReadOnlyList<BankSuggestionDto>> GetSuggestionsAsync(int companyId, long lineId, CancellationToken ct);
 
     Task<byte[]> ExplainAsync(int companyId, long lineId, IReadOnlyList<BankLinePartRecord> parts, byte[] rowVersion, int userId, CancellationToken ct);
 
@@ -92,7 +101,10 @@ internal sealed class GetBankStatementLineHandler(IBankStatementLineStore store,
     {
         var (lines, parts) = await store.GetAsync(context.CompanyId, [request.Id], cancellationToken).ConfigureAwait(false);
         var line = lines.SingleOrDefault() ?? throw BankLineRules.NotFound();
-        return BankLineRules.Detail(line, parts);
+        return BankLineRules.Detail(line, parts) with
+        {
+            Suggestions = await store.GetSuggestionsAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false),
+        };
     }
 }
 

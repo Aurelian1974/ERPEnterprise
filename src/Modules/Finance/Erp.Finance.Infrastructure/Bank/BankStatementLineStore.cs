@@ -23,6 +23,17 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
         return (lines, parts);
     }
 
+    public async Task<IReadOnlyList<BankSuggestionDto>> GetSuggestionsAsync(int companyId, long lineId, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_BankStatementLine_Get",
+            new { CompanyId = companyId, Lines = Versions([new BankLineVersion(lineId, null!)]) }, ct)).ConfigureAwait(false);
+        await grid.ReadAsync().ConfigureAwait(false);
+        await grid.ReadAsync().ConfigureAwait(false);
+        return (await grid.ReadAsync<(long LineId, byte Kind, int? PaymentOrderId, int? PartnerId, decimal Amount, byte Score, string Description)>()
+            .ConfigureAwait(false)).Select(m => new BankSuggestionDto(m.Kind, m.PaymentOrderId, m.PartnerId, Erp.Finance.Domain.Money.Format(m.Amount), m.Score,
+            m.Description)).ToList();
+    }
+
     public Task<byte[]> ExplainAsync(int companyId, long lineId, IReadOnlyList<BankLinePartRecord> parts, byte[] rowVersion, int userId, CancellationToken ct)
     {
         var table = new DataTable();

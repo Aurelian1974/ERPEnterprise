@@ -596,6 +596,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/bank-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetBankAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/bank-reconciliation/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetBankReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/bank-statement-lines/{id}": {
         parameters: {
             query?: never;
@@ -6283,6 +6315,7 @@ export interface components {
             parts: components["schemas"]["BankLinePartDto"][];
             /** Format: byte */
             rowVersion: string;
+            suggestions?: components["schemas"]["BankSuggestionDto"][];
         };
         BankLinePartDto: {
             /** Format: int16 */
@@ -6775,6 +6808,104 @@ export interface components {
             ageDays: number;
         };
         TransitKind: number;
+        BankReconciliationDto: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            accountCode: string;
+            accountName: string;
+            currencyCode: string;
+            /** Format: int32 */
+            bankStatementId: null | number;
+            statementNo: null | string;
+            /** Format: date */
+            statementDate: null | string;
+            statementBalance: null | string;
+            unconfirmedAmount: string;
+            bookBalance: null | string;
+            /** Format: int32 */
+            openLineCount: number;
+            lines: components["schemas"]["ReconciliationLineDto"][];
+            unconfirmedOrders: components["schemas"]["UnconfirmedOrderDto"][];
+            operationTypes: components["schemas"]["BankOperationTypeDto"][];
+            accounts: components["schemas"]["BankAccountOptionDto"][];
+        };
+        BankSuggestionDto: {
+            /** Format: uint8 */
+            kind: number;
+            /** Format: int32 */
+            paymentOrderId: null | number;
+            /** Format: int32 */
+            partnerId: null | number;
+            amount: string;
+            /** Format: uint8 */
+            score: number;
+            description: string;
+        };
+        ReconciliationLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            bankStatementId: number;
+            statementNo: null | string;
+            /** Format: int32 */
+            lineNumber: number;
+            /** Format: date */
+            bookingDate: string;
+            amount: string;
+            counterpartyName: null | string;
+            counterpartyIban: null | string;
+            remittanceInfo: null | string;
+            matchStatus: components["schemas"]["BankLineMatchStatus"];
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            continuityStatus: components["schemas"]["ContinuityStatus"];
+            /** Format: int32 */
+            suggestionCount: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        UnconfirmedOrderDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            beneficiaryName: string;
+            amount: string;
+            isApproved: boolean;
+            /** Format: int32 */
+            paymentBatchId: null | number;
+            batchNumber: null | string;
+            /** Format: uint8 */
+            batchStatus: null | number;
+        };
+        BankAccountOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+        };
+        BankOperationTypeDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            direction: number;
+            requiresPartner: boolean;
+            requiresEmployee: boolean;
+            requiresCounterAccount: boolean;
+        };
+        BankAccountLookupDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            kind: number;
+            currencyCode: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -9559,6 +9690,120 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBankAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountLookupDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBankReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankReconciliationDto"];
                 };
             };
             /** @description Bad Request */

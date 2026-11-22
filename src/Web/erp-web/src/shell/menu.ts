@@ -61,6 +61,8 @@ export const menuGroups: readonly MenuGroup[] = [
         id: 'expense-reports', label: 'menu.expenseReports', path: '/finante/trezorerie/deconturi', icon: '', module: 'Finance',
         permission: 'Fin.ExpenseReport.Create',
       },
+      { id: 'bank-statements', label: 'menu.bankStatements', path: '/finante/banca/extrase', icon: '', module: 'Finance', permission: 'Fin.Bank.View' },
+      { id: 'bank-reconcile', label: 'menu.bankReconcile', path: '/finante/banca/extras-de-cont', icon: '', module: 'Finance', permission: 'Fin.Bank.View' },
     ],
   },
   {

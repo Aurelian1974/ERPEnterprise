@@ -3496,6 +3496,140 @@
         }
       }
     },
+    "/api/finance/bank-accounts": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankAccounts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountLookupDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-reconciliation/{accountId}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankReconciliation",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankReconciliationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/bank-statement-lines/{id}": {
       "get": {
         "tags": [
@@ -28012,6 +28146,12 @@
           "rowVersion": {
             "type": "string",
             "format": "byte"
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankSuggestionDto"
+            }
           }
         }
       },
@@ -29972,6 +30112,382 @@
       },
       "TransitKind": {
         "type": "integer"
+      },
+      "BankReconciliationDto": {
+        "required": [
+          "treasuryAccountId",
+          "accountCode",
+          "accountName",
+          "currencyCode",
+          "bankStatementId",
+          "statementNo",
+          "statementDate",
+          "statementBalance",
+          "unconfirmedAmount",
+          "bookBalance",
+          "openLineCount",
+          "lines",
+          "unconfirmedOrders",
+          "operationTypes",
+          "accounts"
+        ],
+        "type": "object",
+        "properties": {
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "bankStatementId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "statementNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "statementBalance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unconfirmedAmount": {
+            "type": "string"
+          },
+          "bookBalance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openLineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationLineDto"
+            }
+          },
+          "unconfirmedOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnconfirmedOrderDto"
+            }
+          },
+          "operationTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankOperationTypeDto"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankAccountOptionDto"
+            }
+          }
+        }
+      },
+      "BankSuggestionDto": {
+        "required": [
+          "kind",
+          "paymentOrderId",
+          "partnerId",
+          "amount",
+          "score",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "paymentOrderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ReconciliationLineDto": {
+        "required": [
+          "id",
+          "bankStatementId",
+          "statementNo",
+          "lineNumber",
+          "bookingDate",
+          "amount",
+          "counterpartyName",
+          "counterpartyIban",
+          "remittanceInfo",
+          "matchStatus",
+          "partnerId",
+          "partnerName",
+          "continuityStatus",
+          "suggestionCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bankStatementId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statementNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "counterpartyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceInfo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matchStatus": {
+            "$ref": "#/components/schemas/BankLineMatchStatus"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "continuityStatus": {
+            "$ref": "#/components/schemas/ContinuityStatus"
+          },
+          "suggestionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "UnconfirmedOrderDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "beneficiaryName",
+          "amount",
+          "isApproved",
+          "paymentBatchId",
+          "batchNumber",
+          "batchStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "beneficiaryName": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "isApproved": {
+            "type": "boolean"
+          },
+          "paymentBatchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "batchNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "batchStatus": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          }
+        }
+      },
+      "BankAccountOptionDto": {
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "BankOperationTypeDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "direction",
+          "requiresPartner",
+          "requiresEmployee",
+          "requiresCounterAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "requiresPartner": {
+            "type": "boolean"
+          },
+          "requiresEmployee": {
+            "type": "boolean"
+          },
+          "requiresCounterAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BankAccountLookupDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "kind",
+          "currencyCode"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "currencyCode": {
+            "type": "string"
+          }
+        }
       }
     }
   },

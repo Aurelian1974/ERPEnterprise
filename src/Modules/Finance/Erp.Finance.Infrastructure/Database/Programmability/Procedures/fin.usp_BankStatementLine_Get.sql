@@ -27,4 +27,9 @@ BEGIN
     LEFT JOIN core.Partner AS pa ON pa.Id = x.PartnerId
     WHERE x.BankStatementLineId IN (SELECT Id FROM @Lines)
     ORDER BY x.BankStatementLineId, x.PartNumber;
+
+    SELECT m.BankStatementLineId, m.Kind, m.PaymentOrderId, m.PartnerId, m.Amount, m.Score, m.Description
+    FROM fin.MatchSuggestion AS m
+    WHERE m.BankStatementLineId IN (SELECT Id FROM @Lines)
+    ORDER BY m.BankStatementLineId, m.Score DESC, m.Id;
 END;

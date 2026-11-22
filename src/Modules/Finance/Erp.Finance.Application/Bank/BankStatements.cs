@@ -73,7 +73,35 @@ public interface IBankStatementStore
     Task<IReadOnlyList<BankStatementRow>> ListAsync(int companyId, int? treasuryAccountId, DateOnly? from, DateOnly? to, CancellationToken ct);
 
     Task<BankStatementDetailRow?> GetAsync(int companyId, int bankStatementId, CancellationToken ct);
+
+    Task<BankReconciliationDto?> GetReconciliationAsync(int companyId, int treasuryAccountId, CancellationToken ct);
+
+    Task<IReadOnlyList<BankAccountLookupDto>> ListAccountsAsync(int companyId, CancellationToken ct);
 }
+
+/// <summary>O linie nevalidata a contului in ecranul Extras de cont.</summary>
+public sealed record ReconciliationLineDto(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateOnly BookingDate, string Amount,
+    string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, BankLineMatchStatus MatchStatus, int? PartnerId, string? PartnerName,
+    ContinuityStatus ContinuityStatus, int SuggestionCount, byte[] RowVersion);
+
+/// <summary>Un OP validat si neconfirmat al contului („de confirmat”).</summary>
+public sealed record UnconfirmedOrderDto(int Id, string? Number, DateOnly DocumentDate, string BeneficiaryName, string Amount, bool IsApproved,
+    int? PaymentBatchId, string? BatchNumber, byte? BatchStatus);
+
+/// <summary>
+/// Ecranul Extras de cont (macheta f2-02): ultimul extras si soldul lui, OP-urile neconfirmate si soldul scriptic (soldul extrasului minus
+/// platile validate inca negasite pe extras), liniile nevalidate ale contului si OP-urile de confirmat.
+/// </summary>
+public sealed record BankReconciliationDto(int TreasuryAccountId, string AccountCode, string AccountName, string CurrencyCode, int? BankStatementId,
+    string? StatementNo, DateOnly? StatementDate, string? StatementBalance, string UnconfirmedAmount, string? BookBalance, int OpenLineCount,
+    IReadOnlyList<ReconciliationLineDto> Lines, IReadOnlyList<UnconfirmedOrderDto> UnconfirmedOrders, IReadOnlyList<BankOperationTypeDto> OperationTypes,
+    IReadOnlyList<BankAccountOptionDto> Accounts);
+
+/// <summary>Un tip de operatiune bancara pentru editorul de parti (Direction: 1 intrare, 2 iesire, 3 ambele).</summary>
+public sealed record BankOperationTypeDto(int Id, string Code, string Name, byte Direction, bool RequiresPartner, bool RequiresEmployee,
+    bool RequiresCounterAccount);
+
+public sealed record BankAccountOptionDto(int Id, string Code, string Name);
 
 internal static class BankErrors
 {
@@ -265,4 +293,30 @@ internal sealed class GetBankStatementHandler(IBankStatementStore store, ICurren
         return new BankStatementDetailDto(BankErrors.Item(row.Statement), row.FileName, row.GapReason, row.GapAcceptedAt, row.GapAcceptedByName,
             row.PreviousClosingBalance is { } p ? Money.Format(p) : null, lines);
     }
+}
+
+/// <summary>Ecranul Extras de cont pentru un cont bancar (macheta f2-02).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.BankView)]
+public sealed record GetBankReconciliation(int TreasuryAccountId) : IQuery<BankReconciliationDto>;
+
+internal sealed class GetBankReconciliationHandler(IBankStatementStore store, ICurrentContext context) : IQueryHandler<GetBankReconciliation, BankReconciliationDto>
+{
+    public async Task<BankReconciliationDto> Handle(GetBankReconciliation request, CancellationToken cancellationToken) =>
+        await store.GetReconciliationAsync(context.CompanyId, request.TreasuryAccountId, cancellationToken).ConfigureAwait(false)
+        ?? throw ErpException.NotFound(FinanceErrorCodes.TreasuryAccountNotFound, "Contul bancar nu există în firma curentă.");
+}
+
+/// <summary>Un cont bancar al firmei in listele ecranelor Bancii (Kind: 1 Banca, 3 Card, 5 Depozit).</summary>
+public sealed record BankAccountLookupDto(int Id, string Code, string Name, byte Kind, string CurrencyCode);
+
+/// <summary>Conturile bancare active ale firmei, pentru ecranele Bancii.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.BankView)]
+public sealed record GetBankAccounts : IQuery<IReadOnlyList<BankAccountLookupDto>>;
+
+internal sealed class GetBankAccountsHandler(IBankStatementStore store, ICurrentContext context) : IQueryHandler<GetBankAccounts, IReadOnlyList<BankAccountLookupDto>>
+{
+    public Task<IReadOnlyList<BankAccountLookupDto>> Handle(GetBankAccounts request, CancellationToken cancellationToken) =>
+        store.ListAccountsAsync(context.CompanyId, cancellationToken);
 }
