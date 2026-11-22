@@ -34,6 +34,15 @@ public sealed class ErpValidationException(IReadOnlyDictionary<string, string[]>
     public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }
 
+/// <summary>
+/// Maparea codurilor THROW ale unui modul la erori API (NET-09): un singur tabel per modul, inregistrat de infrastructura modulului
+/// (plajele din Bune practici 8.3). Aici, in contracte, ca modulele sa nu depinda de infrastructura Nucleului (P1).
+/// </summary>
+public interface ISqlErrorMap
+{
+    IReadOnlyDictionary<int, (ErpErrorKind Kind, string Code)> Errors { get; }
+}
+
 /// <summary>Codurile API ale Nucleului folosite de pipeline (02.01, 4.1 si 7).</summary>
 public static class CoreErrorCodes
 {

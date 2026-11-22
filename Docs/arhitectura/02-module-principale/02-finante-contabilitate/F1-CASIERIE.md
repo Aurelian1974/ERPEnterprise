@@ -88,6 +88,8 @@ Nomenclator extensibil de client (`SQL-10`: tabelă, nu enum), comun casei (F1) 
 | `PLATA-SALARII` | Plată salarii în numerar | Ieșire | Angajat | `421` |
 | `PLATA-DIVERSE` | Alte plăți | Ieșire | Text explicativ | — |
 
+Implementare (22.11.2026): `CashLimitCategory` are valorile `Incasare` și `Plata` (plafonul PJ sau PF se alege după tipul partenerului, regula 3 din 3.6), `AvansPersoanaZi` sau gol (fără plafon: operațiuni interne, salarii, deconturi).
+
 Câmpuri: `Code`, `Name`, `Direction` (1 Intrare, 2 Ieșire), `RequiresPartner`, `RequiresEmployee`, `RequiresCounterAccount` (alt cont de trezorerie), `SettlementKind` (0 Nimic, 1 Facturi client, 2 Facturi furnizor, 3 Avans spre decontare, 4 Decont), `CounterGlAccountCode` (referință pentru partea contabilă), `CashLimitCategory` (ce plafon se aplică, 3.6), `AppliesToCash`, `AppliesToBank` (unde poate fi folosit), `IsSystem` (tipurile livrate nu se șterg și nu își schimbă sensul).
 
 ### 3.3 Document de casă (`CashDocument` + `CashDocumentLine`)
@@ -571,6 +573,9 @@ Coduri de eroare. Plaja modulului e `51000–51999` (`SP-04`); o împart pe sub-
 | 51018 | `FIN_ADVANCE_OVERDUE_UNCONFIRMED` | 409 | Angajatul are un avans nedecontat după termen, iar avertizarea nu a fost confirmată |
 | 51019 | `FIN_EXPENSE_REPORT_SELF_APPROVAL` | 403 | Aprobarea propriului decont, cu separarea sarcinilor activă |
 | 51020 | `FIN_EXPENSE_REPORT_ADVANCE_MISMATCH` | 409 | Decontul referă un avans al altui angajat sau deja decontat |
+| 51021 | `FIN_INVALID_REFERENCE` | 400 | Referință a altei firme, inactivă sau inexistentă (punct de lucru, cont bancar, serie, casier, monedă); tipul contului schimbat după creare. Adăugat la implementare (22.11.2026) |
+| 51022 | `FIN_DUPLICATE_CODE` | 409 | Cod de cont de trezorerie (sau de nomenclator F1) existent deja în firmă. Adăugat la implementare (22.11.2026) |
+| 51023 | `FIN_TREASURY_ACCOUNT_NOT_FOUND` | 404 | Contul de trezorerie nu există în firma curentă. Adăugat la implementare (22.11.2026) |
 
 Conformitate: schema și procedurile respectă `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`. `CashDocument` folosește `int` (antet), liniile și jurnalul de verificări `bigint` (`SQL-13`). Abateri: niciuna.
 
@@ -602,6 +607,8 @@ Roluri livrate (adaptabile de client):
 | Contabil șef | Toate permisiunile F1 |
 | Aprobator (șef direct) | `ExpenseReport.Approve` |
 | Auditor | `TreasuryAccount.View`, `Cash.ViewAll`, rapoartele |
+
+Implementare (22.11.2026): permisiunile au în `core.Permission` `ModuleCode = 'Fin'`, iar codul modulului din licență și din `[Module]` rămâne `Finance`; testul de arhitectură (`NET-04`) acceptă prefixul `Fin.` pentru assembly-urile `Erp.Finance.*`. Rolurile livrate au codurile `CASIER`, `CONTABIL_TREZORERIE`, `CONTABIL_SEF`, `APROBATOR_DECONTURI`; `AUDITOR` (Nucleu) primește `TreasuryAccount.View` și `Cash.ViewAll`.
 
 Scope suplimentar: pe lângă firmă și dimensiuni (02.01), accesul la o casă cere atribuirea din `TreasuryAccountUser` sau `Fin.Cash.ViewAll`. Verificarea e în `AuthorizationBehavior`, printr-un furnizor de scope înregistrat de modulul Finanțe.
 

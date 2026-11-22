@@ -108,3 +108,4 @@ jobs:
           dotnet test --project src/Setup/Erp.Setup.Tests/Erp.Setup.Tests.csproj -c Release --filter-trait "Category=Integration"
           dotnet test --project src/Modules/Core/Erp.Core.Tests/Erp.Core.Tests.csproj -c Release --filter-trait "Category=Integration"
           dotnet test --project src/Auth/Erp.Auth.Tests/Erp.Auth.Tests.csproj -c Release --filter-trait "Category=Integration"
+          dotnet test --project src/Modules/Finance/Erp.Finance.Tests/Erp.Finance.Tests.csproj -c Release --filter-trait "Category=Integration"

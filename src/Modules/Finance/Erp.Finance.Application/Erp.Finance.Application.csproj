@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cazurile de utilizare ale Finantelor, prin pipeline-ul comun al Nucleului (02.01, 4.1). Fara SQL si Dapper (NET-06). -->
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Finance.Domain\Erp.Finance.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Finance.Tests" />
+  </ItemGroup>
+
+</Project>

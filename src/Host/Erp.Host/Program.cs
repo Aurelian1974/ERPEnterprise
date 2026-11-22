@@ -7,6 +7,8 @@ using Erp.Core.Infrastructure;
 using Erp.Core.Infrastructure.Licensing;
 using Erp.Hosting;
 using Erp.Core.Contracts;
+using Erp.Finance.Api;
+using Erp.Finance.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.SqlClient;
 
@@ -51,13 +53,15 @@ builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:Mai
 builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 
 // Nucleul (02.01): pipeline-ul comun al comenzilor, contextul cererii, ProblemDetails. Modulele se adauga aici, dupa licenta.
-builder.Services.AddErpMediator();
+builder.Services.AddErpMediator(Erp.Finance.Application.FinanceApplication.Assembly);
 // Licenta (08, 4.1): din baza, reincarcata de LicenseRefresher la pornire, la 5 minute si dupa fiecare incarcare.
 // Cursurile BNR (02.01, 4.3): adresele fisierelor, inlocuibile din configurare daca BNR le muta.
 builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
     new Uri(builder.Configuration["Bnr:DailyUrl"] ?? Erp.Bnr.BnrOptions.Default.DailyUrl.ToString()),
     new Uri(builder.Configuration["Bnr:TenDaysUrl"] ?? Erp.Bnr.BnrOptions.Default.TenDaysUrl.ToString())));
 builder.Services.AddCoreInfrastructure(connectionString, new LicenseOptions(development));
+// Finante si contabilitate (02.02): store-urile modulului si codurile lui de eroare SQL.
+builder.Services.AddFinanceInfrastructure();
 builder.Services.AddErpApi();
 
 // Autentificarea (08, sectiunea 8): Identity cu cookie, paginile /account/*. Cheile Data Protection (cookie, antiforgery, cheile
@@ -101,6 +105,7 @@ app.MapErpHealth(build, () =>
 ]);
 
 app.MapCoreApi();
+app.MapFinanceApi();
 app.MapErpAuth();
 if (development)
 {

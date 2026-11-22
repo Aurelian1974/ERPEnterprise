@@ -16,6 +16,8 @@
     <ProjectReference Include="..\..\Auth\Erp.Auth\Erp.Auth.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Api\Erp.Core.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Api\Erp.Finance.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
   </ItemGroup>
 
   <!-- Baza de dezvoltare care se tine singura la zi (07, „Mediul de dezvoltare”): numai in Debug. Kitul se publica in

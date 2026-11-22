@@ -20,6 +20,8 @@
     <ProjectReference Include="..\..\Host\Erp.Host\Erp.Host.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Api\Erp.Core.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Api\Erp.Finance.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

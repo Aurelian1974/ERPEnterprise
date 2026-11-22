@@ -235,7 +235,7 @@ Fiecare modul primește un document separat, scris în ordinea roadmap-ului, ca 
 | Ordine | Document | Fază | Folder în Library | Stare |
 | --- | --- | --- | --- | --- |
 | 1 | 02.01 Nucleu (Platform) | 0 | [NUCLEU.md](01-nucleu/NUCLEU.md) · [Claude Docs](https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU) | Validat (14.11.2026) |
-| 2 | 02.02 Finanțe și contabilitate | 1 | [02-finante-contabilitate](02-finante-contabilitate/) | De făcut |
+| 2 | 02.02 Finanțe și contabilitate | 1 | [02-finante-contabilitate](02-finante-contabilitate/) | Validat (15.11.2026); în implementare (F1) |
 | 3 | 02.14 Integrări ANAF și BNR | 1 | [14-integrari-anaf-bnr](14-integrari-anaf-bnr/) | De făcut |
 | 4 | 02.03 Vânzări | 1 | [03-vanzari](03-vanzari/) | De făcut |
 | 5 | 02.04 Achiziții | 1 | [04-achizitii](04-achizitii/) | De făcut |

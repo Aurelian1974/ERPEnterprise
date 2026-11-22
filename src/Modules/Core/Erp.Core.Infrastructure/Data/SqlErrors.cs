@@ -4,12 +4,6 @@ using Microsoft.Data.SqlClient;
 
 namespace Erp.Core.Infrastructure.Data;
 
-/// <summary>Maparea codurilor THROW ale unui modul la erori API (NET-09): un singur tabel per modul.</summary>
-public interface ISqlErrorMap
-{
-    IReadOnlyDictionary<int, (ErpErrorKind Kind, string Code)> Errors { get; }
-}
-
 /// <summary>Codurile 50000–50999 ale Nucleului (02.01, 7). 50009 si 50016 raman erori neprevazute (500).</summary>
 public sealed class CoreSqlErrors : ISqlErrorMap
 {

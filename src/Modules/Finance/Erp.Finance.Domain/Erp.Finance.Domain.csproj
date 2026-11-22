@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Regulile de business ale Finantelor (NET-01), fara acces la date. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Finance.Contracts\Erp.Finance.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Finance.Tests" />
+  </ItemGroup>
+
+</Project>

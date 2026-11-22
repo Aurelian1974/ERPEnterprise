@@ -20,11 +20,20 @@ public sealed class ModuleBoundaryTests
 
     private static string ModuleOf(Assembly assembly) => assembly.GetName().Name!.Split('.')[1];
 
+    // Prefixul permisiunilor unui modul (NET-04): codul modulului, cu exceptiile din specificatiile validate (02.02: „Fin.”).
+    private static string PermissionPrefix(string module) => module switch
+    {
+        "Finance" => "Fin",
+        _ => module,
+    };
+
     [Fact]
     public void Module_assemblies_are_loaded()
     {
         Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Core.Application");
         Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Core.Infrastructure");
+        Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Finance.Application");
+        Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Finance.Infrastructure");
     }
 
     [Fact]
@@ -116,7 +125,7 @@ public sealed class ModuleBoundaryTests
                 failures.Add($"{type.FullName}: interogarea cere [RequiresPermission] sau [AuthenticatedUser]");
             }
 
-            if (permission is not null && !permission.Permission.StartsWith(ModuleOf(type.Assembly) + ".", StringComparison.Ordinal))
+            if (permission is not null && !permission.Permission.StartsWith(PermissionPrefix(ModuleOf(type.Assembly)) + ".", StringComparison.Ordinal))
             {
                 failures.Add($"{type.FullName}: permisiunea {permission.Permission} nu aparține modulului");
             }

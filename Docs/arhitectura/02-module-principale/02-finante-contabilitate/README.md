@@ -21,6 +21,14 @@ Diagrame: [model-domeniu-f1.png](model-domeniu-f1.png), [model-domeniu-f2.png](m
 
 Vezi documentul principal: [MODULE_PRINCIPALE.md](../MODULE_PRINCIPALE.md).
 
+## Implementare
+
+Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, câte un pas mic cu commit, push și CI verde.
+
+| Pas | Ce conține | Stare |
+| --- | --- | --- |
+| F1.1 | Proiectele `Erp.Finance.*` în gazdă; conturile de trezorerie (`fin.TreasuryAccount`, casierii, tipurile de operațiuni livrate), permisiunile și rolurile F1; API `/api/finance/treasury-accounts` | Implementat |
+
 ## Machete de ecran (`ecrane/`)
 
 Machetele sunt grupate pe sub-părți, câte un folder în `ecrane/` (cerut de Aurelian, 15.11.2026): `f1-casierie/`, `f2-banca/`, `f3-decontari/`, `f4-multivaluta/`, `f5-planificare/`, `configurare/`.

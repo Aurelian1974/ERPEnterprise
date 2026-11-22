@@ -16,6 +16,14 @@
     <Project Path="src/Modules/Core/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
     <Project Path="src/Modules/Core/Erp.Core.Tests/Erp.Core.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/Erp.Finance.Api/Erp.Finance.Api.csproj" />
+    <Project Path="src/Modules/Finance/Erp.Finance.Application/Erp.Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/Erp.Finance.Contracts/Erp.Finance.Contracts.csproj" />
+    <Project Path="src/Modules/Finance/Erp.Finance.Domain/Erp.Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/Erp.Finance.Infrastructure/Erp.Finance.Infrastructure.csproj" />
+    <Project Path="src/Modules/Finance/Erp.Finance.Tests/Erp.Finance.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Setup/">
     <Project Path="src/Setup/Erp.Setup.Core/Erp.Setup.Core.csproj" />
     <Project Path="src/Setup/Erp.Setup.Engine/Erp.Setup.Engine.csproj" />
