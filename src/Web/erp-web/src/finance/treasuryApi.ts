@@ -100,6 +100,15 @@ export function useTreasuryAccount(id: number) {
   });
 }
 
+/** Tab-ul Istoric al contului (jurnalul de audit), incarcat doar cand tab-ul e deschis. */
+export function useTreasuryHistory(id: number | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['finance', 'treasury-accounts', 'history', id ?? 0] as const,
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/finance/treasury-accounts/{id}/history', { params: { path: { id: id ?? 0 } }, signal })),
+    enabled: enabled && id !== undefined,
+  });
+}
+
 export const treasuryApi = {
   async save(body: SaveTreasuryAccount) {
     return body.id === null

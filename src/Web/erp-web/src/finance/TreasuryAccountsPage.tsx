@@ -13,10 +13,11 @@ import { applyServerErrors, money, moneyForInput, required } from '../components
 import { formatDate } from '../format/date';
 import { t } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
+import { HistoryView } from '../partners/PartnerTabs';
 import { useDebounced } from '../partners/PartnersPage';
 import {
   CloseMode, groupAccounts, groupLabel, isCash, kindLabel, proposedGlAccount, requiresBankAccount, treasuryApi, treasuryKeys, TreasuryKind,
-  treasuryKinds, useTreasuryAccount, useTreasuryAccounts, type TreasuryDetail, type TreasuryFilter, type TreasuryLookups,
+  treasuryKinds, useTreasuryAccount, useTreasuryAccounts, useTreasuryHistory, type TreasuryDetail, type TreasuryFilter, type TreasuryLookups,
 } from './treasuryApi';
 
 const ManagePermission = 'Fin.TreasuryAccount.Manage';
@@ -284,10 +285,12 @@ function TreasuryForm({ account, lookups, canManage, onSaved, onCancel }: {
   const queryClient = useQueryClient();
   const { notify } = useNotifier();
   const [error, setError] = useState<string | undefined>();
-  const [tab, setTab] = useState<'general' | 'cashiers'>('general');
+  const [tab, setTab] = useState<'general' | 'cashiers' | 'history'>('general');
+  const history = useTreasuryHistory(account?.id, tab === 'history');
   const kind = useWatch({ control: form.control, name: 'kind' });
   const currency = useWatch({ control: form.control, name: 'currencyCode' });
   const cash = isCash(kind);
+  const tabs = [...(['general'] as const), ...(cash ? (['cashiers'] as const) : []), ...(account === undefined ? [] : (['history'] as const))];
 
   const branches = useMemo<Option[]>(() => lookups.branches.map((b) => ({ value: String(b.id), text: b.name })), [lookups.branches]);
   const currencies = useMemo<Option[]>(() => lookups.currencies.map((c) => ({ value: c, text: c })), [lookups.currencies]);
@@ -324,18 +327,18 @@ function TreasuryForm({ account, lookups, canManage, onSaved, onCancel }: {
   return (
     <form className="node-form" noValidate onSubmit={(e) => void submit(e)} aria-label={account === undefined ? t('treasury.newTitle') : account.code}>
       {isNew && <h2 className="form-title">{t('treasury.newTitle')}</h2>}
-      {cash && (
+      {tabs.length > 1 && (
         <div className="tabs" role="tablist" aria-label={t('treasury.title')}>
-          {(['general', 'cashiers'] as const).map((key) => (
+          {tabs.map((key) => (
             <button key={key} type="button" role="tab" id={`treasury-tab-${key}`} aria-selected={tab === key} tabIndex={tab === key ? 0 : -1}
               className={tab === key ? 'tab on' : 'tab'} onClick={() => setTab(key)}>
-              {t(key === 'general' ? 'treasury.tab.general' : 'treasury.tab.cashiers')}
+              {t(key === 'general' ? 'treasury.tab.general' : key === 'cashiers' ? 'treasury.tab.cashiers' : 'partner.tab.history')}
             </button>
           ))}
         </div>
       )}
       <ErrorBanner message={error} />
-      <fieldset className="form-body plain" disabled={!canManage} hidden={cash && tab !== 'general'}>
+      <fieldset className="form-body plain" disabled={!canManage} hidden={tab !== 'general'}>
         <Controller
           control={form.control}
           name="kind"
@@ -415,6 +418,7 @@ function TreasuryForm({ account, lookups, canManage, onSaved, onCancel }: {
         <div className="banner dashed">{t('treasury.hint.rules')}</div>
       </fieldset>
       {cash && tab === 'cashiers' && <CashiersEditor control={form.control} users={users} disabled={!canManage} />}
+      {tab === 'history' && <div role="tabpanel" aria-labelledby="treasury-tab-history"><HistoryView history={history} /></div>}
       <div className="form-footer">
         <span className="muted">{info}</span>
         {canManage && (

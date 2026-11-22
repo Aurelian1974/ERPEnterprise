@@ -51,6 +51,23 @@ public interface ITreasuryAccountStore
     Task<TreasuryAccountDetailDto?> GetAsync(int companyId, int id, CancellationToken ct);
 
     Task<FinanceSaved> SaveAsync(TreasuryAccountRecord account, int userId, CancellationToken ct);
+
+    Task<IReadOnlyList<FinanceHistoryEntryDto>> HistoryAsync(int companyId, int id, CancellationToken ct);
+}
+
+/// <summary>O intrare din istoricul unei fise a Finantelor (jurnalul de audit, 02.01 fluxul 4.5).</summary>
+public sealed record FinanceHistoryEntryDto(long Id, DateTime OccurredAt, string Action, string EntityType, long? EntityId, string UserName, string? Changes);
+
+/// <summary>Tab-ul Istoric al contului de trezorerie (macheta f1-01).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.TreasuryAccountView)]
+public sealed record GetTreasuryAccountHistory(int Id) : IQuery<IReadOnlyList<FinanceHistoryEntryDto>>;
+
+internal sealed class GetTreasuryAccountHistoryHandler(ITreasuryAccountStore store, ICurrentContext context)
+    : IQueryHandler<GetTreasuryAccountHistory, IReadOnlyList<FinanceHistoryEntryDto>>
+{
+    public Task<IReadOnlyList<FinanceHistoryEntryDto>> Handle(GetTreasuryAccountHistory request, CancellationToken cancellationToken) =>
+        store.HistoryAsync(context.CompanyId, request.Id, cancellationToken);
 }
 
 /// <summary>Lista ecranului Conturi de trezorerie pentru firma curenta, cu listele fisei.</summary>

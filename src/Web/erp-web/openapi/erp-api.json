@@ -250,6 +250,50 @@
         }
       }
     },
+    "/api/finance/treasury-accounts/{id}/history": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetTreasuryAccountHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceHistoryEntryDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/cash-desk": {
       "get": {
         "tags": [
@@ -24164,6 +24208,50 @@
               "string"
             ],
             "format": "byte"
+          }
+        }
+      },
+      "FinanceHistoryEntryDto": {
+        "required": [
+          "id",
+          "occurredAt",
+          "action",
+          "entityType",
+          "entityId",
+          "userName",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "changes": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       }

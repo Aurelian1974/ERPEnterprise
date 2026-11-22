@@ -74,6 +74,11 @@ public sealed class TreasuryAccountStore(IDbSession session) : ITreasuryAccountS
         }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
     }
 
+    public async Task<IReadOnlyList<FinanceHistoryEntryDto>> HistoryAsync(int companyId, int id, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<FinanceHistoryEntryDto>(new CommandDefinition("fin.usp_TreasuryAccount_History",
+            new { CompanyId = companyId, Id = id }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct))
+            .ConfigureAwait(false)).ToList();
+
     internal static DateOnly? Date(DateTime? value) => value is { } v ? DateOnly.FromDateTime(v) : null;
 
     internal static DateTime? DateTime(DateOnly? value) => value?.ToDateTime(TimeOnly.MinValue);

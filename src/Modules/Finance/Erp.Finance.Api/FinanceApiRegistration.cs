@@ -37,6 +37,9 @@ public static class FinanceApiRegistration
         finance.MapGet("/treasury-accounts/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetTreasuryAccount(id), ct))
             .WithName("GetTreasuryAccount").Produces<TreasuryAccountDetailDto>()
             .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        finance.MapGet("/treasury-accounts/{id:int}/history", (int id, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetTreasuryAccountHistory(id), ct))
+            .WithName("GetTreasuryAccountHistory").Produces<IReadOnlyList<FinanceHistoryEntryDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
         finance.MapPost("/treasury-accounts", (SaveTreasuryAccount body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
             .WithName("CreateTreasuryAccount").Saves();
         finance.MapPut("/treasury-accounts/{id:int}", (int id, SaveTreasuryAccount body, ISender sender, CancellationToken ct) =>
