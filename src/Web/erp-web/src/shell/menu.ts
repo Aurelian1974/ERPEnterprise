@@ -56,6 +56,11 @@ export const menuGroups: readonly MenuGroup[] = [
       },
       { id: 'cash-desk', label: 'menu.cashDesk', path: '/finante/trezorerie/casa', icon: '', module: 'Finance', permission: 'Fin.Cash.View' },
       { id: 'cash-register', label: 'menu.cashRegister', path: '/finante/trezorerie/registru', icon: '', module: 'Finance', permission: 'Fin.Cash.View' },
+      { id: 'advances', label: 'menu.advances', path: '/finante/trezorerie/avansuri', icon: '', module: 'Finance', permission: 'Fin.Advance.Manage' },
+      {
+        id: 'expense-reports', label: 'menu.expenseReports', path: '/finante/trezorerie/deconturi', icon: '', module: 'Finance',
+        permission: 'Fin.ExpenseReport.Create',
+      },
     ],
   },
   {

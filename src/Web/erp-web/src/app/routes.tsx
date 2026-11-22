@@ -12,6 +12,8 @@ import { TreasuryAccountsPage } from '../finance/TreasuryAccountsPage';
 import { CashDeskPage } from '../finance/CashDeskPage';
 import { CashDocumentPage } from '../finance/CashDocumentPage';
 import { CashRegisterPage } from '../finance/CashRegisterPage';
+import { AdvancesPage } from '../finance/AdvancesPage';
+import { ExpenseReportsPage } from '../finance/ExpenseReportsPage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -36,6 +38,8 @@ export const routes = [
       { path: 'finante/trezorerie/casa', element: <CashDeskPage /> },
       { path: 'finante/trezorerie/casa/document', element: <CashDocumentPage /> },
       { path: 'finante/trezorerie/registru', element: <CashRegisterPage /> },
+      { path: 'finante/trezorerie/avansuri', element: <AdvancesPage /> },
+      { path: 'finante/trezorerie/deconturi', element: <ExpenseReportsPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

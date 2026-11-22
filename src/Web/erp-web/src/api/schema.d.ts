@@ -180,6 +180,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/cash-advances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashAdvances"];
+        put?: never;
+        post: operations["CreateCashAdvance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/expense-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetExpenseReports"];
+        put?: never;
+        post: operations["CreateExpenseReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/expense-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetExpenseReport"];
+        put: operations["UpdateExpenseReport"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/expense-reports/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SubmitExpenseReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/expense-reports/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveExpenseReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/expense-reports/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateExpenseReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/antiforgery": {
         parameters: {
             query?: never;
@@ -5051,6 +5147,218 @@ export interface components {
             /** Format: date */
             accountingDate?: string;
         };
+        AdvanceLookupsDto: {
+            employees: components["schemas"]["CashEmployeeOptionDto"][];
+            cashAccounts: components["schemas"]["CashAccountOptionDto"][];
+            expenseTypes: components["schemas"]["ExpenseTypeOptionDto"][];
+        };
+        AdvancePurpose: number;
+        AdvanceStatus: number;
+        CashAdvanceCreatedDto: {
+            /** Format: int32 */
+            cashAdvanceId: number;
+            /** Format: int32 */
+            cashDocumentId: number;
+            /** Format: date */
+            settlementDueDate: string;
+        };
+        CashAdvanceItemDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            employeeId: number;
+            employeeName: string;
+            purpose: components["schemas"]["AdvancePurpose"];
+            currencyCode: string;
+            amount: string;
+            settledAmount: string;
+            returnedAmount: string;
+            paidDifference: string;
+            balance: string;
+            /** Format: date */
+            settlementDueDate: string;
+            /** Format: date */
+            tripStartDate: null | string;
+            /** Format: date */
+            tripEndDate: null | string;
+            status: components["schemas"]["AdvanceStatus"];
+            description: null | string;
+            grantedByNumber: null | string;
+            /** Format: int32 */
+            expenseReportId: null | number;
+            expenseReportNumber: null | string;
+            /** Format: int32 */
+            daysOverdue: number;
+        };
+        CashAdvancePageDto: {
+            advances: components["schemas"]["CashAdvanceItemDto"][];
+            lookups: components["schemas"]["AdvanceLookupsDto"];
+        };
+        CreateCashAdvance: {
+            /** Format: int32 */
+            employeeId: number;
+            purpose: components["schemas"]["AdvancePurpose"];
+            amount: string;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            tripStartDate: null | string;
+            /** Format: date */
+            tripEndDate: null | string;
+            description: null | string;
+            /** @default false */
+            confirmOverdue: boolean;
+            /** Format: date */
+            accountingDate?: string;
+        };
+        ExpenseReportDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            employeeId: number;
+            employeeName: string;
+            /** Format: int32 */
+            cashAdvanceId: null | number;
+            advanceGranted: null | string;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            currencyCode: string;
+            totalJustified: string;
+            advanceAmount: string;
+            difference: string;
+            description: null | string;
+            status: components["schemas"]["ExpenseReportStatus"];
+            /** Format: int32 */
+            createdBy: number;
+            createdByName: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            submittedAt: null | string;
+            submittedByName: null | string;
+            /** Format: date-time */
+            approvedAt: null | string;
+            approvedByName: null | string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            /** Format: int32 */
+            settlementCashDocumentId: null | number;
+            settlementNumber: null | string;
+            settlementStatus: null | components["schemas"]["CashDocumentStatus"];
+            lines: components["schemas"]["ExpenseReportLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        ExpenseReportItemDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            employeeName: string;
+            /** Format: int32 */
+            cashAdvanceId: null | number;
+            totalJustified: string;
+            difference: string;
+            status: components["schemas"]["ExpenseReportStatus"];
+        };
+        ExpenseReportLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int16 */
+            lineNumber: number;
+            /** Format: int32 */
+            expenseTypeId: number;
+            expenseTypeCode: string;
+            expenseTypeName: string;
+            isPerDiem: boolean;
+            justificationKind: components["schemas"]["JustificationKind"];
+            documentNo: null | string;
+            /** Format: date */
+            documentDate: null | string;
+            supplierFiscalCode: null | string;
+            /** Format: int32 */
+            supplierInvoiceId: null | number;
+            amount: string;
+            vatAmount: string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            days: null | string;
+            dailyAmount: null | string;
+            nonTaxableAmount: null | string;
+            taxableAmount: null | string;
+            note: null | string;
+        };
+        ExpenseReportLineInput: {
+            /** Format: int32 */
+            expenseTypeId: number;
+            justificationKind: components["schemas"]["JustificationKind"];
+            documentNo: null | string;
+            /** Format: date */
+            documentDate: null | string;
+            supplierFiscalCode: null | string;
+            /** Format: int32 */
+            supplierInvoiceId: null | number;
+            amount: null | string;
+            vatAmount: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            days: null | string;
+            note: null | string;
+        };
+        ExpenseReportPageDto: {
+            reports: components["schemas"]["ExpenseReportItemDto"][];
+            openAdvances: components["schemas"]["CashAdvanceItemDto"][];
+            lookups: components["schemas"]["AdvanceLookupsDto"];
+        };
+        ExpenseReportStatus: number;
+        ExpenseReportValidatedDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            difference: string;
+            /** Format: int32 */
+            settlementCashDocumentId: null | number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        ExpenseTypeOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            isPerDiem: boolean;
+            dailyAmount: null | string;
+            nonTaxableDailyLimit: null | string;
+        };
+        JustificationKind: number;
+        SaveExpenseReport: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            employeeId: number;
+            /** Format: int32 */
+            cashAdvanceId: null | number;
+            /** Format: date */
+            documentDate: string;
+            description: null | string;
+            lines: components["schemas"]["ExpenseReportLineInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        ValidateExpenseReportBody: {
+            /** Format: byte */
+            rowVersion: string;
+            /** Format: int32 */
+            settlementTreasuryAccountId: null | number;
+        };
     };
     responses: never;
     parameters: never;
@@ -5774,6 +6082,546 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashAdvances: {
+        parameters: {
+            query?: {
+                Filter?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashAdvancePageDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCashAdvance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCashAdvance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashAdvanceCreatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetExpenseReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseReportPageDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveExpenseReport"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseReportDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveExpenseReport"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SubmitExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ApproveExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateExpenseReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateExpenseReportBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseReportValidatedDto"];
                 };
             };
             /** @description Bad Request */

@@ -973,6 +973,666 @@
         }
       }
     },
+    "/api/finance/cash-advances": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetCashAdvances",
+        "parameters": [
+          {
+            "name": "Filter",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashAdvancePageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateCashAdvance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCashAdvance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashAdvanceCreatedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/expense-reports": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetExpenseReports",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseReportPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateExpenseReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExpenseReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/expense-reports/{id}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetExpenseReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseReportDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "UpdateExpenseReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExpenseReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/expense-reports/{id}/submit": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SubmitExpenseReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/expense-reports/{id}/approve": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ApproveExpenseReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/expense-reports/{id}/validate": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ValidateExpenseReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateExpenseReportBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseReportValidatedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/antiforgery": {
       "get": {
         "tags": [
@@ -21602,6 +22262,862 @@
           "accountingDate": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "AdvanceLookupsDto": {
+        "required": [
+          "employees",
+          "cashAccounts",
+          "expenseTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "employees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashEmployeeOptionDto"
+            }
+          },
+          "cashAccounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashAccountOptionDto"
+            }
+          },
+          "expenseTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseTypeOptionDto"
+            }
+          }
+        }
+      },
+      "AdvancePurpose": {
+        "type": "integer"
+      },
+      "AdvanceStatus": {
+        "type": "integer"
+      },
+      "CashAdvanceCreatedDto": {
+        "required": [
+          "cashAdvanceId",
+          "cashDocumentId",
+          "settlementDueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "cashAdvanceId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cashDocumentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "settlementDueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "CashAdvanceItemDto": {
+        "required": [
+          "id",
+          "employeeId",
+          "employeeName",
+          "purpose",
+          "currencyCode",
+          "amount",
+          "settledAmount",
+          "returnedAmount",
+          "paidDifference",
+          "balance",
+          "settlementDueDate",
+          "tripStartDate",
+          "tripEndDate",
+          "status",
+          "description",
+          "grantedByNumber",
+          "expenseReportId",
+          "expenseReportNumber",
+          "daysOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "employeeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/AdvancePurpose"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "settledAmount": {
+            "type": "string"
+          },
+          "returnedAmount": {
+            "type": "string"
+          },
+          "paidDifference": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "string"
+          },
+          "settlementDueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "tripStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "tripEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AdvanceStatus"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "grantedByNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expenseReportId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "expenseReportNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "daysOverdue": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CashAdvancePageDto": {
+        "required": [
+          "advances",
+          "lookups"
+        ],
+        "type": "object",
+        "properties": {
+          "advances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashAdvanceItemDto"
+            }
+          },
+          "lookups": {
+            "$ref": "#/components/schemas/AdvanceLookupsDto"
+          }
+        }
+      },
+      "CreateCashAdvance": {
+        "required": [
+          "employeeId",
+          "purpose",
+          "amount",
+          "treasuryAccountId",
+          "documentDate",
+          "tripStartDate",
+          "tripEndDate",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/AdvancePurpose"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "tripStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "tripEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confirmOverdue": {
+            "type": "boolean",
+            "default": false
+          },
+          "accountingDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ExpenseReportDetailDto": {
+        "required": [
+          "id",
+          "employeeId",
+          "employeeName",
+          "cashAdvanceId",
+          "advanceGranted",
+          "number",
+          "documentDate",
+          "currencyCode",
+          "totalJustified",
+          "advanceAmount",
+          "difference",
+          "description",
+          "status",
+          "createdBy",
+          "createdByName",
+          "createdAt",
+          "submittedAt",
+          "submittedByName",
+          "approvedAt",
+          "approvedByName",
+          "validatedAt",
+          "settlementCashDocumentId",
+          "settlementNumber",
+          "settlementStatus",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "employeeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "cashAdvanceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "advanceGranted": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "totalJustified": {
+            "type": "string"
+          },
+          "advanceAmount": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExpenseReportStatus"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "submittedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "approvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "approvedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "settlementCashDocumentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "settlementNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "settlementStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CashDocumentStatus"
+              }
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseReportLineDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "ExpenseReportItemDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "employeeName",
+          "cashAdvanceId",
+          "totalJustified",
+          "difference",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "cashAdvanceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "totalJustified": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExpenseReportStatus"
+          }
+        }
+      },
+      "ExpenseReportLineDto": {
+        "required": [
+          "id",
+          "lineNumber",
+          "expenseTypeId",
+          "expenseTypeCode",
+          "expenseTypeName",
+          "isPerDiem",
+          "justificationKind",
+          "documentNo",
+          "documentDate",
+          "supplierFiscalCode",
+          "supplierInvoiceId",
+          "amount",
+          "vatAmount",
+          "costCenterId",
+          "projectId",
+          "days",
+          "dailyAmount",
+          "nonTaxableAmount",
+          "taxableAmount",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int16"
+          },
+          "expenseTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expenseTypeCode": {
+            "type": "string"
+          },
+          "expenseTypeName": {
+            "type": "string"
+          },
+          "isPerDiem": {
+            "type": "boolean"
+          },
+          "justificationKind": {
+            "$ref": "#/components/schemas/JustificationKind"
+          },
+          "documentNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "supplierFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supplierInvoiceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "vatAmount": {
+            "type": "string"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "days": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dailyAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nonTaxableAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taxableAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExpenseReportLineInput": {
+        "required": [
+          "expenseTypeId",
+          "justificationKind",
+          "documentNo",
+          "documentDate",
+          "supplierFiscalCode",
+          "supplierInvoiceId",
+          "amount",
+          "vatAmount",
+          "costCenterId",
+          "projectId",
+          "days",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "expenseTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "justificationKind": {
+            "$ref": "#/components/schemas/JustificationKind"
+          },
+          "documentNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "supplierFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supplierInvoiceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "days": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExpenseReportPageDto": {
+        "required": [
+          "reports",
+          "openAdvances",
+          "lookups"
+        ],
+        "type": "object",
+        "properties": {
+          "reports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseReportItemDto"
+            }
+          },
+          "openAdvances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashAdvanceItemDto"
+            }
+          },
+          "lookups": {
+            "$ref": "#/components/schemas/AdvanceLookupsDto"
+          }
+        }
+      },
+      "ExpenseReportStatus": {
+        "type": "integer"
+      },
+      "ExpenseReportValidatedDto": {
+        "required": [
+          "id",
+          "number",
+          "difference",
+          "settlementCashDocumentId",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "difference": {
+            "type": "string"
+          },
+          "settlementCashDocumentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "ExpenseTypeOptionDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "isPerDiem",
+          "dailyAmount",
+          "nonTaxableDailyLimit"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPerDiem": {
+            "type": "boolean"
+          },
+          "dailyAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nonTaxableDailyLimit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "JustificationKind": {
+        "type": "integer"
+      },
+      "SaveExpenseReport": {
+        "required": [
+          "id",
+          "employeeId",
+          "cashAdvanceId",
+          "documentDate",
+          "description",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employeeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cashAdvanceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseReportLineInput"
+            }
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "ValidateExpenseReportBody": {
+        "required": [
+          "rowVersion",
+          "settlementTreasuryAccountId"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          },
+          "settlementTreasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       }
