@@ -75,7 +75,7 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
         Assert.All(lines, l => Assert.Equal(BankLineMatchStatus.Validated, l.MatchStatus));
         Assert.Equal(PaymentConfirmationStatus.Confirmed, (await Send(new GetPaymentOrder(byId.Id))).ConfirmationStatus);
         Assert.Equal(PaymentConfirmationStatus.Confirmed, (await Send(new GetPaymentOrder(byIban.Id))).ConfirmationStatus);
-        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentId\":{byId.Id},%"));
+        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.PaymentOrder\",\"documentId\":{byId.Id},%"));
         Assert.Equal(0, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.BankStatementLine\",\"documentId\":{lines[0].Id},%"));
     }
 

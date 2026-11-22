@@ -176,7 +176,7 @@ public sealed class PaymentOrderIntegrationTests : BankTestBase, IClassFixture<F
 
         var confirmed = await Send(new GetPaymentOrder(orderId));
         Assert.Equal((PaymentConfirmationStatus.Confirmed, line.Id), (confirmed.ConfirmationStatus, confirmed.BankStatementLineId));
-        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentId\":{orderId},%"));
+        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.PaymentOrder\",\"documentId\":{orderId},%"));
         Assert.Equal(0, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.BankStatementLine\",\"documentId\":{line.Id},%"));
         Assert.Equal(1, await Events("OrdinPlataConfirmat", $"%\"paymentOrderId\":{orderId},%"));
 
@@ -247,7 +247,7 @@ public sealed class PaymentOrderIntegrationTests : BankTestBase, IClassFixture<F
         var after = await Send(new GetBankStatementLine(line.Id));
         Assert.Equal(BankLineMatchStatus.Validated, after.MatchStatus);
         Assert.All(after.Parts, p => Assert.Equal(created.Id, p.PaymentOrderId));
-        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentId\":{created.Id},%"));
+        Assert.Equal(1, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.PaymentOrder\",\"documentId\":{created.Id},%"));
         Assert.Equal(0, await Events("PlataInregistrata", $"%\"documentType\":\"Finance.BankStatementLine\",\"documentId\":{line.Id},%"));
         Assert.Equal(1, await Events("OrdinPlataConfirmat", $"%\"paymentOrderId\":{created.Id},%"));
     }
