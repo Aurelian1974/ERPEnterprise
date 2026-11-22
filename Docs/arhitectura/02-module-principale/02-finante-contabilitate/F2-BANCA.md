@@ -635,3 +635,10 @@ Criteriile F2-A2, F2-A5 și F2-A7 sunt critice: o dublură sau o linie validată
 | 3 | Importul automat din folder | Se păstrează | 3.1, 4.1 |
 | 4 | Extrase reale pentru teste | Nu există încă; de procurat ulterior (TBD) | F2-A1 |
 | 5 | Validarea automată a încasărilor potrivite exact pe factură | Da, implicit pornită (`Fin.Bank.AutoValidateLevel = 2`) | 4.3, F2-A21 |
+
+## Note de implementare (22.11.2026)
+
+| Pas | Ce s-a făcut | Abateri și completări față de specificație |
+| --- | --- | --- |
+| F2.1 | Migrarea `2026.11.030` (profile, extrase, linii, părți, TVP `fin.BankStatementLineList` după convenția repo-ului), seed-urile `06_BankOperationTypes` și `07_BankFormatProfiles`, permisiunile și rolurile F2 (rol nou `DIRECTOR_FINANCIAR`), comenzile `ImportBankStatement`, `AcceptStatementGap`, `SaveBankFormatProfile`, `SetTreasuryAccountBankFormat` și interogările extraselor | Fișierul original se păstrează provizoriu în `fin.BankStatementFile` (hash unic pe cont), până la atașamentele Nucleului (02.01); un CAMT.053 cu mai multe extrase are un singur fișier. Continuitatea se judecă pe sold: gol = soldul inițial ≠ soldul final al extrasului anterior (băncile nu emit extras în zilele fără mișcări); un extras lipsă importat ulterior închide golul următorului. Sensul „Ambele” (3) e permis doar tipurilor folosite numai la bancă. Cod nou 51224 `FIN_BANK_STATEMENT_NOT_FOUND`. Un CSV fără coloană de sold pornește de la soldul final al extrasului anterior. Testele F2-A1 rulează pe fișiere construite (decizia 4) |
+

@@ -130,7 +130,7 @@ public sealed class CashDocumentIntegrationTests : FinanceTestBase, IClassFixtur
 
         // Plafonul legal de 5.000 lei: 3.000 la o casa, apoi 3.000 la alta casa a aceleiasi firme, in aceeasi zi = 6.000 > 5.000.
         await Validate(await Draft(first, CashDocumentKind.Receipt, Day1, "INC-CLIENT", "3000", Database.LegalPartnerId, companyId: company), companyId: company);
-        var checks = await Query<int>("SELECT COUNT(*) FROM fin.CashLimitCheck WHERE CompanyId = @Company", new { Company = company });
+        var checks = await Query<int>("SELECT COUNT(*) FROM fin.CashLimitCheck WHERE CompanyId = @Company AND Confirmed = 0", new { Company = company });
         var blocked = await Assert.ThrowsAsync<ErpException>(async () =>
             await Validate(await Draft(second, CashDocumentKind.Receipt, Day1, "INC-CLIENT", "3000", Database.LegalPartnerId, companyId: company),
                 companyId: company));

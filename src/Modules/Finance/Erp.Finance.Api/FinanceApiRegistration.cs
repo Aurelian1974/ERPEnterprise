@@ -1,4 +1,5 @@
 using Erp.Finance.Application;
+using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Treasury;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,7 @@ public static class FinanceApiRegistration
         MapCashRegister(finance);
         MapAdvances(finance);
         MapTreasurySettings(finance);
+        MapBank(finance);
         return endpoints;
     }
 
@@ -132,6 +134,30 @@ public static class FinanceApiRegistration
             .WithName("UpdateCashLimitRule").Saves();
     }
 
+    // Extrase bancare si profile de format (02.02, F2 3.1, 3.3, 4.1; machetele f2-01, f2-02, cf-04).
+    private static void MapBank(RouteGroupBuilder finance)
+    {
+        finance.MapGet("/bank-statements", ([AsParameters] GetBankStatements query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetBankStatements").Produces<IReadOnlyList<BankStatementItemDto>>().Problems();
+        finance.MapGet("/bank-statements/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetBankStatement(id), ct))
+            .WithName("GetBankStatement").Produces<BankStatementDetailDto>().Problems();
+        finance.MapPost("/bank-statements/import", (ImportBankStatement body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ImportBankStatement").Produces<BankImportResultDto>().Problems();
+        finance.MapPost("/bank-statements/{id:int}/accept-gap", (int id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new AcceptStatementGap(id, body.Reason, body.RowVersion), ct))
+            .WithName("AcceptStatementGap").Produces<byte[]>().Problems();
+        finance.MapGet("/bank-format-profiles", (ISender sender, CancellationToken ct) => sender.Send(new GetBankFormatProfiles(), ct))
+            .WithName("GetBankFormatProfiles").Produces<IReadOnlyList<BankFormatProfileDto>>().Problems();
+        finance.MapPost("/bank-format-profiles", (SaveBankFormatProfile body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateBankFormatProfile").Saves();
+        finance.MapPut("/bank-format-profiles/{id:int}", (int id, SaveBankFormatProfile body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateBankFormatProfile").Saves();
+        finance.MapPut("/treasury-accounts/{id:int}/bank-format", (int id, BankFormatBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new SetTreasuryAccountBankFormat(id, body.BankFormatProfileId, body.ImportFolder), ct))
+            .WithName("SetTreasuryAccountBankFormat").Produces<bool>().Problems();
+    }
+
     private static RouteHandlerBuilder Problems(this RouteHandlerBuilder builder) => builder
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -154,3 +180,9 @@ public sealed record ValidateCashBody(byte[] RowVersion, bool ConfirmWarnings);
 
 /// <summary>Corpul validarii decontului: versiunea si casa in care se inchide diferenta.</summary>
 public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? SettlementTreasuryAccountId);
+
+/// <summary>Acceptarea golului de continuitate: motivul si versiunea extrasului.</summary>
+public sealed record AcceptGapBody(string Reason, byte[] RowVersion);
+
+/// <summary>Profilul bancar si folderul de import ale unui cont.</summary>
+public sealed record BankFormatBody(int? BankFormatProfileId, string? ImportFolder);

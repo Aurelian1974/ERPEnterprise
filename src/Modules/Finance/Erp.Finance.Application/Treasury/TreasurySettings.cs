@@ -65,6 +65,8 @@ internal sealed class SaveOperationTypeValidator : AbstractValidator<SaveOperati
         RuleFor(x => x.SettlementKind).InclusiveBetween((byte)0, (byte)4);
         RuleFor(x => x.CounterGlAccountCode).Matches(SettingsRules.GlPattern).When(x => !string.IsNullOrWhiteSpace(x.CounterGlAccountCode))
             .WithMessage("Simbolul contului are 3–6 cifre, opțional cu analitic.");
+        RuleFor(x => x).Must(x => !(x.AppliesToCash && x.Direction == CashDirection.Both)).WithName("direction")
+            .WithMessage("Un tip folosit la casă are sensul intrare sau ieșire.");
         RuleFor(x => x).Must(x => x.AppliesToCash || x.AppliesToBank).WithName("appliesToCash").WithMessage("Tipul se folosește la casă, la bancă sau la amândouă.");
         RuleFor(x => x.RowVersion).NotNull().When(x => x.Id is not null).WithMessage("Lipsește versiunea înregistrării.");
     }

@@ -1720,6 +1720,7 @@ export const ro = {
   'settings.direction': 'Sens',
   'settings.in': 'Intrare',
   'settings.out': 'Ieșire',
+  'settings.both': 'Ambele',
   'settings.where': 'Unde',
   'settings.cash': 'Casă',
   'settings.bank': 'Bancă',

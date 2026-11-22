@@ -2313,6 +2313,611 @@
         }
       }
     },
+    "/api/finance/bank-statements": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankStatements",
+        "parameters": [
+          {
+            "name": "TreasuryAccountId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "To",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankStatementItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-statements/{id}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankStatementDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-statements/import": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ImportBankStatement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBankStatement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankImportResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-statements/{id}/accept-gap": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "AcceptStatementGap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptGapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-format-profiles": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankFormatProfiles",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankFormatProfileDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateBankFormatProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBankFormatProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-format-profiles/{id}": {
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "UpdateBankFormatProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBankFormatProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/treasury-accounts/{id}/bank-format": {
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SetTreasuryAccountBankFormat",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankFormatBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/antiforgery": {
       "get": {
         "tags": [
@@ -24254,6 +24859,541 @@
             ]
           }
         }
+      },
+      "AcceptGapBody": {
+        "required": [
+          "reason",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "BankFormatBody": {
+        "required": [
+          "bankFormatProfileId",
+          "importFolder"
+        ],
+        "type": "object",
+        "properties": {
+          "bankFormatProfileId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "importFolder": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "BankFormatProfileDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "bankBic",
+          "statementFormat",
+          "csvMapping",
+          "paymentFormat",
+          "paymentMapping",
+          "maxRemittanceLength",
+          "isSystem",
+          "isActive",
+          "accountCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bankBic": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementFormat": {
+            "$ref": "#/components/schemas/StatementFormat"
+          },
+          "csvMapping": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentFormat": {
+            "$ref": "#/components/schemas/PaymentFileFormat"
+          },
+          "paymentMapping": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxRemittanceLength": {
+            "type": "integer",
+            "format": "int16"
+          },
+          "isSystem": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "accountCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "BankImportResultDto": {
+        "required": [
+          "statements"
+        ],
+        "type": "object",
+        "properties": {
+          "statements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportedStatementDto"
+            }
+          }
+        }
+      },
+      "BankLineMatchStatus": {
+        "type": "integer"
+      },
+      "BankStatementDetailDto": {
+        "required": [
+          "statement",
+          "fileName",
+          "gapReason",
+          "gapAcceptedAt",
+          "gapAcceptedByName",
+          "previousClosingBalance",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "statement": {
+            "$ref": "#/components/schemas/BankStatementItemDto"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gapReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gapAcceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "gapAcceptedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "previousClosingBalance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankStatementLineDto"
+            }
+          }
+        }
+      },
+      "BankStatementItemDto": {
+        "required": [
+          "id",
+          "treasuryAccountId",
+          "accountCode",
+          "accountName",
+          "statementNo",
+          "statementDate",
+          "periodFrom",
+          "periodTo",
+          "currencyCode",
+          "openingBalance",
+          "closingBalance",
+          "source",
+          "status",
+          "continuityStatus",
+          "lineCount",
+          "validatedCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "statementNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "openingBalance": {
+            "type": "string"
+          },
+          "closingBalance": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/StatementSource"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BankStatementStatus"
+          },
+          "continuityStatus": {
+            "$ref": "#/components/schemas/ContinuityStatus"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validatedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "BankStatementLineDto": {
+        "required": [
+          "id",
+          "lineNumber",
+          "bookingDate",
+          "valueDate",
+          "amount",
+          "counterpartyName",
+          "counterpartyIban",
+          "counterpartyBic",
+          "remittanceInfo",
+          "endToEndId",
+          "bankReference",
+          "bankTransactionCode",
+          "foreignAmount",
+          "foreignCurrency",
+          "matchStatus",
+          "partnerId",
+          "partnerName",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "valueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "counterpartyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyBic": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceInfo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "endToEndId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankReference": {
+            "type": "string"
+          },
+          "bankTransactionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "foreignAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "foreignCurrency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matchStatus": {
+            "$ref": "#/components/schemas/BankLineMatchStatus"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "BankStatementStatus": {
+        "type": "integer"
+      },
+      "ContinuityStatus": {
+        "type": "integer"
+      },
+      "ImportBankStatement": {
+        "required": [
+          "treasuryAccountId",
+          "fileName",
+          "contentBase64"
+        ],
+        "type": "object",
+        "properties": {
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentBase64": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportedStatementDto": {
+        "required": [
+          "bankStatementId",
+          "treasuryAccountId",
+          "statementNo",
+          "statementDate",
+          "lineCount",
+          "skippedCount",
+          "continuityStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "bankStatementId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statementNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skippedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "continuityStatus": {
+            "$ref": "#/components/schemas/ContinuityStatus"
+          }
+        }
+      },
+      "PaymentFileFormat": {
+        "type": "integer"
+      },
+      "SaveBankFormatProfile": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "bankBic",
+          "statementFormat",
+          "csvMapping",
+          "paymentFormat",
+          "paymentMapping",
+          "maxRemittanceLength",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bankBic": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementFormat": {
+            "$ref": "#/components/schemas/StatementFormat"
+          },
+          "csvMapping": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentFormat": {
+            "$ref": "#/components/schemas/PaymentFileFormat"
+          },
+          "paymentMapping": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxRemittanceLength": {
+            "type": "integer",
+            "format": "int16"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "StatementFormat": {
+        "type": "integer"
+      },
+      "StatementSource": {
+        "type": "integer"
       }
     }
   },

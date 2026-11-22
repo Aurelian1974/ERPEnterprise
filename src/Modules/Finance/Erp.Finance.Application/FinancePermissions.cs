@@ -1,7 +1,7 @@
 namespace Erp.Finance.Application;
 
 /// <summary>
-/// Permisiunile Finantelor (02.02, F1 8); aceleasi coduri ca in seed-ul fin (core.Permission, ModuleCode „Fin”). Prefixul „Fin.” e cel
+/// Permisiunile Finantelor (02.02, F1 8 si F2 8); aceleasi coduri ca in seed-ul fin (core.Permission, ModuleCode „Fin”). Prefixul „Fin.” e cel
 /// din specificatia validata; codul modulului din licenta ramane „Finance” (FinanceModule.Code).
 /// </summary>
 public static class FinancePermissions
@@ -21,6 +21,22 @@ public static class FinancePermissions
     public const string ExpenseReportApprove = "Fin.ExpenseReport.Approve";
     public const string ExpenseReportValidate = "Fin.ExpenseReport.Validate";
     public const string TreasuryConfigure = "Fin.Treasury.Configure";
+    public const string BankView = "Fin.Bank.View";
+    public const string BankStatementImport = "Fin.BankStatement.Import";
+    public const string BankStatementReconcile = "Fin.BankStatement.Reconcile";
+    public const string BankStatementValidate = "Fin.BankStatement.Validate";
+    public const string BankStatementUnvalidate = "Fin.BankStatement.Unvalidate";
+    public const string BankStatementAcceptGap = "Fin.BankStatement.AcceptGap";
+    public const string BankRuleManage = "Fin.BankRule.Manage";
+    public const string BankFormatManage = "Fin.BankFormat.Manage";
+    public const string PaymentOrderCreate = "Fin.PaymentOrder.Create";
+    public const string PaymentOrderValidate = "Fin.PaymentOrder.Validate";
+    public const string PaymentOrderReverse = "Fin.PaymentOrder.Reverse";
+    public const string PaymentOrderApprove = "Fin.PaymentOrder.Approve";
+    public const string PaymentOrderExport = "Fin.PaymentOrder.Export";
+    public const string PaymentOrderReExport = "Fin.PaymentOrder.ReExport";
+    public const string PaymentOrderCancel = "Fin.PaymentOrder.Cancel";
+    public const string PaymentOrderFreeIban = "Fin.PaymentOrder.FreeIban";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>

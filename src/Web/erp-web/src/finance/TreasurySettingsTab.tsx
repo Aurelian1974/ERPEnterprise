@@ -138,7 +138,7 @@ function OperationTypes() {
             <tr key={o.id} className={o.isActive ? '' : 'inactive'} onClick={() => setDraft(toDraft(o))}>
               <td><button type="button" className="row-link mono">{o.code}</button></td>
               <td>{o.name}</td>
-              <td className="small">{t(o.direction === 1 ? 'settings.in' : 'settings.out')}</td>
+              <td className="small">{t(o.direction === 1 ? 'settings.in' : o.direction === 2 ? 'settings.out' : 'settings.both')}</td>
               <td className="small">{[o.appliesToCash ? t('settings.cash') : '', o.appliesToBank ? t('settings.bank') : ''].filter(Boolean).join(' · ')}</td>
               <td className="small">{o.cashLimitCategory ?? t('common.none')}</td>
               <td className="small">{o.counterGlAccountCode ?? t('common.none')}</td>

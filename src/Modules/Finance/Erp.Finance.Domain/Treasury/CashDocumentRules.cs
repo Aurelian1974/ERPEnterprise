@@ -17,11 +17,12 @@ public enum CashDocumentStatus : byte
     Reversed = 3,
 }
 
-/// <summary>Sensul unui tip de operatiune de trezorerie (F1 3.2).</summary>
+/// <summary>Sensul unui tip de operatiune de trezorerie (F1 3.2); „Ambele” doar la banca (viramente interne, sume de clarificat, F2 3.2).</summary>
 public enum CashDirection : byte
 {
     In = 1,
     Out = 2,
+    Both = 3,
 }
 
 /// <summary>Plafonul aplicat (F1 3.6): categoria si actiunea (Blocare sau Avertizare).</summary>

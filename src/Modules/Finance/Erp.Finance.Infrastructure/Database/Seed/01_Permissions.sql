@@ -1,4 +1,4 @@
--- Catalogul permisiunilor Finantelor (02.02, F1 8): coduri tehnice fixe „Fin.*”, comparate exact (SQL-21). MERGE pe Code (MIG-06);
+-- Catalogul permisiunilor Finantelor (02.02, F1 8 si F2 8): coduri tehnice fixe „Fin.*”, comparate exact (SQL-21). MERGE pe Code (MIG-06);
 -- seed-ul fin ruleaza dupa cel al Nucleului (ordinea modulelor), deci tabelele core.Permission / core.Role exista deja.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -19,7 +19,23 @@ USING (VALUES
     (N'Fin.ExpenseReport.Create',   N'Deconturi de cheltuieli pentru orice angajat'),
     (N'Fin.ExpenseReport.Approve',  N'Aprobare deconturi de cheltuieli'),
     (N'Fin.ExpenseReport.Validate', N'Validare deconturi de cheltuieli'),
-    (N'Fin.Treasury.Configure',     N'Tipuri de operațiuni de trezorerie, tipuri de cheltuieli și diurnă')
+    (N'Fin.Treasury.Configure',     N'Tipuri de operațiuni de trezorerie, tipuri de cheltuieli și diurnă'),
+    (N'Fin.Bank.View',                N'Extrase, linii și reconcilierea conturilor bancare ale firmei'),
+    (N'Fin.BankStatement.Import',     N'Import de extrase și introducere manuală'),
+    (N'Fin.BankStatement.Reconcile',  N'Explicarea liniilor de extras, acceptarea propunerilor, reguli din potriviri'),
+    (N'Fin.BankStatement.Validate',   N'Validarea liniilor de extras'),
+    (N'Fin.BankStatement.Unvalidate', N'Desfacerea validării unei linii de extras (auditată)'),
+    (N'Fin.BankStatement.AcceptGap',  N'Acceptarea unui gol de continuitate între extrase, cu motiv'),
+    (N'Fin.BankRule.Manage',          N'Reguli de potrivire a liniilor de extras'),
+    (N'Fin.BankFormat.Manage',        N'Profile de format bancar și foldere de import'),
+    (N'Fin.PaymentOrder.Create',      N'Creare și modificare ordine de plată ciornă'),
+    (N'Fin.PaymentOrder.Validate',    N'Legarea ordinului de plată de factură, care îl validează'),
+    (N'Fin.PaymentOrder.Reverse',     N'Stornarea unui ordin de plată validat'),
+    (N'Fin.PaymentOrder.Approve',     N'Aprobarea ordinelor de plată (patru ochi)'),
+    (N'Fin.PaymentOrder.Export',      N'Loturi de plată și export fișier către bancă'),
+    (N'Fin.PaymentOrder.ReExport',    N'Reexportul unui lot de plată, cu motiv'),
+    (N'Fin.PaymentOrder.Cancel',      N'Anularea unui lot exportat dar netrimis'),
+    (N'Fin.PaymentOrder.FreeIban',    N'IBAN beneficiar tastat direct, nu din fișa partenerului')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN
