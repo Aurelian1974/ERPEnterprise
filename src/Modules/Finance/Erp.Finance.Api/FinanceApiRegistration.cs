@@ -25,6 +25,7 @@ public static class FinanceApiRegistration
         MapCash(finance);
         MapCashRegister(finance);
         MapAdvances(finance);
+        MapTreasurySettings(finance);
         return endpoints;
     }
 
@@ -103,6 +104,29 @@ public static class FinanceApiRegistration
         finance.MapPost("/expense-reports/{id:int}/validate", (int id, ValidateExpenseReportBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new ValidateExpenseReport(id, body.RowVersion, body.SettlementTreasuryAccountId), ct))
             .WithName("ValidateExpenseReport").Produces<ExpenseReportValidatedDto>().Problems();
+    }
+
+    // Configurare › Finante › Trezorerie (02.02, F1 3.2, 3.6, 3.7; machetele cf-01, cf-02, cf-03).
+    private static void MapTreasurySettings(RouteGroupBuilder finance)
+    {
+        finance.MapGet("/operation-types", (ISender sender, CancellationToken ct) => sender.Send(new GetOperationTypes(), ct))
+            .WithName("GetOperationTypes").Produces<IReadOnlyList<OperationTypeDto>>().Problems();
+        finance.MapPost("/operation-types", (SaveOperationType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateOperationType").Saves();
+        finance.MapPut("/operation-types/{id:int}", (int id, SaveOperationType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateOperationType").Saves();
+        finance.MapGet("/expense-types", (ISender sender, CancellationToken ct) => sender.Send(new GetExpenseTypes(), ct))
+            .WithName("GetExpenseTypes").Produces<IReadOnlyList<ExpenseTypeDto>>().Problems();
+        finance.MapPost("/expense-types", (SaveExpenseType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateExpenseType").Saves();
+        finance.MapPut("/expense-types/{id:int}", (int id, SaveExpenseType body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateExpenseType").Saves();
+        finance.MapGet("/cash-limits", (ISender sender, CancellationToken ct) => sender.Send(new GetCashLimitRules(), ct))
+            .WithName("GetCashLimitRules").Produces<IReadOnlyList<CashLimitRuleDto>>().Problems();
+        finance.MapPost("/cash-limits", (SaveCashLimitRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateCashLimitRule").Saves();
+        finance.MapPut("/cash-limits/{id:int}", (int id, SaveCashLimitRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateCashLimitRule").Saves();
     }
 
     private static RouteHandlerBuilder Problems(this RouteHandlerBuilder builder) => builder

@@ -20,6 +20,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<ICashRegisterStore, CashRegisterStore>();
         services.AddTransient<CashDayAutoClose>();
         services.AddScoped<IAdvanceStore, AdvanceStore>();
+        services.AddScoped<ITreasurySettingsStore, TreasurySettingsStore>();
         services.AddScoped<CashDraftFactory>();
         services.AddTransient<CashAdvanceOverdue>();
         return services;
