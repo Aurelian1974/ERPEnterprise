@@ -1,0 +1,239 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Solduri parteneri</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+
+  .lim { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .lim b { white-space: nowrap; }
+  .kv .l { font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .kv .v { font-size: 17px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: inline-grid; place-items: center; font-size: 11px; color: #fff; vertical-align: middle; }
+  .cb.on { background: var(--blue-500); border-color: var(--blue-500); }
+  .mono { font-family: "Cascadia Mono", Consolas, monospace; font-size: 11.5px; color: #445064; }
+  td { padding: 7px 12px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px; }
+  .kpi .l { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .kpi .v { font-size: 20px; font-weight: 700; margin-top: 3px; letter-spacing: -.3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .kpi .v small { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .kpi .t { font-size: 11.5px; color: #8a94a3; margin-top: 2px; white-space: nowrap; }
+  td .pc, td .pn { white-space: nowrap; }
+  .ag { display: flex; height: 8px; border-radius: 4px; overflow: hidden; width: 130px; background: #eef1f5; }
+  .ag i { display: block; height: 100%; }
+  .a0 { background: #2f6fed; } .a1 { background: #e0a21b; } .a2 { background: #e07b1b; } .a3 { background: #d14343; }
+
+  .leg { display: flex; gap: 16px; padding: 12px 14px; font-size: 11.5px; color: #5b6676; }
+  .leg i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  td { padding: 9px 12px; }
+
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#3b5f92">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Note contabile</div>
+<div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+<div class="sec">Module</div>
+<div class="item open"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">⌄</span></div>
+<div class="grp closed">Trezorerie<span class="chev">›</span></div>
+<div class="grp closed">Bancă<span class="chev">›</span></div>
+<div class="grp">Decontări<span class="chev">⌄</span></div>
+<div class="sub2l active">Solduri parteneri</div>
+<div class="sub2l">Alocare</div>
+<div class="sub2l">Scadențar</div>
+<div class="sub2l">Compensări</div>
+<div class="sub2l">Efecte comerciale</div>
+<div class="sub2l">Confirmări de sold</div>
+<div class="sub2l">Penalități</div>
+<div class="grp closed">Valută<span class="chev">›</span></div>
+<div class="grp closed">Planificare<span class="chev">›</span></div>
+<div class="grp closed">Contabilitate<span class="chev">›</span></div>
+<div class="grp closed">Închideri<span class="chev">›</span></div>
+<div class="grp closed">Declarații<span class="chev">›</span></div>
+<div class="grp closed">Rapoarte<span class="chev">›</span></div>
+<div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+<div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+<div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+<div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+<div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Finanțe și contabilitate › Decontări › Solduri parteneri</div>
+    <div class="head">
+      <div><h1>Solduri parteneri</h1><div class="sub2">Cât ne datorează clienții și cât datorăm furnizorilor, cu restanțele și vechimea lor</div></div>
+      <div class="actions"><div class="btn ghost">⇩ Export Excel</div><div class="btn ghost">⎙ Fișă de cont pe lot</div></div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Creanțe clienți</div><div class="v">1.742.380 <small>RON</small></div><div class="t">412 clienți cu sold</div></div>
+    <div class="kpi"><div class="l">din care restante</div><div class="v neg">318.640 <small>RON</small></div><div class="t">18,3% · 74 de clienți</div></div>
+    <div class="kpi"><div class="l">Datorii furnizori</div><div class="v">964.215 <small>RON</small></div><div class="t">138 furnizori cu sold</div></div>
+    <div class="kpi"><div class="l">Plăți și încasări nealocate</div><div class="v">27.840 <small>RON</small></div><div class="t">19 partide de alocat</div></div>
+    <div class="kpi"><div class="l">TVA neexigibil (la încasare)</div><div class="v">36.212 <small>RON</small></div><div class="t">colectat 21.904 · deductibil 14.308</div></div>
+  </div>
+  <section class="panel" style="flex:1">
+    <div class="ltools" style="flex-direction:row;align-items:center;gap:10px">
+      <div class="tsearch" style="width:340px">⌕ Caută partener, cod sau CUI…</div>
+      <div class="tfilters"><span class="tf on">Clienți</span><span class="tf">Furnizori</span><span class="tf">Cu restanțe</span><span class="tf">Cu plăți nealocate</span><span class="tf">Client și furnizor</span><span class="tf">Agent ▾</span><span class="tf">Grupă ▾</span><span class="tf">La data: 13.11.2026 ▾</span></div>
+    </div>
+    <table><thead><tr><th>Partener</th><th>Rol</th><th class="num">Sold client</th><th class="num">Restant</th><th>Vechime</th><th>Max. întârziere</th><th class="num">Nealocat</th><th>Agent</th></tr></thead><tbody><tr class=""><td><div class="pn">Mega Retail SA</div><div class="pc">MEGA01</div></td><td><span class="rc c">Client</span></td><td class="num"><b>86.340,00</b></td><td class="num neg">21.880,00</td><td><div class="ag"><i class="a0" style="width:75%"></i><i class="a1" style="width:0%"></i><i class="a2" style="width:25%"></i><i class="a3" style="width:0%"></i></div></td><td class="tp">54 zile</td><td class="num">0,00</td><td class="tp">Mihai Stan</td></tr><tr class="sel"><td><div class="pn">Agro Nord Distribuție SRL</div><div class="pc">AGN</div></td><td><span class="rc c">Client</span><span class="rc f">Furnizor</span></td><td class="num"><b>48.210,00</b></td><td class="num neg">1.530,00</td><td><div class="ag"><i class="a0" style="width:97%"></i><i class="a1" style="width:3%"></i><i class="a2" style="width:0%"></i><i class="a3" style="width:0%"></i></div></td><td class="tp">15 zile</td><td class="num">500,00</td><td class="tp">Mihai Stan</td></tr><tr class=""><td><div class="pn">Construct Max SA</div><div class="pc">CMX</div></td><td><span class="rc c">Client</span></td><td class="num"><b>41.120,00</b></td><td class="num neg">2.300,00</td><td><div class="ag"><i class="a0" style="width:94%"></i><i class="a1" style="width:6%"></i><i class="a2" style="width:0%"></i><i class="a3" style="width:0%"></i></div></td><td class="tp">9 zile</td><td class="num">10.296,50</td><td class="tp">Radu Enache</td></tr><tr class=""><td><div class="pn">Energo Serv SRL</div><div class="pc">ENS</div></td><td><span class="rc c">Client</span></td><td class="num"><b>18.960,00</b></td><td class="num muted">0,00</td><td><div class="ag"><i class="a0" style="width:100%"></i><i class="a1" style="width:0%"></i><i class="a2" style="width:0%"></i><i class="a3" style="width:0%"></i></div></td><td class="tp">—</td><td class="num">0,00</td><td class="tp">Radu Enache</td></tr><tr class=""><td><div class="pn">Müller Logistik GmbH</div><div class="pc">MUL</div></td><td><span class="rc c">Client</span></td><td class="num"><b>9.400,00 EUR</b></td><td class="num neg">4.100,00 EUR</td><td><div class="ag"><i class="a0" style="width:56%"></i><i class="a1" style="width:0%"></i><i class="a2" style="width:0%"></i><i class="a3" style="width:44%"></i></div></td><td class="tp">69 zile</td><td class="num">0,00</td><td class="tp">Andrei Sava</td></tr><tr class=""><td><div class="pn">Popescu Maria</div><div class="pc">PF-00412</div></td><td><span class="rc c">Client</span></td><td class="num"><b>1.240,00</b></td><td class="num muted">0,00</td><td><div class="ag"><i class="a0" style="width:100%"></i><i class="a1" style="width:0%"></i><i class="a2" style="width:0%"></i><i class="a3" style="width:0%"></i></div></td><td class="tp">—</td><td class="num">0,00</td><td class="tp">—</td></tr></tbody></table>
+    <div class="leg"><span><i class="a0"></i>În termen</span><span><i class="a1"></i>1–30 zile</span><span><i class="a2"></i>31–60 zile</span><span><i class="a3"></i>peste 60 de zile</span><span style="margin-left:auto">Intervalele de vechime se configurează în Configurare › Finanțe</span></div>
+    <div class="lfoot"><span>1–6 din 412 clienți · sortat după sold</span><span>Enter deschide fișa financiară a partenerului</span></div>
+  </section>
+</main>
+</div></body></html>

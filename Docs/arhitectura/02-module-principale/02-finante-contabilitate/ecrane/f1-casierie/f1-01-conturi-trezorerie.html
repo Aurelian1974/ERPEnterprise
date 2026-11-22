@@ -1,0 +1,240 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Conturi de trezorerie</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+.split { grid-template-columns: 560px 1fr; } .seg span { font-size: 11px; } .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .seg { height: 32px; }
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#3b5f92">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Note contabile</div>
+<div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+<div class="sec">Module</div>
+<div class="item open"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">⌄</span></div>
+<div class="grp">Trezorerie<span class="chev">⌄</span></div>
+<div class="sub2l active">Conturi de trezorerie</div>
+<div class="sub2l">Casa</div>
+<div class="sub2l">Registrul de casă</div>
+<div class="sub2l">Avansuri spre decontare</div>
+<div class="sub2l">Deconturi de cheltuieli</div>
+<div class="grp closed">Bancă<span class="chev">›</span></div>
+<div class="grp closed">Decontări<span class="chev">›</span></div>
+<div class="grp closed">Valută<span class="chev">›</span></div>
+<div class="grp closed">Planificare<span class="chev">›</span></div>
+<div class="grp closed">Contabilitate<span class="chev">›</span></div>
+<div class="grp closed">Închideri<span class="chev">›</span></div>
+<div class="grp closed">Declarații<span class="chev">›</span></div>
+<div class="grp closed">Rapoarte<span class="chev">›</span></div>
+<div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+<div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+<div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+<div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+<div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Finanțe și contabilitate › Trezorerie › Conturi de trezorerie</div>
+    <div class="head">
+      <div><h1>Conturi de trezorerie</h1><div class="sub2">Locurile unde firma ține bani: bănci, case, carduri și viramente interne · soldurile la 13.11.2026, 16:20</div></div>
+      <div class="actions"><div class="btn ghost">⇩ Export Excel</div><div class="btn primary">+ Cont nou</div></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <section class="panel">
+      <div class="ltools">
+        <div class="tsearch">⌕ Caută după cod, denumire sau IBAN…</div>
+        <div class="tfilters"><span class="tf on">Toate</span><span class="tf">Bănci</span><span class="tf">Case</span><span class="tf">Carduri</span><span class="tf">Tranzit</span><span class="tf">Inactive</span><span class="tf">+ Filtru</span></div>
+      </div>
+      <table><thead><tr><th>Cont</th><th>Simbol · loc</th><th>Mon.</th><th class="num">Sold curent</th><th>Stare</th></tr></thead><tbody><tr class="grpr"><td colspan="5">Bănci · 2</td></tr><tr class=""><td><div class="pn">BCR-RON</div><div class="pc">BCR · RO49 RNCB …0001</div></td><td class="tp">5121 · Sediu</td><td class="tp">RON</td><td class="num"><b>1.284.560,32</b></td><td><span class="st ok">Activ</span></td></tr><tr class=""><td><div class="pn">ING-EUR</div><div class="pc">ING Bank · RO22 INGB …0002</div></td><td class="tp">5124 · Sediu</td><td class="tp">EUR</td><td class="num"><b>86.420,00</b></td><td><span class="st ok">Activ</span></td></tr><tr class="grpr"><td colspan="5">Case · 4</td></tr><tr class="sel"><td><div class="pn">CASA-SEDIU</div><div class="pc">Casa sediu București</div></td><td class="tp">5311 · Sediu</td><td class="tp">RON</td><td class="num"><b>20.982,50</b></td><td><span class="st info">Zi deschisă</span></td></tr><tr class=""><td><div class="pn">CASA-CLUJ</div><div class="pc">Casa PL Cluj</div></td><td class="tp">5311 · PL Cluj</td><td class="tp">RON</td><td class="num"><b>6.120,00</b></td><td><span class="st info">Zi deschisă</span></td></tr><tr class=""><td><div class="pn">CASA-TM</div><div class="pc">Casa PL Timișoara</div></td><td class="tp">5311 · PL Timișoara</td><td class="tp">RON</td><td class="num"><b>3.905,40</b></td><td><span class="st warn">3 zile neînchise</span></td></tr><tr class=""><td><div class="pn">CASA-EUR</div><div class="pc">Casa în valută sediu</div></td><td class="tp">5314 · Sediu</td><td class="tp">EUR</td><td class="num"><b>1.250,00</b></td><td><span class="st info">Zi deschisă</span></td></tr><tr class="grpr"><td colspan="5">Carduri de firmă · 1</td></tr><tr class=""><td><div class="pn">CARD-BCR-01</div><div class="pc">Card BCR · Ion Popescu</div></td><td class="tp">5125 · Sediu</td><td class="tp">RON</td><td class="num"><b>2.430,00</b></td><td><span class="st ok">Activ</span></td></tr><tr class="grpr"><td colspan="5">Viramente interne · 1</td></tr><tr class=""><td><div class="pn">VIR-INT</div><div class="pc">Sume în tranzit (depuneri, ridicări)</div></td><td class="tp">581</td><td class="tp">RON</td><td class="num"><b>5.000,00</b></td><td><span class="st warn">1 sumă în tranzit</span></td></tr></tbody></table>
+      <div class="lfoot"><span>8 conturi · total în lei 1.768.467,02</span><span>EUR la cursul BNR 5,0812 din 13.11.2026</span></div>
+    </section>
+    <section class="panel">
+      <div class="d-head">
+        <div class="d-title">
+          <h2>CASA-SEDIU · Casa sediu București <span class="pill ok">Activ</span></h2>
+          <div class="path">Casă în lei · Exemplu Distribuție SRL › Sediu București · în sistem din 01.01.2026</div>
+          <div class="stats"><span class="stat">Sold 20.982,50 RON</span><span class="stat">Zi deschisă: 13.11.2026</span><span class="stat">2 casieri</span><span class="stat">Plafon sold 50.000 lei</span></div>
+        </div>
+        <div class="btn ghost sm" style="white-space:nowrap">▤ Registrul de casă</div>
+      </div>
+      <div class="tabs"><span class="tab on">Date generale</span><span class="tab">Casieri <span class="muted">2</span></span><span class="tab">Serii</span><span class="tab">Plafon propriu</span><span class="tab">Istoric</span></div>
+      <div class="form">
+        <div class="f span3"><label>Tip cont <span class="req">*</span></label>
+          <div class="seg"><span>Bancă</span><span class="on">Casă</span><span>Card de firmă</span><span>Viramente interne</span><span>Depozit</span></div></div>
+        <div class="f"><label>Cod <span class="req">*</span></label><div class="in">CASA-SEDIU</div></div>
+        <div class="f span2"><label>Denumire <span class="req">*</span></label><div class="in">Casa sediu București</div></div>
+        <div class="f"><label>Punct de lucru <span class="req">*</span></label><div class="in">Sediu București ▾</div></div>
+        <div class="f"><label>Monedă</label><div class="in" style="color:#8a94a3">RON 🔒</div><div class="hint" style="color:#8a94a3">blocată după primul document</div></div>
+        <div class="f"><label>Simbol cont contabil</label><div class="in">5311 · Casa în lei</div><div class="hint" style="color:#8a94a3">devine legătură spre planul de conturi în partea contabilă</div></div>
+        <div class="secttl">Lucru zilnic</div>
+        <div class="f"><label>Casier titular (gestionar)</label><div class="in">Elena Dumitru ▾</div></div>
+        <div class="f"><label>Închiderea zilei</label><div class="seg"><span>La cerere</span><span class="on">Automat la 00:00</span></div></div>
+        <div class="f"><label>Prima zi în sistem</label><div class="in">01.01.2026 <span class="act">Sold inițial ›</span></div></div>
+        <div class="secttl">Plafon și serii</div>
+        <div class="f"><label>Plafon de sold propriu</label><div class="in">40.000,00 lei</div><div class="hint" style="color:#8a94a3">mai strict decât plafonul legal de 50.000 lei</div></div>
+        <div class="f"><label>Serie chitanțe</label><div class="in">CH-SED ▾ <span class="act">următorul 0417</span></div></div>
+        <div class="f"><label>Serie dispoziții (încasare / plată)</label><div class="in">DI-SED / DP-SED ▾</div></div>
+        <div class="f"><label>Activ</label><div class="sw"><span class="tog on"></span>Da</div></div>
+        <div class="note info span2" style="align-self:center">Un cont cu sold diferit de zero nu se poate dezactiva. Pentru bancă și card, IBAN-ul se alege din conturile firmei (Nucleu), nu se copiază.</div>
+      </div>
+      <div class="d-foot"><span class="info">Modificat ultima dată de Ion Popescu, 02.11.2026, 10:41</span>
+        <div class="actions"><div class="btn ghost">Anulează</div><div class="btn primary">Salvează</div></div></div>
+    </section>
+  </div>
+</main>
+</div></body></html>

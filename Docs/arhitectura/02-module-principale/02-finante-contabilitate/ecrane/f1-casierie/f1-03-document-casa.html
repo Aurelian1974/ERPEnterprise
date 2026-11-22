@@ -1,0 +1,242 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Document de casă</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+
+  .kv .l { font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .kv .v { font-size: 17px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .big { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .big .bi { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; font-size: 22px; font-weight: 700; }
+  .big.in .bi { background: var(--green-50); color: var(--green); } .big.out .bi { background: var(--red-50); color: var(--red); } .big.cl .bi { background: var(--blue-50); color: var(--blue-600); font-size: 18px; }
+  .big.in { border-color: #bfe5d1; } .big.out { border-color: #f3c9c9; }
+  .big .bt { font-size: 15px; font-weight: 700; } .big .bs { font-size: 12px; color: #8a94a3; margin-top: 2px; }
+  .big .kbdk { margin-left: auto; }
+  .lim { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 5px; color: #445064; } .lim b { white-space: nowrap; }
+  .todo { display: flex; gap: 8px; align-items: flex-start; } .todo .st { flex: 0 0 auto; }
+  td { padding: 6px 12px; } .big { padding: 11px 14px; }
+
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .cb.on { background: var(--blue-500); border-color: var(--blue-500); }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; }
+
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">2</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#7a4f9c">ED</div><div><div class="nm">Elena Dumitru</div><div class="rl">Casier</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Casa</div>
+<div class="item"><span class="ic star">★</span>Registrul de casă</div>
+<div class="sec">Module</div>
+<div class="item open"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">⌄</span></div>
+<div class="grp">Trezorerie<span class="chev">⌄</span></div>
+<div class="sub2l active">Casa</div>
+<div class="sub2l">Registrul de casă</div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Finanțe și contabilitate › Trezorerie › Casa › Chitanță nouă</div>
+    <div class="head">
+      <div><h1>Chitanță nouă</h1><div class="sub2">Încasare în numerar de la un terț · la alegerea partenerului apar facturile lui deschise</div></div>
+      <div class="actions"><div class="btn ghost">← Înapoi la casă <span class="kbdk">Esc</span></div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;flex:1;min-height:0">
+    <section class="panel">
+      <div class="d-head" style="padding-bottom:12px;border-bottom:1px solid var(--line)">
+        <div class="d-title"><h2>Chitanță · ciornă <span class="pill" style="background:#eef1f5;color:#5b6676">Fără număr</span></h2>
+          <div class="path">CASA-SEDIU · ziua deschisă 13.11.2026 · numărul se alocă la validare din seria CH-SED (următorul: 0417)</div></div>
+        <div class="seg" style="width:430px"><span class="on">Chitanță</span><span>Dispoziție de încasare</span><span>Dispoziție de plată</span></div>
+      </div>
+      <div class="form">
+        <div class="f span2"><label>Plătitor <span class="req">*</span></label><div class="in"><b>Agro Nord Distribuție SRL</b> · RO33445566 <span class="act">Persoană fără fișă</span></div></div>
+        <div class="f"><label>Data documentului</label><div class="in" style="color:#8a94a3">13.11.2026 · ziua deschisă</div></div>
+        <div class="f span3"><label>Explicație</label><div class="in">Încasare parțială FV EXD 10252</div></div>
+        <div class="anaf"><span class="t">Partener:</span><span class="st warn">TVA la încasare</span><span class="st ok">Activ fiscal</span><span class="st info">Juridică RO · plafon PJ 5.000 lei / zi</span><span class="when">sold client 48.210,00 RON · 1 factură restantă</span></div>
+      </div>
+      <div style="padding:0 20px"><div class="secttl" style="border-top:0;padding-top:0;margin-bottom:8px">Facturile deschise ale partenerului (din Decontări) · bifează ce se încasează</div></div>
+      <table><thead><tr><th style="width:36px"></th><th>Factură</th><th>Data</th><th>Scadența</th><th>Întârziere</th><th class="num">Rest de plată</th><th class="num">Se încasează</th></tr></thead><tbody><tr><td><span class="cb"></span></td><td><b>FV EXD 10198</b></td><td class="tp">15.10.2026</td><td class="tp">29.10.2026</td><td><span class="st bad">15 zile</span></td><td class="num">1.530,00</td><td class="num"></td></tr><tr><td><span class="cb on">✓</span></td><td><b>FV EXD 10252</b></td><td class="tp">05.11.2026</td><td class="tp">19.11.2026</td><td><span class="st ok">în termen</span></td><td class="num">3.480,00</td><td class="num"><b>1.200,00</b></td></tr><tr><td><span class="cb"></span></td><td><b>FV EXD 10241</b></td><td class="tp">30.10.2026</td><td class="tp">13.11.2026</td><td><span class="st warn">azi</span></td><td class="num">12.400,00</td><td class="num"></td></tr><tr><td><span class="cb"></span></td><td><b>FV EXD 10247</b></td><td class="tp">03.11.2026</td><td class="tp">17.11.2026</td><td><span class="st ok">în termen</span></td><td class="num">9.860,00</td><td class="num"></td></tr><tr><td><span class="cb"></span></td><td><b>FV EXD 10261</b></td><td class="tp">09.11.2026</td><td class="tp">23.11.2026</td><td><span class="st ok">în termen</span></td><td class="num">5.950,00</td><td class="num"></td></tr><tr><td><span class="cb"></span></td><td><b>FV EXD 10266</b></td><td class="tp">11.11.2026</td><td class="tp">25.11.2026</td><td><span class="st ok">în termen</span></td><td class="num">15.490,00</td><td class="num"></td></tr><tr><td><span class="cb"></span></td><td><b>AV-CL 0031</b></td><td class="tp">28.10.2026</td><td class="tp">—</td><td><span class="st grey">avans nealocat</span></td><td class="num">−500,00</td><td class="num"></td></tr></tbody></table>
+      <div style="padding:14px 20px 0"><div class="secttl" style="border-top:0;padding-top:0;margin-bottom:8px">Liniile documentului</div></div>
+      <table><thead><tr><th>Tip operațiune</th><th>Factură indicată</th><th>Centru de cost</th><th class="num">Sumă (RON)</th></tr></thead><tbody>
+        <tr><td><b>INC-CLIENT</b> · Încasare de la client</td><td>FV EXD 10252 (parțial)</td><td class="tp">Vânzări Sud</td><td class="num"><b>1.200,00</b></td></tr>
+        <tr><td class="muted">+ Adaugă linie <span class="kbdk">Ins</span></td><td></td><td></td><td></td></tr>
+      </tbody></table>
+      <div class="d-foot"><span class="info">Total în litere: <b style="color:#1a2433">una mie două sute lei și zero bani</b></span>
+        <div class="actions"><div class="btn ghost">Șterge ciorna</div><div class="btn ghost">Salvează ciornă</div><div class="btn primary">✓ Validează <span class="kbdk">F9</span></div></div></div>
+    </section>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="padding:16px 18px">
+        <div class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total chitanță</div>
+        <div style="font-size:30px;font-weight:700;letter-spacing:-.5px;margin-top:4px">1.200,00 <span style="font-size:15px;color:#8a94a3">RON</span></div>
+        <div class="pc" style="margin-top:4px">Sold casă după validare: 22.182,50 RON</div>
+      </div>
+      <div class="card"><div class="card-h"><h3>Verificarea plafonului</h3><span class="st warn">Aproape de limită</span></div>
+        <div style="padding:10px 16px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:8px">
+          <div class="lim"><span>Încasat azi de la partener (toate casele firmei)</span><b>3.800,00</b></div>
+          <div class="lim"><span>Documentul curent</span><b>1.200,00</b></div>
+          <div class="bar"><div style="width:100%;background:var(--amber)"></div></div>
+          <div class="lim"><span>Total zi / plafon PJ</span><b>5.000,00 / 5.000,00</b></div>
+          <div class="pc">Plafonul e atins exact. Orice altă încasare în numerar de la acest partener azi va fi blocată, fără excepție prin drepturi.</div>
+        </div></div>
+      <div class="note info">După validare, chitanța primește numărul CH-SED 0417, mișcă soldul zilei, iar factura FV EXD 10252 rămâne cu 2.280,00 lei de încasat. O chitanță validată se corectează doar prin storno.</div>
+      <div class="card" style="padding:12px 16px;font-size:12px;color:#5b6676;display:flex;flex-direction:column;gap:6px">
+        <div><span class="kbdk">F4</span> alege partenerul &nbsp; <span class="kbdk">Space</span> bifează factura</div>
+        <div><span class="kbdk">F9</span> validează &nbsp; <span class="kbdk">Ctrl P</span> tipărește după validare</div>
+      </div>
+    </div>
+  </div>
+</main>
+</div></body></html>

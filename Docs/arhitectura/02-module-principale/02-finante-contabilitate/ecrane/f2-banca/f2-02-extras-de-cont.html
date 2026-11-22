@@ -1,0 +1,258 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Extras de cont</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+
+  .lim { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .lim b { white-space: nowrap; }
+  .kv .l { font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .kv .v { font-size: 17px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: inline-grid; place-items: center; font-size: 11px; color: #fff; vertical-align: middle; }
+  .cb.on { background: var(--blue-500); border-color: var(--blue-500); }
+  .mono { font-family: "Cascadia Mono", Consolas, monospace; font-size: 11.5px; color: #445064; }
+  td { padding: 7px 12px; }
+
+  .in2 { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-weight: 700; white-space: nowrap; }
+  .sub-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #8a94a3; padding: 12px 12px 6px; border-top: 1px solid var(--line); margin-top: 6px; }
+  .prop { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 12.5px; }
+  .prop.on { border-color: var(--blue-500); background: var(--blue-50); }
+  .score { width: 44px; height: 30px; border-radius: 8px; background: var(--green-50); color: var(--green); display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .score.lo { background: var(--amber-50); color: var(--amber); }
+  .main { gap: 12px; }
+
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">5</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#3b5f92">IP</div><div><div class="nm">Ion Popescu</div><div class="rl">Contabil șef</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Note contabile</div>
+<div class="item"><span class="ic star">★</span>Balanță de verificare</div>
+<div class="sec">Module</div>
+<div class="item open"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">⌄</span></div>
+<div class="grp closed">Trezorerie<span class="chev">›</span></div>
+<div class="grp">Bancă<span class="chev">⌄</span></div>
+<div class="sub2l">Extrase bancare</div>
+<div class="sub2l active">Extras de cont</div>
+<div class="sub2l">Ordine de plată</div>
+<div class="sub2l">Reguli de potrivire</div>
+<div class="grp closed">Decontări<span class="chev">›</span></div>
+<div class="grp closed">Valută<span class="chev">›</span></div>
+<div class="grp closed">Planificare<span class="chev">›</span></div>
+<div class="grp closed">Contabilitate<span class="chev">›</span></div>
+<div class="grp closed">Închideri<span class="chev">›</span></div>
+<div class="grp closed">Declarații<span class="chev">›</span></div>
+<div class="grp closed">Rapoarte<span class="chev">›</span></div>
+<div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+<div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+<div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+<div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+<div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Finanțe și contabilitate › Bancă › Extras de cont</div>
+    <div class="head">
+      <div><h1>Extras de cont · reconciliere</h1><div class="sub2">Explică fiecare linie a extrasului și confirmă OP-urile; liniile clare s-au validat deja automat</div></div>
+      <div class="actions"><div class="btn ghost">⟳ Rulează potrivirea</div><div class="btn ghost">⇩ Raport reconciliere</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:10px 16px;display:flex;align-items:center;gap:20px">
+    <div class="in2">BCR-RON · BCR lei ▾</div>
+    <div class="kv"><div class="l">Extras</div><div class="v" style="font-size:14px">nr. 221 · 12.11.2026</div></div>
+    <div class="kv" style="border-left:1px solid var(--line);padding-left:18px"><div class="l">Sold din extras</div><div class="v">1.302.190,32</div></div>
+    <div class="kv"><div class="l">OP-uri neconfirmate</div><div class="v neg">−17.630,00</div></div>
+    <div class="kv" style="background:var(--blue-50);border-radius:10px;padding:6px 12px"><div class="l" style="color:var(--blue-600)">Sold scriptic</div><div class="v">1.284.560,32</div></div>
+    <div style="margin-left:auto;text-align:right"><div class="pc">38 linii · 32 validate automat</div><div style="font-weight:700;font-size:13px">6 de explicat</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:560px 1fr;gap:14px;flex:1;min-height:0">
+    <section class="panel">
+      <div class="tabs" style="margin-top:4px"><span class="tab on">Linii nevalidate <span class="muted">6</span></span><span class="tab">OP-uri de confirmat <span class="muted">3</span></span><span class="tab">În tranzit <span class="muted">1</span></span></div>
+      <div class="ltools" style="flex-direction:row;gap:6px;align-items:center"><div class="tfilters"><span class="tf on">Toate</span><span class="tf">Încasări</span><span class="tf">Plăți</span><span class="tf">Propuse</span><span class="tf">Nepotrivite</span><span class="tf">Sumă ▾</span><span class="tf">Partener ▾</span></div></div>
+      <table><thead><tr><th style="width:34px"></th><th>Data</th><th>Contrapartidă · detalii bancă</th><th class="num">Sumă</th><th>Stare</th></tr></thead><tbody><tr class="sel"><td><span class="cb on">✓</span></td><td class="tp">12.11</td><td><div class="pn">Mega Retail SA</div><div class="pc mono">PLATA FV EXD 10219 SI 10224</div></td><td class="num pos"><b>+12.450,00</b></td><td><span class="st warn">Propusă · 2 facturi</span></td></tr><tr class=""><td><span class="cb"></span></td><td class="tp">12.11</td><td><div class="pn">Construct Max SA</div><div class="pc mono">AVANS CTR 45/2026 LIVRARE DEC</div></td><td class="num pos"><b>+8.000,00</b></td><td><span class="st warn">Propusă · avans client</span></td></tr><tr class=""><td><span class="cb"></span></td><td class="tp">12.11</td><td><div class="pn">Transport Rapid SRL</div><div class="pc mono">CV FF TR 1204</div></td><td class="num neg"><b>−1.785,00</b></td><td><span class="st warn">Propusă · OP nou</span></td></tr><tr class=""><td><span class="cb"></span></td><td class="tp">12.11</td><td><div class="pn">IONESCU VASILE</div><div class="pc mono">fara detalii</div></td><td class="num pos"><b>+1.230,00</b></td><td><span class="st bad">Nepotrivită</span></td></tr><tr class=""><td><span class="cb"></span></td><td class="tp">12.11</td><td><div class="pn">ORANGE ROMANIA SA</div><div class="pc mono">DEBIT DIRECT 0723XXXXXX</div></td><td class="num neg"><b>−389,47</b></td><td><span class="st bad">Nepotrivită</span></td></tr><tr class=""><td><span class="cb"></span></td><td class="tp">12.11</td><td><div class="pn">MINISTERUL JUSTITIEI</div><div class="pc mono">TAXA JUDICIARA DOSAR 1123</div></td><td class="num neg"><b>−250,00</b></td><td><span class="st bad">Nepotrivită</span></td></tr></tbody></table>
+      <div class="sub-h">OP-uri neconfirmate ale contului</div>
+      <table><tbody>
+        <tr><td class="tp">13.11</td><td><b>OP-BCR 0617</b> · Furnizor Ambalaje SRL<div class="pc">validat, așteaptă aprobarea · lot 0098 deschis</div></td><td class="num neg">−10.000,00</td></tr>
+        <tr><td class="tp">13.11</td><td><b>OP-BCR 0616</b> · Furnizor Ambalaje SRL<div class="pc">exportat în lotul 0097, 10:15</div></td><td class="num neg">−4.760,00</td></tr>
+        <tr><td class="tp">13.11</td><td><b>OP-BCR 0615</b> · Office Line SRL<div class="pc">exportat în lotul 0097, 10:15</div></td><td class="num neg">−2.870,00</td></tr>
+      </tbody></table>
+      <div class="lfoot"><span>Space bifează · ↑↓ linia următoare · Enter acceptă propunerea</span><span>1 selectată</span></div>
+    </section>
+    <section class="panel">
+      <div class="d-head" style="padding-bottom:12px;border-bottom:1px solid var(--line)">
+        <div class="d-title"><h2>+12.450,00 RON · Mega Retail SA <span class="pill" style="background:var(--amber-50);color:var(--amber)">Propusă</span></h2>
+          <div class="path">Datele băncii, doar citire: rezervare 12.11.2026 · valută 12.11.2026 · IBAN RO66 BTRL 0000 1111 2222 3333 · ref. 2611120847</div>
+          <div class="path mono" style="margin-top:3px">PLATA FV EXD 10219 SI 10224</div></div>
+      </div>
+      <div style="padding:12px 20px 0">
+        <div class="secttl" style="border:0;padding:0;margin:0 0 8px">Propuneri · partener identificat după IBAN</div>
+        <div class="prop on"><span class="score">95%</span><div style="flex:1"><b>FV EXD 10219 + FV EXD 10224</b><div class="pc">ambele numere găsite în detalii · suma resturilor = 12.450,00 exact</div></div><span class="btn primary sm">Acceptă <span class="kbdk">Enter</span></span></div>
+        <div class="prop"><span class="score lo">58%</span><div style="flex:1"><b>FIFO: FV EXD 10212 + FV EXD 10219 (parțial)</b><div class="pc">cele mai vechi facturi deschise, 6.300,00 + 6.150,00</div></div><span class="btn ghost sm">Alege</span></div>
+        <div class="tsearch" style="margin-top:8px">⌕ Caută în facturi deschise, OP-uri neconfirmate, sume în tranzit…</div>
+      </div>
+      <div style="padding:14px 20px 6px"><div class="secttl" style="border:0;padding:0;margin:0">Explicația liniei (părți)</div></div>
+      <table><thead><tr><th>Tip operațiune</th><th>Partener</th><th>Factură</th><th class="num">Sumă</th></tr></thead><tbody>
+        <tr><td><b>INC-CLIENT</b></td><td>Mega Retail SA</td><td>FV EXD 10219 · scad. 04.11</td><td class="num"><b>7.450,00</b></td></tr>
+        <tr><td><b>INC-CLIENT</b></td><td>Mega Retail SA</td><td>FV EXD 10224 · scad. 09.11</td><td class="num"><b>5.000,00</b></td></tr>
+        <tr><td class="muted">+ Parte nouă <span class="kbdk">Ins</span></td><td></td><td class="muted">Rest de explicat</td><td class="num pos"><b>0,00 ✓</b></td></tr>
+      </tbody></table>
+      <div style="padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="cb on">✓</span>Ține minte pentru data viitoare <span class="pc">(creează o regulă de potrivire)</span></div>
+      <div class="note info" style="margin:0 20px">Pentru plățile către furnizori fără OP în sistem (de exemplu Transport Rapid SRL, plată tastată direct în internet banking), butonul „OP nou” deschide ordinul precompletat din linie; la legarea facturii se validează și se confirmă în același pas, fără aprobarea cu patru ochi.</div>
+      <div class="d-foot"><span class="info">Data contabilă: 12.11.2026</span>
+        <div class="actions"><div class="btn ghost">OP nou</div><div class="btn ghost">De clarificat (473)</div><div class="btn primary">✓ Validează selecția <span class="kbdk">F9</span></div></div></div>
+    </section>
+  </div>
+</main>
+</div></body></html>
