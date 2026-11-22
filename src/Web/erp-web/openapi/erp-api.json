@@ -2543,6 +2543,877 @@
         }
       }
     },
+    "/api/finance/bank-statements/auto-match": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "RunAutoMatching",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunAutoMatching"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchingResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/matching-rules": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetMatchingRules",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchingRuleDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateMatchingRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMatchingRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/matching-rules/{id}": {
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "UpdateMatchingRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMatchingRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/bank-statement-lines/{id}/remember": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "RememberMatchingRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RememberMatchingRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/card-acquirers": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetCardAcquirers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardAcquirerDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateCardAcquirer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCardAcquirer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/card-acquirers/{id}": {
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "UpdateCardAcquirer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCardAcquirer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/card-settlements": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetCardSettlements",
+        "parameters": [
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CardSettlementStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardSettlementDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "RegisterCardSettlement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCardSettlement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/card-settlements/{id}/resolve": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ResolveCardSettlement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCardBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/transit-items": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetTransitItems",
+        "parameters": [
+          {
+            "name": "TreasuryAccountId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransitItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/bank-statements/{id}/accept-gap": {
       "post": {
         "tags": [
@@ -27346,6 +28217,13 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "cardSettlementExpectedId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -28481,6 +29359,619 @@
             "format": "byte"
           }
         }
+      },
+      "CardAcquirerDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "counterpartyIban",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "CardSettlementDto": {
+        "required": [
+          "id",
+          "acquirerCode",
+          "salesDate",
+          "grossAmount",
+          "expectedSettlementDate",
+          "sourceModule",
+          "sourceRef",
+          "settledAmount",
+          "feeAmount",
+          "status",
+          "bankStatementLineId",
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "acquirerCode": {
+            "type": "string"
+          },
+          "salesDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "grossAmount": {
+            "type": "string"
+          },
+          "expectedSettlementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceModule": {
+            "type": "string"
+          },
+          "sourceRef": {
+            "type": "string"
+          },
+          "settledAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "feeAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardSettlementStatus"
+          },
+          "bankStatementLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "CardSettlementStatus": {
+        "type": "integer"
+      },
+      "MatchingResultDto": {
+        "required": [
+          "considered",
+          "explained",
+          "proposed",
+          "autoValidated",
+          "bySource"
+        ],
+        "type": "object",
+        "properties": {
+          "considered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "explained": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proposed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "autoValidated": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bySource": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "MatchingRuleDto": {
+        "required": [
+          "id",
+          "priority",
+          "name",
+          "treasuryAccountId",
+          "direction",
+          "counterpartyIban",
+          "counterpartyFiscalCode",
+          "remittanceContains",
+          "bankTransactionCode",
+          "amountFrom",
+          "amountTo",
+          "operationTypeId",
+          "operationTypeCode",
+          "partnerId",
+          "partnerName",
+          "costCenterId",
+          "projectId",
+          "noteTemplate",
+          "autoValidate",
+          "createdFromLineId",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "direction": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceContains": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankTransactionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountFrom": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountTo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "operationTypeCode": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "noteTemplate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "autoValidate": {
+            "type": "boolean"
+          },
+          "createdFromLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "RegisterCardSettlement": {
+        "required": [
+          "acquirerCode",
+          "salesDate",
+          "grossAmount",
+          "sourceRef"
+        ],
+        "type": "object",
+        "properties": {
+          "acquirerCode": {
+            "type": "string"
+          },
+          "salesDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "grossAmount": {
+            "type": "string"
+          },
+          "sourceRef": {
+            "type": "string"
+          }
+        }
+      },
+      "RememberMatchingRule": {
+        "required": [
+          "bankStatementLineId"
+        ],
+        "type": "object",
+        "properties": {
+          "bankStatementLineId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remittanceContains": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "autoValidate": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "ResolveCardBody": {
+        "required": [
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "RunAutoMatching": {
+        "required": [
+          "bankStatementId"
+        ],
+        "type": "object",
+        "properties": {
+          "bankStatementId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SaveCardAcquirer": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "counterpartyIban",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "SaveMatchingRule": {
+        "required": [
+          "id",
+          "priority",
+          "name",
+          "treasuryAccountId",
+          "direction",
+          "counterpartyIban",
+          "counterpartyFiscalCode",
+          "remittanceContains",
+          "bankTransactionCode",
+          "amountFrom",
+          "amountTo",
+          "operationTypeId",
+          "partnerId",
+          "costCenterId",
+          "projectId",
+          "noteTemplate",
+          "autoValidate",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "direction": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceContains": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankTransactionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountFrom": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountTo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "noteTemplate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "autoValidate": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "TransitItemDto": {
+        "required": [
+          "kind",
+          "treasuryAccountId",
+          "sourceAccountId",
+          "itemDate",
+          "amount",
+          "reference",
+          "sourceId",
+          "ageDays"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/TransitKind"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "sourceAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "itemDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ageDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TransitKind": {
+        "type": "integer"
       }
     }
   },

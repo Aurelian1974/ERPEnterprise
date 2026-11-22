@@ -143,8 +143,8 @@ public static class FinanceApiRegistration
             .WithName("GetBankStatement").Produces<BankStatementDetailDto>().Problems();
         // Dupa import (tranzactia lui e inchisa), potrivirea automata ruleaza pe fiecare extras, in tranzactia ei (F2 4.1 pasul 5), daca
         // utilizatorul are dreptul de reconciliere.
-        finance.MapPost("/bank-statements/import", async (ImportBankStatement body, ISender sender, Erp.Core.Contracts.ICurrentContext context,
-                CancellationToken ct) =>
+        finance.MapPost("/bank-statements/import", async (ImportBankStatement body, ISender sender,
+                [Microsoft.AspNetCore.Mvc.FromServices] Erp.Core.Contracts.ICurrentContext context, CancellationToken ct) =>
             {
                 var result = await sender.Send(body, ct);
                 if (context.HasPermission(FinancePermissions.BankStatementReconcile))
