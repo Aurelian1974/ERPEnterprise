@@ -164,6 +164,9 @@ public abstract class FinanceTestBase(FinanceDatabase database)
         return await connection.QuerySingleAsync<T>(sql, parameters);
     }
 
+    /// <summary>Zilele din perioade contabile inchise (CORE_PERIOD_CLOSED), pentru testele pe pipeline.</summary>
+    protected HashSet<DateOnly> ClosedDays { get; } = [];
+
     protected static string Unique(string prefix) => prefix + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
 
     private ServiceProvider Services(int? userId, int? companyId)
@@ -175,6 +178,7 @@ public abstract class FinanceTestBase(FinanceDatabase database)
         services.AddFinanceInfrastructure(Database.ConnectionString);
         services.AddSingleton<Application.Treasury.IPersonIdProtector>(new Api.PersonIdProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
         services.AddSingleton<ILicenseInfo>(new FakeLicense());
+        services.AddSingleton<IPeriodLock>(new FakePeriodLock(ClosedDays));
         var context = new FakeContext { UserId = userId ?? Database.AdminId, CompanyId = companyId ?? Database.CompanyId };
         context.Permissions.UnionWith(Permissions);
         services.AddSingleton<ICurrentContext>(context);

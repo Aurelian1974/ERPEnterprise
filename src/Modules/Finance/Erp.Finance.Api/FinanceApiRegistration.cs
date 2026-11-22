@@ -146,6 +146,16 @@ public static class FinanceApiRegistration
         finance.MapPost("/bank-statements/{id:int}/accept-gap", (int id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new AcceptStatementGap(id, body.Reason, body.RowVersion), ct))
             .WithName("AcceptStatementGap").Produces<byte[]>().Problems();
+        finance.MapGet("/bank-statement-lines/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new GetBankStatementLine(id), ct))
+            .WithName("GetBankStatementLine").Produces<BankLineDetailDto>().Problems();
+        finance.MapPut("/bank-statement-lines/{id:long}/explanation", (long id, ExplainLineBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ExplainBankStatementLine(id, body.Parts, body.RowVersion), ct))
+            .WithName("ExplainBankStatementLine").Produces<BankLineSaved>().Problems();
+        finance.MapPost("/bank-statement-lines/validate", (ValidateBankStatementLines body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ValidateBankStatementLines").Produces<IReadOnlyList<BankLineSaved>>().Problems();
+        finance.MapPost("/bank-statement-lines/{id:long}/unvalidate", (long id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new UnvalidateBankStatementLine(id, body.Reason, body.RowVersion), ct))
+            .WithName("UnvalidateBankStatementLine").Produces<BankLineSaved>().Problems();
         finance.MapGet("/bank-format-profiles", (ISender sender, CancellationToken ct) => sender.Send(new GetBankFormatProfiles(), ct))
             .WithName("GetBankFormatProfiles").Produces<IReadOnlyList<BankFormatProfileDto>>().Problems();
         finance.MapPost("/bank-format-profiles", (SaveBankFormatProfile body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
@@ -181,8 +191,11 @@ public sealed record ValidateCashBody(byte[] RowVersion, bool ConfirmWarnings);
 /// <summary>Corpul validarii decontului: versiunea si casa in care se inchide diferenta.</summary>
 public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? SettlementTreasuryAccountId);
 
-/// <summary>Acceptarea golului de continuitate: motivul si versiunea extrasului.</summary>
+/// <summary>O actiune cu motiv (acceptarea golului, desfacerea validarii): motivul si versiunea vazuta.</summary>
 public sealed record AcceptGapBody(string Reason, byte[] RowVersion);
+
+/// <summary>Explicatia unei linii de extras: partile si versiunea liniei.</summary>
+public sealed record ExplainLineBody(IReadOnlyList<BankLinePartInput> Parts, byte[] RowVersion);
 
 /// <summary>Profilul bancar si folderul de import ale unui cont.</summary>
 public sealed record BankFormatBody(int? BankFormatProfileId, string? ImportFolder);

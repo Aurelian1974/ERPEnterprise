@@ -49,3 +49,9 @@ public sealed class FakeLicense : ILicenseInfo
 
     public LicenseState State => LicenseState.Valid;
 }
+
+/// <summary>Perioadele contabile inchise ale testului (zilele date); in rest, perioada e deschisa.</summary>
+public sealed class FakePeriodLock(IReadOnlySet<DateOnly> closedDays) : IPeriodLock
+{
+    public Task<bool> IsClosedAsync(int companyId, DateOnly date, CancellationToken ct) => Task.FromResult(closedDays.Contains(date));
+}

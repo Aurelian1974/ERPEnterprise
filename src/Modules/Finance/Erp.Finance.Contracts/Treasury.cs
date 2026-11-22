@@ -46,8 +46,14 @@ public sealed record PlataInregistrata(int TreasuryAccountId, TreasuryAccountKin
     DateOnly DocumentDate, int? PartnerId, int? EmployeeId, string CurrencyCode, decimal ExchangeRate, decimal TotalAmount, decimal TotalAmountRon,
     IReadOnlyList<TreasuryMovementLine> Lines) : IntegrationEvent;
 
-/// <summary>Validarea unei stornari de document de trezorerie (F1 5.1). Consumatori: F3, partea contabila.</summary>
-public sealed record DocumentTrezorerieStornat(int OriginalDocumentId, int ReversalDocumentId, DateOnly DocumentDate) : IntegrationEvent;
+/// <summary>
+/// Validarea unei stornari de document de trezorerie (F1 5.1; in F2 si desfacerea validarii unei linii de extras). Consumatori: F3, partea
+/// contabila. DocumentType lipseste la documentele de casa; la banca e Finance.BankStatementLine (original = storno = linia).
+/// </summary>
+public sealed record DocumentTrezorerieStornat(int OriginalDocumentId, int ReversalDocumentId, DateOnly DocumentDate) : IntegrationEvent
+{
+    public string? DocumentType { get; init; }
+}
 
 /// <summary>Inchiderea unei zile de casa (F1 5.1). Consumatori: Raportare, partea contabila.</summary>
 public sealed record RegistruCasaInchis(int TreasuryAccountId, DateOnly Day, decimal OpeningBalance, decimal TotalIn, decimal TotalOut,

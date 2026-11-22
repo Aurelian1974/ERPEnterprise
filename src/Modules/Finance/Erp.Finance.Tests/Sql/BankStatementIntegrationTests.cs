@@ -1,4 +1,3 @@
-using Dapper;
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
@@ -7,7 +6,6 @@ using Erp.Finance.Contracts.Treasury;
 using Erp.Finance.Domain.Bank;
 using Erp.Finance.Domain.Treasury;
 using Erp.Finance.Tests.Bank;
-using Microsoft.Data.SqlClient;
 
 namespace Erp.Finance.Tests.Sql;
 
@@ -18,34 +16,13 @@ namespace Erp.Finance.Tests.Sql;
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class BankStatementIntegrationTests : FinanceTestBase, IClassFixture<FinanceDatabase>
+public sealed class BankStatementIntegrationTests : BankTestBase, IClassFixture<FinanceDatabase>
 {
-    private static readonly DateOnly Day = new(2026, 11, 2);
-    private static int accountSequence;
-
     public BankStatementIntegrationTests(FinanceDatabase database) : base(database)
     {
         Permissions.UnionWith([FinancePermissions.BankView, FinancePermissions.BankStatementImport, FinancePermissions.BankStatementAcceptGap,
             FinancePermissions.BankFormatManage]);
     }
-
-    /// <summary>Un cont bancar nou al firmei, cu IBAN valid propriu.</summary>
-    private async Task<(int Id, string Iban)> NewBank(string currency = "RON", int? companyId = null)
-    {
-        var iban = StatementFiles.RomanianIban("RNCB", $"{Interlocked.Increment(ref accountSequence):D4}{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}");
-        await using var connection = new SqlConnection(Database.ConnectionString);
-        var bankAccountId = await connection.ExecuteScalarAsync<int>("""
-            INSERT INTO core.CompanyBankAccount (CompanyId, Iban, BankName, Currency, IsDefault, IsActive, CreatedBy)
-            VALUES (@CompanyId, @Iban, N'BCR', @Currency, 0, 1, 1);
-            SELECT CAST(SCOPE_IDENTITY() AS int);
-            """, new { CompanyId = companyId ?? Database.CompanyId, Iban = iban, Currency = currency });
-        var saved = await Send(new SaveTreasuryAccount(null, TreasuryAccountKind.Bank, Unique("BANCA-"), "Cont bancar test", null, currency, bankAccountId,
-            null, null, null, null, null, null, CashCloseMode.OnDemand, null, true, [], null), companyId: companyId);
-        return (saved.Id, iban);
-    }
-
-    private Task<BankImportResultDto> Import(int? account, byte[] content, string name = "extras.xml", int? companyId = null) =>
-        Send(new ImportBankStatement(account, name, Convert.ToBase64String(content)), companyId: companyId);
 
     private static TestEntry[] Day1(string prefix) =>
     [

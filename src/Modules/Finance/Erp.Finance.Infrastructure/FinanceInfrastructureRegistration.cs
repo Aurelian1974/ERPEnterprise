@@ -28,6 +28,7 @@ public static class FinanceInfrastructureRegistration
         services.AddTransient<CashAdvanceOverdue>();
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
+        services.AddScoped<IBankStatementLineStore, BankStatementLineStore>();
         services.AddSingleton<IStatementParser, Camt053Parser>();
         services.AddSingleton<IStatementParser, Mt940Parser>();
         services.AddSingleton<IStatementParser, CsvStatementParser>();

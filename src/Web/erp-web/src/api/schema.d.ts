@@ -452,6 +452,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/bank-statement-lines/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetBankStatementLine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/bank-statement-lines/{id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ExplainBankStatementLine"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/bank-statement-lines/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateBankStatementLines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/bank-statement-lines/{id}/unvalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UnvalidateBankStatementLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/bank-format-profiles": {
         parameters: {
             query?: never;
@@ -5837,6 +5901,104 @@ export interface components {
         };
         StatementFormat: number;
         StatementSource: number;
+        BankLineDetailDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            bankStatementId: number;
+            statementNo: null | string;
+            /** Format: int32 */
+            lineNumber: number;
+            /** Format: date */
+            bookingDate: string;
+            /** Format: date */
+            valueDate: null | string;
+            amount: string;
+            counterpartyName: null | string;
+            counterpartyIban: null | string;
+            remittanceInfo: null | string;
+            endToEndId: null | string;
+            bankReference: string;
+            matchStatus: components["schemas"]["BankLineMatchStatus"];
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            /** Format: int32 */
+            treasuryAccountId: number;
+            currencyCode: string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            parts: components["schemas"]["BankLinePartDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        BankLinePartDto: {
+            /** Format: int16 */
+            partNumber: number;
+            /** Format: int32 */
+            operationTypeId: number;
+            operationTypeCode: string;
+            operationTypeName: string;
+            amount: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            /** Format: int32 */
+            employeeId: null | number;
+            settlementRef: null | string;
+            /** Format: int32 */
+            paymentOrderId: null | number;
+            /** Format: int32 */
+            cashDocumentId: null | number;
+            /** Format: int32 */
+            counterTreasuryAccountId: null | number;
+            budgetObligationRef: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            note: null | string;
+        };
+        BankLinePartInput: {
+            /** Format: int32 */
+            operationTypeId: number;
+            amount: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            settlementRef: null | string;
+            /** Format: int32 */
+            cashDocumentId: null | number;
+            /** Format: int32 */
+            counterTreasuryAccountId: null | number;
+            budgetObligationRef: null | string;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            note: null | string;
+        };
+        BankLineSaved: {
+            /** Format: int64 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        BankLineVersion: {
+            /** Format: int64 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        ExplainLineBody: {
+            parts: components["schemas"]["BankLinePartInput"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        ValidateBankStatementLines: {
+            lines: components["schemas"]["BankLineVersion"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -7905,6 +8067,248 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBankStatementLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLineDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ExplainBankStatementLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainLineBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLineSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateBankStatementLines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateBankStatementLines"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLineSaved"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnvalidateBankStatementLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptGapBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLineSaved"];
                 };
             };
             /** @description Bad Request */
