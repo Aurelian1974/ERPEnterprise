@@ -125,16 +125,36 @@ public sealed class PaymentOrderStore(IDbSession session) : IPaymentOrderStore
         byte Status, byte? ConfirmationStatus, DateTime? ApprovedAt, int? PaymentBatchId, int? ReversalOfId, byte[] RowVersion);
 }
 
-/// <summary>Setarile Finantelor pe firma din fin.CompanySetting; o setare lipsa are valoarea implicita din specificatie.</summary>
+/// <summary>
+/// Setarile Finantelor pe firma din fin.CompanySetting; o setare lipsa are valoarea implicita din specificatie (toleranta comisionului de
+/// card, nespecificata, e 3% pana la decizia utilizatorului).
+/// </summary>
 public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
 {
     public const string RequireApproval = "Fin.PaymentOrder.RequireApproval";
+    public const string AutoValidateLevel = "Fin.Bank.AutoValidateLevel";
+    public const string CardFeeTolerancePercent = "Fin.Card.FeeTolerancePercent";
+    public const string CardSettlementDays = "Fin.Card.SettlementDays";
 
     public async Task<bool> RequireApprovalAsync(int companyId, CancellationToken ct)
     {
-        var value = await session.Connection.QuerySingleOrDefaultAsync<string?>(new CommandDefinition("fin.usp_CompanySetting_Get",
-            new { CompanyId = companyId, Code = RequireApproval }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct))
-            .ConfigureAwait(false);
+        var value = await GetAsync(companyId, RequireApproval, ct).ConfigureAwait(false);
         return value is null || !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
+
+    public async Task<int> AutoValidateLevelAsync(int companyId, CancellationToken ct) =>
+        int.TryParse(await GetAsync(companyId, AutoValidateLevel, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out var level) && level is >= 0 and <= 2 ? level : 2;
+
+    public async Task<decimal> CardFeeTolerancePercentAsync(int companyId, CancellationToken ct) =>
+        decimal.TryParse(await GetAsync(companyId, CardFeeTolerancePercent, ct).ConfigureAwait(false), System.Globalization.NumberStyles.AllowDecimalPoint,
+            System.Globalization.CultureInfo.InvariantCulture, out var percent) && percent is >= 0 and <= 100 ? percent : 3m;
+
+    public async Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct) =>
+        int.TryParse(await GetAsync(companyId, CardSettlementDays, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out var days) && days is >= 0 and <= 30 ? days : 2;
+
+    private Task<string?> GetAsync(int companyId, string code, CancellationToken ct) =>
+        session.Connection.QuerySingleOrDefaultAsync<string?>(new CommandDefinition("fin.usp_CompanySetting_Get", new { CompanyId = companyId, Code = code },
+            session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
 }

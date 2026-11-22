@@ -1,7 +1,8 @@
 CREATE OR ALTER PROCEDURE fin.usp_BankStatementLine_Validate
     @CompanyId int,
     @Lines     fin.BankLineVersionList READONLY,
-    @UserId    int
+    @UserId    int,
+    @CardFeeTolerancePercent decimal(5,2) = 3
 AS
 BEGIN
     -- Validarea unui grup de linii de extras, pe seturi (02.02, F2 7; SP-08), in tranzactia apelantului (SP-03). Handler-ul a verificat
@@ -42,6 +43,18 @@ BEGIN
     SET MatchStatus = 4, ValidatedAt = SYSUTCDATETIME(), ValidatedBy = @UserId, ReversedAt = NULL, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     FROM fin.BankStatementLine AS l
     JOIN @Locked AS k ON k.Id = l.Id;
+
+    -- Decontarile de card explicate: Decontata, sau Decontata cu diferenta cand comisionul depaseste toleranta (F2 4.6 pasul 3).
+    UPDATE c
+    SET SettledAmount = l.Amount, FeeAmount = c.GrossAmount - l.Amount, BankStatementLineId = l.Id,
+        Status = CASE WHEN c.GrossAmount - l.Amount BETWEEN 0 AND ROUND(c.GrossAmount * @CardFeeTolerancePercent / 100, 2) THEN 2 ELSE 3 END,
+        ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    FROM fin.CardSettlementExpected AS c
+    JOIN fin.BankStatementLinePart AS p ON p.CardSettlementExpectedId = c.Id
+    JOIN fin.BankStatementLine AS l ON l.Id = p.BankStatementLineId
+    JOIN @Locked AS k ON k.Id = l.Id;
+
+    DELETE FROM fin.MatchSuggestion WHERE BankStatementLineId IN (SELECT Id FROM @Locked);
 
     UPDATE s
     SET Status = CASE WHEN NOT EXISTS (SELECT 1 FROM fin.BankStatementLine AS x WHERE x.BankStatementId = s.Id AND x.MatchStatus <> 4) THEN 3 ELSE 2 END,

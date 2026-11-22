@@ -18,3 +18,13 @@ public sealed record OrdinPlataExportatLinie(int PaymentOrderId, int? PartnerId,
 /// <summary>Exportul unui lot de plati catre banca (F2 5.1), la fiecare export (si reexport). Consumator: F5.</summary>
 public sealed record OrdinPlataExportat(int PaymentBatchId, int TreasuryAccountId, decimal TotalAmount, IReadOnlyList<OrdinPlataExportatLinie> Orders)
     : IntegrationEvent;
+
+/// <summary>O decontare de card asteptata, din alt modul (F2 6): POS-ul la inchiderea zilei.</summary>
+public sealed record CardSettlementRequest(int CompanyId, string AcquirerCode, DateOnly SalesDate, decimal GrossAmount, string SourceModule, string SourceRef);
+
+/// <summary>Inregistrarea decontarilor de card asteptate (F2 6), in tranzactia apelantului.</summary>
+public interface ICardSettlementWriter
+{
+    /// <summary>Idempotent pe (SourceModule, SourceRef): un raport Z livrat de doua ori creeaza o singura decontare.</summary>
+    Task<int> RegisterExpectedAsync(CardSettlementRequest request, CancellationToken ct);
+}

@@ -141,8 +141,49 @@ public static class FinanceApiRegistration
             .WithName("GetBankStatements").Produces<IReadOnlyList<BankStatementItemDto>>().Problems();
         finance.MapGet("/bank-statements/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetBankStatement(id), ct))
             .WithName("GetBankStatement").Produces<BankStatementDetailDto>().Problems();
-        finance.MapPost("/bank-statements/import", (ImportBankStatement body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+        // Dupa import (tranzactia lui e inchisa), potrivirea automata ruleaza pe fiecare extras, in tranzactia ei (F2 4.1 pasul 5), daca
+        // utilizatorul are dreptul de reconciliere.
+        finance.MapPost("/bank-statements/import", async (ImportBankStatement body, ISender sender, Erp.Core.Contracts.ICurrentContext context,
+                CancellationToken ct) =>
+            {
+                var result = await sender.Send(body, ct);
+                if (context.HasPermission(FinancePermissions.BankStatementReconcile))
+                {
+                    foreach (var statement in result.Statements)
+                    {
+                        await sender.Send(new RunAutoMatching(statement.BankStatementId), ct);
+                    }
+                }
+
+                return result;
+            })
             .WithName("ImportBankStatement").Produces<BankImportResultDto>().Problems();
+        finance.MapPost("/bank-statements/auto-match", (RunAutoMatching body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RunAutoMatching").Produces<MatchingResultDto>().Problems();
+        finance.MapGet("/matching-rules", (ISender sender, CancellationToken ct) => sender.Send(new GetMatchingRules(), ct))
+            .WithName("GetMatchingRules").Produces<IReadOnlyList<MatchingRuleDto>>().Problems();
+        finance.MapPost("/matching-rules", (SaveMatchingRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateMatchingRule").Saves();
+        finance.MapPut("/matching-rules/{id:int}", (int id, SaveMatchingRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateMatchingRule").Saves();
+        finance.MapPost("/bank-statement-lines/{id:long}/remember", (long id, RememberMatchingRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { BankStatementLineId = id }, ct))
+            .WithName("RememberMatchingRule").Saves();
+        finance.MapGet("/card-acquirers", (ISender sender, CancellationToken ct) => sender.Send(new GetCardAcquirers(), ct))
+            .WithName("GetCardAcquirers").Produces<IReadOnlyList<CardAcquirerDto>>().Problems();
+        finance.MapPost("/card-acquirers", (SaveCardAcquirer body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateCardAcquirer").Saves();
+        finance.MapPut("/card-acquirers/{id:int}", (int id, SaveCardAcquirer body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateCardAcquirer").Saves();
+        finance.MapGet("/card-settlements", ([AsParameters] GetCardSettlements query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetCardSettlements").Produces<IReadOnlyList<CardSettlementDto>>().Problems();
+        finance.MapPost("/card-settlements", (RegisterCardSettlement body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RegisterCardSettlement").Produces<int>().Problems();
+        finance.MapPost("/card-settlements/{id:int}/resolve", (int id, ResolveCardBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ResolveCardSettlement(id, body.Note, body.RowVersion), ct))
+            .WithName("ResolveCardSettlement").Produces<byte[]>().Problems();
+        finance.MapGet("/transit-items", ([AsParameters] GetTransitItems query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetTransitItems").Produces<IReadOnlyList<TransitItemDto>>().Problems();
         finance.MapPost("/bank-statements/{id:int}/accept-gap", (int id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new AcceptStatementGap(id, body.Reason, body.RowVersion), ct))
             .WithName("AcceptStatementGap").Produces<byte[]>().Problems();
@@ -233,6 +274,9 @@ public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? Settlemen
 
 /// <summary>O actiune cu motiv (acceptarea golului, desfacerea validarii): motivul si versiunea vazuta.</summary>
 public sealed record AcceptGapBody(string Reason, byte[] RowVersion);
+
+/// <summary>Explicatia unei decontari de card cu diferenta.</summary>
+public sealed record ResolveCardBody(string Note, byte[] RowVersion);
 
 /// <summary>Exportul unui lot: versiunea si, la reexport, motivul.</summary>
 public sealed record ExportBatchBody(byte[] RowVersion, string? ReExportReason = null);

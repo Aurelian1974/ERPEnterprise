@@ -40,6 +40,9 @@ BEGIN
                  WHERE p.PaymentOrderId = po.Id) AS x
     WHERE po.Status = 2 AND po.ConfirmationStatus IS NOT NULL
       AND po.Id IN (SELECT PaymentOrderId FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId AND PaymentOrderId IS NOT NULL);
+    UPDATE fin.CardSettlementExpected
+    SET Status = 1, SettledAmount = NULL, FeeAmount = NULL, BankStatementLineId = NULL, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    WHERE Id IN (SELECT CardSettlementExpectedId FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId AND CardSettlementExpectedId IS NOT NULL);
     UPDATE fin.BankStatement SET Status = 2, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @StatementId AND Status = 3;
 
     SELECT RowVersion FROM fin.BankStatementLine WHERE Id = @BankStatementLineId;

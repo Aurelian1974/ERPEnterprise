@@ -10,13 +10,17 @@ namespace Erp.Finance.Application.Bank;
 
 /// <summary>O parte a explicatiei unei linii (F2 3.4): suma cu semn (intrare +, iesire −), ce stinge si cu ce pereche.</summary>
 public sealed record BankLinePartInput(int OperationTypeId, string Amount, int? PartnerId, int? EmployeeId, string? SettlementRef, int? CashDocumentId,
-    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note, int? PaymentOrderId = null);
+    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note, int? PaymentOrderId = null,
+    int? CardSettlementExpectedId = null);
 
 public sealed record BankLinePartRecord(short PartNumber, int OperationTypeId, decimal Amount, int? PartnerId, int? EmployeeId, string? SettlementRef,
     int? CashDocumentId, int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note)
 {
     /// <summary>OP-ul pe care partea il confirma (F2 3.4); o astfel de parte nu mai publica o plata.</summary>
     public int? PaymentOrderId { get; init; }
+
+    /// <summary>Decontarea de card asteptata pe care partea BANK-DECONTARE-CARD o explica (F2 3.7).</summary>
+    public int? CardSettlementExpectedId { get; init; }
 }
 
 /// <summary>Un OP confirmat la validarea liniilor (F2 4.2 pasul 7): linia de confirmare si data ei.</summary>
@@ -54,7 +58,7 @@ public interface IBankStatementLineStore
     Task<byte[]> ExplainAsync(int companyId, long lineId, IReadOnlyList<BankLinePartRecord> parts, byte[] rowVersion, int userId, CancellationToken ct);
 
     Task<(IReadOnlyList<BankLineSaved> Saved, IReadOnlyList<PaymentOrderConfirmed> Confirmed, IReadOnlyList<(int PaymentOrderId, long BankStatementLineId)> Rejected)>
-        ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines, int userId, CancellationToken ct);
+        ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines, decimal cardFeeTolerancePercent, int userId, CancellationToken ct);
 
     Task<byte[]> UnvalidateAsync(int companyId, long lineId, byte[] rowVersion, int userId, CancellationToken ct);
 }
@@ -125,7 +129,7 @@ internal sealed class ExplainBankStatementLineHandler(IBankStatementLineStore st
         static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         var parts = request.Parts.Select((p, i) => new BankLinePartRecord((short)(i + 1), p.OperationTypeId, Money.ParseOptional(p.Amount) ?? 0, p.PartnerId,
             p.EmployeeId, Clean(p.SettlementRef), p.CashDocumentId, p.CounterTreasuryAccountId, Clean(p.BudgetObligationRef), p.CostCenterId, p.ProjectId,
-            Clean(p.Note)) { PaymentOrderId = p.PaymentOrderId }).ToList();
+            Clean(p.Note)) { PaymentOrderId = p.PaymentOrderId, CardSettlementExpectedId = p.CardSettlementExpectedId }).ToList();
         var version = await store.ExplainAsync(context.CompanyId, request.Id, parts, request.RowVersion, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.BankStatementLine", request.Id, new
         {
@@ -159,14 +163,29 @@ internal sealed class ValidateBankStatementLinesValidator : AbstractValidator<Va
     }
 }
 
-internal sealed class ValidateBankStatementLinesHandler(IBankStatementLineStore store, IPeriodLock periods, IExchangeRateProvider rates,
-    IPrecisionService precision, IOutbox outbox, ICurrentContext context, IAuditScope audit)
+internal sealed class ValidateBankStatementLinesHandler(BankLineValidation validation, IAuditScope audit)
     : ICommandHandler<ValidateBankStatementLines, IReadOnlyList<BankLineSaved>>
 {
     public async Task<IReadOnlyList<BankLineSaved>> Handle(ValidateBankStatementLines request, CancellationToken cancellationToken)
     {
-        var (lines, parts) = await store.GetAsync(context.CompanyId, request.Lines.Select(l => l.Id).ToList(), cancellationToken).ConfigureAwait(false);
-        if (lines.Count != request.Lines.Count)
+        var (lines, saved) = await validation.ValidateAsync(request.Lines, cancellationToken).ConfigureAwait(false);
+        audit.Describe("Fin.BankStatementLine", lines.Count == 1 ? lines[0].Id : null, new { Lines = lines.Select(l => l.Id), Count = lines.Count });
+        return saved;
+    }
+}
+
+/// <summary>
+/// Validarea liniilor si evenimentele ei, comune validarii manuale si celei automate dupa potrivire (F2 4.3 si 4.4): perioadele, validarea pe
+/// seturi, IncasareInregistrata / PlataInregistrata (partile pe OP nu republica plata), OrdinPlataConfirmat si OrdinPlataRespins.
+/// </summary>
+public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLock periods, IExchangeRateProvider rates, IPrecisionService precision,
+    IFinanceSettings settings, IOutbox outbox, ICurrentContext context)
+{
+    public async Task<(IReadOnlyList<BankLineRow> Lines, IReadOnlyList<BankLineSaved> Saved)> ValidateAsync(IReadOnlyList<BankLineVersion> versions,
+        CancellationToken cancellationToken)
+    {
+        var (lines, parts) = await store.GetAsync(context.CompanyId, versions.Select(l => l.Id).ToList(), cancellationToken).ConfigureAwait(false);
+        if (lines.Count != versions.Count)
         {
             throw BankLineRules.NotFound();
         }
@@ -176,7 +195,9 @@ internal sealed class ValidateBankStatementLinesHandler(IBankStatementLineStore 
             await CashAccess.EnsureOpenPeriodAsync(periods, context.CompanyId, day, cancellationToken).ConfigureAwait(false);
         }
 
-        var (saved, confirmed, rejected) = await store.ValidateAsync(context.CompanyId, request.Lines, context.UserId, cancellationToken).ConfigureAwait(false);
+        var tolerance = await settings.CardFeeTolerancePercentAsync(context.CompanyId, cancellationToken).ConfigureAwait(false);
+        var (saved, confirmed, rejected) = await store.ValidateAsync(context.CompanyId, versions, tolerance, context.UserId, cancellationToken)
+            .ConfigureAwait(false);
         foreach (var c in confirmed)
         {
             await outbox.EnqueueAsync(new Contracts.Bank.OrdinPlataConfirmat(c.PaymentOrderId, c.BankStatementLineId, c.BookingDate, c.Amount)
@@ -225,8 +246,7 @@ internal sealed class ValidateBankStatementLinesHandler(IBankStatementLineStore 
             await outbox.EnqueueAsync(evt with { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
         }
 
-        audit.Describe("Fin.BankStatementLine", lines.Count == 1 ? lines[0].Id : null, new { Lines = lines.Select(l => l.Id), Count = lines.Count });
-        return saved;
+        return (lines, saved);
     }
 }
 

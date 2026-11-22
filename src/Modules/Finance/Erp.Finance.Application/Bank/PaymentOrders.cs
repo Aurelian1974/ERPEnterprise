@@ -63,6 +63,18 @@ public interface IFinanceSettings
 {
     /// <summary>Fin.PaymentOrder.RequireApproval: aprobarea cu patru ochi, pornita implicit (decizia din 15.11.2026).</summary>
     Task<bool> RequireApprovalAsync(int companyId, CancellationToken ct);
+
+    /// <summary>
+    /// Fin.Bank.AutoValidateLevel: 0 niciodata, 1 confirmarile de OP, perechile interne, cardurile si regulile cu validare automata, 2 si
+    /// incasarile potrivite exact pe factura (implicit 2, decizia din 15.11.2026).
+    /// </summary>
+    Task<int> AutoValidateLevelAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Fin.Card.FeeTolerancePercent: comisionul maxim acceptat la potrivirea automata a unei decontari de card (procent din brut).</summary>
+    Task<decimal> CardFeeTolerancePercentAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Fin.Card.SettlementDays: zilele lucratoare pana la decontarea asteptata (implicit 2).</summary>
+    Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct);
 }
 
 internal static class PaymentOrderErrors
@@ -344,7 +356,7 @@ internal sealed class CreatePaymentOrderFromStatementLineValidator : AbstractVal
 }
 
 internal sealed class CreatePaymentOrderFromStatementLineHandler(IPaymentOrderStore store, IBankStatementLineStore lines, PaymentOrderWorkflow workflow,
-    IOutbox outbox, ICurrentContext context, IAuditScope audit) : ICommandHandler<CreatePaymentOrderFromStatementLine, FinanceSaved>
+    BankLineValidation validation, ICurrentContext context, IAuditScope audit) : ICommandHandler<CreatePaymentOrderFromStatementLine, FinanceSaved>
 {
     public async Task<FinanceSaved> Handle(CreatePaymentOrderFromStatementLine request, CancellationToken cancellationToken)
     {
@@ -379,13 +391,7 @@ internal sealed class CreatePaymentOrderFromStatementLineHandler(IPaymentOrderSt
         var parts = orderLines.Select(l => new BankLinePartRecord(l.LineNumber, codes[l.LineNumber], -l.Amount, request.PartnerId, request.EmployeeId,
             l.SettlementRef, null, null, request.BudgetObligationRef, l.CostCenterId, l.ProjectId, null) { PaymentOrderId = saved.Id }).ToList();
         var lineVersion = await lines.ExplainAsync(context.CompanyId, line.Id, parts, request.LineRowVersion, context.UserId, cancellationToken).ConfigureAwait(false);
-        var (_, confirmed, _) = await lines.ValidateAsync(context.CompanyId, [new BankLineVersion(line.Id, lineVersion)], context.UserId, cancellationToken)
-            .ConfigureAwait(false);
-        foreach (var c in confirmed)
-        {
-            await outbox.EnqueueAsync(new OrdinPlataConfirmat(c.PaymentOrderId, c.BankStatementLineId, c.BookingDate, c.Amount) { CompanyId = context.CompanyId },
-                cancellationToken).ConfigureAwait(false);
-        }
+        await validation.ValidateAsync([new BankLineVersion(line.Id, lineVersion)], cancellationToken).ConfigureAwait(false);
 
         audit.Describe("Fin.PaymentOrder", saved.Id, new { Number = number, line.Id, Amount = -line.Amount, request.PartnerId });
         return new FinanceSaved(saved.Id, version);

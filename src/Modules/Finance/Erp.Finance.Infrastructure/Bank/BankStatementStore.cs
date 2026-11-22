@@ -59,7 +59,7 @@ public sealed class BankStatementStore(IDbSession session) : IBankStatementStore
                 (object?)l.CounterpartyName ?? DBNull.Value, (object?)l.CounterpartyIban ?? DBNull.Value, (object?)l.CounterpartyBic ?? DBNull.Value,
                 (object?)l.RemittanceInfo ?? DBNull.Value, (object?)l.EndToEndId ?? DBNull.Value, statement.References[i],
                 (object?)l.BankTransactionCode ?? DBNull.Value, (object?)l.ForeignAmount ?? DBNull.Value, (object?)l.ForeignCurrency?.ToUpperInvariant() ?? DBNull.Value,
-                DBNull.Value, DBNull.Value);
+                (object?)RemittanceRules.ExtractFiscalCode(l.RemittanceInfo) ?? DBNull.Value, (object?)RemittanceRules.ExtractDocumentNo(l.RemittanceInfo) ?? DBNull.Value);
         }
 
         var row = await session.Connection.QuerySingleAsync<ImportedRow>(Command("fin.usp_BankStatement_Import", new

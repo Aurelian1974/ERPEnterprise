@@ -1,6 +1,7 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Treasury;
+using Erp.Finance.Contracts.Bank;
 using Erp.Finance.Contracts.Treasury;
 using Erp.Finance.Infrastructure.Bank;
 using Erp.Finance.Infrastructure.Bank.Formats;
@@ -32,6 +33,10 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<IPaymentOrderStore, PaymentOrderStore>();
         services.AddScoped<IFinanceSettings, FinanceSettings>();
         services.AddScoped<PaymentOrderWorkflow>();
+        services.AddScoped<BankLineValidation>();
+        services.AddScoped<IBankMatchingStore, BankMatchingStore>();
+        services.AddScoped<BankMatchingEngine>();
+        services.AddScoped<ICardSettlementWriter, CardSettlementWriter>();
         services.AddScoped<IPaymentBatchStore, PaymentBatchStore>();
         services.AddSingleton<IPaymentFileWriter, Pain001Writer>();
         services.AddSingleton<IPaymentFileWriter, CsvPaymentWriter>();

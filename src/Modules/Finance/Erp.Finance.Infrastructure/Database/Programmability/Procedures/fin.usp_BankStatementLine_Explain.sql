@@ -75,6 +75,15 @@ BEGIN
                          OR o.ReversalOfId IS NOT NULL OR o.ConfirmationStatus = 3
                          OR (t.Code = N'BANK-RESTITUIRE' AND p.Amount <= 0) OR (t.Code <> N'BANK-RESTITUIRE' AND p.Amount >= 0)))
             THROW 51021, N'Ordinul de plată nu este un OP validat al contului extrasului, sau partea nu este o ieșire (ori o restituire).', 1;
+        -- Decontarea de card: a firmei, neexplicata de alta linie (51220), pe partea BANK-DECONTARE-CARD.
+        IF EXISTS (SELECT 1 FROM @Parts AS p
+                   JOIN fin.TreasuryOperationType AS t ON t.Id = p.TreasuryOperationTypeId
+                   LEFT JOIN fin.CardSettlementExpected AS c ON c.Id = p.CardSettlementExpectedId AND c.CompanyId = @CompanyId
+                   WHERE p.CardSettlementExpectedId IS NOT NULL AND (c.Id IS NULL OR t.Code <> N'BANK-DECONTARE-CARD'))
+            THROW 51021, N'Decontarea de card nu există în firma curentă sau partea nu este o decontare de card.', 1;
+        IF EXISTS (SELECT 1 FROM @Parts AS p JOIN fin.BankStatementLinePart AS x ON x.CardSettlementExpectedId = p.CardSettlementExpectedId
+                   WHERE p.CardSettlementExpectedId IS NOT NULL AND x.BankStatementLineId <> @BankStatementLineId)
+            THROW 51220, N'Decontarea de card este deja explicată de altă linie de extras.', 1;
         IF EXISTS (SELECT 1 FROM fin.PaymentOrder AS o WITH (UPDLOCK)
                    JOIN (SELECT PaymentOrderId, -SUM(Amount) AS Linked FROM @Parts WHERE PaymentOrderId IS NOT NULL AND Amount < 0 GROUP BY PaymentOrderId) AS n
                         ON n.PaymentOrderId = o.Id
@@ -86,10 +95,27 @@ BEGIN
 
     DELETE FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId;
     INSERT INTO fin.BankStatementLinePart (BankStatementLineId, PartNumber, TreasuryOperationTypeId, Amount, PartnerId, EmployeeId, SettlementRef,
-        PaymentOrderId, CashDocumentId, CounterTreasuryAccountId, BudgetObligationRef, CostCenterId, ProjectId, Note)
+        PaymentOrderId, CashDocumentId, CounterTreasuryAccountId, CardSettlementExpectedId, BudgetObligationRef, CostCenterId, ProjectId, Note)
     SELECT @BankStatementLineId, PartNumber, TreasuryOperationTypeId, Amount, PartnerId, EmployeeId, SettlementRef, PaymentOrderId, CashDocumentId,
-        CounterTreasuryAccountId, BudgetObligationRef, CostCenterId, ProjectId, Note
+        CounterTreasuryAccountId, CardSettlementExpectedId, BudgetObligationRef, CostCenterId, ProjectId, Note
     FROM @Parts;
+
+    -- Viramentul intern explicat manual se leaga de partea pereche din celalalt cont (aceeasi suma, sens opus, ±3 zile), ca sa iasa din
+    -- tranzit (F2 4.5).
+    DECLARE @Booking date = (SELECT BookingDate FROM fin.BankStatementLine WHERE Id = @BankStatementLineId);
+    UPDATE p
+    SET PairedBankStatementLineId = (SELECT TOP (1) ol.Id
+        FROM fin.BankStatementLinePart AS op
+        JOIN fin.BankStatementLine AS ol ON ol.Id = op.BankStatementLineId AND ol.MatchStatus IN (3, 4) AND ol.TreasuryAccountId = p.CounterTreasuryAccountId
+        WHERE op.TreasuryOperationTypeId = p.TreasuryOperationTypeId AND op.CounterTreasuryAccountId = @AccountId AND op.Amount = -p.Amount
+          AND op.PairedBankStatementLineId IS NULL AND ABS(DATEDIFF(day, ol.BookingDate, @Booking)) <= 3
+          AND NOT EXISTS (SELECT 1 FROM fin.BankStatementLinePart AS q WHERE q.PairedBankStatementLineId = ol.Id)
+        ORDER BY ABS(DATEDIFF(day, ol.BookingDate, @Booking)), ol.Id)
+    FROM fin.BankStatementLinePart AS p
+    JOIN fin.TreasuryOperationType AS t ON t.Id = p.TreasuryOperationTypeId AND t.Code IN (N'BANK-TRANSFER-INTERN', N'BANK-SCHIMB-VALUTAR')
+    WHERE p.BankStatementLineId = @BankStatementLineId AND p.CounterTreasuryAccountId IS NOT NULL;
+
+    DELETE FROM fin.MatchSuggestion WHERE BankStatementLineId = @BankStatementLineId;
 
     DECLARE @HasParts bit = CASE WHEN EXISTS (SELECT 1 FROM @Parts) THEN 1 ELSE 0 END;
     DECLARE @Partner int = (SELECT CASE WHEN COUNT(DISTINCT PartnerId) = 1 THEN MAX(PartnerId) END FROM @Parts WHERE PartnerId IS NOT NULL);
