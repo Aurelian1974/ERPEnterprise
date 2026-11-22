@@ -117,6 +117,8 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
     {
         await Deploy("ERP_IT_ADMIN2", "ITADM2");
         await CreateAdmin("ERP_IT_ADMIN2", "ITADM2", Request());
+        // Rolurile de sistem ale tuturor modulelor (Nucleu, Finante...): o rerulare nu adauga niciunul.
+        var systemRoles = await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM core.Role WHERE IsSystem = 1;");
 
         await Deploy("ERP_IT_ADMIN2", "ITADM2");
         var second = await CreateAdmin("ERP_IT_ADMIN2", "ITADM2", Request(userName: "alt.admin"));
@@ -126,7 +128,7 @@ public sealed class InitialAdminIntegrationTests(SqlServerFixture sql)
         Assert.Contains(InitialAdminCreator.SkippedMessage, logSink.Text);
         Assert.Equal(1, await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM ids.UserAccount;"));
         Assert.Equal(2, await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM core.[User];"));
-        Assert.Equal(4, await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM core.Role WHERE IsSystem = 1;"));
+        Assert.Equal(systemRoles, await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM core.Role WHERE IsSystem = 1;"));
         Assert.Equal(1, await Scalar<int>("ERP_IT_ADMIN2", "SELECT COUNT(*) FROM core.AuditEntry;"));
     }
 

@@ -190,7 +190,8 @@ describe('fișa partenerului', () => {
     expect(await screen.findByText('e-Factura: înregistrat')).toBeInTheDocument();
     expect(lookupAnaf).toHaveBeenCalledWith('33445566');
     expect(save).not.toHaveBeenCalled();
-    expect(unsavedChanges.any()).toBe(true);
+    // Garda modificarilor nesalvate se actualizeaza intr-un efect, dupa randarea datelor ANAF: se asteapta, nu se citeste imediat.
+    await waitFor(() => expect(unsavedChanges.any()).toBe(true));
 
     submit();
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
