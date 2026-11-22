@@ -2662,3 +2662,34 @@ table.register-table td:first-child,
 table.cash-list td:nth-child(2) .row-link {
   white-space: nowrap;
 }
+
+/* ---------- Configurare › Finanțe › Trezorerie (machetele cf-01…cf-03) ---------- */
+
+.settings-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.settings-editor label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.settings-editor label.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

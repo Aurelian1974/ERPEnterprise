@@ -23,3 +23,12 @@ describe('avansuri și deconturi (machetele f1-05, f1-06)', () => {
     expect(body.lines[1]).toMatchObject({ justificationKind: Justification.PerDiem, amount: null, vatAmount: null, days: '3' });
   });
 });
+
+describe('configurarea trezoreriei (machetele cf-01…cf-03)', () => {
+  it('plafonul introdus românește devine sumă invariantă', async () => {
+    const { parseAmount } = await import('./TreasurySettingsTab');
+    expect(parseAmount('5.000,50')).toBe('5000.50');
+    expect(parseAmount('3000')).toBe('3000');
+    expect(parseAmount('abc')).toBeNull();
+  });
+});
