@@ -44,6 +44,7 @@ export function CashDeskPage() {
   const data = desk.data;
   const day = data?.day;
   const canCreate = user.permissions.includes('Fin.Cash.Create');
+  const canClose = user.permissions.includes('Fin.Cash.CloseDay');
   const documents = useMemo(() => filterDay(data?.documents ?? [], filter), [data?.documents, filter]);
   const open = (kind: number) => {
     if (day != null && !day.isClosed) {
@@ -53,7 +54,13 @@ export function CashDeskPage() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!canCreate || day == null || day.isClosed) return;
+      if (day == null || day.isClosed) return;
+      if (event.key === 'F10' && canClose) {
+        event.preventDefault();
+        void navigate(`/finante/trezorerie/registru?casa=${day.treasuryAccountId}&luna=${day.day.slice(0, 7)}&zi=${day.day}`);
+        return;
+      }
+      if (!canCreate) return;
       if (event.key === 'F2') {
         event.preventDefault();
         void navigate(documentPath({ kind: CashKind.Receipt, account: day.treasuryAccountId, day: day.day }));
@@ -64,7 +71,7 @@ export function CashDeskPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canCreate, day, navigate]);
+  }, [canClose, canCreate, day, navigate]);
 
   if (data === undefined) {
     return <div className="page" role="status">{desk.isError ? desk.error.message : t('app.loading')}</div>;
@@ -108,18 +115,30 @@ export function CashDeskPage() {
             <Stat label={t('cash.current')} value={formatAmount(day.closingBalance)} tone="current" suffix={day.currencyCode} />
           </section>
 
-          {canCreate && (
+          {(canCreate || canClose) && (
             <div className="cash-actions">
+              {canCreate && (
               <button type="button" className="cash-action in" disabled={day.isClosed} onClick={() => open(CashKind.Receipt)}>
                 <span className="ic" aria-hidden="true">+</span>
                 <span><strong>{t('cash.action.in')}</strong><span className="muted small">{t('cash.action.inHint')}</span></span>
                 <kbd>F2</kbd>
               </button>
+              )}
+              {canCreate && (
               <button type="button" className="cash-action out" disabled={day.isClosed} onClick={() => open(CashKind.CashOut)}>
                 <span className="ic" aria-hidden="true">−</span>
                 <span><strong>{t('cash.action.out')}</strong><span className="muted small">{t('cash.action.outHint')}</span></span>
                 <kbd>F3</kbd>
               </button>
+              )}
+              {canClose && (
+                <button type="button" className="cash-action close" disabled={day.isClosed} onClick={() => void navigate(
+                  `/finante/trezorerie/registru?casa=${day.treasuryAccountId}&luna=${day.day.slice(0, 7)}&zi=${day.day}`)}>
+                  <span className="ic" aria-hidden="true">⏻</span>
+                  <span><strong>{t('cash.action.close')}</strong><span className="muted small">{t('cash.action.closeHint')}</span></span>
+                  <kbd>F10</kbd>
+                </button>
+              )}
             </div>
           )}
 

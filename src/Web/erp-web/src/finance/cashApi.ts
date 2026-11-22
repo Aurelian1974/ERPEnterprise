@@ -116,3 +116,64 @@ export const cashApi = {
     return unwrap(await api.POST('/api/finance/cash-documents/{id}/reverse', { params: { path: { id } }, body: { rowVersion } }));
   },
 };
+
+export type CashRegister = components['schemas']['CashRegisterDto'];
+export type CashRegisterDay = components['schemas']['CashRegisterDayDto'];
+export type CashRegisterEntry = components['schemas']['CashRegisterEntryDto'];
+
+/** Registrul de casa al lunii (macheta f1-04): zilele cu starea lor si documentele validate, cu soldul dupa fiecare. */
+export function useCashRegister(accountId: number | undefined, from: string, to: string) {
+  return useQuery({
+    queryKey: ['finance', 'cash', 'register', accountId ?? 0, from, to] as const,
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/finance/cash-register', {
+      params: { query: { TreasuryAccountId: accountId ?? 0, From: from, To: to } },
+      signal,
+    })),
+    enabled: accountId !== undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export const cashDayApi = {
+  async close(treasuryAccountId: number, day: string) {
+    return unwrap(await api.POST('/api/finance/cash-days/close', { body: { treasuryAccountId, day } }));
+  },
+  async reopen(treasuryAccountId: number, day: string, reason: string) {
+    return unwrap(await api.POST('/api/finance/cash-days/reopen', { body: { treasuryAccountId, day, reason } }));
+  },
+};
+
+/** O celula a calendarului lunii: ziua (ISO), ziua din luna si ziua registrului, daca are activitate sau a fost inchisa. */
+export interface CalendarCell {
+  readonly iso: string;
+  readonly dayOfMonth: number;
+  readonly day: CashRegisterDay | undefined;
+}
+
+/** Calendarul lunii incepand cu luni (macheta f1-04): celule goale inainte de prima zi, apoi zilele lunii. */
+export function monthCalendar(month: string, days: readonly CashRegisterDay[]): (CalendarCell | null)[] {
+  const [year = 2026, monthNumber = 1] = month.split('-').map(Number);
+  const first = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const count = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const lead = (first.getUTCDay() + 6) % 7;
+  const cells: (CalendarCell | null)[] = Array.from({ length: lead }, () => null);
+  for (let d = 1; d <= count; d++) {
+    const iso = `${month}-${String(d).padStart(2, '0')}`;
+    cells.push({ iso, dayOfMonth: d, day: days.find((x) => x.day === iso) });
+  }
+  return cells;
+}
+
+/** Prima si ultima zi a lunii „AAAA-LL”, ca interval al registrului. */
+export function monthRange(month: string): { readonly from: string; readonly to: string } {
+  const [year = 2026, monthNumber = 1] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
+}
+
+/** Luna urmatoare sau anterioara („AAAA-LL”). */
+export function shiftMonth(month: string, delta: number): string {
+  const [year = 2026, monthNumber = 1] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1 + delta, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}

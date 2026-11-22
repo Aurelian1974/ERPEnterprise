@@ -132,6 +132,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/cash-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashRegister"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-days/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CloseCashDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-days/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReopenCashDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/antiforgery": {
         parameters: {
             query?: never;
@@ -4929,6 +4977,80 @@ export interface components {
             rowVersion: string;
             confirmWarnings: boolean;
         };
+        CashDayClosedDto: {
+            /** Format: date */
+            day: string;
+            closingBalance: string;
+            /** Format: int32 */
+            firstPageNo: null | number;
+            /** Format: int32 */
+            lastPageNo: null | number;
+            balanceWarning: null | string;
+        };
+        CashRegisterDayDto: {
+            /** Format: date */
+            day: string;
+            openingBalance: string;
+            totalIn: string;
+            totalOut: string;
+            closingBalance: string;
+            isClosed: boolean;
+            /** Format: int32 */
+            firstPageNo: null | number;
+            /** Format: int32 */
+            lastPageNo: null | number;
+            /** Format: date-time */
+            closedAt: null | string;
+            closedByName: null | string;
+            /** Format: date-time */
+            reopenedAt: null | string;
+            reopenedByName: null | string;
+            reopenReason: null | string;
+            /** Format: int32 */
+            draftCount: number;
+        };
+        CashRegisterDto: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            days: components["schemas"]["CashRegisterDayDto"][];
+            entries: components["schemas"]["CashRegisterEntryDto"][];
+        };
+        CashRegisterEntryDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: date */
+            day: string;
+            kind: components["schemas"]["CashDocumentKind"];
+            number: null | string;
+            personName: null | string;
+            description: null | string;
+            cashIn: null | string;
+            cashOut: null | string;
+            balance: string;
+            status: components["schemas"]["CashDocumentStatus"];
+            isReversal: boolean;
+            /** Format: date-time */
+            validatedAt: null | string;
+        };
+        CloseCashDay: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            /** Format: date */
+            day: string;
+        };
+        ReopenCashDay: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            /** Format: date */
+            day: string;
+            reason: string;
+            /** Format: date */
+            accountingDate?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -5472,6 +5594,186 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashValidatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashRegister: {
+        parameters: {
+            query: {
+                TreasuryAccountId: number;
+                From?: string;
+                To?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashRegisterDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CloseCashDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseCashDay"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashDayClosedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReopenCashDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReopenCashDay"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
             /** @description Bad Request */

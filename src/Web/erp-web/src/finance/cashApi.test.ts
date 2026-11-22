@@ -51,3 +51,17 @@ describe('casa (machetele f1-02, f1-03)', () => {
     });
   });
 });
+
+describe('registrul de casă (macheta f1-04)', () => {
+  it('calendarul începe cu luni și leagă zilele cu activitate', async () => {
+    const { monthCalendar, monthRange, shiftMonth } = await import('./cashApi');
+    const day = { day: '2026-11-12', openingBalance: '0', totalIn: '0', totalOut: '0', closingBalance: '0', isClosed: true, firstPageNo: 1, lastPageNo: 1,
+      closedAt: null, closedByName: null, reopenedAt: null, reopenedByName: null, reopenReason: null, draftCount: 0 };
+    const cells = monthCalendar('2026-11', [day]);
+    // 1 noiembrie 2026 e duminică: șase celule goale înainte.
+    expect(cells.slice(0, 7).map((c) => c?.dayOfMonth ?? null)).toEqual([null, null, null, null, null, null, 1]);
+    expect(cells.find((c) => c?.iso === '2026-11-12')?.day?.isClosed).toBe(true);
+    expect(monthRange('2026-02')).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+    expect([shiftMonth('2026-12', 1), shiftMonth('2026-01', -1)]).toEqual(['2027-01', '2025-12']);
+  });
+});
