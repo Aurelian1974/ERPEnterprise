@@ -26,11 +26,20 @@ BEGIN
     UPDATE fin.BankStatementLine
     SET MatchStatus = 3, ValidatedAt = NULL, ValidatedBy = NULL, ReversedAt = SYSUTCDATETIME(), ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @BankStatementLineId;
-    -- Un OP confirmat de linie redevine Neconfirmat (F2 3.6: Confirmat → Neconfirmat doar prin desfacerea potrivirii pe extras).
-    UPDATE fin.PaymentOrder
-    SET ConfirmationStatus = 1, BankStatementLineId = NULL, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
-    WHERE ConfirmationStatus = 2
-      AND Id IN (SELECT PaymentOrderId FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId AND PaymentOrderId IS NOT NULL);
+    -- OP-urile legate de linie isi recalculeaza confirmarea din liniile validate ramase (F2 3.6: Confirmat → Neconfirmat doar prin
+    -- desfacerea potrivirii pe extras; o restituire desfacuta scoate OP-ul din Respins).
+    UPDATE po
+    SET ConfirmationStatus = CASE WHEN x.Returned > 0 THEN 3 WHEN x.Paid = po.Amount THEN 2 ELSE 1 END,
+        BankStatementLineId = CASE WHEN x.Returned > 0 OR x.Paid = po.Amount THEN x.LastLineId END,
+        ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    FROM fin.PaymentOrder AS po
+    CROSS APPLY (SELECT ISNULL(-SUM(CASE WHEN p.Amount < 0 THEN p.Amount END), 0) AS Paid,
+                        COUNT(CASE WHEN p.Amount > 0 THEN 1 END) AS Returned, MAX(p.BankStatementLineId) AS LastLineId
+                 FROM fin.BankStatementLinePart AS p
+                 JOIN fin.BankStatementLine AS l ON l.Id = p.BankStatementLineId AND l.MatchStatus = 4
+                 WHERE p.PaymentOrderId = po.Id) AS x
+    WHERE po.Status = 2 AND po.ConfirmationStatus IS NOT NULL
+      AND po.Id IN (SELECT PaymentOrderId FROM fin.BankStatementLinePart WHERE BankStatementLineId = @BankStatementLineId AND PaymentOrderId IS NOT NULL);
     UPDATE fin.BankStatement SET Status = 2, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @StatementId AND Status = 3;
 
     SELECT RowVersion FROM fin.BankStatementLine WHERE Id = @BankStatementLineId;

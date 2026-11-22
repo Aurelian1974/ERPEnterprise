@@ -67,15 +67,19 @@ BEGIN
         IF EXISTS (SELECT 1 FROM @Parts AS p JOIN fin.BankStatementLinePart AS x ON x.CashDocumentId = p.CashDocumentId
                    WHERE p.CashDocumentId IS NOT NULL AND x.BankStatementLineId <> @BankStatementLineId)
             THROW 51220, N'Documentul de casă este deja potrivit cu altă linie de extras.', 1;
-        IF EXISTS (SELECT 1 FROM @Parts AS p LEFT JOIN fin.PaymentOrder AS o ON o.Id = p.PaymentOrderId
+        -- O parte pe OP e o iesire care il confirma sau, cu BANK-RESTITUIRE, intrarea prin care banca il returneaza (F2 4.2 pasul 8).
+        IF EXISTS (SELECT 1 FROM @Parts AS p
+                   JOIN fin.TreasuryOperationType AS t ON t.Id = p.TreasuryOperationTypeId
+                   LEFT JOIN fin.PaymentOrder AS o ON o.Id = p.PaymentOrderId
                    WHERE p.PaymentOrderId IS NOT NULL AND (o.Id IS NULL OR o.CompanyId <> @CompanyId OR o.TreasuryAccountId <> @AccountId OR o.Status <> 2
-                         OR o.ReversalOfId IS NOT NULL OR o.ConfirmationStatus = 3 OR p.Amount >= 0))
-            THROW 51021, N'Ordinul de plată nu este un OP validat al contului extrasului, sau partea nu este o ieșire.', 1;
+                         OR o.ReversalOfId IS NOT NULL OR o.ConfirmationStatus = 3
+                         OR (t.Code = N'BANK-RESTITUIRE' AND p.Amount <= 0) OR (t.Code <> N'BANK-RESTITUIRE' AND p.Amount >= 0)))
+            THROW 51021, N'Ordinul de plată nu este un OP validat al contului extrasului, sau partea nu este o ieșire (ori o restituire).', 1;
         IF EXISTS (SELECT 1 FROM fin.PaymentOrder AS o WITH (UPDLOCK)
-                   JOIN (SELECT PaymentOrderId, -SUM(Amount) AS Linked FROM @Parts WHERE PaymentOrderId IS NOT NULL GROUP BY PaymentOrderId) AS n
+                   JOIN (SELECT PaymentOrderId, -SUM(Amount) AS Linked FROM @Parts WHERE PaymentOrderId IS NOT NULL AND Amount < 0 GROUP BY PaymentOrderId) AS n
                         ON n.PaymentOrderId = o.Id
                    OUTER APPLY (SELECT -SUM(x.Amount) AS Other FROM fin.BankStatementLinePart AS x
-                                WHERE x.PaymentOrderId = o.Id AND x.BankStatementLineId <> @BankStatementLineId) AS e
+                                WHERE x.PaymentOrderId = o.Id AND x.Amount < 0 AND x.BankStatementLineId <> @BankStatementLineId) AS e
                    WHERE n.Linked + ISNULL(e.Other, 0) > o.Amount)
             THROW 51219, N'Ordinul de plată este deja acoperit de alte linii de extras.', 1;
     END;

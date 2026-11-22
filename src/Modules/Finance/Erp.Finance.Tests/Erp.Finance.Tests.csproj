@@ -18,6 +18,11 @@
     <Using Include="Erp.Testing.Sql" />
   </ItemGroup>
 
+  <!-- Schemele ISO 20022 publice ale fisierului de plati (www.iso20022.org), pentru testul F2-A7. -->
+  <ItemGroup>
+    <None Include="Bank\Schemas\*.xsd" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Pipeline-ul comun si infrastructura Nucleului (conexiune, tranzactie, audit) compuse ca in Erp.Host, plus modulul Finante. -->
   <ItemGroup>
     <ProjectReference Include="..\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />

@@ -53,8 +53,8 @@ public interface IBankStatementLineStore
 
     Task<byte[]> ExplainAsync(int companyId, long lineId, IReadOnlyList<BankLinePartRecord> parts, byte[] rowVersion, int userId, CancellationToken ct);
 
-    Task<(IReadOnlyList<BankLineSaved> Saved, IReadOnlyList<PaymentOrderConfirmed> Confirmed)> ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines,
-        int userId, CancellationToken ct);
+    Task<(IReadOnlyList<BankLineSaved> Saved, IReadOnlyList<PaymentOrderConfirmed> Confirmed, IReadOnlyList<(int PaymentOrderId, long BankStatementLineId)> Rejected)>
+        ValidateAsync(int companyId, IReadOnlyList<BankLineVersion> lines, int userId, CancellationToken ct);
 
     Task<byte[]> UnvalidateAsync(int companyId, long lineId, byte[] rowVersion, int userId, CancellationToken ct);
 }
@@ -142,7 +142,7 @@ internal sealed class ExplainBankStatementLineHandler(IBankStatementLineStore st
 /// Valideaza un grup de linii explicate (F2 4.4; SP-08): perioada fiecarei zile contabile deschisa (CORE_PERIOD_CLOSED), apoi validarea pe
 /// seturi (51201–51205, 51223) si, in aceeasi tranzactie, cate un eveniment pe linie: IncasareInregistrata pentru intrari,
 /// PlataInregistrata pentru iesirile fara ordin de plata (partile care confirma un OP nu republica plata), OrdinPlataConfirmat pentru OP-urile
-/// acoperite integral de liniile validate (si in transe).
+/// acoperite integral de liniile validate (si in transe), OrdinPlataRespins pentru OP-urile returnate de banca (BANK-RESTITUIRE).
 /// </summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.BankStatementValidate)]
@@ -176,13 +176,19 @@ internal sealed class ValidateBankStatementLinesHandler(IBankStatementLineStore 
             await CashAccess.EnsureOpenPeriodAsync(periods, context.CompanyId, day, cancellationToken).ConfigureAwait(false);
         }
 
-        var (saved, confirmed) = await store.ValidateAsync(context.CompanyId, request.Lines, context.UserId, cancellationToken).ConfigureAwait(false);
+        var (saved, confirmed, rejected) = await store.ValidateAsync(context.CompanyId, request.Lines, context.UserId, cancellationToken).ConfigureAwait(false);
         foreach (var c in confirmed)
         {
             await outbox.EnqueueAsync(new Contracts.Bank.OrdinPlataConfirmat(c.PaymentOrderId, c.BankStatementLineId, c.BookingDate, c.Amount)
             {
                 CompanyId = context.CompanyId,
             }, cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var (orderId, lineId) in rejected)
+        {
+            await outbox.EnqueueAsync(new Contracts.Bank.OrdinPlataRespins(orderId, lineId, "Suma a fost returnată de bancă.") { CompanyId = context.CompanyId },
+                cancellationToken).ConfigureAwait(false);
         }
 
         var policy = await precision.ResolveAsync(context.CompanyId, null, null, cancellationToken).ConfigureAwait(false);

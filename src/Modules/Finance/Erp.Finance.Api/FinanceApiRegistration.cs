@@ -177,6 +177,22 @@ public static class FinanceApiRegistration
             .WithName("ApprovePaymentOrders").Produces<IReadOnlyList<PaymentOrderVersion>>().Problems();
         finance.MapPost("/payment-orders/unapprove", (UnapprovePaymentOrders body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("UnapprovePaymentOrders").Produces<IReadOnlyList<PaymentOrderVersion>>().Problems();
+        finance.MapGet("/payment-batches", ([AsParameters] GetPaymentBatches query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetPaymentBatches").Produces<IReadOnlyList<PaymentBatchItemDto>>().Problems();
+        finance.MapGet("/payment-batches/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPaymentBatch(id), ct))
+            .WithName("GetPaymentBatch").Produces<PaymentBatchDetailDto>().Problems();
+        finance.MapGet("/payment-batches/{id:int}/file", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPaymentBatchFile(id), ct))
+            .WithName("GetPaymentBatchFile").Produces<PaymentBatchFileDto>().Problems();
+        finance.MapPost("/payment-batches", (SavePaymentBatch body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreatePaymentBatch").Saves();
+        finance.MapPut("/payment-batches/{id:int}", (int id, SavePaymentBatch body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdatePaymentBatch").Saves();
+        finance.MapPost("/payment-batches/{id:int}/export", (int id, ExportBatchBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ExportPaymentBatch(id, body.RowVersion, body.ReExportReason), ct))
+            .WithName("ExportPaymentBatch").Produces<PaymentBatchFileDto>().Problems();
+        finance.MapPost("/payment-batches/{id:int}/cancel", (int id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelPaymentBatch(id, body.Reason, body.RowVersion), ct))
+            .WithName("CancelPaymentBatch").Produces<byte[]>().Problems();
         finance.MapPost("/bank-statement-lines/{id:long}/payment-order", (long id, CreatePaymentOrderFromStatementLine body, ISender sender,
                 CancellationToken ct) => sender.Send(body with { BankStatementLineId = id }, ct))
             .WithName("CreatePaymentOrderFromStatementLine").Saves();
@@ -217,6 +233,9 @@ public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? Settlemen
 
 /// <summary>O actiune cu motiv (acceptarea golului, desfacerea validarii): motivul si versiunea vazuta.</summary>
 public sealed record AcceptGapBody(string Reason, byte[] RowVersion);
+
+/// <summary>Exportul unui lot: versiunea si, la reexport, motivul.</summary>
+public sealed record ExportBatchBody(byte[] RowVersion, string? ReExportReason = null);
 
 /// <summary>Validarea unui OP: versiunea si confirmarea platii catre un partener inactiv la ANAF.</summary>
 public sealed record ValidateOrderBody(byte[] RowVersion, bool ConfirmAnafInactive = false);

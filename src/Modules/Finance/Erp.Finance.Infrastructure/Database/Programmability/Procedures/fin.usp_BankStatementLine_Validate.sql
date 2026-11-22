@@ -64,7 +64,23 @@ BEGIN
           GROUP BY p.PaymentOrderId) AS c ON c.PaymentOrderId = po.Id
     WHERE po.Status = 2 AND po.ConfirmationStatus = 1 AND c.ConfirmedAmount = po.Amount;
 
+    -- Restituirea bancii (parte BANK-RESTITUIRE pe OP) il trece in Respins (F2 4.2 pasul 8); storno-ul il face utilizatorul.
+    DECLARE @Rejected TABLE (PaymentOrderId int PRIMARY KEY, BankStatementLineId bigint);
+    UPDATE po
+    SET ConfirmationStatus = 3, BankStatementLineId = r.LineId, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    OUTPUT inserted.Id, inserted.BankStatementLineId INTO @Rejected (PaymentOrderId, BankStatementLineId)
+    FROM fin.PaymentOrder AS po
+    JOIN (SELECT p.PaymentOrderId, MAX(p.BankStatementLineId) AS LineId
+          FROM fin.BankStatementLinePart AS p
+          JOIN @Locked AS k ON k.Id = p.BankStatementLineId
+          JOIN fin.TreasuryOperationType AS t ON t.Id = p.TreasuryOperationTypeId AND t.Code = N'BANK-RESTITUIRE'
+          WHERE p.PaymentOrderId IS NOT NULL AND p.Amount > 0
+          GROUP BY p.PaymentOrderId) AS r ON r.PaymentOrderId = po.Id
+    WHERE po.Status = 2 AND po.ConfirmationStatus IN (1, 2);
+
     SELECT l.Id, l.RowVersion FROM fin.BankStatementLine AS l JOIN @Locked AS k ON k.Id = l.Id;
     SELECT c.PaymentOrderId, c.BankStatementLineId, c.Amount, l.BookingDate
-    FROM @Confirmed AS c JOIN fin.BankStatementLine AS l ON l.Id = c.BankStatementLineId;
+    FROM @Confirmed AS c JOIN fin.BankStatementLine AS l ON l.Id = c.BankStatementLineId
+    WHERE c.PaymentOrderId NOT IN (SELECT PaymentOrderId FROM @Rejected);
+    SELECT PaymentOrderId, BankStatementLineId FROM @Rejected;
 END;

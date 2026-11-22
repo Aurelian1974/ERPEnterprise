@@ -379,7 +379,7 @@ internal sealed class CreatePaymentOrderFromStatementLineHandler(IPaymentOrderSt
         var parts = orderLines.Select(l => new BankLinePartRecord(l.LineNumber, codes[l.LineNumber], -l.Amount, request.PartnerId, request.EmployeeId,
             l.SettlementRef, null, null, request.BudgetObligationRef, l.CostCenterId, l.ProjectId, null) { PaymentOrderId = saved.Id }).ToList();
         var lineVersion = await lines.ExplainAsync(context.CompanyId, line.Id, parts, request.LineRowVersion, context.UserId, cancellationToken).ConfigureAwait(false);
-        var (_, confirmed) = await lines.ValidateAsync(context.CompanyId, [new BankLineVersion(line.Id, lineVersion)], context.UserId, cancellationToken)
+        var (_, confirmed, _) = await lines.ValidateAsync(context.CompanyId, [new BankLineVersion(line.Id, lineVersion)], context.UserId, cancellationToken)
             .ConfigureAwait(false);
         foreach (var c in confirmed)
         {

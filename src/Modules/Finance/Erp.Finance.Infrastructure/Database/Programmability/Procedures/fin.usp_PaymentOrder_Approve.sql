@@ -29,6 +29,9 @@ BEGIN
         THROW 51213, N'Un ordin de plată validat de dumneavoastră se aprobă de alt utilizator (patru ochi).', 1;
     IF @Approve = 0 AND EXISTS (SELECT 1 FROM @Locked WHERE ConfirmationStatus = 2)
         THROW 51217, N'Ordinul de plată este deja confirmat pe extras.', 1;
+    IF @Approve = 0 AND EXISTS (SELECT 1 FROM fin.PaymentOrder AS o JOIN @Locked AS k ON k.Id = o.Id JOIN fin.PaymentBatch AS b ON b.Id = o.PaymentBatchId
+                                WHERE b.Status = 2)
+        THROW 51222, N'Aprobarea unui OP dintr-un lot exportat nu se retrage; anulați întâi lotul.', 1;
 
     UPDATE o
     SET ApprovedAt = CASE WHEN @Approve = 1 THEN SYSUTCDATETIME() END, ApprovedBy = CASE WHEN @Approve = 1 THEN @UserId END,

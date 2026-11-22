@@ -116,9 +116,9 @@ public interface IPersonIdProtector
 /// <summary>Ziua de lucru a Romaniei (Europe/Bucharest), din ceasul serverului.</summary>
 public static class BusinessDay
 {
-    private static readonly TimeZoneInfo Romania = TimeZoneInfo.FindSystemTimeZoneById("Europe/Bucharest");
+    public static readonly TimeZoneInfo Zone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Bucharest");
 
-    public static DateOnly Today(TimeProvider time) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), Romania).DateTime);
+    public static DateOnly Today(TimeProvider time) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), Zone).DateTime);
 }
 
 internal static class CashAccess
