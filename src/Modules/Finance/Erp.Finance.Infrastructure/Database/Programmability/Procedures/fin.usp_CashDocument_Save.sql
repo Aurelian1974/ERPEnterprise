@@ -15,6 +15,8 @@ CREATE OR ALTER PROCEDURE fin.usp_CashDocument_Save
     @TotalAmountRon    decimal(19,2),
     @Description       nvarchar(500) = NULL,
     @Lines             fin.CashDocumentLineList READONLY,
+    @CashAdvanceId     int = NULL,
+    @ExpenseReportId   int = NULL,
     @RowVersion        binary(8) = NULL,
     @RequireAssignment bit,
     @UserId            int
@@ -66,6 +68,13 @@ BEGIN
     IF @EmployeeId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM core.Employee WHERE Id = @EmployeeId AND CompanyId = @CompanyId)
         THROW 51021, N'Angajatul nu aparține firmei.', 1;
 
+    IF @CashAdvanceId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM fin.CashAdvance WHERE Id = @CashAdvanceId AND CompanyId = @CompanyId
+                                                  AND EmployeeId = @EmployeeId)
+        THROW 51020, N'Avansul nu este al angajatului documentului.', 1;
+    IF @ExpenseReportId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM fin.ExpenseReport WHERE Id = @ExpenseReportId AND CompanyId = @CompanyId
+                                                    AND EmployeeId = @EmployeeId)
+        THROW 51020, N'Decontul nu este al angajatului documentului.', 1;
+
     IF @Kind = 4
     BEGIN
         IF EXISTS (SELECT 1 FROM @Lines)
@@ -110,9 +119,9 @@ BEGIN
     IF @Id IS NULL
     BEGIN
         INSERT INTO fin.CashDocument (CompanyId, TreasuryAccountId, Kind, DocumentDate, PartnerId, EmployeeId, PersonName, PersonIdEncrypted,
-            CurrencyCode, ExchangeRate, RateDate, TotalAmount, TotalAmountRon, Description, CreatedBy)
+            CurrencyCode, ExchangeRate, RateDate, TotalAmount, TotalAmountRon, Description, CashAdvanceId, ExpenseReportId, CreatedBy)
         VALUES (@CompanyId, @TreasuryAccountId, @Kind, @DocumentDate, @PartnerId, @EmployeeId, @PersonName, @PersonIdEncrypted,
-            @Currency, @ExchangeRate, @RateDate, @TotalAmount, @TotalAmountRon, @Description, @UserId);
+            @Currency, @ExchangeRate, @RateDate, @TotalAmount, @TotalAmountRon, @Description, @CashAdvanceId, @ExpenseReportId, @UserId);
         SET @Id = SCOPE_IDENTITY();
     END
     ELSE
@@ -122,7 +131,11 @@ BEGIN
             PersonName = @PersonName,
             PersonIdEncrypted = CASE WHEN @PersonName IS NULL THEN NULL WHEN @KeepPersonId = 1 THEN PersonIdEncrypted ELSE @PersonIdEncrypted END,
             CurrencyCode = @Currency, ExchangeRate = @ExchangeRate, RateDate = @RateDate, TotalAmount = @TotalAmount,
-            TotalAmountRon = @TotalAmountRon, Description = @Description, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            TotalAmountRon = @TotalAmountRon, Description = @Description,
+            -- Legatura cu avansul sau decontul vine din generare; o salvare din ecranul documentului o pastreaza (cat timp angajatul e acelasi).
+            CashAdvanceId = CASE WHEN EmployeeId = @EmployeeId THEN ISNULL(@CashAdvanceId, CashAdvanceId) ELSE @CashAdvanceId END,
+            ExpenseReportId = CASE WHEN EmployeeId = @EmployeeId THEN ISNULL(@ExpenseReportId, ExpenseReportId) ELSE @ExpenseReportId END,
+            ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
         WHERE Id = @Id;
 
         DELETE FROM fin.CashDocumentLine WHERE CashDocumentId = @Id;

@@ -24,6 +24,7 @@ public static class FinanceApiRegistration
         MapTreasuryAccounts(finance);
         MapCash(finance);
         MapCashRegister(finance);
+        MapAdvances(finance);
         return endpoints;
     }
 
@@ -77,6 +78,33 @@ public static class FinanceApiRegistration
             .WithName("ReopenCashDay").Produces<IReadOnlyList<DateOnly>>().Problems();
     }
 
+    // Trezorerie › Avansuri spre decontare si deconturi de cheltuieli (02.02, F1 3.5, 3.7, 4.4; machetele f1-05, f1-06).
+    private static void MapAdvances(RouteGroupBuilder finance)
+    {
+        finance.MapGet("/cash-advances", ([AsParameters] GetCashAdvances query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetCashAdvances").Produces<CashAdvancePageDto>().Problems();
+        finance.MapPost("/cash-advances", (CreateCashAdvance body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreateCashAdvance").Produces<CashAdvanceCreatedDto>().Problems();
+        finance.MapGet("/expense-reports", (ISender sender, CancellationToken ct) => sender.Send(new GetExpenseReports(), ct))
+            .WithName("GetExpenseReports").Produces<ExpenseReportPageDto>().Problems();
+        finance.MapGet("/expense-reports/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetExpenseReport(id), ct))
+            .WithName("GetExpenseReport").Produces<ExpenseReportDetailDto>().Problems();
+        finance.MapPost("/expense-reports", (SaveExpenseReport body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateExpenseReport").Saves();
+        finance.MapPut("/expense-reports/{id:int}", (int id, SaveExpenseReport body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateExpenseReport").Saves();
+        finance.MapPost("/expense-reports/{id:int}/submit", (int id, RowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new SubmitExpenseReport(id, body.RowVersion), ct))
+            .WithName("SubmitExpenseReport").Saves();
+        finance.MapPost("/expense-reports/{id:int}/approve", (int id, RowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ApproveExpenseReport(id, body.RowVersion), ct))
+            .WithName("ApproveExpenseReport").Saves();
+        finance.MapPost("/expense-reports/{id:int}/validate", (int id, ValidateExpenseReportBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateExpenseReport(id, body.RowVersion, body.SettlementTreasuryAccountId), ct))
+            .WithName("ValidateExpenseReport").Produces<ExpenseReportValidatedDto>().Problems();
+    }
+
     private static RouteHandlerBuilder Problems(this RouteHandlerBuilder builder) => builder
         .ProducesValidationProblem()
         .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -96,3 +124,6 @@ public sealed record RowVersionBody(byte[] RowVersion);
 
 /// <summary>Corpul validarii unui document de casa: versiunea si confirmarea avertizarilor de plafon.</summary>
 public sealed record ValidateCashBody(byte[] RowVersion, bool ConfirmWarnings);
+
+/// <summary>Corpul validarii decontului: versiunea si casa in care se inchide diferenta.</summary>
+public sealed record ValidateExpenseReportBody(byte[] RowVersion, int? SettlementTreasuryAccountId);

@@ -19,6 +19,9 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<ICashLimitLog, CashLimitLog>();
         services.AddScoped<ICashRegisterStore, CashRegisterStore>();
         services.AddTransient<CashDayAutoClose>();
+        services.AddScoped<IAdvanceStore, AdvanceStore>();
+        services.AddScoped<CashDraftFactory>();
+        services.AddTransient<CashAdvanceOverdue>();
         return services;
     }
 }
@@ -53,5 +56,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51021] = (ErpErrorKind.Validation, "FIN_INVALID_REFERENCE"),
         [51022] = (ErpErrorKind.Conflict, "FIN_DUPLICATE_CODE"),
         [51023] = (ErpErrorKind.NotFound, "FIN_TREASURY_ACCOUNT_NOT_FOUND"),
+        [51024] = (ErpErrorKind.NotFound, "FIN_EXPENSE_REPORT_NOT_FOUND"),
+        [51025] = (ErpErrorKind.Conflict, "FIN_EXPENSE_REPORT_WRONG_STATUS"),
     };
 }

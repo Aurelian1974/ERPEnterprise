@@ -154,3 +154,26 @@ public sealed class CashDayAutoClose(FinanceConnection connection, TimeProvider 
             Changes = JsonSerializer.Serialize(new { day.Day, day.ClosingBalance, day.FirstPageNo, day.LastPageNo, Automatic = true }, Json),
         }, transaction, cancellationToken: ct)).ConfigureAwait(false);
 }
+
+/// <summary>
+/// Jobul zilnic al avansurilor (02.02, F1 3.5 si 4.4 pasul 6): avansurile cu termenul trecut si sold devin Depasit. Notificarea
+/// angajatului, contabilului si sefului vine cu fluxul 4.7 din Nucleu; pana atunci, jurnalul.
+/// </summary>
+public sealed class CashAdvanceOverdue(FinanceConnection connection, TimeProvider clock, ILogger<CashAdvanceOverdue> log)
+{
+    public const string JobId = "fin-cash-advance-overdue";
+
+    /// <summary>Zilnic la 00:15, ora Romaniei.</summary>
+    public const string Schedule = "15 0 * * *";
+
+    public async Task<int> RunAsync(CancellationToken ct)
+    {
+        await using var sql = new SqlConnection(connection.ConnectionString);
+        await sql.OpenAsync(ct).ConfigureAwait(false);
+        var marked = (await sql.QueryAsync<int>(new CommandDefinition("fin.usp_CashAdvance_MarkOverdue",
+            new { Today = BusinessDay.Today(clock).ToDateTime(TimeOnly.MinValue) }, commandType: CommandType.StoredProcedure, cancellationToken: ct))
+            .ConfigureAwait(false)).Count();
+        log.LogInformation("Avansuri spre decontare marcate depășite: {Count}.", marked);
+        return marked;
+    }
+}

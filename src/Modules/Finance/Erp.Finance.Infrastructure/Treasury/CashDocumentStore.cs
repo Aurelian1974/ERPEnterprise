@@ -78,7 +78,7 @@ public sealed class CashDocumentStore(IDbSession session) : ICashDocumentStore
             h.RowVersion);
         return new CashDocumentState(document, h.BranchId, h.ReceiptSeriesId, h.CashInSeriesId, h.CashOutSeriesId, h.PartnerType,
             lines.Select(l => new CashLineState(l.Id, l.OperationTypeCode, l.CashLimitCategory, l.Amount, l.AmountRon, l.SettlementRef,
-                l.CounterTreasuryAccountId)).ToList());
+                l.CounterTreasuryAccountId)).ToList(), h.CashAdvanceId, h.AdvancePurpose, Day(h.AdvanceDueDate), h.ExpenseReportId);
     }
 
     public Task<bool> IsAssignedAsync(int treasuryAccountId, int userId, DateOnly day, bool forValidation, CancellationToken ct) =>
@@ -111,7 +111,8 @@ public sealed class CashDocumentStore(IDbSession session) : ICashDocumentStore
             document.Id, document.CompanyId, document.TreasuryAccountId, Kind = (byte)document.Kind, DocumentDate = Date(document.DocumentDate),
             document.PartnerId, document.EmployeeId, document.PersonName, document.PersonIdEncrypted, document.KeepPersonId, document.ExchangeRate,
             RateDate = Date(document.RateDate), document.TotalAmount, document.TotalAmountRon, document.Description,
-            Lines = lines.AsTableValuedParameter("fin.CashDocumentLineList"), document.RowVersion, RequireAssignment = requireAssignment, UserId = userId,
+            Lines = lines.AsTableValuedParameter("fin.CashDocumentLineList"), document.CashAdvanceId, document.ExpenseReportId, document.RowVersion,
+            RequireAssignment = requireAssignment, UserId = userId,
         }, ct));
     }
 
@@ -169,7 +170,8 @@ public sealed class CashDocumentStore(IDbSession session) : ICashDocumentStore
         int? ReceiptSeriesId, int? CashInSeriesId, int? CashOutSeriesId, byte Kind, string? Number, DateTime DocumentDate, byte Status, int? PartnerId,
         string? PartnerName, byte? PartnerType, int? EmployeeId, string? EmployeeName, string? PersonName, bool HasPersonId, string CurrencyCode,
         decimal ExchangeRate, DateTime RateDate, decimal TotalAmount, decimal TotalAmountRon, string? Description, int? ReversalOfId,
-        string? ReversalOfNumber, int? ReversedById, string? ReversedByNumber, DateTime? ValidatedAt, string? ValidatedByName, DateTime CreatedAt,
+        string? ReversalOfNumber, int? ReversedById, string? ReversedByNumber, int? CashAdvanceId, byte? AdvancePurpose, DateTime? AdvanceDueDate,
+        int? ExpenseReportId, DateTime? ValidatedAt, string? ValidatedByName, DateTime CreatedAt,
         DateTime? ModifiedAt, string? ModifiedByName, byte[] RowVersion);
 
     private sealed record LineRow(long Id, short LineNumber, int TreasuryOperationTypeId, string OperationTypeCode, string OperationTypeName, byte Direction,

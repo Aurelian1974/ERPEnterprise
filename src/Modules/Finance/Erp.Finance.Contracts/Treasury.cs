@@ -52,3 +52,14 @@ public sealed record DocumentTrezorerieStornat(int OriginalDocumentId, int Rever
 /// <summary>Inchiderea unei zile de casa (F1 5.1). Consumatori: Raportare, partea contabila.</summary>
 public sealed record RegistruCasaInchis(int TreasuryAccountId, DateOnly Day, decimal OpeningBalance, decimal TotalIn, decimal TotalOut,
     decimal ClosingBalance) : IntegrationEvent;
+
+/// <summary>Plata unui avans spre decontare a fost validata (F1 5.1). Consumatori: HR (evidenta), Raportare.</summary>
+public sealed record AvansDecontareAcordat(int CashAdvanceId, int EmployeeId, decimal Amount, string CurrencyCode, DateOnly SettlementDueDate)
+    : IntegrationEvent;
+
+/// <summary>Linia unui decont validat (F1 5.1).</summary>
+public sealed record DecontLinie(string ExpenseTypeCode, decimal Amount, decimal VatAmount, int? SupplierInvoiceId);
+
+/// <summary>Validarea unui decont de cheltuieli (F1 5.1). Consumatori: HR (diurna impozabila), F3, partea contabila.</summary>
+public sealed record DecontCheltuieliValidat(int ExpenseReportId, int EmployeeId, int? CashAdvanceId, decimal TotalJustified, decimal Difference,
+    decimal TaxablePerDiemAmount, IReadOnlyList<DecontLinie> Lines) : IntegrationEvent;

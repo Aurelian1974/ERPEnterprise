@@ -57,11 +57,13 @@ public sealed record CashLineRecord(short LineNumber, int OperationTypeId, decim
 
 public sealed record CashDocumentRecord(int? Id, int CompanyId, int TreasuryAccountId, CashDocumentKind Kind, DateOnly DocumentDate, int? PartnerId,
     int? EmployeeId, string? PersonName, byte[]? PersonIdEncrypted, bool KeepPersonId, decimal ExchangeRate, DateOnly RateDate, decimal TotalAmount,
-    decimal TotalAmountRon, string? Description, IReadOnlyList<CashLineRecord> Lines, byte[]? RowVersion);
+    decimal TotalAmountRon, string? Description, IReadOnlyList<CashLineRecord> Lines, byte[]? RowVersion, int? CashAdvanceId = null,
+    int? ExpenseReportId = null);
 
 /// <summary>Datele interne ale documentului pentru validare (casa, seriile, tipul partenerului, liniile cu categoria de plafon).</summary>
 public sealed record CashDocumentState(CashDocumentDetailDto Document, int? BranchId, int? ReceiptSeriesId, int? CashInSeriesId, int? CashOutSeriesId,
-    byte? PartnerType, IReadOnlyList<CashLineState> Lines);
+    byte? PartnerType, IReadOnlyList<CashLineState> Lines, int? CashAdvanceId = null, byte? AdvancePurpose = null, DateOnly? AdvanceDueDate = null,
+    int? ExpenseReportId = null);
 
 public sealed record CashLineState(long Id, string OperationTypeCode, string? CashLimitCategory, decimal Amount, decimal AmountRon, string? SettlementRef,
     int? CounterTreasuryAccountId);
@@ -357,6 +359,12 @@ internal sealed class ValidateCashDocumentHandler(ICashDocumentStore store, ICas
         }
 
         await outbox.EnqueueAsync(Event(state, documentType ?? "Finance.OpeningBalance", number), cancellationToken).ConfigureAwait(false);
+        // Plata avansului spre decontare il acorda (F1 4.4 pasul 2).
+        if (state.CashAdvanceId is { } advanceId && state.AdvanceDueDate is { } due && state.Lines.Any(l => l.OperationTypeCode == "PLATA-AVANS-DECONTARE"))
+        {
+            await outbox.EnqueueAsync(new AvansDecontareAcordat(advanceId, doc.EmployeeId ?? 0, Money.ParseOptional(doc.TotalAmount) ?? 0, doc.CurrencyCode, due)
+                { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
+        }
         audit.Describe("Fin.CashDocument", doc.Id, new
         {
             Number = number, doc.Kind, doc.TreasuryAccountId, doc.DocumentDate, doc.TotalAmount,
@@ -375,9 +383,11 @@ internal sealed class ValidateCashDocumentHandler(ICashDocumentStore store, ICas
         }
 
         var legal = state.PartnerType is >= 1 and <= 3;
+        // Plafonul avansurilor pe zi si persoana nu se aplica deplasarilor (F1 3.6: „fara deplasari”).
+        var trip = state.AdvancePurpose is 2 or 3;
         var documentTotals = state.Lines
             .Select(l => (Category: CashDocumentRules.LimitCategory(l.CashLimitCategory, legal), l.AmountRon))
-            .Where(l => l.Category is not null)
+            .Where(l => l.Category is not null && !(trip && l.Category == CashDocumentRules.AdvanceCategory))
             .GroupBy(l => l.Category!, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.Sum(l => l.AmountRon), StringComparer.Ordinal);
         if (documentTotals.Count == 0)

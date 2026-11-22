@@ -12,13 +12,14 @@ BEGIN
            p.PartnerType, d.EmployeeId, CONCAT(e.LastName, N' ', e.FirstName) AS EmployeeName, d.PersonName,
            CAST(CASE WHEN d.PersonIdEncrypted IS NULL THEN 0 ELSE 1 END AS bit) AS HasPersonId, d.CurrencyCode, d.ExchangeRate, d.RateDate,
            d.TotalAmount, d.TotalAmountRon, d.Description, d.ReversalOfId, r.Number AS ReversalOfNumber, d.ReversedById, rb.Number AS ReversedByNumber,
-           d.ValidatedAt, v.DisplayName AS ValidatedByName, d.CreatedAt, d.ModifiedAt, m.DisplayName AS ModifiedByName, d.RowVersion
+           d.CashAdvanceId, ad.Purpose AS AdvancePurpose, ad.SettlementDueDate AS AdvanceDueDate, d.ExpenseReportId, d.ValidatedAt, v.DisplayName AS ValidatedByName, d.CreatedAt, d.ModifiedAt, m.DisplayName AS ModifiedByName, d.RowVersion
     FROM fin.CashDocument AS d
     JOIN fin.TreasuryAccount AS a ON a.Id = d.TreasuryAccountId
     LEFT JOIN core.Partner AS p ON p.Id = d.PartnerId
     LEFT JOIN core.Employee AS e ON e.Id = d.EmployeeId
     LEFT JOIN fin.CashDocument AS r ON r.Id = d.ReversalOfId
     LEFT JOIN fin.CashDocument AS rb ON rb.Id = d.ReversedById
+    LEFT JOIN fin.CashAdvance AS ad ON ad.Id = d.CashAdvanceId
     LEFT JOIN core.[User] AS v ON v.Id = d.ValidatedBy
     LEFT JOIN core.[User] AS m ON m.Id = ISNULL(d.ModifiedBy, d.CreatedBy)
     WHERE d.Id = @CashDocumentId AND d.CompanyId = @CompanyId;

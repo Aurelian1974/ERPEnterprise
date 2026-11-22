@@ -156,6 +156,8 @@ Registrul tipărit (sau PDF semnat și atașat, 02.01 `Attachment`) conține, î
 | `SettledAmount`, `ReturnedAmount`, `Balance` | Actualizate de decont și de restituiri |
 | `Status` | 1 Acordat, 2 Decontat parțial, 3 Decontat, 4 Depășit termenul (calculat de un job zilnic), 5 Stornat |
 
+Implementare (22.11.2026): starea **0 De plătit** (avansul există, dispoziția de plată e încă ciornă) a fost adăugată; soldul avansului e calculat: `Amount - SettledAmount - ReturnedAmount + PaidDifference` (ce datorează angajatul; negativ = ce îi datorează firma). Efectele documentelor de casă asupra avansului (plata, restituirea, diferența de plată, stornările lor) se aplică în validarea documentului (`fin.usp_CashAdvance_Apply`). Ciornele generate din avans și decont le face contabilul, fără atribuirea pe casă; validarea lor o face casierul atribuit. Termenul de decontare numără zilele de luni până vineri (sărbătorile legale nu sunt încă în calendar); setarea `Fin.Advance.SettlementWorkingDays` are deocamdată valoarea fixă 3. Separarea sarcinilor la aprobarea decontului e mereu activă (setarea configurabilă vine cu Configurare › Finanțe). Diurna internă livrată (50 lei/zi, plafon neimpozabil 57,50 lei/zi, din macheta f1-06) **se verifică cu HG 714/2018 și Codul fiscal în vigoare înainte de livrare**. Codurile SQL noi: 51024 `FIN_EXPENSE_REPORT_NOT_FOUND` (404), 51025 `FIN_EXPENSE_REPORT_WRONG_STATUS` (409).
+
 ### 3.6 Plafoane de numerar (`CashLimitRule`)
 
 Plafoanele din Legea 70/2015 se țin în tabel, cu dată de vigoare (P6), ca o modificare legislativă să fie o actualizare de date, nu de cod.

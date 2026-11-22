@@ -88,6 +88,9 @@ BEGIN
         ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @CashDocumentId;
 
+    -- Avansul spre decontare legat de document (F1 4.4): acordat, restituit, diferenta platita.
+    EXEC fin.usp_CashAdvance_Apply @CashDocumentId = @CashDocumentId, @UserId = @UserId;
+
     SELECT d.Id AS CashDocumentId, d.Number, r.ClosingBalance AS DayClosingBalance, d.RowVersion
     FROM fin.CashDocument AS d
     JOIN fin.CashRegisterDay AS r ON r.Id = d.CashRegisterDayId
