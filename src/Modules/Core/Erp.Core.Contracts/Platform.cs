@@ -104,3 +104,24 @@ public interface ISystemContextScope
 {
     void Enter(int companyId, Guid? correlationId = null);
 }
+
+/// <summary>Un atasament (02.01, 3 „Attachment”): fisierul legat de o entitate, cu hash-ul SHA-256 (hex).</summary>
+public sealed record AttachmentInfo(int Id, string EntityType, long EntityId, string FileName, string ContentType, long Size, string Sha256, DateTime CreatedAt,
+    string? CreatedByName);
+
+/// <summary>
+/// Atasamentele (02.01, 6), folosite de module in comenzile lor (care verifica drepturile pe documentul de care se leaga fisierul). Fisierele
+/// au limita de dimensiune si lista de tipuri permise, verificate si dupa continut, si nu se executa niciodata (SEC-05); sunt ale firmei curente.
+/// </summary>
+public interface IAttachmentStore
+{
+    /// <summary>Salveaza fisierul (CORE_ATTACHMENT_INVALID: tip nepermis, gol, prea mare sau continut care nu corespunde tipului).</summary>
+    Task<int> SaveAsync(string entityType, long entityId, string fileName, string contentType, Stream content, CancellationToken ct);
+
+    /// <summary>Continutul unui atasament al firmei curente (CORE_ATTACHMENT_NOT_FOUND).</summary>
+    Task<Stream> OpenAsync(int attachmentId, CancellationToken ct);
+
+    Task<AttachmentInfo?> GetInfoAsync(int attachmentId, CancellationToken ct);
+
+    Task<IReadOnlyList<AttachmentInfo>> ListAsync(string entityType, long entityId, CancellationToken ct);
+}

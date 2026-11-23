@@ -421,6 +421,35 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.True(await Query<bool>("SELECT AboveThreshold FROM fin.WriteOff WHERE OpenItemId = @Id", new { Id = big }));
     }
 
+    [Fact]
+    public async Task Attachments_are_stored_with_their_hash_checked_by_type_and_kept_per_company()
+    {
+        var pdf = "%PDF-1.4\n1 0 obj\n"u8.ToArray();
+        var id = await InTransaction(sp => sp.GetRequiredService<IAttachmentStore>().SaveAsync("Finance.Compensation", 4242, "PV semnat.pdf", "text/plain",
+            new MemoryStream(pdf), Ct));
+        var (info, content) = await InTransaction(async sp =>
+        {
+            var store = sp.GetRequiredService<IAttachmentStore>();
+            await using var stream = await store.OpenAsync(id, Ct);
+            using var copy = new MemoryStream();
+            await stream.CopyToAsync(copy, Ct);
+            return (await store.GetInfoAsync(id, Ct), copy.ToArray());
+        });
+        Assert.Equal(("PV semnat.pdf", "application/pdf", (long)pdf.Length), (info!.FileName, info.ContentType, info.Size));
+        Assert.Equal(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(pdf)), info.Sha256);
+        Assert.Equal(pdf, content);
+        Assert.Single(await InTransaction(sp => sp.GetRequiredService<IAttachmentStore>().ListAsync("Finance.Compensation", 4242, Ct)), a => a.Id == id);
+
+        // Alta firma nu il vede; un executabil sau un PDF fals sunt refuzate.
+        Assert.Null(await InTransaction(sp => sp.GetRequiredService<IAttachmentStore>().GetInfoAsync(id, Ct), Database.OtherCompanyId));
+        var exe = await Assert.ThrowsAsync<ErpException>(() => InTransaction(sp => sp.GetRequiredService<IAttachmentStore>().SaveAsync("Finance.Compensation",
+            4242, "pv.exe", "application/pdf", new MemoryStream(pdf), Ct)));
+        Assert.Equal("CORE_ATTACHMENT_INVALID", exe.Code);
+        var fake = await Assert.ThrowsAsync<ErpException>(() => InTransaction(sp => sp.GetRequiredService<IAttachmentStore>().SaveAsync("Finance.Compensation",
+            4242, "pv.pdf", "application/pdf", new MemoryStream("MZ"u8.ToArray()), Ct)));
+        Assert.Equal("CORE_ATTACHMENT_INVALID", fake.Code);
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);
