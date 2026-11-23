@@ -77,7 +77,7 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
                 INSERT INTO core.NumberSeries (CompanyId, BranchId, DocumentTypeId, Prefix, [Year], NextNumber, Padding, IsFiscal, IsDefault, FirstNumber,
                     CreatedBy)
                 SELECT @CompanyId, NULL, t.Id, v.Prefix, 2026, 1, 6, v.IsFiscal, 1, 1, 1
-                FROM (VALUES (N'Finance.Receipt', N'CH', 1), (N'Finance.CashIn', N'DI', 0), (N'Finance.Payment', N'DP', 0), (N'Finance.ExpenseReport', N'DC', 0), (N'Finance.PaymentOrder', N'OP', 0)) AS v (Code, Prefix, IsFiscal)
+                FROM (VALUES (N'Finance.Receipt', N'CH', 1), (N'Finance.CashIn', N'DI', 0), (N'Finance.Payment', N'DP', 0), (N'Finance.ExpenseReport', N'DC', 0), (N'Finance.PaymentOrder', N'OP', 0), (N'Finance.Compensation', N'PVC', 0), (N'Finance.BalanceConfirmation', N'CS', 0), (N'Finance.PenaltyCalculation', N'PEN', 0)) AS v (Code, Prefix, IsFiscal)
                 JOIN core.DocumentType AS t ON t.Code = v.Code;
                 """, new { CompanyId = company });
         }
@@ -127,7 +127,12 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
                 DefaultPrecisionPolicyId, IncludeInConsolidation, IsActive, CreatedBy)
             SELECT @Code, @Name, @FiscalCode, 1, 0, N'J40/1234/2015', N'Str. Exemplu 1', N'București', N'B', 'RO', Id, 1, 1, 1
             FROM core.PrecisionPolicy WHERE Code = N'STANDARD';
-            SELECT CAST(SCOPE_IDENTITY() AS int);
+            DECLARE @Id int = SCOPE_IDENTITY();
+            -- Datele firmei pentru documente (02.01, core.CompanyVersion), ca la salvarea firmei din ecran.
+            INSERT INTO core.CompanyVersion (CompanyId, ValidFrom, Name, VatPayer, VatOnCollection, TradeRegisterNo, Address, City, CountyCode, CountryCode,
+                ModifiedAt, ModifiedBy)
+            VALUES (@Id, '2020-01-01', @Name, 1, 0, N'J40/1234/2015', N'Str. Exemplu 1', N'București', N'B', 'RO', SYSUTCDATETIME(), 1);
+            SELECT @Id;
             """, new { Code = code, Name = name, FiscalCode = fiscalCode });
 
     private static Task<int> NewBranch(SqlConnection connection, int companyId, string code, string name, string city, string county) =>

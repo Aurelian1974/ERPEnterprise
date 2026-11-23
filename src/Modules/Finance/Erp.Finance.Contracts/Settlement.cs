@@ -60,6 +60,12 @@ public sealed record FacturaAchitata(PartnerRole Role, string SourceDocumentType
 public sealed record TvaLaIncasareExigibil(long OpenItemId, string SourceDocumentType, long SourceDocumentId, byte Side, DateOnly ExigibilityDate,
     decimal BaseAmountRon, decimal VatAmountRon, bool IsReversal) : IntegrationEvent;
 
+/// <summary>O linie a unui PV de compensare validat (F3 5.1): partida, partenerul, rolul si suma stinsa (cu semnul partidei).</summary>
+public sealed record CompensareValidataLinie(long OpenItemId, int PartnerId, PartnerRole Role, decimal Amount);
+
+/// <summary>Validarea unui PV de compensare (F3 5.1). Consumator: partea contabila.</summary>
+public sealed record CompensareValidata(int CompensationId, string Number, DateOnly DocumentDate, IReadOnlyList<CompensareValidataLinie> Lines) : IntegrationEvent;
+
 /// <summary>Soldul unui partener pe rol si moneda la o data (F3 6). Sumele urmeaza conventia de semn: debit (+), credit (−).</summary>
 public sealed record PartnerBalanceDto(int CompanyId, int PartnerId, PartnerRole Role, string CurrencyCode, decimal Balance, decimal BalanceRon,
     decimal OverdueRon, int MaxOverdueDays, decimal UnallocatedPaymentsRon, DateOnly AsOf);

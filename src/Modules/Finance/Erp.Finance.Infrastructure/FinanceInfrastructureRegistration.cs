@@ -52,6 +52,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<ISettlementService>(sp => sp.GetRequiredService<SettlementService>());
         services.AddScoped<InvoiceOpenItems>();
         services.AddScoped<TreasurySettlement>();
+        services.AddScoped<ICompensationStore, CompensationStore>();
+        services.AddSingleton<ICompensationPrinter, CompensationPrinter>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
     }
@@ -133,5 +135,6 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51416] = (ErpErrorKind.Conflict, "FIN_REFERENCE_RATE_MISSING"),
         [51417] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
         [51418] = (ErpErrorKind.Validation, "FIN_ALLOCATION_CURRENCY_MISMATCH"),
+        [51419] = (ErpErrorKind.NotFound, "FIN_COMPENSATION_NOT_FOUND"),
     };
 }

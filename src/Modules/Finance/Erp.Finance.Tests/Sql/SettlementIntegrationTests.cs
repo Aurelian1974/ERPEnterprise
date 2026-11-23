@@ -450,6 +450,60 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal("CORE_ATTACHMENT_INVALID", fake.Code);
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F3-A9")]
+    public async Task A_balanced_compensation_settles_both_sides_with_vat_on_collection_and_its_reversal_restores_the_balances()
+    {
+        Permissions.UnionWith([FinancePermissions.CompensationCreate, FinancePermissions.CompensationValidate]);
+        Erp.Pdf.PdfSetup.Configure(null);
+        var partner = await NewPartner();
+        var sale = await Register(Sale(partner, 1190m, Day, Day.AddDays(10), vat: 190m, vatOnCollection: true));
+        var sale2 = await Register(Sale(partner, 300m, Day.AddDays(1), Day.AddDays(20)));
+        var purchase = await Register(Purchase(partner, 1000m, Day.AddDays(2)));
+
+        Assert.Contains(await Send(new GetCompensationProposals()), p => p.PartnerId == partner && p.Amount == "1000.00");
+        var proposed = await Send(new ProposeCompensation(partner, "RON"));
+        Assert.Equal([(sale, "1000.00"), (purchase, "-1000.00")], proposed.Select(l => (l.OpenItemId, l.Amount)));
+
+        // Neechilibrat: refuzat la validare.
+        var unbalanced = await Send(new SaveCompensation(null, Day.AddDays(5), CompensationKind.SamePartner, null, "RON", null,
+            [new CompensationLineInput(sale2, "300"), new CompensationLineInput(purchase, "-250")], null));
+        var refused = await Assert.ThrowsAsync<ErpException>(() => Send(new ValidateCompensation(unbalanced.Id, unbalanced.RowVersion)));
+        Assert.Equal("FIN_COMPENSATION_NOT_BALANCED", refused.Code);
+        await Send(new DeleteCompensation(unbalanced.Id, unbalanced.RowVersion));
+
+        var draft = await Send(new SaveCompensation(null, Day.AddDays(5), CompensationKind.SamePartner, null, "RON", "Compensare lunară", proposed, null));
+        var pdf = await Send(new PrintCompensation(draft.Id));
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(pdf.Content, 0, 4));
+        var validated = await Send(new ValidateCompensation(draft.Id, draft.RowVersion));
+        var detail = await Send(new GetCompensation(draft.Id));
+        Assert.Equal((CompensationStatus.Validated, "1000.00"), (detail.Status, detail.TotalAmount));
+        Assert.NotNull(detail.Number);
+        Assert.Equal((1190m, 190m), await Item(sale));
+        Assert.Equal((-1000m, 0m), await Item(purchase));
+        // TVA la incasare: compensarea conteaza ca incasare (1000 din 1190 → 159,66).
+        Assert.Equal(159.66m, await Query<decimal>("SELECT SUM(VatAmountRon) FROM fin.VatCashEntry WHERE OpenItemId = @Id", new { Id = sale }));
+        Assert.Equal(2, await Query<int>("SELECT COUNT(*) FROM fin.OpenItem WHERE SourceDocumentType = 'Finance.Compensation' AND SourceDocumentId = @Id AND OpenAmount = 0",
+            new { draft.Id }));
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%CompensareValidata' AND Payload LIKE @Like",
+            new { Like = $"%\"compensationId\":{draft.Id}[,}}]%" }));
+
+        // PV-ul semnat, scanat.
+        var signed = await Send(new AttachCompensationScan(draft.Id, "pv semnat.pdf", "%PDF-1.4 scan"u8.ToArray()));
+        Assert.Equal("pv semnat.pdf", (await Send(new GetCompensationScan(draft.Id))).FileName);
+        Assert.DoesNotContain(await Send(new GetCompensations(WithoutSigned: true)), c => c.Id == draft.Id);
+
+        // Stornarea readuce resturile si TVA-ul; partidele tehnice se sting intre ele.
+        await Send(new ReverseCompensation(draft.Id, signed.RowVersion));
+        Assert.Equal((1190m, 1190m), await Item(sale));
+        Assert.Equal((-1000m, -1000m), await Item(purchase));
+        Assert.Equal(0m, await Query<decimal>("SELECT SUM(VatAmountRon) FROM fin.VatCashEntry WHERE OpenItemId = @Id", new { Id = sale }));
+        Assert.Equal(0m, await Query<decimal>("SELECT SUM(OpenAmount) FROM fin.OpenItem WHERE SourceDocumentType = 'Finance.Compensation' AND SourceDocumentId = @Id",
+            new { draft.Id }));
+        Assert.Equal(CompensationStatus.Reversed, (await Send(new GetCompensation(draft.Id))).Status);
+        _ = validated;
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

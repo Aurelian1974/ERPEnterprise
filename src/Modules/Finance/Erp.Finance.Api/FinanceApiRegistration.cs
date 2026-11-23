@@ -182,6 +182,37 @@ public static class FinanceApiRegistration
             .WithName("GetPartnerAllocations").Produces<IReadOnlyList<PartnerAllocationDto>>().Problems();
         finance.MapPost("/payment-orders/from-invoices", (CreatePaymentOrdersFromInvoices body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("CreatePaymentOrdersFromInvoices").Produces<IReadOnlyList<int>>().Problems();
+        // Compensari (F3 3.4, 4.4; macheta f3-05).
+        finance.MapGet("/compensations", (int? year, CompensationStatus? status, bool? withoutSigned, string? search, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetCompensations(year, status, withoutSigned ?? false, search), ct))
+            .WithName("GetCompensations").Produces<IReadOnlyList<CompensationItemDto>>().Problems();
+        finance.MapGet("/compensations/proposals", (ISender sender, CancellationToken ct) => sender.Send(new GetCompensationProposals(), ct))
+            .WithName("GetCompensationProposals").Produces<IReadOnlyList<CompensationProposalDto>>().Problems();
+        finance.MapGet("/compensations/propose", (int partnerId, string currencyCode, ISender sender, CancellationToken ct) =>
+                sender.Send(new ProposeCompensation(partnerId, currencyCode), ct))
+            .WithName("ProposeCompensation").Produces<IReadOnlyList<CompensationLineInput>>().Problems();
+        finance.MapGet("/compensations/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompensation(id), ct))
+            .WithName("GetCompensation").Produces<CompensationDetailDto>().Problems();
+        finance.MapPost("/compensations", (SaveCompensation body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateCompensation").Saves();
+        finance.MapPut("/compensations/{id:int}", (int id, SaveCompensation body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateCompensation").Saves();
+        finance.MapPost("/compensations/{id:int}/delete", (int id, DeleteCompensation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("DeleteCompensation").Produces<bool>().Problems();
+        finance.MapPost("/compensations/{id:int}/validate", (int id, ValidateCompensation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ValidateCompensation").Saves();
+        finance.MapPost("/compensations/{id:int}/reverse", (int id, ReverseCompensation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ReverseCompensation").Saves();
+        finance.MapPost("/compensations/{id:int}/signed", (int id, AttachCompensationScan body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("AttachCompensationScan").Saves();
+        finance.MapGet("/compensations/{id:int}/signed", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCompensationScan(id), ct))
+            .WithName("GetCompensationScan").Produces<DownloadedFile>().Problems();
+        finance.MapGet("/compensations/{id:int}/pdf", (int id, ISender sender, CancellationToken ct) => sender.Send(new PrintCompensation(id), ct))
+            .WithName("PrintCompensation").Produces<DownloadedFile>().Problems();
         finance.MapGet("/due-schedule", (DateOnly? from, DateOnly? to, ISender sender, CancellationToken ct) => sender.Send(new GetDueSchedule(from, to), ct))
             .WithName("GetDueSchedule").Produces<DueScheduleDto>().Problems();
         finance.MapGet("/due-schedule/items", (PartnerRole role, DateOnly day, bool? overdue, ISender sender, CancellationToken ct) =>
