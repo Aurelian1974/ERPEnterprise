@@ -85,3 +85,13 @@ public interface IPeriodLock
 {
     Task<bool> IsClosedAsync(int companyId, DateOnly date, CancellationToken ct);
 }
+
+/// <summary>
+/// Consumatorul unui eveniment de integrare (02.01, 4.5): ruleaza in Worker, in tranzactia lui (IDbSession), impreuna cu nota din
+/// core.InboxProcessed, deci o singura data pe eveniment. Contextul curent e al utilizatorului de sistem, in firma evenimentului.
+/// </summary>
+public interface IIntegrationEventHandler<in TEvent>
+    where TEvent : IntegrationEvent
+{
+    Task HandleAsync(TEvent evt, CancellationToken ct);
+}

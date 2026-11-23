@@ -1,3 +1,4 @@
+using Erp.Core.Infrastructure.Messaging;
 using Erp.Hosting;
 using Erp.Worker.Jobs;
 using Hangfire;
@@ -57,8 +58,13 @@ builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
     new Uri(builder.Configuration["Bnr:TenDaysUrl"] ?? Erp.Bnr.BnrOptions.Default.TenDaysUrl.ToString())));
 builder.Services.AddSingleton(_ => new Erp.Bnr.BnrRatesClient(new HttpClient { Timeout = TimeSpan.FromSeconds(30) }));
 builder.Services.AddTransient<BnrRatesJob>();
+// Procesatorul outbox-ului (02.01, 4.5): consumatorii modulelor se inregistreaza cu AddIntegrationEventHandler.
+builder.Services.AddOutboxDispatcher(connectionString);
+builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
+    TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
+    sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));
 builder.Services.AddSingleton<IBackgroundProcessingFactory>(sp => new HangfireProcessingFactory(sp.GetRequiredService<JobStorage>(), instance,
-    sp.GetRequiredService<IServiceScopeFactory>()));
+    sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<OutboxProcessorLoop>()));
 builder.Services.AddHostedService(sp => new BackgroundProcessingLifecycle(
     sp.GetRequiredService<IBackgroundProcessingFactory>(),
     sp.GetRequiredService<SchemaVersionGuard>(),
@@ -68,7 +74,8 @@ builder.Services.AddHostedService(sp => new BackgroundProcessingLifecycle(
 
 builder.Build().Run();
 
-internal sealed class HangfireProcessingFactory(JobStorage storage, string instance, IServiceScopeFactory scopes) : IBackgroundProcessingFactory
+internal sealed class HangfireProcessingFactory(JobStorage storage, string instance, IServiceScopeFactory scopes, OutboxProcessorLoop outbox)
+    : IBackgroundProcessingFactory
 {
     // Joburile recurente se inregistreaza la pornirea procesarii, deci numai cu baza compatibila si fara mentenanta (10.4, 10.5).
     public IAsyncDisposable Start()
@@ -95,16 +102,16 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
             {
                 ServerName = $"ErpWorker-{instance}:{Environment.MachineName}",
                 Activator = new ServiceProviderJobActivator(scopes),
-            }, storage));
+            }, storage), outbox.Start());
     }
 
-    private sealed class Running(BackgroundJobServer server) : IAsyncDisposable
+    private sealed class Running(BackgroundJobServer server, IAsyncDisposable outbox) : IAsyncDisposable
     {
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            await outbox.DisposeAsync().ConfigureAwait(false);
             server.SendStop();
             server.Dispose();
-            return ValueTask.CompletedTask;
         }
     }
 }

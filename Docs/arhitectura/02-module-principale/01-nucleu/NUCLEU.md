@@ -530,6 +530,8 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 3. Pentru fiecare mesaj apelează consumatorii înregistrați; fiecare consumator își notează mesajul în `core.InboxProcessed` (idempotență: același mesaj nu se procesează de două ori).
 4. La eroare: reîncercare cu așteptare crescătoare (1 min, 5 min, 30 min, 2 h), apoi mesajul trece în stare `Failed` și apare în ecranul de monitorizare, cu alertă.
 
+**Implementare (23.11.2026, decizia lui Aurelian de a construi dispecerul):** consumatorii implementează `IIntegrationEventHandler<TEvent>` (în `Erp.Core.Contracts`) și se înregistrează cu `AddIntegrationEventHandler<TEvent, THandler>()`; `OutboxDispatcher` (în `Erp.Core.Infrastructure/Messaging`) ia lotul cu `core.usp_Outbox_FetchBatch` (`UPDLOCK, READPAST`, cu un termen de 5 minute în `NextAttemptAt`, ca alt procesor să nu ia aceleași mesaje), deserializează evenimentul după `EventType` (numele complet al clasei) și îl livrează fiecărui consumator în scope-ul și tranzacția lui, împreună cu nota din `core.InboxProcessed` (`core.usp_InboxProcessed_Claim`). Contextul consumatorului e utilizatorul de sistem (Id 1), în firma și cu corelarea evenimentului. Un mesaj fără consumatori se marchează procesat. Un consumator care eșuează nu repetă consumatorii reușiți la reîncercare. În `Erp.Worker`, bucla rulează la 2 secunde (`Outbox:IntervalSeconds`) doar cât procesarea de fundal e pornită. Ștergerea mesajelor procesate după 30 de zile și notificarea `Core.OutboxFailed` vin cu jobul de retenție și cu notificările.
+
 ### 4.6 Cazuri limită
 
 | Situație | Comportament |
