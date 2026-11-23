@@ -1,3 +1,6 @@
+using Erp.Core.Application;
+using Erp.Core.Infrastructure;
+using Erp.Finance.Infrastructure;
 using Erp.Core.Infrastructure.Messaging;
 using Erp.Hosting;
 using Erp.Worker.Jobs;
@@ -49,10 +52,12 @@ var storage = new SqlServerStorage(() => new SqlConnection(connectionString), ne
 builder.Services.AddSingleton<JobStorage>(storage);
 builder.Services.AddSingleton<Func<SqlConnection>>(() => new SqlConnection(connectionString));
 builder.Services.AddTransient<UserAccessExpirationJob>();
-// Finante (02.02, F1 4.2): inchiderea automata a zilelor de casa, cu aceeasi conexiune.
-builder.Services.AddSingleton(new Erp.Finance.Infrastructure.Treasury.FinanceConnection(connectionString));
-builder.Services.AddTransient<Erp.Finance.Infrastructure.Treasury.CashDayAutoClose>();
-builder.Services.AddTransient<Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue>();
+// Pipeline-ul comenzilor, ca in Erp.Host, pentru joburile care trimit comenzi in numele utilizatorului de sistem (de exemplu importul
+// extraselor din folder): licenta, validare, tranzactie, audit, outbox. Contextul e cel de sistem (AddOutboxDispatcher, mai jos).
+builder.Services.AddErpMediator(Erp.Finance.Application.FinanceApplication.Assembly);
+builder.Services.AddCoreInfrastructure(connectionString, new Erp.Core.Infrastructure.Licensing.LicenseOptions(development));
+// Finante (02.02): inchiderea automata a zilelor de casa, avansurile depasite, importul extraselor din folder.
+builder.Services.AddFinanceInfrastructure(connectionString);
 builder.Services.AddTransient<CompanyVersionJob>();
 // Cursurile BNR (02.01, 4.3): aceleasi adrese ca Erp.Host (Bnr:DailyUrl), clientul HTTP partajat.
 builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
@@ -97,6 +102,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Treasury.CashDayAutoClose>(Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, F2 4.1: importul automat al extraselor din folderele conturilor, la 15 minute.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Bank.BankFolderImport>(Erp.Finance.Infrastructure.Bank.BankFolderImport.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Bank.BankFolderImport.Schedule,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         // 02.02, F1 4.4: avansurile spre decontare depasite, la 00:15 ora Romaniei.
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue>(Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue.Schedule,

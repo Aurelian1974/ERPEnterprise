@@ -28,6 +28,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<CashDraftFactory>();
         services.AddTransient<CashAdvanceOverdue>();
         services.AddScoped<IBankStatementStore, BankStatementStore>();
+        services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
         services.AddScoped<IBankStatementLineStore, BankStatementLineStore>();
         services.AddScoped<IPaymentOrderStore, PaymentOrderStore>();

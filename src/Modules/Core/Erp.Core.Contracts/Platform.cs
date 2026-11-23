@@ -95,3 +95,12 @@ public interface IIntegrationEventHandler<in TEvent>
 {
     Task HandleAsync(TEvent evt, CancellationToken ct);
 }
+
+/// <summary>
+/// Contextul utilizatorului de sistem in procesele de fundal (Worker: consumatori de evenimente, joburi care trimit comenzi): firma in care
+/// lucreaza scope-ul curent. Comenzile trimise apoi prin pipeline au contextul acestei firme.
+/// </summary>
+public interface ISystemContextScope
+{
+    void Enter(int companyId, Guid? correlationId = null);
+}

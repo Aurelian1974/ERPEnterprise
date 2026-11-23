@@ -26,7 +26,7 @@ public sealed record IntegrationEventRegistration(Type EventType, Type HandlerTy
 /// Contextul consumatorilor (02.01, 4.5): utilizatorul de sistem (Id 1), in firma si cu corelarea evenimentului; toate permisiunile,
 /// pentru ca evenimentul a fost deja autorizat la sursa.
 /// </summary>
-public sealed class SystemEventContext : ICurrentContext
+public sealed class SystemEventContext : ICurrentContext, ISystemContextScope
 {
     public const int SystemUserId = 1;
 
@@ -43,6 +43,12 @@ public sealed class SystemEventContext : ICurrentContext
     public string? IpAddress => null;
 
     public bool HasPermission(string permission, DimensionRef? scope = null) => true;
+
+    public void Enter(int companyId, Guid? correlationId = null)
+    {
+        CompanyId = companyId;
+        CorrelationId = correlationId ?? Guid.NewGuid();
+    }
 }
 
 /// <summary>Sirul de conexiune al procesatorului (citirea si marcarea lotului, in afara tranzactiilor consumatorilor).</summary>
@@ -64,6 +70,7 @@ public static class OutboxRegistration
         services.TryAddScoped<IOutbox, OutboxWriter>();
         services.TryAddScoped<SystemEventContext>();
         services.TryAddScoped<ICurrentContext>(sp => sp.GetRequiredService<SystemEventContext>());
+        services.TryAddScoped<ISystemContextScope>(sp => sp.GetRequiredService<SystemEventContext>());
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(new OutboxConnection(connectionString));
         services.TryAddSingleton<OutboxDispatcher>();
