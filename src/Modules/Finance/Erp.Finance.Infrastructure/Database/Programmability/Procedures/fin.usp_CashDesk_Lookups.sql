@@ -19,7 +19,7 @@ BEGIN
     WHERE a.CompanyId = @CompanyId AND a.Kind = 2 AND a.IsActive = 1 AND (@ViewAll = 1 OR u.CanValidate IS NOT NULL)
     ORDER BY a.CodeKey;
 
-    SELECT t.Id, t.Code, t.Name, t.Direction, t.RequiresPartner, t.RequiresEmployee, t.RequiresCounterAccount, t.CashLimitCategory
+    SELECT t.Id, t.Code, t.Name, t.Direction, t.RequiresPartner, t.RequiresEmployee, t.RequiresCounterAccount, t.CashLimitCategory, t.SettlementKind
     FROM fin.TreasuryOperationType AS t
     WHERE t.IsActive = 1 AND t.AppliesToCash = 1
     ORDER BY t.Direction, t.Name;

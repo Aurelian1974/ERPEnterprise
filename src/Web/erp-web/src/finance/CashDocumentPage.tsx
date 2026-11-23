@@ -15,6 +15,7 @@ import { applyServerErrors } from '../components/forms';
 import { t } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
 import { documentPath } from './CashDeskPage';
+import { InvoicePicker } from './InvoicePicker';
 import {
   CashKind, cashApi, cashKeys, cashKindLabel, cashKinds, CashStatus, formatAmount, operationsFor, statusLabel, useCashDesk, useCashDocument,
   type CashDeskLookups, type CashDocumentDetail,
@@ -164,6 +165,7 @@ function CashDocumentForm({ document, lookups, kind: initialKind, accountId, day
   const kind = useWatch({ control: form.control, name: 'kind' });
   const payer = useWatch({ control: form.control, name: 'payer' });
   const watchedLines = useWatch({ control: form.control, name: 'lines' });
+  const watchedPartner = useWatch({ control: form.control, name: 'partnerId' });
   const draft = document === undefined || document.status === CashStatus.Draft;
   const canEdit = draft && user.permissions.includes('Fin.Cash.Create');
   const canValidate = draft && document !== undefined && user.permissions.includes('Fin.Cash.Validate');
@@ -177,6 +179,11 @@ function CashDocumentForm({ document, lookups, kind: initialKind, accountId, day
     [lookups.employees]);
   const partnerCurrent = useMemo<Option | undefined>(() => document?.partnerId == null ? undefined
     : { value: String(document.partnerId), text: document.partnerName ?? '' }, [document]);
+  // Facturile deschise ale partenerului, la tipurile cu decontare pe facturi (1 client, 2 furnizor; F3 4.2).
+  const invoiceRole = (index: number) => {
+    const kindOf = lookups.operationTypes.find((o) => o.id === watchedLines[index]?.operationTypeId)?.settlementKind;
+    return payer === 'partner' && watchedPartner != null && (kindOf === 1 || kindOf === 2) ? kindOf : undefined;
+  };
   const needsCounter = (index: number) => lookups.operationTypes.find((o) => o.id === watchedLines[index]?.operationTypeId)?.requiresCounterAccount === true;
 
   const refresh = async () => {
@@ -375,7 +382,10 @@ function CashDocumentForm({ document, lookups, kind: initialKind, accountId, day
                               options={counterAccounts} numeric className="compact" />
                           ) : <span className="muted">{t('common.none')}</span>}
                         </td>
-                        <td><TextField control={form.control} name={`lines.${index}.settlementRef`} label={t('cash.line.settlement')} className="compact" /></td>
+                        <td>{invoiceRole(index) !== undefined && watchedPartner != null
+                          ? <InvoicePicker control={form.control} name={`lines.${index}.settlementRef`} partnerId={watchedPartner} role={invoiceRole(index) ?? 1}
+                            label={t('cash.line.settlement')} className="compact" />
+                          : <TextField control={form.control} name={`lines.${index}.settlementRef`} label={t('cash.line.settlement')} className="compact" />}</td>
                         <td><TextField control={form.control} name={`lines.${index}.amount`} label={t('cash.line.amount')} className="compact num" /></td>
                         <td>{canEdit && lines.length > 1 && (
                           <button type="button" className="btn ghost small" onClick={() => remove(index)}>{t('treasury.cashiers.remove')}</button>)}</td>

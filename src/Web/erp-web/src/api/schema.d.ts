@@ -5961,6 +5961,8 @@ export interface components {
             requiresEmployee: boolean;
             requiresCounterAccount: boolean;
             cashLimitCategory: null | string;
+            /** Format: uint8 */
+            settlementKind?: number;
         };
         CashValidatedDto: {
             /** Format: int32 */

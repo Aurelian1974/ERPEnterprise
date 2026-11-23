@@ -27174,6 +27174,10 @@
               "null",
               "string"
             ]
+          },
+          "settlementKind": {
+            "type": "integer",
+            "format": "uint8"
           }
         }
       },

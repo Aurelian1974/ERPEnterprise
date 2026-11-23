@@ -34,7 +34,11 @@ public sealed record CashAccountOptionDto(int Id, string Code, string Name, stri
 
 /// <summary>Un tip de operatiune de casa pentru liniile documentului (F1 3.2).</summary>
 public sealed record CashOperationTypeDto(int Id, string Code, string Name, CashDirection Direction, bool RequiresPartner, bool RequiresEmployee,
-    bool RequiresCounterAccount, string? CashLimitCategory);
+    bool RequiresCounterAccount, string? CashLimitCategory)
+{
+    /// <summary>Decontarea (F1 3.2, F3 4.2): 1 facturi client, 2 facturi furnizor, 5 / 6 avans; ecranul ofera facturile deschise la 1 si 2.</summary>
+    public byte SettlementKind { get; init; }
+}
 
 /// <summary>Un angajat al firmei, pentru documentele de casa ale angajatilor (avansuri, salarii, restituiri).</summary>
 public sealed record CashEmployeeOptionDto(int Id, string Name, string EmployeeNo);

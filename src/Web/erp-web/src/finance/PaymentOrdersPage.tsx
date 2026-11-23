@@ -8,6 +8,8 @@ import type { CurrentUser } from '../api/session';
 import { ErrorBanner, type Option } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
 import { SearchSelectField } from '../components/SearchSelectField';
+import { InvoicePicker } from './InvoicePicker';
+import { Role } from './settlementApi';
 import { t } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
 import { useBankAccounts, useBankReconciliation } from './bankApi';
@@ -325,7 +327,9 @@ function NewOrder({ accountId, onCreated, onCancel }: { readonly accountId: numb
           {types.map((ty) => <option key={ty.id} value={ty.id}>{ty.name}</option>)}
         </select>
       </label>
-      <label>{t('order.col.invoice')}<input className="cell-input" {...form.register('settlementRef')} placeholder="FA-123" /></label>
+      {partnerId != null && values.purpose === 1
+        ? <label>{t('order.col.invoice')}<InvoicePicker control={form.control} name="settlementRef" partnerId={partnerId} role={Role.Supplier} label={t('order.col.invoice')} /></label>
+        : <label>{t('order.col.invoice')}<input className="cell-input" {...form.register('settlementRef')} placeholder="FA-123" /></label>}
       <label>{t('bank.col.amount')}<input className="cell-input num" {...form.register('amount')} /></label>
       {values.purpose === 3 && (
         <>

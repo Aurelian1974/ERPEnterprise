@@ -23,7 +23,7 @@ public sealed class CashDocumentStore(IDbSession session) : ICashDocumentStore
             .Select(a => new CashAccountOptionDto(a.Id, a.Code, a.Name, a.CurrencyCode.Trim(), a.CanValidate)).ToList();
         var types = (await grid.ReadAsync<OperationRow>().ConfigureAwait(false))
             .Select(t => new CashOperationTypeDto(t.Id, t.Code, t.Name, (CashDirection)t.Direction, t.RequiresPartner, t.RequiresEmployee,
-                t.RequiresCounterAccount, t.CashLimitCategory)).ToList();
+                t.RequiresCounterAccount, t.CashLimitCategory) { SettlementKind = t.SettlementKind }).ToList();
         var counter = (await grid.ReadAsync<TreasuryOptionDto>().ConfigureAwait(false)).ToList();
         var employees = (await grid.ReadAsync<CashEmployeeOptionDto>().ConfigureAwait(false)).ToList();
         return new CashDeskLookupsDto(accounts, types, counter, employees);
@@ -157,7 +157,7 @@ public sealed class CashDocumentStore(IDbSession session) : ICashDocumentStore
     private sealed record AccountRow(int Id, string Code, string Name, string CurrencyCode, bool CanValidate);
 
     private sealed record OperationRow(int Id, string Code, string Name, byte Direction, bool RequiresPartner, bool RequiresEmployee,
-        bool RequiresCounterAccount, string? CashLimitCategory);
+        bool RequiresCounterAccount, string? CashLimitCategory, byte SettlementKind);
 
     private sealed record DayRow(int TreasuryAccountId, string Code, string Name, string CurrencyCode, decimal? MaxClosingBalance, DateTime Day,
         decimal OpeningBalance, decimal TotalIn, decimal TotalOut, decimal ClosingBalance, byte DayStatus, DateTime? ClosedAt, DateTime? FirstOpenDay,
