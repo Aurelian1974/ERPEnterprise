@@ -45,6 +45,8 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'AUDITOR',             N'Fin.TreasuryAccount.View'),
         (N'AUDITOR',             N'Fin.Cash.ViewAll'),
         (N'CONTABIL_TREZORERIE', N'Fin.Bank.View'),
+        -- Beneficiarul OP-ului si contul lui bancar se aleg din fisa partenerului (doar consultare, F2 3.6 regula 1).
+        (N'CONTABIL_TREZORERIE', N'Core.Partner.View'),
         (N'CONTABIL_TREZORERIE', N'Fin.BankStatement.Import'),
         (N'CONTABIL_TREZORERIE', N'Fin.BankStatement.Reconcile'),
         (N'CONTABIL_TREZORERIE', N'Fin.BankStatement.Validate'),
