@@ -168,6 +168,8 @@ public static class FinanceApiRegistration
             .WithName("UpdateMatchingRule").Saves();
         finance.MapPost("/matching-rules/reorder", (ReorderMatchingRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("ReorderMatchingRules").Produces<bool>().Problems();
+        finance.MapPost("/matching-rules/test", (TestMatchingRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("TestMatchingRule").Produces<MatchingRuleTestDto>().Problems();
         finance.MapPost("/bank-statement-lines/{id:long}/remember", (long id, RememberMatchingRule body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { BankStatementLineId = id }, ct))
             .WithName("RememberMatchingRule").Saves();

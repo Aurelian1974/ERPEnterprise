@@ -2869,3 +2869,7 @@ dl.order-kv dd {
 .bank-split tr.dragging td {
   opacity: 0.5;
 }
+
+/* Reguli de potrivire: rezultatul „Testează pe 30 de zile” (macheta f2-04). */
+.rule-test { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+.rule-test table { margin-top: 8px; }

@@ -48,6 +48,23 @@ public sealed class BankMatchingStore(IDbSession session) : IBankMatchingStore
         session.Connection.ExecuteAsync(Command("fin.usp_MatchingRule_Reorder",
             new { CompanyId = companyId, RuleIds = System.Text.Json.JsonSerializer.Serialize(ruleIds), UserId = userId }, ct));
 
+    public async Task<MatchingRuleTestDto> TestRuleAsync(int companyId, MatchingRuleTestInput rule, DateOnly fromDate, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_MatchingRule_Test", new
+        {
+            CompanyId = companyId, rule.Id, rule.Priority, rule.TreasuryAccountId, rule.Direction, rule.CounterpartyIban, rule.CounterpartyFiscalCode,
+            rule.RemittanceContains, rule.BankTransactionCode, rule.AmountFrom, rule.AmountTo, TreasuryOperationTypeId = rule.OperationTypeId, rule.PartnerId,
+            rule.NoteTemplate, FromDate = fromDate.ToDateTime(TimeOnly.MinValue),
+        }, ct, 120)).ConfigureAwait(false);
+        var (lines, explained, taken) = await grid.ReadSingleAsync<(int Lines, int AlreadyExplained, int TakenByOtherRule)>().ConfigureAwait(false);
+        var totals = (await grid.ReadAsync<(string CurrencyCode, int Lines, decimal TotalIn, decimal TotalOut)>().ConfigureAwait(false))
+            .Select(t => new MatchingRuleTestTotalDto(t.CurrencyCode, t.Lines, Money.Format(t.TotalIn), Money.Format(t.TotalOut))).ToList();
+        var items = (await grid.ReadAsync<TestLineRow>().ConfigureAwait(false))
+            .Select(r => new MatchingRuleTestLineDto(r.Id, r.BankStatementId, DateOnly.FromDateTime(r.BookingDate), r.AccountCode, r.CurrencyCode, Money.Format(r.Amount),
+                r.CounterpartyName, r.RemittanceInfo, (BankLineMatchStatus)r.MatchStatus, r.ExplainedAs, r.ExplainedByRuleName, r.TakenByRuleName)).ToList();
+        return new MatchingRuleTestDto(fromDate, lines, explained, taken, totals, items);
+    }
+
     public async Task<IReadOnlyList<CardAcquirerDto>> ListAcquirersAsync(int companyId, CancellationToken ct) =>
         (await session.Connection.QueryAsync<CardAcquirerDto>(Command("fin.usp_CardAcquirer_List", new { CompanyId = companyId }, ct)).ConfigureAwait(false))
         .ToList();
@@ -100,4 +117,7 @@ public sealed class BankMatchingStore(IDbSession session) : IBankMatchingStore
 
     private sealed record TransitRow(int Kind, int? TreasuryAccountId, int? SourceAccountId, DateTime ItemDate, decimal Amount, string? Reference, long SourceId,
         int AgeDays);
+
+    private sealed record TestLineRow(long Id, int BankStatementId, DateTime BookingDate, string AccountCode, string CurrencyCode, decimal Amount,
+        string? CounterpartyName, string? RemittanceInfo, byte MatchStatus, string? ExplainedAs, string? ExplainedByRuleName, string? TakenByRuleName);
 }

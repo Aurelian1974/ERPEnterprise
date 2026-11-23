@@ -1994,6 +1994,19 @@ export const ro = {
   'rules.drag': 'Trageți ca să schimbați ordinea',
   'rules.up': 'Mută mai sus regula {name}',
   'rules.down': 'Mută mai jos regula {name}',
+  'rules.test.run': 'Testează pe 30 de zile',
+  'rules.test.title': 'Test pe ultimele 30 de zile (nu se modifică nimic)',
+  'rules.test.none': 'Regula nu prinde nicio linie de extras din {from} încoace.',
+  'rules.test.summary': 'Regula ar prinde {count} linii din {from} încoace: {totals}.',
+  'rules.test.alreadyExplained': '{count} dintre ele sunt deja explicate altfel.',
+  'rules.test.takenByOther': '{count} dintre ele le prinde înainte o regulă cu prioritate mai mare.',
+  'rules.test.details': 'Contrapartidă · detalii',
+  'rules.test.outcome': 'Rezultat',
+  'rules.test.would': 'ar fi explicată de regulă',
+  'rules.test.taken': 'prinsă înainte de „{name}”',
+  'rules.test.explained': 'deja explicată: {type}',
+  'rules.test.validated': 'deja validată: {type}',
+  'rules.test.more': 'Se afișează primele {count} linii.',
 } as const;
 
 export type TextKey = keyof typeof ro;

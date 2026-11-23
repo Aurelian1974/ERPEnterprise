@@ -199,6 +199,45 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
     }
 
     [Fact]
+    public async Task Testing_a_rule_on_the_last_30_days_reports_the_lines_it_would_explain_without_changing_them()
+    {
+        var (account, iban) = await NewBank();
+        var fee = await OperationType("BANK-COMISION");
+        var saved = await Send(new SaveMatchingRule(null, 10, "Comisioane test", account, 2, null, null, "comision", null, null, null, fee, null, null, null, null,
+            false, true, null));
+        var today = Application.Treasury.BusinessDay.Today(TimeProvider.System);
+        var lines = await ImportAndMatch(account, iban, 1_000m,
+            new TestEntry(today.AddDays(-40), -7m, Unique("T0"), null, null, "Comision SEPA vechi"),
+            new TestEntry(today.AddDays(-2), -5m, Unique("T1"), null, null, "COMISIÓN lunar"),
+            new TestEntry(today.AddDays(-1), -3m, Unique("T2"), null, null, "taxa"));
+        Assert.Equal(BankLineMatchStatus.Explained, lines[1].MatchStatus);
+
+        TestMatchingRule Candidate(int? id, int priority) =>
+            new(id, priority, account, 2, null, null, "comision", null, null, null, fee, null, null);
+
+        // O regula noua, inaintea celei salvate: prinde doar linia din ultimele 30 de zile, deja explicata de cealalta regula.
+        var first = await Send(Candidate(null, 5));
+        Assert.Equal((1, 1, 0), (first.Lines, first.AlreadyExplained, first.TakenByOtherRule));
+        Assert.Equal(("RON", "0.00", "5.00"), (first.Totals.Single().CurrencyCode, first.Totals.Single().TotalIn, first.Totals.Single().TotalOut));
+        var item = Assert.Single(first.Items);
+        Assert.Equal((lines[1].Id, "BANK-COMISION", "Comisioane test", (string?)null), (item.Id, item.ExplainedAs, item.ExplainedByRuleName, item.TakenByRuleName));
+
+        // Dupa regula salvata: linia o prinde aceea.
+        var after = await Send(Candidate(null, 50));
+        Assert.Equal((1, "Comisioane test"), (after.TakenByOtherRule, after.Items.Single().TakenByRuleName));
+
+        // Testul regulii salvate (versiunea din fisa): liniile explicate chiar de ea nu sunt „explicate altfel”.
+        var itself = await Send(Candidate(saved.Id, 10));
+        Assert.Equal((1, 0, 0), (itself.Lines, itself.AlreadyExplained, itself.TakenByOtherRule));
+
+        // Nimic nu s-a schimbat pe linie.
+        var line = await Send(new GetBankStatementLine(lines[1].Id));
+        Assert.Equal((Convert.ToBase64String(lines[1].RowVersion), BankLineMatchStatus.Explained), (Convert.ToBase64String(line.RowVersion), line.MatchStatus));
+        await Assert.ThrowsAsync<Erp.Core.Contracts.ErpValidationException>(async () =>
+            await Send(new TestMatchingRule(null, 5, account, 2, null, null, null, null, null, null, fee, null, null)));
+    }
+
+    [Fact]
     public async Task The_partner_is_identified_by_iban_or_fiscal_code_and_partial_payments_become_proposals()
     {
         var (account, iban) = await NewBank();

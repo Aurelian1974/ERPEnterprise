@@ -71,6 +71,8 @@ public interface IBankMatchingStore
 
     Task ReorderRulesAsync(int companyId, IReadOnlyList<int> ruleIds, int userId, CancellationToken ct);
 
+    Task<MatchingRuleTestDto> TestRuleAsync(int companyId, MatchingRuleTestInput rule, DateOnly fromDate, CancellationToken ct);
+
     Task<IReadOnlyList<CardAcquirerDto>> ListAcquirersAsync(int companyId, CancellationToken ct);
 
     Task<FinanceSaved> SaveAcquirerAsync(int companyId, int? id, string code, string name, string? iban, bool isActive, byte[]? rowVersion, int userId,
@@ -199,12 +201,11 @@ internal sealed class SaveMatchingRuleHandler(IBankMatchingStore store, ICurrent
 {
     public async Task<FinanceSaved> Handle(SaveMatchingRule request, CancellationToken cancellationToken)
     {
-        static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         var rule = new MatchingRuleRecord(request.Id, request.Priority, request.Name.Trim(), request.TreasuryAccountId, request.Direction,
-            BankStatementRules.NormalizeIban(request.CounterpartyIban), Clean(request.CounterpartyFiscalCode)?.ToUpperInvariant().Replace("RO", "", StringComparison.Ordinal),
-            Clean(request.RemittanceContains), Clean(request.BankTransactionCode), Money.ParseOptional(request.AmountFrom), Money.ParseOptional(request.AmountTo),
-            request.OperationTypeId, request.PartnerId, request.CostCenterId, request.ProjectId, Clean(request.NoteTemplate), request.AutoValidate, null,
-            request.IsActive, request.RowVersion);
+            BankStatementRules.NormalizeIban(request.CounterpartyIban), MatchingRuleText.FiscalCode(request.CounterpartyFiscalCode),
+            MatchingRuleText.Clean(request.RemittanceContains), MatchingRuleText.Clean(request.BankTransactionCode), Money.ParseOptional(request.AmountFrom),
+            Money.ParseOptional(request.AmountTo), request.OperationTypeId, request.PartnerId, request.CostCenterId, request.ProjectId,
+            MatchingRuleText.Clean(request.NoteTemplate), request.AutoValidate, null, request.IsActive, request.RowVersion);
         var saved = await store.SaveRuleAsync(context.CompanyId, rule, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.MatchingRule", saved.Id, new { rule.Name, rule.Priority, rule.OperationTypeId, rule.AutoValidate, rule.IsActive });
         return saved;
@@ -231,6 +232,77 @@ internal sealed class ReorderMatchingRulesHandler(IBankMatchingStore store, ICur
         await store.ReorderRulesAsync(context.CompanyId, request.RuleIds, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.MatchingRule", null, new { Order = request.RuleIds });
         return true;
+    }
+}
+
+/// <summary>Curatarea conditiilor unei reguli, aceeasi la salvare si la test.</summary>
+internal static class MatchingRuleText
+{
+    public static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    public static string? FiscalCode(string? value) => Clean(value)?.ToUpperInvariant().Replace("RO", "", StringComparison.Ordinal);
+}
+
+/// <summary>
+/// „Testeaza pe 30 de zile” (F2 3.5; macheta f2-04): regula asa cum e in fisa, chiar nesalvata, aplicata pe liniile de extras din ultimele
+/// 30 de zile, fara nicio modificare: cate linii ar prinde, totalurile pe moneda, cate sunt deja explicate altfel si cate le prinde inainte
+/// o regula cu prioritate mai mare; primele 200 de linii.
+/// </summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.BankView)]
+public sealed record TestMatchingRule(int? Id, int Priority, int? TreasuryAccountId, byte? Direction, string? CounterpartyIban, string? CounterpartyFiscalCode,
+    string? RemittanceContains, string? BankTransactionCode, string? AmountFrom, string? AmountTo, int OperationTypeId, int? PartnerId, string? NoteTemplate)
+    : IQuery<MatchingRuleTestDto>
+{
+    public const int Days = 30;
+}
+
+public sealed record MatchingRuleTestTotalDto(string CurrencyCode, int Lines, string TotalIn, string TotalOut);
+
+public sealed record MatchingRuleTestLineDto(long Id, int BankStatementId, DateOnly BookingDate, string AccountCode, string CurrencyCode, string Amount,
+    string? CounterpartyName, string? RemittanceInfo, BankLineMatchStatus MatchStatus, string? ExplainedAs, string? ExplainedByRuleName, string? TakenByRuleName);
+
+public sealed record MatchingRuleTestDto(DateOnly FromDate, int Lines, int AlreadyExplained, int TakenByOtherRule, IReadOnlyList<MatchingRuleTestTotalDto> Totals,
+    IReadOnlyList<MatchingRuleTestLineDto> Items);
+
+public sealed record MatchingRuleTestInput(int? Id, int Priority, int? TreasuryAccountId, byte? Direction, string? CounterpartyIban, string? CounterpartyFiscalCode,
+    string? RemittanceContains, string? BankTransactionCode, decimal? AmountFrom, decimal? AmountTo, int OperationTypeId, int? PartnerId, string? NoteTemplate);
+
+internal sealed class TestMatchingRuleValidator : AbstractValidator<TestMatchingRule>
+{
+    public TestMatchingRuleValidator()
+    {
+        RuleFor(x => x.Priority).InclusiveBetween(1, 100_000);
+        RuleFor(x => x.Direction).Must(d => d is null or 1 or 2).WithMessage("Sensul este intrare, ieșire sau oricare.");
+        RuleFor(x => x).Must(x => !string.IsNullOrWhiteSpace(x.CounterpartyIban) || !string.IsNullOrWhiteSpace(x.CounterpartyFiscalCode)
+                || !string.IsNullOrWhiteSpace(x.RemittanceContains) || !string.IsNullOrWhiteSpace(x.BankTransactionCode))
+            .WithName("counterpartyIban").WithMessage("Regula are cel puțin o condiție: IBAN, CUI, text din detalii sau codul tranzacției.");
+        RuleFor(x => x.AmountFrom).Must(a => a is null || Money.TryParse(a, out var v) && v >= 0).WithMessage("Suma minimă nu este validă.");
+        RuleFor(x => x.AmountTo).Must(a => a is null || Money.TryParse(a, out var v) && v >= 0).WithMessage("Suma maximă nu este validă.");
+        RuleFor(x => x.RemittanceContains).MaximumLength(200);
+        RuleFor(x => x.NoteTemplate).MaximumLength(500);
+    }
+}
+
+internal sealed class TestMatchingRuleHandler(IBankMatchingStore store, ICurrentContext context, TimeProvider time, IValidator<TestMatchingRule> validator)
+    : IQueryHandler<TestMatchingRule, MatchingRuleTestDto>
+{
+    public async Task<MatchingRuleTestDto> Handle(TestMatchingRule request, CancellationToken cancellationToken)
+    {
+        // Pipeline-ul valideaza doar comenzile; testul primeste fisa nesalvata, deci se valideaza aici, cu aceleasi erori pe camp (NET-11).
+        var check = await validator.ValidateAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!check.IsValid)
+        {
+            throw new ErpValidationException(check.Errors.GroupBy(e => char.ToLowerInvariant(e.PropertyName[0]) + e.PropertyName[1..], StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).Distinct(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal));
+        }
+
+        var input = new MatchingRuleTestInput(request.Id, request.Priority, request.TreasuryAccountId, request.Direction,
+            BankStatementRules.NormalizeIban(request.CounterpartyIban), MatchingRuleText.FiscalCode(request.CounterpartyFiscalCode),
+            MatchingRuleText.Clean(request.RemittanceContains), MatchingRuleText.Clean(request.BankTransactionCode), Money.ParseOptional(request.AmountFrom),
+            Money.ParseOptional(request.AmountTo), request.OperationTypeId, request.PartnerId, MatchingRuleText.Clean(request.NoteTemplate));
+        return await store.TestRuleAsync(context.CompanyId, input, BusinessDay.Today(time).AddDays(-TestMatchingRule.Days), cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 

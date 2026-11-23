@@ -2895,6 +2895,76 @@
         }
       }
     },
+    "/api/finance/matching-rules/test": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "TestMatchingRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestMatchingRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchingRuleTestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/bank-statement-lines/{id}/remember": {
       "post": {
         "tags": [
@@ -30885,6 +30955,242 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "MatchingRuleTestDto": {
+        "required": [
+          "fromDate",
+          "lines",
+          "alreadyExplained",
+          "takenByOtherRule",
+          "totals",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "fromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lines": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alreadyExplained": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "takenByOtherRule": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchingRuleTestTotalDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchingRuleTestLineDto"
+            }
+          }
+        }
+      },
+      "MatchingRuleTestLineDto": {
+        "required": [
+          "id",
+          "bankStatementId",
+          "bookingDate",
+          "accountCode",
+          "currencyCode",
+          "amount",
+          "counterpartyName",
+          "remittanceInfo",
+          "matchStatus",
+          "explainedAs",
+          "explainedByRuleName",
+          "takenByRuleName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bankStatementId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "counterpartyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceInfo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matchStatus": {
+            "$ref": "#/components/schemas/BankLineMatchStatus"
+          },
+          "explainedAs": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "explainedByRuleName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "takenByRuleName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatchingRuleTestTotalDto": {
+        "required": [
+          "currencyCode",
+          "lines",
+          "totalIn",
+          "totalOut"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalIn": {
+            "type": "string"
+          },
+          "totalOut": {
+            "type": "string"
+          }
+        }
+      },
+      "TestMatchingRule": {
+        "required": [
+          "id",
+          "priority",
+          "treasuryAccountId",
+          "direction",
+          "counterpartyIban",
+          "counterpartyFiscalCode",
+          "remittanceContains",
+          "bankTransactionCode",
+          "amountFrom",
+          "amountTo",
+          "operationTypeId",
+          "partnerId",
+          "noteTemplate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "direction": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "counterpartyIban": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterpartyFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remittanceContains": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankTransactionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountFrom": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountTo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "noteTemplate": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       }

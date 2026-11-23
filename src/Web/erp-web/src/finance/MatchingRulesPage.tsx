@@ -8,15 +8,28 @@ import type { CurrentUser } from '../api/session';
 import { ErrorBanner } from '../components/Field';
 import { useNotifier } from '../components/Notifier';
 import { t } from '../i18n';
+import { isoToRo } from '../partners/partnerModel';
 import { formatAmount } from './cashApi';
 import { parseAmount } from './TreasurySettingsTab';
 
 type Rule = components['schemas']['MatchingRuleDto'];
 type SaveRule = components['schemas']['SaveMatchingRule'];
 type Lookups = components['schemas']['BankLookupsDto'];
+type RuleTest = components['schemas']['MatchingRuleTestDto'];
+type RuleTestLine = components['schemas']['MatchingRuleTestLineDto'];
 type RuleFilter = 'active' | 'inactive' | 'remembered';
 
 const rulesKey = ['finance', 'bank', 'rules'] as const;
+
+/** Ce s-ar intampla cu o linie la „Testeaza pe 30 de zile”: prinsa de alta regula inainte, deja explicata altfel sau explicata de regula. */
+export function testLineStatus(line: Pick<RuleTestLine, 'matchStatus' | 'explainedAs' | 'explainedByRuleName' | 'takenByRuleName'>, ruleName: string | undefined): string {
+  if (line.takenByRuleName != null) return t('rules.test.taken', { name: line.takenByRuleName });
+  const explained = line.matchStatus === 3 || line.matchStatus === 4;
+  if (explained && (line.explainedByRuleName == null || line.explainedByRuleName !== ruleName)) {
+    return t(line.matchStatus === 4 ? 'rules.test.validated' : 'rules.test.explained', { type: line.explainedAs ?? '—' });
+  }
+  return t('rules.test.would');
+}
 
 /** Textul condiților unei reguli, pe scurt (macheta f2-04, coloana Regulă · condiții). */
 export function conditionText(rule: Pick<Rule, 'direction' | 'counterpartyIban' | 'counterpartyFiscalCode' | 'remittanceContains' | 'bankTransactionCode'
@@ -187,6 +200,31 @@ function RuleForm({ rule, lookups, canManage, onSaved }: { readonly rule: Rule |
     }
   };
 
+  const [testResult, setTestResult] = useState<RuleTest | undefined>();
+  const [testing, setTesting] = useState(false);
+  const runTest = async () => {
+    setError(undefined);
+    const from = draft.amountFrom == null ? null : parseAmount(draft.amountFrom);
+    const to = draft.amountTo == null ? null : parseAmount(draft.amountTo);
+    if ((draft.amountFrom != null && from === null) || (draft.amountTo != null && to === null)) {
+      setError(t('rules.invalidAmount'));
+      return;
+    }
+    setTesting(true);
+    try {
+      setTestResult(unwrap(await api.POST('/api/finance/matching-rules/test', { body: {
+        id: draft.id, priority: draft.priority, treasuryAccountId: draft.treasuryAccountId, direction: draft.direction, counterpartyIban: draft.counterpartyIban,
+        counterpartyFiscalCode: draft.counterpartyFiscalCode, remittanceContains: draft.remittanceContains, bankTransactionCode: draft.bankTransactionCode,
+        amountFrom: from, amountTo: to, operationTypeId: draft.operationTypeId, partnerId: draft.partnerId, noteTemplate: draft.noteTemplate,
+      } })));
+    } catch (e) {
+      setTestResult(undefined);
+      setError(e instanceof ApiError ? e.message : t('common.notSaved'));
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <div className="bank-line settings-form">
       <h2>{rule?.name ?? t('rules.newTitle')} {rule !== undefined && <span className={rule.isActive ? 'pill ok' : 'pill'}>{t(rule.isActive ? 'rules.active' : 'rules.inactive')}</span>}</h2>
@@ -231,13 +269,46 @@ function RuleForm({ rule, lookups, canManage, onSaved }: { readonly rule: Rule |
         onChange={(e) => set({ autoValidate: e.target.checked })} />{t('rules.autoValidateLabel')}</label>
       <div className="banner warn">{t('rules.autoValidateHint')}</div>
       <ErrorBanner message={error} />
-      {canManage && (
-        <div className="actions">
-          {rule !== undefined && <button type="button" className="btn ghost" onClick={() => void save({ isActive: !draft.isActive })}>
-            {t(draft.isActive ? 'rules.deactivate' : 'rules.activate')}</button>}
-          <button type="button" className="btn primary" onClick={() => void save()}>{t('common.save')}</button>
-        </div>
-      )}
+      {testResult !== undefined && <RuleTestResult result={testResult} ruleName={rule?.name} />}
+      <div className="actions">
+        <button type="button" className="btn ghost" disabled={testing} onClick={() => void runTest()}>{t('rules.test.run')}</button>
+        {canManage && rule !== undefined && <button type="button" className="btn ghost" onClick={() => void save({ isActive: !draft.isActive })}>
+          {t(draft.isActive ? 'rules.deactivate' : 'rules.activate')}</button>}
+        {canManage && <button type="button" className="btn primary" onClick={() => void save()}>{t('common.save')}</button>}
+      </div>
     </div>
+  );
+}
+
+/** Rezultatul „Testeaza pe 30 de zile” (macheta f2-04): nimic nu se modifica; rezumatul, totalurile pe moneda si primele 200 de linii. */
+function RuleTestResult({ result, ruleName }: { readonly result: RuleTest; readonly ruleName: string | undefined }) {
+  const totals = result.totals.map((x) => [x.totalIn !== '0.00' && `+${formatAmount(x.totalIn)}`, x.totalOut !== '0.00' && `−${formatAmount(x.totalOut)}`]
+    .filter(Boolean).join(' / ') + ` ${x.currencyCode}`).join('; ');
+  return (
+    <section className="rule-test" aria-label={t('rules.test.title')} role="status">
+      <h3 className="section-title">{t('rules.test.title')}</h3>
+      <p>{result.lines === 0 ? t('rules.test.none', { from: isoToRo(result.fromDate) })
+        : t('rules.test.summary', { count: result.lines, from: isoToRo(result.fromDate), totals })}</p>
+      {result.alreadyExplained > 0 && <p className="muted small">{t('rules.test.alreadyExplained', { count: result.alreadyExplained })}</p>}
+      {result.takenByOtherRule > 0 && <div className="banner warn">{t('rules.test.takenByOther', { count: result.takenByOtherRule })}</div>}
+      {result.items.length > 0 && (
+        <table className="partner-list cash-list">
+          <thead><tr><th>{t('bank.col.date')}</th><th>{t('bank.account')}</th><th>{t('rules.test.details')}</th><th className="num">{t('bank.col.amount')}</th>
+            <th>{t('rules.test.outcome')}</th></tr></thead>
+          <tbody>
+            {result.items.map((l) => (
+              <tr key={l.id}>
+                <td>{isoToRo(l.bookingDate)}</td>
+                <td>{l.accountCode}</td>
+                <td><div>{l.counterpartyName ?? '—'}</div><div className="muted small">{l.remittanceInfo}</div></td>
+                <td className={l.amount.startsWith('-') ? 'num neg' : 'num pos'}>{formatAmount(l.amount)}</td>
+                <td className="small">{testLineStatus(l, ruleName)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {result.lines > result.items.length && <p className="muted small">{t('rules.test.more', { count: result.items.length })}</p>}
+    </section>
   );
 }

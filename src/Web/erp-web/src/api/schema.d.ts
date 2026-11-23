@@ -500,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/matching-rules/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TestMatchingRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/bank-statement-lines/{id}/remember": {
         parameters: {
             query?: never;
@@ -6991,6 +7007,63 @@ export interface components {
         ReorderMatchingRules: {
             ruleIds: number[];
         };
+        MatchingRuleTestDto: {
+            /** Format: date */
+            fromDate: string;
+            /** Format: int32 */
+            lines: number;
+            /** Format: int32 */
+            alreadyExplained: number;
+            /** Format: int32 */
+            takenByOtherRule: number;
+            totals: components["schemas"]["MatchingRuleTestTotalDto"][];
+            items: components["schemas"]["MatchingRuleTestLineDto"][];
+        };
+        MatchingRuleTestLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            bankStatementId: number;
+            /** Format: date */
+            bookingDate: string;
+            accountCode: string;
+            currencyCode: string;
+            amount: string;
+            counterpartyName: null | string;
+            remittanceInfo: null | string;
+            matchStatus: components["schemas"]["BankLineMatchStatus"];
+            explainedAs: null | string;
+            explainedByRuleName: null | string;
+            takenByRuleName: null | string;
+        };
+        MatchingRuleTestTotalDto: {
+            currencyCode: string;
+            /** Format: int32 */
+            lines: number;
+            totalIn: string;
+            totalOut: string;
+        };
+        TestMatchingRule: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            priority: number;
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            /** Format: uint8 */
+            direction: null | number;
+            counterpartyIban: null | string;
+            counterpartyFiscalCode: null | string;
+            remittanceContains: null | string;
+            bankTransactionCode: null | string;
+            amountFrom: null | string;
+            amountTo: null | string;
+            /** Format: int32 */
+            operationTypeId: number;
+            /** Format: int32 */
+            partnerId: null | number;
+            noteTemplate: null | string;
+        };
     };
     responses: never;
     parameters: never;
@@ -9295,6 +9368,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    TestMatchingRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestMatchingRule"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchingRuleTestDto"];
                 };
             };
             /** @description Bad Request */
