@@ -22,6 +22,7 @@ import { PartnerBalancesPage } from '../finance/PartnerBalancesPage';
 import { PartnerFinancePage } from '../finance/PartnerFinancePage';
 import { AllocationPage } from '../finance/AllocationPage';
 import { DueSchedulePage } from '../finance/DueSchedulePage';
+import { CompensationsPage } from '../finance/CompensationsPage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -56,6 +57,7 @@ export const routes = [
       { path: 'finante/decontari/parteneri/:id', element: <PartnerFinancePage /> },
       { path: 'finante/decontari/alocare', element: <AllocationPage /> },
       { path: 'finante/decontari/scadentar', element: <DueSchedulePage /> },
+      { path: 'finante/decontari/compensari', element: <CompensationsPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
