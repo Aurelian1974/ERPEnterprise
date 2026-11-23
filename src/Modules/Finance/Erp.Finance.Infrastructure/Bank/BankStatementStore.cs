@@ -130,9 +130,12 @@ public sealed class BankStatementStore(IDbSession session) : IBankStatementStore
     }
 
     public async Task<IReadOnlyList<BankAccountLookupDto>> ListAccountsAsync(int companyId, CancellationToken ct) =>
-        (await session.Connection.QueryAsync<(int Id, string Code, string Name, byte Kind, string CurrencyCode)>(Command("fin.usp_BankAccount_Options",
-            new { CompanyId = companyId }, ct)).ConfigureAwait(false)).Select(a => new BankAccountLookupDto(a.Id, a.Code, a.Name, a.Kind, a.CurrencyCode.Trim()))
-        .ToList();
+        (await session.Connection.QueryAsync<(int Id, string Code, string Name, byte Kind, string CurrencyCode, int? BankFormatProfileId, string? ImportFolder)>(
+            Command("fin.usp_BankAccount_Options", new { CompanyId = companyId }, ct)).ConfigureAwait(false))
+        .Select(a => new BankAccountLookupDto(a.Id, a.Code, a.Name, a.Kind, a.CurrencyCode.Trim())
+        {
+            BankFormatProfileId = a.BankFormatProfileId, ImportFolder = a.ImportFolder,
+        }).ToList();
 
     public async Task<IReadOnlyList<BankOperationTypeDto>> ListOperationTypesAsync(CancellationToken ct) =>
         (await session.Connection.QueryAsync<BankOperationTypeDto>(Command("fin.usp_BankOperationType_List", new { }, ct)).ConfigureAwait(false)).ToList();

@@ -30678,6 +30678,19 @@
           },
           "currencyCode": {
             "type": "string"
+          },
+          "bankFormatProfileId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "importFolder": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

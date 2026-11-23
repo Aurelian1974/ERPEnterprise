@@ -6939,6 +6939,9 @@ export interface components {
             /** Format: uint8 */
             kind: number;
             currencyCode: string;
+            /** Format: int32 */
+            bankFormatProfileId?: null | number;
+            importFolder?: null | string;
         };
         FinanceSettingsDto: {
             requireApproval: boolean;

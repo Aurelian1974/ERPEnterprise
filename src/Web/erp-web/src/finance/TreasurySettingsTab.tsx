@@ -8,11 +8,12 @@ import { useNotifier } from '../components/Notifier';
 import { t } from '../i18n';
 import { isoToRo, roToIso } from '../partners/partnerModel';
 import { formatAmount } from './cashApi';
+import { BankProfiles, CardAcquirers } from './BankConfigSections';
 
 type OperationType = components['schemas']['OperationTypeDto'];
 type ExpenseType = components['schemas']['ExpenseTypeDto'];
 type CashLimit = components['schemas']['CashLimitRuleDto'];
-type Section = 'operations' | 'expenses' | 'limits' | 'bank';
+type Section = 'operations' | 'expenses' | 'limits' | 'bank' | 'profiles' | 'acquirers';
 type FinanceSettings = components['schemas']['FinanceSettingsDto'];
 
 const keys = {
@@ -37,7 +38,8 @@ export function parseAmount(text: string): string | null {
 export function TreasurySettingsTab({ user }: { readonly user: CurrentUser }) {
   const canConfigure = user.permissions.includes('Fin.Treasury.Configure');
   const canLimits = user.permissions.includes('Fin.CashLimit.Manage');
-  const [section, setSection] = useState<Section>(canConfigure ? 'operations' : 'limits');
+  const canBankFormats = user.permissions.includes('Fin.BankFormat.Manage');
+  const [section, setSection] = useState<Section>(canConfigure ? 'operations' : canLimits ? 'limits' : 'profiles');
   return (
     <section className="card" aria-label={t('config.tab.treasury')}>
       <div className="chips-row" role="tablist" aria-label={t('config.tab.treasury')}>
@@ -45,11 +47,15 @@ export function TreasurySettingsTab({ user }: { readonly user: CurrentUser }) {
         {canConfigure && <SectionButton value="expenses" current={section} onSelect={setSection} label={t('settings.expenses')} />}
         {canLimits && <SectionButton value="limits" current={section} onSelect={setSection} label={t('settings.limits')} />}
         {canConfigure && <SectionButton value="bank" current={section} onSelect={setSection} label={t('settings.bank')} />}
+        {canBankFormats && <SectionButton value="profiles" current={section} onSelect={setSection} label={t('cfg.bank.profiles')} />}
+        {canBankFormats && <SectionButton value="acquirers" current={section} onSelect={setSection} label={t('cfg.bank.acquirers')} />}
       </div>
       {section === 'operations' && canConfigure && <OperationTypes />}
       {section === 'expenses' && canConfigure && <ExpenseTypes />}
       {section === 'limits' && canLimits && <CashLimits />}
       {section === 'bank' && canConfigure && <BankSettings />}
+      {section === 'profiles' && canBankFormats && <BankProfiles />}
+      {section === 'acquirers' && canBankFormats && <CardAcquirers />}
     </section>
   );
 }

@@ -48,7 +48,7 @@ export function ConfigPage() {
   const canDuplicates = user.permissions.includes('Core.Partner.Manage') || user.permissions.includes('Core.Item.Manage');
   // Finante (02.02, F1): familia apare doar cu modulul licentiat si cu dreptul pe trezorerie sau pe plafoane.
   const canTreasury = user.modules.includes('Finance')
-    && (user.permissions.includes('Fin.Treasury.Configure') || user.permissions.includes('Fin.CashLimit.Manage'));
+    && (user.permissions.includes('Fin.Treasury.Configure') || user.permissions.includes('Fin.CashLimit.Manage') || user.permissions.includes('Fin.BankFormat.Manage'));
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'

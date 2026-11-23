@@ -310,7 +310,13 @@ internal sealed class GetBankReconciliationHandler(IBankStatementStore store, IC
 }
 
 /// <summary>Un cont bancar al firmei in listele ecranelor Bancii (Kind: 1 Banca, 3 Card, 5 Depozit).</summary>
-public sealed record BankAccountLookupDto(int Id, string Code, string Name, byte Kind, string CurrencyCode);
+public sealed record BankAccountLookupDto(int Id, string Code, string Name, byte Kind, string CurrencyCode)
+{
+    /// <summary>Profilul bancar si folderul de import ale contului (F2 3.1), pentru Configurare › Finante › Banca.</summary>
+    public int? BankFormatProfileId { get; init; }
+
+    public string? ImportFolder { get; init; }
+}
 
 /// <summary>Conturile bancare active ale firmei, pentru ecranele Bancii.</summary>
 [Module(FinanceModule.Code)]

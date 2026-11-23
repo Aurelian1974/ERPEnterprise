@@ -171,6 +171,7 @@ public sealed class BankStatementIntegrationTests : BankTestBase, IClassFixture<
         await Import(account, StatementFiles.Camt053(iban, "RON", 0m, [new TestEntry(Day, 700m, $"{prefix}-0")], "1"));
         await Send(new SetTreasuryAccountBankFormat(account, profile.Id, null));
         Assert.Contains(await Send(new GetBankFormatProfiles()), p => p.Id == profile.Id && p.BankBic == "RNCBROBU" && p.AccountCount == 1);
+        Assert.Contains(await Send(new GetBankAccounts()), a => a.Id == account && a.BankFormatProfileId == profile.Id);
 
         // Cu profilul CSV, un CAMT.053 nu se mai citeste.
         Assert.Equal("FIN_BANK_FILE_INVALID", (await Assert.ThrowsAsync<ErpException>(() => Import(account,
