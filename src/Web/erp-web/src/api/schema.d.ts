@@ -6963,6 +6963,15 @@ export interface components {
             operationTypes: components["schemas"]["BankOperationTypeDto"][];
             accounts: components["schemas"]["BankAccountLookupDto"][];
         };
+        BankLineValidationResult: {
+            /** Format: int64 */
+            id: number;
+            validated: boolean;
+            errorCode: null | string;
+            message: null | string;
+            /** Format: byte */
+            rowVersion: null | string;
+        };
     };
     responses: never;
     parameters: never;
@@ -10096,7 +10105,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BankLineSaved"][];
+                    "application/json": components["schemas"]["BankLineValidationResult"][];
                 };
             };
             /** @description Bad Request */

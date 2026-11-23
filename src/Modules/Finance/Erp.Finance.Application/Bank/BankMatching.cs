@@ -117,13 +117,15 @@ public sealed class BankMatchingEngine(IBankMatchingStore store, BankLineValidat
             }
         }
 
-        if (eligible.Count > 0)
+        // Pe loturi de cel mult 500; o linie care nu poate trece ramane Explicata, fara sa le opreasca pe celelalte.
+        var validated = 0;
+        foreach (var chunk in eligible.Chunk(500))
         {
-            await validation.ValidateAsync(eligible, ct).ConfigureAwait(false);
+            validated += (await validation.ValidateEachAsync(chunk, ct).ConfigureAwait(false)).Count(r => r.Validated);
         }
 
         var bySource = run.Matched.GroupBy(m => m.Source).ToDictionary(g => g.Key, g => g.Count());
-        return new MatchingResultDto(run.Considered, run.Matched.Count, run.Proposed, eligible.Count, bySource);
+        return new MatchingResultDto(run.Considered, run.Matched.Count, run.Proposed, validated, bySource);
     }
 }
 

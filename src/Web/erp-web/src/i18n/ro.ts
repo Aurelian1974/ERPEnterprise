@@ -1990,6 +1990,7 @@ export const ro = {
   'cfg.bank.acquirerIban': 'IBAN-ul de pe care vin decontările',
   'cfg.bank.code': 'Cod',
   'cfg.bank.name': 'Denumire',
+  'bank.refusedLines': 'Linii nevalidate ({count}): {details}',
 } as const;
 
 export type TextKey = keyof typeof ro;

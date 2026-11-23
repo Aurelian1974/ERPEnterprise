@@ -3866,7 +3866,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/BankLineSaved"
+                    "$ref": "#/components/schemas/BankLineValidationResult"
                   }
                 }
               }
@@ -30762,6 +30762,44 @@
             "items": {
               "$ref": "#/components/schemas/BankAccountLookupDto"
             }
+          }
+        }
+      },
+      "BankLineValidationResult": {
+        "required": [
+          "id",
+          "validated",
+          "errorCode",
+          "message",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "validated": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
           }
         }
       }

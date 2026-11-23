@@ -18,7 +18,7 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
         var lines = (await grid.ReadAsync<LineRow>().ConfigureAwait(false)).Select(l => new BankLineRow(l.Id, l.BankStatementId, l.StatementNo, l.LineNumber,
             DateOnly.FromDateTime(l.BookingDate), l.ValueDate is { } v ? DateOnly.FromDateTime(v) : null, l.Amount, l.CounterpartyName, l.CounterpartyIban,
             l.RemittanceInfo, l.EndToEndId, l.BankReference, (BankLineMatchStatus)l.MatchStatus, l.PartnerId, l.PartnerName, l.TreasuryAccountId,
-            (TreasuryAccountKind)l.AccountKind, l.CurrencyCode.Trim(), l.ValidatedAt, l.RowVersion)).ToList();
+            (TreasuryAccountKind)l.AccountKind, l.CurrencyCode.Trim(), l.ValidatedAt, l.RowVersion) { ContinuityStatus = (ContinuityStatus)l.ContinuityStatus }).ToList();
         var parts = (await grid.ReadAsync<BankLinePartRow>().ConfigureAwait(false)).ToList();
         return (lines, parts);
     }
@@ -101,5 +101,5 @@ public sealed class BankStatementLineStore(IDbSession session) : IBankStatementL
 
     private sealed record LineRow(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateTime BookingDate, DateTime? ValueDate, decimal Amount,
         string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, string? EndToEndId, string BankReference, byte MatchStatus, int? PartnerId,
-        string? PartnerName, int TreasuryAccountId, byte AccountKind, string CurrencyCode, DateTime? ValidatedAt, byte[] RowVersion);
+        string? PartnerName, int TreasuryAccountId, byte AccountKind, string CurrencyCode, DateTime? ValidatedAt, byte[] RowVersion, byte ContinuityStatus);
 }

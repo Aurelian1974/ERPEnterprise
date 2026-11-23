@@ -183,7 +183,7 @@ public sealed class PaymentOrderIntegrationTests : BankTestBase, IClassFixture<F
         // Un OP confirmat nu se storneaza; dupa desfacerea validarii liniei redevine Neconfirmat si se poate storna.
         var refused = await Assert.ThrowsAsync<ErpException>(() => Send(new ReversePaymentOrder(orderId, confirmed.RowVersion)));
         Assert.Equal("FIN_PAYMENT_ORDER_ALREADY_CONFIRMED", refused.Code);
-        await Send(new UnvalidateBankStatementLine(line.Id, "OP greșit", validated.RowVersion));
+        await Send(new UnvalidateBankStatementLine(line.Id, "OP greșit", validated.RowVersion!));
         var unconfirmed = await Send(new GetPaymentOrder(orderId));
         Assert.Equal(PaymentConfirmationStatus.Unconfirmed, unconfirmed.ConfirmationStatus);
         var reversal = await Send(new ReversePaymentOrder(orderId, unconfirmed.RowVersion));

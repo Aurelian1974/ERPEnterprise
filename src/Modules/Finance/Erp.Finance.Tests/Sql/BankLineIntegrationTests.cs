@@ -33,7 +33,7 @@ public sealed class BankLineIntegrationTests : BankTestBase, IClassFixture<Finan
     private async Task<BankLinePartInput> Part(string code, string amount, int? partnerId = null, string? note = null) =>
         new(await OperationType(code), amount, partnerId, null, null, null, null, null, null, null, note);
 
-    private Task<IReadOnlyList<BankLineSaved>> Validate(params (long Id, byte[] RowVersion)[] lines) =>
+    private Task<IReadOnlyList<BankLineValidationResult>> Validate(params (long Id, byte[] RowVersion)[] lines) =>
         Send(new ValidateBankStatementLines(lines.Select(l => new BankLineVersion(l.Id, l.RowVersion)).ToList()));
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class BankLineIntegrationTests : BankTestBase, IClassFixture<Finan
         Assert.Equal(BankLineMatchStatus.Validated, (await Send(new GetBankStatementLine(line.Id))).MatchStatus);
         Assert.Equal(BankStatementStatus.Closed, (await Send(new GetBankStatement(detail.BankStatementId))).Statement.Status);
         var immutable = await Assert.ThrowsAsync<ErpException>(async () =>
-            await Send(new ExplainBankStatementLine(line.Id, [await Part("BANK-COMISION", "-12.40")], saved.RowVersion)));
+            await Send(new ExplainBankStatementLine(line.Id, [await Part("BANK-COMISION", "-12.40")], saved.RowVersion!)));
         Assert.Equal("FIN_BANK_LINE_IMMUTABLE", immutable.Code);
         Assert.Equal(1, await Query<int>("""
             SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE N'%PlataInregistrata' AND Payload LIKE @Pattern
@@ -123,9 +123,9 @@ public sealed class BankLineIntegrationTests : BankTestBase, IClassFixture<Finan
         var explained = await Send(new ExplainBankStatementLine(line.Id, [await Part("BANK-DOBANDA-INC", "75.20")], line.RowVersion));
         var validated = Assert.Single(await Validate((line.Id, explained.RowVersion)));
 
-        var noReason = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new UnvalidateBankStatementLine(line.Id, "", validated.RowVersion)));
+        var noReason = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new UnvalidateBankStatementLine(line.Id, "", validated.RowVersion!)));
         Assert.Contains("reason", noReason.Errors.Keys);
-        await Send(new UnvalidateBankStatementLine(line.Id, "Dobânda era pentru alt cont.", validated.RowVersion));
+        await Send(new UnvalidateBankStatementLine(line.Id, "Dobânda era pentru alt cont.", validated.RowVersion!));
 
         var after = await Send(new GetBankStatementLine(line.Id));
         Assert.Equal(BankLineMatchStatus.Explained, after.MatchStatus);
@@ -154,7 +154,7 @@ public sealed class BankLineIntegrationTests : BankTestBase, IClassFixture<Finan
         ClosedDays.Clear();
         var validated = Assert.Single(await Validate((line.Id, explained.RowVersion)));
         ClosedDays.Add(Day);
-        var undo = await Assert.ThrowsAsync<ErpException>(() => Send(new UnvalidateBankStatementLine(line.Id, "corectie", validated.RowVersion)));
+        var undo = await Assert.ThrowsAsync<ErpException>(() => Send(new UnvalidateBankStatementLine(line.Id, "corectie", validated.RowVersion!)));
         Assert.Equal(CoreErrorCodes.PeriodClosed, undo.Code);
     }
 
@@ -176,6 +176,35 @@ public sealed class BankLineIntegrationTests : BankTestBase, IClassFixture<Finan
         var statement = await Send(new GetBankStatement(gap.BankStatementId));
         await Send(new AcceptStatementGap(gap.BankStatementId, "Extrasul intermediar e pe hârtie, arhivat.", statement.Statement.RowVersion));
         Assert.Single(await Validate((line.Id, explained.RowVersion)));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.02-F2-4.4")]
+    public async Task In_a_group_each_line_gets_its_own_result_and_a_refused_line_does_not_stop_the_others()
+    {
+        var prefix = Unique("GRP");
+        var lines = await Statement(
+            new TestEntry(Day, 10m, $"{prefix}-1", null, null, "Dobanda"),
+            new TestEntry(Day, 20m, $"{prefix}-2", null, null, "Dobanda"),
+            new TestEntry(Day, -30m, $"{prefix}-3", "Furnizor", null, "Plata"),
+            new TestEntry(Day, 40m, $"{prefix}-4", null, null, "neexplicata"));
+        var interest = await Part("BANK-DOBANDA-INC", "10");
+        var first = await Send(new ExplainBankStatementLine(lines[0].Id, [interest], lines[0].RowVersion));
+        var second = await Send(new ExplainBankStatementLine(lines[1].Id, [interest with { Amount = "20" }], lines[1].RowVersion));
+        var supplier = await Send(new ExplainBankStatementLine(lines[2].Id, [await Part("PLATA-FURNIZOR", "-30", Database.LegalPartnerId)], lines[2].RowVersion));
+
+        var results = await Validate((lines[0].Id, first.RowVersion), (lines[1].Id, lines[1].RowVersion), (lines[2].Id, supplier.RowVersion),
+            (lines[3].Id, lines[3].RowVersion));
+
+        Assert.Equal([true, false, false, false], results.Select(r => r.Validated));
+        Assert.Equal([null, "FIN_CONCURRENCY_CONFLICT", "FIN_BANK_PARTNER_PAYMENT_WITHOUT_OP", "FIN_BANK_LINE_NOT_EXPLAINED"], results.Select(r => r.ErrorCode));
+        Assert.Equal(BankLineMatchStatus.Validated, (await Send(new GetBankStatementLine(lines[0].Id))).MatchStatus);
+        Assert.Equal(BankLineMatchStatus.Explained, (await Send(new GetBankStatementLine(lines[1].Id))).MatchStatus);
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE N'%IncasareInregistrata' AND Payload LIKE @Pattern",
+            new { Pattern = $"%\"documentType\":\"Finance.BankStatementLine\",\"documentId\":{lines[0].Id},%" }));
+
+        // Cu versiunea curenta, a doua linie trece.
+        Assert.True(Assert.Single(await Validate((lines[1].Id, second.RowVersion))).Validated);
     }
 
     [Fact]

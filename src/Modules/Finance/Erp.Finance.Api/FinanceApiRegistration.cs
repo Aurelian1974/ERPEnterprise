@@ -200,7 +200,7 @@ public static class FinanceApiRegistration
                 sender.Send(new ExplainBankStatementLine(id, body.Parts, body.RowVersion), ct))
             .WithName("ExplainBankStatementLine").Produces<BankLineSaved>().Problems();
         finance.MapPost("/bank-statement-lines/validate", (ValidateBankStatementLines body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
-            .WithName("ValidateBankStatementLines").Produces<IReadOnlyList<BankLineSaved>>().Problems();
+            .WithName("ValidateBankStatementLines").Produces<IReadOnlyList<BankLineValidationResult>>().Problems();
         finance.MapPost("/bank-statement-lines/{id:long}/unvalidate", (long id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new UnvalidateBankStatementLine(id, body.Reason, body.RowVersion), ct))
             .WithName("UnvalidateBankStatementLine").Produces<BankLineSaved>().Problems();

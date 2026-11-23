@@ -60,8 +60,13 @@ export function BankReconcilePage() {
     const chosen = data.lines.filter((l) => checked.has(l.id));
     if (chosen.length === 0) return;
     try {
-      const saved = await bankApi.validate(chosen.map((l) => ({ id: l.id, rowVersion: l.rowVersion })));
-      notify(t('bank.validated', { count: saved.length }));
+      const results = await bankApi.validate(chosen.map((l) => ({ id: l.id, rowVersion: l.rowVersion })));
+      const refused = results.filter((r) => !r.validated);
+      notify(t('bank.validated', { count: results.length - refused.length }));
+      if (refused.length > 0) {
+        const name = (id: number) => { const l = data.lines.find((x) => x.id === id); return l === undefined ? String(id) : `${isoToRo(l.bookingDate)} ${formatAmount(l.amount)}`; };
+        notify(t('bank.refusedLines', { count: refused.length, details: refused.map((r) => `${name(r.id)}: ${r.message ?? ''}`).join('; ') }), 'error');
+      }
       setChecked(new Set());
       await refresh();
     } catch (e) {

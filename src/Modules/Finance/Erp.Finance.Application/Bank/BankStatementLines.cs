@@ -50,11 +50,18 @@ public sealed record BankSuggestionDto(byte Kind, int? PaymentOrderId, int? Part
 public sealed record BankLineRow(long Id, int BankStatementId, string? StatementNo, int LineNumber, DateOnly BookingDate, DateOnly? ValueDate, decimal Amount,
     string? CounterpartyName, string? CounterpartyIban, string? RemittanceInfo, string? EndToEndId, string BankReference, BankLineMatchStatus MatchStatus,
     int? PartnerId, string? PartnerName, int TreasuryAccountId, Contracts.Treasury.TreasuryAccountKind AccountKind, string CurrencyCode,
-    DateTime? ValidatedAt, byte[] RowVersion);
+    DateTime? ValidatedAt, byte[] RowVersion)
+{
+    /// <summary>Continuitatea extrasului liniei (F2 3.3): un gol neacceptat opreste validarea.</summary>
+    public ContinuityStatus ContinuityStatus { get; init; } = ContinuityStatus.Ok;
+}
+
+/// <summary>Rezultatul validarii unei linii dintr-un grup (F2 4.4 pasul 4): validata, sau motivul refuzului, fara sa le opreasca pe celelalte.</summary>
+public sealed record BankLineValidationResult(long Id, bool Validated, string? ErrorCode, string? Message, byte[]? RowVersion);
 
 public sealed record BankLinePartRow(long BankStatementLineId, short PartNumber, int OperationTypeId, string OperationTypeCode, string OperationTypeName,
     decimal Amount, int? PartnerId, string? PartnerName, int? EmployeeId, string? SettlementRef, int? PaymentOrderId, int? CashDocumentId,
-    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note);
+    int? CounterTreasuryAccountId, string? BudgetObligationRef, int? CostCenterId, int? ProjectId, string? Note, bool RequiresPartner);
 
 /// <summary>Accesul la date pentru liniile de extras (fin.usp_BankStatementLine_*, NET-06).</summary>
 public interface IBankStatementLineStore
@@ -155,34 +162,42 @@ internal sealed class ExplainBankStatementLineHandler(IBankStatementLineStore st
 }
 
 /// <summary>
-/// Valideaza un grup de linii explicate (F2 4.4; SP-08): perioada fiecarei zile contabile deschisa (CORE_PERIOD_CLOSED), apoi validarea pe
-/// seturi (51201–51205, 51223) si, in aceeasi tranzactie, cate un eveniment pe linie: IncasareInregistrata pentru intrari,
-/// PlataInregistrata pentru iesirile fara ordin de plata (partile care confirma un OP nu republica plata), OrdinPlataConfirmat pentru OP-urile
-/// acoperite integral de liniile validate (si in transe), OrdinPlataRespins pentru OP-urile returnate de banca (BANK-RESTITUIRE).
+/// Valideaza linii explicate (F2 4.4; SP-08), fiecare cu rezultatul ei: liniile care nu pot trece (inexistente, modificate intre timp,
+/// neexplicate, pe un extras cu gol, cu parti care nu acopera suma, plata catre partener fara OP, perioada inchisa) sunt raportate si scoase din
+/// grup; celelalte se valideaza pe seturi, in aceeasi tranzactie cu evenimentele lor. O singura linie refuzata intoarce eroarea ei.
 /// </summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.BankStatementValidate)]
 [Audited("Fin.BankStatementLine.Validate")]
-public sealed record ValidateBankStatementLines(IReadOnlyList<BankLineVersion> Lines) : ICommand<IReadOnlyList<BankLineSaved>>;
+public sealed record ValidateBankStatementLines(IReadOnlyList<BankLineVersion> Lines) : ICommand<IReadOnlyList<BankLineValidationResult>>;
 
 internal sealed class ValidateBankStatementLinesValidator : AbstractValidator<ValidateBankStatementLines>
 {
     public ValidateBankStatementLinesValidator()
     {
         RuleFor(x => x.Lines).NotEmpty().WithMessage("Alegeți liniile de validat.")
-            .Must(l => l.Count <= 2000).WithMessage("Se validează cel mult 2.000 de linii odată.")
+            .Must(l => l.Count <= 500).WithMessage("Se validează cel mult 500 de linii odată.")
             .Must(l => l.Select(x => x.Id).Distinct().Count() == l.Count).WithMessage("O linie apare de două ori.");
     }
 }
 
 internal sealed class ValidateBankStatementLinesHandler(BankLineValidation validation, IAuditScope audit)
-    : ICommandHandler<ValidateBankStatementLines, IReadOnlyList<BankLineSaved>>
+    : ICommandHandler<ValidateBankStatementLines, IReadOnlyList<BankLineValidationResult>>
 {
-    public async Task<IReadOnlyList<BankLineSaved>> Handle(ValidateBankStatementLines request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<BankLineValidationResult>> Handle(ValidateBankStatementLines request, CancellationToken cancellationToken)
     {
-        var (lines, saved) = await validation.ValidateAsync(request.Lines, cancellationToken).ConfigureAwait(false);
-        audit.Describe("Fin.BankStatementLine", lines.Count == 1 ? lines[0].Id : null, new { Lines = lines.Select(l => l.Id), Count = lines.Count });
-        return saved;
+        var results = await validation.ValidateEachAsync(request.Lines, cancellationToken).ConfigureAwait(false);
+        if (results is [{ Validated: false } single])
+        {
+            throw new ErpException(BankLineValidation.KindOf(single.ErrorCode!), single.ErrorCode!, single.Message!);
+        }
+
+        audit.Describe("Fin.BankStatementLine", results.Count == 1 ? results[0].Id : null, new
+        {
+            Validated = results.Where(r => r.Validated).Select(r => r.Id),
+            Refused = results.Where(r => !r.Validated).Select(r => new { r.Id, r.ErrorCode }),
+        });
+        return results;
     }
 }
 
@@ -193,6 +208,78 @@ internal sealed class ValidateBankStatementLinesHandler(BankLineValidation valid
 public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLock periods, IExchangeRateProvider rates, IPrecisionService precision,
     IFinanceSettings settings, IOutbox outbox, ICurrentContext context)
 {
+    /// <summary>
+    /// Valideaza fiecare linie care poate trece si raporteaza motivul pentru celelalte (F2 4.4 pasul 4); procedura primeste doar liniile bune,
+    /// deci o eroare a ei e o concurenta si anuleaza grupul.
+    /// </summary>
+    public async Task<IReadOnlyList<BankLineValidationResult>> ValidateEachAsync(IReadOnlyList<BankLineVersion> versions, CancellationToken cancellationToken)
+    {
+        var (lines, parts) = await store.GetAsync(context.CompanyId, versions.Select(l => l.Id).ToList(), cancellationToken).ConfigureAwait(false);
+        var byId = lines.ToDictionary(l => l.Id);
+        var byLine = parts.ToLookup(p => p.BankStatementLineId);
+        var closed = new Dictionary<DateOnly, bool>();
+        var results = new Dictionary<long, BankLineValidationResult>();
+        var passing = new List<BankLineVersion>();
+        foreach (var version in versions)
+        {
+            if (!byId.TryGetValue(version.Id, out var line))
+            {
+                results[version.Id] = Refused(version.Id, "FIN_BANK_LINE_NOT_FOUND", "Linia de extras nu există.");
+                continue;
+            }
+
+            if (!closed.TryGetValue(line.BookingDate, out var isClosed))
+            {
+                isClosed = await periods.IsClosedAsync(context.CompanyId, line.BookingDate, cancellationToken).ConfigureAwait(false);
+                closed[line.BookingDate] = isClosed;
+            }
+
+            var lineParts = byLine[line.Id].ToList();
+            var refusal = !line.RowVersion.AsSpan().SequenceEqual(version.RowVersion)
+                ? ("FIN_CONCURRENCY_CONFLICT", "Linia de extras a fost modificată de alt utilizator; reîncărcați datele.")
+                : line.MatchStatus != BankLineMatchStatus.Explained
+                    ? ("FIN_BANK_LINE_NOT_EXPLAINED", "Doar liniile explicate pot fi validate.")
+                    : line.ContinuityStatus == ContinuityStatus.Gap
+                        ? ("FIN_BANK_STATEMENT_GAP", "Extrasul are un gol față de extrasul anterior; importați extrasul lipsă sau acceptați golul.")
+                        : lineParts.Sum(p => p.Amount) != line.Amount
+                            ? ("FIN_BANK_LINE_PARTS_MISMATCH", "Suma părților nu este egală cu suma liniei.")
+                            : lineParts.Any(p => p.Amount < 0 && p.RequiresPartner && p.PaymentOrderId is null)
+                                ? ("FIN_BANK_PARTNER_PAYMENT_WITHOUT_OP", "O plată către partener se validează prin ordin de plată („OP nou” din linia de extras).")
+                                : isClosed
+                                    ? (CoreErrorCodes.PeriodClosed, "Perioada contabilă a liniei este închisă.")
+                                    : ((string, string)?)null;
+            if (refusal is { } r)
+            {
+                results[line.Id] = Refused(line.Id, r.Item1, r.Item2);
+            }
+            else
+            {
+                passing.Add(version);
+            }
+        }
+
+        if (passing.Count > 0)
+        {
+            var (_, saved) = await ValidateAsync(passing, cancellationToken).ConfigureAwait(false);
+            foreach (var s in saved)
+            {
+                results[s.Id] = new BankLineValidationResult(s.Id, true, null, null, s.RowVersion);
+            }
+        }
+
+        return versions.Select(v => results[v.Id]).ToList();
+    }
+
+    /// <summary>Felul erorii API pentru un cod de refuz al validarii unei linii.</summary>
+    public static ErpErrorKind KindOf(string code) => code switch
+    {
+        "FIN_BANK_LINE_NOT_FOUND" => ErpErrorKind.NotFound,
+        "FIN_BANK_LINE_PARTS_MISMATCH" or "FIN_BANK_PARTNER_PAYMENT_WITHOUT_OP" => ErpErrorKind.Validation,
+        _ => ErpErrorKind.Conflict,
+    };
+
+    private static BankLineValidationResult Refused(long id, string code, string message) => new(id, false, code, message, null);
+
     public async Task<(IReadOnlyList<BankLineRow> Lines, IReadOnlyList<BankLineSaved> Saved)> ValidateAsync(IReadOnlyList<BankLineVersion> versions,
         CancellationToken cancellationToken)
     {
