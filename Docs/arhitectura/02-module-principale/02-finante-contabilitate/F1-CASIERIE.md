@@ -291,7 +291,7 @@ Toate moștenesc `IntegrationEvent` din `Erp.Core.Contracts` (02.01, secțiunea 
 | Eveniment | De la | Ce face F1 |
 | --- | --- | --- |
 | `ZiInchisaPOS` | POS (02.10) | Dispoziție de încasare automată în casa magazinului (fluxul 4.6) |
-| `UtilizatorDezactivat` | Nucleu | Închide atribuirile `TreasuryAccountUser` ale utilizatorului |
+| `UtilizatorDezactivat` | Nucleu | Închide atribuirile `TreasuryAccountUser` ale utilizatorului (implementat 23.11.2026: `CloseCashierAssignments`, livrat de dispecerul outbox-ului din Worker; atribuirile se închid cu ziua dezactivării, cele neîncepute se șterg) |
 | `FirmaModificata` | Nucleu | Nimic de recalculat; datele firmei se citesc la tipărire |
 
 ## 6. Contracte publice (`Erp.Finance.Contracts`, partea F1)

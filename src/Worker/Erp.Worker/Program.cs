@@ -60,6 +60,8 @@ builder.Services.AddSingleton(_ => new Erp.Bnr.BnrRatesClient(new HttpClient { T
 builder.Services.AddTransient<BnrRatesJob>();
 // Procesatorul outbox-ului (02.01, 4.5): consumatorii modulelor se inregistreaza cu AddIntegrationEventHandler.
 builder.Services.AddOutboxDispatcher(connectionString);
+// Finante (02.02, F1 5.2): atribuirile la case ale utilizatorului dezactivat se inchid.
+builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
 builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
     TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
     sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));
