@@ -532,6 +532,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/partners/{partnerId}/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPartnerAllocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/partner-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPartnerBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/partners/{partnerId}/finance-profile/{role}": {
         parameters: {
             query?: never;
@@ -7221,6 +7253,10 @@ export interface components {
             isBlockedForPayment: boolean;
             eInvoiceStatus: components["schemas"]["EInvoiceStatus"];
             isVatOnCollection: boolean;
+            vatAmount: string;
+            vatNonExigibleRon: string;
+            /** Format: date */
+            closedAt: null | string;
             /** Format: byte */
             rowVersion: string;
         };
@@ -7296,6 +7332,75 @@ export interface components {
             /** Format: int64 */
             allocationId: number;
             reason: string;
+        };
+        AllocationSource: number;
+        PartnerAllocationDto: {
+            /** Format: int64 */
+            id: number;
+            role: components["schemas"]["PartnerRole"];
+            /** Format: date */
+            allocationDate: string;
+            source: components["schemas"]["AllocationSource"];
+            /** Format: uint8 */
+            status: number;
+            amount: string;
+            currencyCode: string;
+            /** Format: int64 */
+            debitOpenItemId: number;
+            debitDocumentNo: string;
+            debitKind: components["schemas"]["OpenItemKind"];
+            /** Format: int64 */
+            creditOpenItemId: number;
+            creditDocumentNo: string;
+            creditKind: components["schemas"]["OpenItemKind"];
+            /** Format: date-time */
+            undoneAt: null | string;
+            undoReason: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            createdByName: null | string;
+        };
+        PartnerBalanceListDto: {
+            /** Format: date */
+            asOf: string;
+            totals: components["schemas"]["PartnerBalanceTotalsDto"];
+            rows: components["schemas"]["PartnerBalanceRowDto"][];
+        };
+        PartnerBalanceRowDto: {
+            /** Format: int32 */
+            partnerId: number;
+            partnerCode: string;
+            partnerName: string;
+            fiscalCode: null | string;
+            role: components["schemas"]["PartnerRole"];
+            hasOtherRole: boolean;
+            balanceRon: string;
+            overdueRon: string;
+            currentRon: string;
+            days30Ron: string;
+            days60Ron: string;
+            over60Ron: string;
+            /** Format: int32 */
+            maxOverdueDays: number;
+            unallocatedRon: string;
+            /** Format: int32 */
+            unallocatedCount: number;
+        };
+        PartnerBalanceTotalsDto: {
+            receivablesRon: string;
+            /** Format: int32 */
+            customersWithBalance: number;
+            overdueReceivablesRon: string;
+            /** Format: int32 */
+            customersOverdue: number;
+            payablesRon: string;
+            /** Format: int32 */
+            suppliersWithBalance: number;
+            unallocatedRon: string;
+            /** Format: int32 */
+            unallocatedCount: number;
+            vatNonExigibleCollectedRon: string;
+            vatNonExigibleDeductibleRon: string;
         };
     };
     responses: never;
@@ -9706,6 +9811,9 @@ export interface operations {
         parameters: {
             query?: {
                 role?: components["schemas"]["PartnerRole"];
+                onlyOpen?: boolean;
+                from?: string;
+                to?: string;
             };
             header?: never;
             path: {
@@ -9722,6 +9830,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenItemListDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPartnerAllocations: {
+        parameters: {
+            query?: {
+                role?: components["schemas"]["PartnerRole"];
+            };
+            header?: never;
+            path: {
+                partnerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerAllocationDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPartnerBalances: {
+        parameters: {
+            query?: {
+                asOf?: string;
+                role?: components["schemas"]["PartnerRole"];
+                search?: string;
+                onlyOverdue?: boolean;
+                onlyUnallocated?: boolean;
+                bothRoles?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerBalanceListDto"];
                 };
             };
             /** @description Bad Request */

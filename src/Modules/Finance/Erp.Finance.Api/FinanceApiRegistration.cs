@@ -174,9 +174,16 @@ public static class FinanceApiRegistration
         finance.MapGet("/partners/{partnerId:int}/balance", (int partnerId, PartnerRole? role, DateOnly? asOf, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetPartnerBalance(partnerId, role, asOf), ct))
             .WithName("GetPartnerBalance").Produces<IReadOnlyList<PartnerBalanceDto>>().Problems();
-        finance.MapGet("/partners/{partnerId:int}/open-items", (int partnerId, PartnerRole? role, ISender sender, CancellationToken ct) =>
-                sender.Send(new GetOpenItems(partnerId, role), ct))
+        finance.MapGet("/partners/{partnerId:int}/open-items", (int partnerId, PartnerRole? role, bool? onlyOpen, DateOnly? from, DateOnly? to, ISender sender,
+                CancellationToken ct) => sender.Send(new GetOpenItems(partnerId, role, onlyOpen ?? true, from, to), ct))
             .WithName("GetOpenItems").Produces<IReadOnlyList<OpenItemListDto>>().Problems();
+        finance.MapGet("/partners/{partnerId:int}/allocations", (int partnerId, PartnerRole? role, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetPartnerAllocations(partnerId, role), ct))
+            .WithName("GetPartnerAllocations").Produces<IReadOnlyList<PartnerAllocationDto>>().Problems();
+        finance.MapGet("/partner-balances", (DateOnly? asOf, PartnerRole? role, string? search, bool? onlyOverdue, bool? onlyUnallocated, bool? bothRoles,
+                ISender sender, CancellationToken ct) =>
+                sender.Send(new GetPartnerBalances(asOf, role, search, onlyOverdue ?? false, onlyUnallocated ?? false, bothRoles ?? false), ct))
+            .WithName("GetPartnerBalances").Produces<PartnerBalanceListDto>().Problems();
         finance.MapGet("/partners/{partnerId:int}/finance-profile/{role}", (int partnerId, PartnerRole role, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetPartnerFinanceProfile(partnerId, role), ct))
             .WithName("GetPartnerFinanceProfile").Produces<PartnerFinanceProfileDto>().Problems();

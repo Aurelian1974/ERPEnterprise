@@ -93,12 +93,40 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         return (items, allocations);
     }
 
-    public async Task<IReadOnlyList<OpenItemListDto>> ListOpenAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct) =>
-        (await session.Connection.QueryAsync<OpenRow>(Command("fin.usp_OpenItem_ListOpen",
-            new { CompanyId = companyId, PartnerId = partnerId, Role = (byte?)role }, ct)).ConfigureAwait(false))
+    public async Task<IReadOnlyList<OpenItemListDto>> ListOpenAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct, bool onlyOpen = true,
+        DateOnly? from = null, DateOnly? to = null) =>
+        (await session.Connection.QueryAsync<OpenRow>(Command("fin.usp_OpenItem_ListOpen", new
+        {
+            CompanyId = companyId, PartnerId = partnerId, Role = (byte?)role, OnlyOpen = onlyOpen, From = from is { } f ? Day(f) : (DateTime?)null,
+            To = to is { } t ? Day(t) : (DateTime?)null,
+        }, ct)).ConfigureAwait(false))
         .Select(r => new OpenItemListDto(r.OpenItemId, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.SourceDocumentType, r.SourceDocumentId, r.DocumentNo,
             DateOnly.FromDateTime(r.DocumentDate), DateOnly.FromDateTime(r.DueDate), r.CurrencyCode, Money.Format(r.Amount), Money.Format(r.OpenAmount), r.IsDisputed,
-            r.DisputeNote, r.IsBlockedForPayment, (EInvoiceStatus)r.EInvoiceStatus, r.IsVatOnCollection, r.RowVersion)).ToList();
+            r.DisputeNote, r.IsBlockedForPayment, (EInvoiceStatus)r.EInvoiceStatus, r.IsVatOnCollection, Money.Format(r.VatAmount), Money.Format(r.VatNonExigibleRon),
+            r.ClosedAt is { } c ? DateOnly.FromDateTime(c) : null, r.RowVersion)).ToList();
+
+    public async Task<PartnerBalanceListDto> ListBalancesAsync(int companyId, PartnerBalanceFilter filter, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_PartnerBalance_List", new
+        {
+            CompanyId = companyId, AsOf = Day(filter.AsOf), Role = (byte?)filter.Role, filter.Search, filter.OnlyOverdue, filter.OnlyUnallocated, filter.BothRoles,
+        }, ct)).ConfigureAwait(false);
+        var rows = (await grid.ReadAsync<BalanceListRow>().ConfigureAwait(false))
+            .Select(r => new PartnerBalanceRowDto(r.PartnerId, r.PartnerCode, r.PartnerName, r.FiscalCode, (PartnerRole)r.Role, r.HasOtherRole, Money.Format(r.BalanceRon),
+                Money.Format(r.OverdueRon), Money.Format(r.CurrentRon), Money.Format(r.Days30Ron), Money.Format(r.Days60Ron), Money.Format(r.Over60Ron),
+                r.MaxOverdueDays, Money.Format(r.UnallocatedRon), r.UnallocatedCount)).ToList();
+        var t = await grid.ReadSingleAsync<TotalsRow>().ConfigureAwait(false);
+        return new PartnerBalanceListDto(filter.AsOf, new PartnerBalanceTotalsDto(Money.Format(t.ReceivablesRon), t.CustomersWithBalance,
+            Money.Format(t.OverdueReceivablesRon), t.CustomersOverdue, Money.Format(t.PayablesRon), t.SuppliersWithBalance, Money.Format(t.UnallocatedRon),
+            t.UnallocatedCount, Money.Format(t.VatNonExigibleCollectedRon), Money.Format(t.VatNonExigibleDeductibleRon)), rows);
+    }
+
+    public async Task<IReadOnlyList<PartnerAllocationDto>> ListAllocationsAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<PartnerAllocationRow>(Command("fin.usp_Allocation_ListForPartner",
+            new { CompanyId = companyId, PartnerId = partnerId, Role = (byte?)role }, ct)).ConfigureAwait(false))
+        .Select(a => new PartnerAllocationDto(a.Id, (PartnerRole)a.Role, DateOnly.FromDateTime(a.AllocationDate), (AllocationSource)a.Source, a.Status,
+            Money.Format(a.Amount), a.CurrencyCode, a.DebitOpenItemId, a.DebitDocumentNo, (OpenItemKind)a.DebitKind, a.CreditOpenItemId, a.CreditDocumentNo,
+            (OpenItemKind)a.CreditKind, a.UndoneAt, a.UndoReason, a.CreatedAt, a.CreatedByName)).ToList();
 
     public async Task<IReadOnlyList<PartnerBalanceDto>> BalanceAsync(int companyId, int partnerId, PartnerRole? role, DateOnly asOf, CancellationToken ct) =>
         (await session.Connection.QueryAsync<BalanceRow>(Command("fin.usp_PartnerBalance_Get",
@@ -181,7 +209,17 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
 
     private sealed record OpenRow(long OpenItemId, byte Role, byte Kind, string SourceDocumentType, long SourceDocumentId, string DocumentNo, DateTime DocumentDate,
         DateTime DueDate, string CurrencyCode, decimal Amount, decimal OpenAmount, bool IsDisputed, string? DisputeNote, bool IsBlockedForPayment, byte EInvoiceStatus,
-        bool IsVatOnCollection, byte[] RowVersion);
+        bool IsVatOnCollection, decimal VatAmount, decimal VatNonExigibleRon, DateTime? ClosedAt, byte[] RowVersion);
+
+    private sealed record BalanceListRow(int PartnerId, string PartnerCode, string PartnerName, string? FiscalCode, byte Role, bool HasOtherRole, decimal BalanceRon,
+        decimal OverdueRon, decimal CurrentRon, decimal Days30Ron, decimal Days60Ron, decimal Over60Ron, int MaxOverdueDays, decimal UnallocatedRon, int UnallocatedCount);
+
+    private sealed record TotalsRow(decimal ReceivablesRon, int CustomersWithBalance, decimal OverdueReceivablesRon, int CustomersOverdue, decimal PayablesRon,
+        int SuppliersWithBalance, decimal UnallocatedRon, int UnallocatedCount, decimal VatNonExigibleCollectedRon, decimal VatNonExigibleDeductibleRon);
+
+    private sealed record PartnerAllocationRow(long Id, byte Role, DateTime AllocationDate, byte Source, byte Status, decimal Amount, string CurrencyCode,
+        long DebitOpenItemId, string DebitDocumentNo, byte DebitKind, long CreditOpenItemId, string CreditDocumentNo, byte CreditKind, DateTime? UndoneAt,
+        string? UndoReason, DateTime CreatedAt, string? CreatedByName);
 
     private sealed record BalanceRow(int CompanyId, int PartnerId, byte Role, string CurrencyCode, decimal Balance, decimal BalanceRon, decimal OverdueRon,
         int MaxOverdueDays, decimal UnallocatedPaymentsRon);

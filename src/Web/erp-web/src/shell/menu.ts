@@ -65,6 +65,10 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'bank-reconcile', label: 'menu.bankReconcile', path: '/finante/banca/extras-de-cont', icon: '', module: 'Finance', permission: 'Fin.Bank.View' },
       { id: 'payment-orders', label: 'menu.paymentOrders', path: '/finante/banca/ordine-de-plata', icon: '', module: 'Finance', permission: 'Fin.Bank.View' },
       { id: 'matching-rules', label: 'menu.matchingRules', path: '/finante/banca/reguli', icon: '', module: 'Finance', permission: 'Fin.Bank.View' },
+      {
+        id: 'partner-balances', label: 'menu.partnerBalances', path: '/finante/decontari/solduri', icon: '', module: 'Finance',
+        permission: 'Fin.PartnerBalance.View',
+      },
     ],
   },
   {

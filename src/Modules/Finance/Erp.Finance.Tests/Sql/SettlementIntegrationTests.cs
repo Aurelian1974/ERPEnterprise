@@ -324,6 +324,40 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal((300m, 0m), await Item(disputed));
     }
 
+    [Fact]
+    public async Task The_balance_list_shows_overdue_aging_and_unallocated_payments_and_the_sheet_lists_documents_and_allocations()
+    {
+        var partner = await NewPartner();
+        var overdue = await Register(Sale(partner, 1000m, Day, Day.AddDays(10)));
+        await Register(Sale(partner, 400m, Day.AddDays(30), Day.AddDays(60)));
+        var payment = await Pay(partner, PartnerRole.Customer, 250m, Day.AddDays(35), false, new SettlementTarget(overdue, null));
+        var advance = await Pay(partner, PartnerRole.Customer, 90m, Day.AddDays(36));
+        Assert.Equal(90m, advance.AllocatedAmount); // FIFO pe restul facturii restante
+        await Register(Purchase(partner, 300m, Day.AddDays(5)));
+
+        var asOf = Day.AddDays(45); // prima factura e restanta de 35 de zile
+        var list = await Send(new GetPartnerBalances(asOf, Search: (await Query<string>("SELECT Code FROM core.Partner WHERE Id = @Id", new { Id = partner }))));
+        var customer = Assert.Single(list.Rows, r => r.PartnerId == partner && r.Role == PartnerRole.Customer);
+        Assert.Equal(("1060.00", "660.00", "400.00", "660.00", 35, true), (customer.BalanceRon, customer.OverdueRon, customer.CurrentRon, customer.Days60Ron,
+            customer.MaxOverdueDays, customer.HasOtherRole));
+        Assert.Equal("-300.00", Assert.Single(list.Rows, r => r.PartnerId == partner && r.Role == PartnerRole.Supplier).BalanceRon);
+        Assert.Contains((await Send(new GetPartnerBalances(asOf, PartnerRole.Customer, OnlyOverdue: true))).Rows, r => r.PartnerId == partner);
+        Assert.DoesNotContain((await Send(new GetPartnerBalances(asOf, OnlyUnallocated: true))).Rows, r => r.PartnerId == partner);
+        Assert.True(decimal.Parse(list.Totals.ReceivablesRon, System.Globalization.CultureInfo.InvariantCulture) >= 1060m);
+
+        // La o data dinaintea platii, toata prima factura era restanta.
+        var before = await Send(new GetPartnerBalances(Day.AddDays(20), PartnerRole.Customer));
+        Assert.Equal("1000.00", Assert.Single(before.Rows, r => r.PartnerId == partner).OverdueRon);
+
+        var documents = await Send(new GetOpenItems(partner, PartnerRole.Customer, OnlyOpen: false));
+        Assert.Equal(4, documents.Count);
+        Assert.Contains(documents, d => d.OpenItemId == payment.PaymentOpenItemId && d.ClosedAt == Day.AddDays(35));
+        var allocations = await Send(new GetPartnerAllocations(partner));
+        Assert.Equal(2, allocations.Count);
+        Assert.All(allocations, a => Assert.Equal(overdue, a.DebitOpenItemId));
+        Assert.Equal(("90.00", AllocationSource.AutomaticOnPayment), (allocations[0].Amount, allocations[0].Source));
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

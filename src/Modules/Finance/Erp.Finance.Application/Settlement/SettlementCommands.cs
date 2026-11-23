@@ -71,12 +71,40 @@ internal sealed class GetPartnerBalanceHandler(ISettlementStore store, ICurrentC
 
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.PartnerBalanceView)]
-public sealed record GetOpenItems(int PartnerId, PartnerRole? Role = null) : IQuery<IReadOnlyList<OpenItemListDto>>;
+public sealed record GetOpenItems(int PartnerId, PartnerRole? Role = null, bool OnlyOpen = true, DateOnly? From = null, DateOnly? To = null)
+    : IQuery<IReadOnlyList<OpenItemListDto>>;
 
 internal sealed class GetOpenItemsHandler(ISettlementStore store, ICurrentContext context) : IQueryHandler<GetOpenItems, IReadOnlyList<OpenItemListDto>>
 {
     public Task<IReadOnlyList<OpenItemListDto>> Handle(GetOpenItems request, CancellationToken cancellationToken) =>
-        store.ListOpenAsync(context.CompanyId, request.PartnerId, request.Role, cancellationToken);
+        store.ListOpenAsync(context.CompanyId, request.PartnerId, request.Role, cancellationToken, request.OnlyOpen, request.From, request.To);
+}
+
+/// <summary>Soldurile partenerilor la o data, cu restantele, vechimea si totalurile firmei (F3 10, macheta f3-01).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PartnerBalanceView)]
+public sealed record GetPartnerBalances(DateOnly? AsOf = null, PartnerRole? Role = null, string? Search = null, bool OnlyOverdue = false,
+    bool OnlyUnallocated = false, bool BothRoles = false) : IQuery<PartnerBalanceListDto>;
+
+internal sealed class GetPartnerBalancesHandler(ISettlementStore store, ICurrentContext context, TimeProvider time)
+    : IQueryHandler<GetPartnerBalances, PartnerBalanceListDto>
+{
+    public Task<PartnerBalanceListDto> Handle(GetPartnerBalances request, CancellationToken cancellationToken) =>
+        store.ListBalancesAsync(context.CompanyId, new PartnerBalanceFilter(request.AsOf ?? BusinessDay.Today(time), request.Role,
+            string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim(), request.OnlyOverdue, request.OnlyUnallocated, request.BothRoles),
+            cancellationToken);
+}
+
+/// <summary>Alocarile unui partener, cele mai noi intai (F3 3.3; tab-ul Alocari din f3-02).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PartnerBalanceView)]
+public sealed record GetPartnerAllocations(int PartnerId, PartnerRole? Role = null) : IQuery<IReadOnlyList<PartnerAllocationDto>>;
+
+internal sealed class GetPartnerAllocationsHandler(ISettlementStore store, ICurrentContext context)
+    : IQueryHandler<GetPartnerAllocations, IReadOnlyList<PartnerAllocationDto>>
+{
+    public Task<IReadOnlyList<PartnerAllocationDto>> Handle(GetPartnerAllocations request, CancellationToken cancellationToken) =>
+        store.ListAllocationsAsync(context.CompanyId, request.PartnerId, request.Role, cancellationToken);
 }
 
 // ---------- Alocarea manuala si desfacerea (F3 3.3, 4.3) ----------

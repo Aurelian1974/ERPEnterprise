@@ -72,7 +72,25 @@ public sealed record ActiveAllocation(long Id, long DebitOpenItemId, long Credit
 
 public sealed record OpenItemListDto(long OpenItemId, PartnerRole Role, OpenItemKind Kind, string SourceDocumentType, long SourceDocumentId, string DocumentNo,
     DateOnly DocumentDate, DateOnly DueDate, string CurrencyCode, string Amount, string OpenAmount, bool IsDisputed, string? DisputeNote, bool IsBlockedForPayment,
-    EInvoiceStatus EInvoiceStatus, bool IsVatOnCollection, byte[] RowVersion);
+    EInvoiceStatus EInvoiceStatus, bool IsVatOnCollection, string VatAmount, string VatNonExigibleRon, DateOnly? ClosedAt, byte[] RowVersion);
+
+/// <summary>Un partener pe rol in lista soldurilor (macheta f3-01); sumele in lei, cu semnul conventiei (debit +, credit −).</summary>
+public sealed record PartnerBalanceRowDto(int PartnerId, string PartnerCode, string PartnerName, string? FiscalCode, PartnerRole Role, bool HasOtherRole,
+    string BalanceRon, string OverdueRon, string CurrentRon, string Days30Ron, string Days60Ron, string Over60Ron, int MaxOverdueDays, string UnallocatedRon,
+    int UnallocatedCount);
+
+/// <summary>Totalurile firmei in lista soldurilor (cartonasele din f3-01); creantele si datoriile ca sume pozitive.</summary>
+public sealed record PartnerBalanceTotalsDto(string ReceivablesRon, int CustomersWithBalance, string OverdueReceivablesRon, int CustomersOverdue, string PayablesRon,
+    int SuppliersWithBalance, string UnallocatedRon, int UnallocatedCount, string VatNonExigibleCollectedRon, string VatNonExigibleDeductibleRon);
+
+public sealed record PartnerBalanceListDto(DateOnly AsOf, PartnerBalanceTotalsDto Totals, IReadOnlyList<PartnerBalanceRowDto> Rows);
+
+public sealed record PartnerBalanceFilter(DateOnly AsOf, PartnerRole? Role, string? Search, bool OnlyOverdue, bool OnlyUnallocated, bool BothRoles);
+
+/// <summary>O alocare a partenerului (tab-ul Alocari din f3-02). Status: 1 Activa, 2 Desfacuta.</summary>
+public sealed record PartnerAllocationDto(long Id, PartnerRole Role, DateOnly AllocationDate, AllocationSource Source, byte Status, string Amount, string CurrencyCode,
+    long DebitOpenItemId, string DebitDocumentNo, OpenItemKind DebitKind, long CreditOpenItemId, string CreditDocumentNo, OpenItemKind CreditKind,
+    DateTime? UndoneAt, string? UndoReason, DateTime CreatedAt, string? CreatedByName);
 
 public sealed record PartnerFinanceProfileDto(int PartnerId, PartnerRole Role, AutoAllocationMode AutoAllocationMode, string PenaltyRatePerDay, int PenaltyGraceDays,
     bool PenaltyCapAtPrincipal, bool ApplyFixedRecoveryCost, bool IsPaymentBlocked, string? BlockReason, string? BalanceConfirmationEmail, byte[]? RowVersion);
@@ -97,7 +115,12 @@ public interface ISettlementStore
     Task<(IReadOnlyList<PaymentOpenItem> Items, IReadOnlyList<ActiveAllocation> Allocations)> PaymentItemsAsync(int companyId, string sourceDocumentType,
         long sourceDocumentId, string? sourceLineKey, CancellationToken ct);
 
-    Task<IReadOnlyList<OpenItemListDto>> ListOpenAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct);
+    Task<IReadOnlyList<OpenItemListDto>> ListOpenAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct, bool onlyOpen = true,
+        DateOnly? from = null, DateOnly? to = null);
+
+    Task<PartnerBalanceListDto> ListBalancesAsync(int companyId, PartnerBalanceFilter filter, CancellationToken ct);
+
+    Task<IReadOnlyList<PartnerAllocationDto>> ListAllocationsAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct);
 
     Task<IReadOnlyList<PartnerBalanceDto>> BalanceAsync(int companyId, int partnerId, PartnerRole? role, DateOnly asOf, CancellationToken ct);
 

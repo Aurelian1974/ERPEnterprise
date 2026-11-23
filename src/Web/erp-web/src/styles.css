@@ -2873,3 +2873,28 @@ dl.order-kv dd {
 /* Reguli de potrivire: rezultatul „Testează pe 30 de zile” (macheta f2-04). */
 .rule-test { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
 .rule-test table { margin-top: 8px; }
+
+/* Decontări (02.02, F3): cartonașele de totaluri, bara de vechime, fișa financiară (machetele f3-01, f3-02). */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.kpi.bad { border-left: 3px solid var(--error); }
+.kpi.warn { border-left: 3px solid var(--warn); }
+.kpi-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.kpi-value { font-size: 18px; font-weight: 700; color: var(--ink); }
+.toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+.toolbar-row .search { min-width: 240px; flex: 1 1 240px; }
+.inline-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover, tr.clickable:focus-visible { background: var(--surface-muted); }
+.strong { font-weight: 600; }
+.aging-bar { display: flex; width: 140px; height: 8px; border-radius: 4px; overflow: hidden; background: var(--surface-sunken); }
+.aging-bar .a0, .aging-key.a0 { background: var(--ok); }
+.aging-bar .a1, .aging-key.a1 { background: var(--warn); }
+.aging-bar .a2, .aging-key.a2 { background: var(--accent-sales); }
+.aging-bar .a3, .aging-key.a3 { background: var(--error); }
+.aging-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: middle; }
+.aging-legend { margin-top: 8px; }
+.row-actions { white-space: nowrap; text-align: right; }
+.inline-form { display: inline-flex; gap: 6px; align-items: center; }
+.items-block + .items-block { margin-top: 18px; }
+.split.two-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }

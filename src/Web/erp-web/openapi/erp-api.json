@@ -3006,6 +3006,29 @@
             "schema": {
               "$ref": "#/components/schemas/PartnerRole"
             }
+          },
+          {
+            "name": "onlyOpen",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
           }
         ],
         "responses": {
@@ -3018,6 +3041,192 @@
                   "items": {
                     "$ref": "#/components/schemas/OpenItemListDto"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/partners/{partnerId}/allocations": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetPartnerAllocations",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PartnerAllocationDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/partner-balances": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetPartnerBalances",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyOverdue",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "onlyUnallocated",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "bothRoles",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerBalanceListDto"
                 }
               }
             }
@@ -31948,6 +32157,9 @@
           "isBlockedForPayment",
           "eInvoiceStatus",
           "isVatOnCollection",
+          "vatAmount",
+          "vatNonExigibleRon",
+          "closedAt",
           "rowVersion"
         ],
         "type": "object",
@@ -32006,6 +32218,19 @@
           },
           "isVatOnCollection": {
             "type": "boolean"
+          },
+          "vatAmount": {
+            "type": "string"
+          },
+          "vatNonExigibleRon": {
+            "type": "string"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           },
           "rowVersion": {
             "type": "string",
@@ -32258,6 +32483,247 @@
             "format": "int64"
           },
           "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "AllocationSource": {
+        "type": "integer"
+      },
+      "PartnerAllocationDto": {
+        "required": [
+          "id",
+          "role",
+          "allocationDate",
+          "source",
+          "status",
+          "amount",
+          "currencyCode",
+          "debitOpenItemId",
+          "debitDocumentNo",
+          "debitKind",
+          "creditOpenItemId",
+          "creditDocumentNo",
+          "creditKind",
+          "undoneAt",
+          "undoReason",
+          "createdAt",
+          "createdByName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "allocationDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "$ref": "#/components/schemas/AllocationSource"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "debitOpenItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "debitDocumentNo": {
+            "type": "string"
+          },
+          "debitKind": {
+            "$ref": "#/components/schemas/OpenItemKind"
+          },
+          "creditOpenItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditDocumentNo": {
+            "type": "string"
+          },
+          "creditKind": {
+            "$ref": "#/components/schemas/OpenItemKind"
+          },
+          "undoneAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "undoReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PartnerBalanceListDto": {
+        "required": [
+          "asOf",
+          "totals",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PartnerBalanceTotalsDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerBalanceRowDto"
+            }
+          }
+        }
+      },
+      "PartnerBalanceRowDto": {
+        "required": [
+          "partnerId",
+          "partnerCode",
+          "partnerName",
+          "fiscalCode",
+          "role",
+          "hasOtherRole",
+          "balanceRon",
+          "overdueRon",
+          "currentRon",
+          "days30Ron",
+          "days60Ron",
+          "over60Ron",
+          "maxOverdueDays",
+          "unallocatedRon",
+          "unallocatedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerCode": {
+            "type": "string"
+          },
+          "partnerName": {
+            "type": "string"
+          },
+          "fiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "hasOtherRole": {
+            "type": "boolean"
+          },
+          "balanceRon": {
+            "type": "string"
+          },
+          "overdueRon": {
+            "type": "string"
+          },
+          "currentRon": {
+            "type": "string"
+          },
+          "days30Ron": {
+            "type": "string"
+          },
+          "days60Ron": {
+            "type": "string"
+          },
+          "over60Ron": {
+            "type": "string"
+          },
+          "maxOverdueDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unallocatedRon": {
+            "type": "string"
+          },
+          "unallocatedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PartnerBalanceTotalsDto": {
+        "required": [
+          "receivablesRon",
+          "customersWithBalance",
+          "overdueReceivablesRon",
+          "customersOverdue",
+          "payablesRon",
+          "suppliersWithBalance",
+          "unallocatedRon",
+          "unallocatedCount",
+          "vatNonExigibleCollectedRon",
+          "vatNonExigibleDeductibleRon"
+        ],
+        "type": "object",
+        "properties": {
+          "receivablesRon": {
+            "type": "string"
+          },
+          "customersWithBalance": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdueReceivablesRon": {
+            "type": "string"
+          },
+          "customersOverdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payablesRon": {
+            "type": "string"
+          },
+          "suppliersWithBalance": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unallocatedRon": {
+            "type": "string"
+          },
+          "unallocatedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vatNonExigibleCollectedRon": {
+            "type": "string"
+          },
+          "vatNonExigibleDeductibleRon": {
             "type": "string"
           }
         }

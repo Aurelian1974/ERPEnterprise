@@ -18,6 +18,8 @@ import { BankStatementsPage } from '../finance/BankStatementsPage';
 import { BankReconcilePage } from '../finance/BankReconcilePage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
+import { PartnerBalancesPage } from '../finance/PartnerBalancesPage';
+import { PartnerFinancePage } from '../finance/PartnerFinancePage';
 import { NotFoundPage } from './NotFoundPage';
 
 // Rutele ecranelor; modulele isi adauga rutele aici odata cu intrarile din meniu (shell/menu.ts).
@@ -48,6 +50,8 @@ export const routes = [
       { path: 'finante/banca/extras-de-cont', element: <BankReconcilePage /> },
       { path: 'finante/banca/ordine-de-plata', element: <PaymentOrdersPage /> },
       { path: 'finante/banca/reguli', element: <MatchingRulesPage /> },
+      { path: 'finante/decontari/solduri', element: <PartnerBalancesPage /> },
+      { path: 'finante/decontari/parteneri/:id', element: <PartnerFinancePage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
