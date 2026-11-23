@@ -87,6 +87,8 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         }
 
         var services = new ServiceCollection().AddLogging().AddOutboxDispatcher(Database.ConnectionString);
+        Erp.Core.Infrastructure.CoreInfrastructureRegistration.AddCoreInfrastructure(services, Database.ConnectionString,
+            new Erp.Core.Infrastructure.Licensing.LicenseOptions(Development: true));
         services.AddFinanceInfrastructure(Database.ConnectionString);
         services.AddIntegrationEventHandler<FacturaEmisa, RegisterInvoices>();
         var dispatcher = services.BuildServiceProvider().GetRequiredService<OutboxDispatcher>();
@@ -735,6 +737,61 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Contains(checkedFile.Errors, e => e.Message.Contains("Restul nu poate depăși", StringComparison.Ordinal));
         Assert.Contains(checkedFile.Errors, e => e.Message.Contains("Cursul este obligatoriu", StringComparison.Ordinal));
         Assert.StartsWith("PK", System.Text.Encoding.ASCII.GetString((await SendTo(company, new DownloadOpeningBalanceErrors(checkedFile.JobId))).Content, 0, 2));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.02-F4-A4")]
+    [Trait("Criteriu", "02.02-F4-A12")]
+    [Trait("Criteriu", "02.02-F4-A15")]
+    public async Task An_eur_invoice_paid_in_lei_uses_the_partner_cross_rate_rule_or_the_operator_rate_and_undoing_reverses_the_difference()
+    {
+        Permissions.Add(FinancePermissions.FxView);
+        var partner = await NewPartner();
+        var (invoiceDate, payDay) = (new DateOnly(2025, 2, 3), new DateOnly(2025, 2, 10));
+        await Query<int>("""
+            MERGE core.ExchangeRate AS t USING (SELECT 'EUR' AS CurrencyCode, @Day AS RateDate) AS s ON t.CurrencyCode = s.CurrencyCode AND t.RateDate = s.RateDate
+            WHEN MATCHED THEN UPDATE SET Rate = 5.0
+            WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, 5.0, 1, 'BNR', 1);
+            SELECT @@ROWCOUNT
+            """, new { Day = payDay.ToDateTime(TimeOnly.MinValue) });
+        var eur = Sale(partner, 1000m, invoiceDate, invoiceDate.AddDays(30)) with { CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 4950m };
+        var invoice = await Register(eur);
+        await Query<int>("""
+            UPDATE fin.PartnerFinanceProfile SET CrossCurrencyRule = 2, CrossCurrencyMarkupPercent = 1 WHERE CompanyId = @CompanyId AND PartnerId = @PartnerId AND Role = 1;
+            SELECT @@ROWCOUNT
+            """, new { Database.CompanyId, PartnerId = partner });
+
+        // A4: 6.000 RON pe factura de 1.000 EUR, la BNR 5,00 + 1% = 5,05: se sting 1.000 EUR cu 5.050 RON, castig 100; restul de 950 RON ramane nealocat.
+        var paid = await Pay(partner, PartnerRole.Customer, 6000m, payDay, false, new SettlementTarget(invoice, null));
+        Assert.Equal((5050m, 950m), (paid.AllocatedAmount, paid.UnallocatedAmount));
+        var allocation = await Query<(long Id, decimal DebitAmount, decimal CreditAmount, decimal CrossRate, byte CrossRateSource)>(
+            "SELECT Id, DebitAmount, CreditAmount, CrossRate, CrossRateSource FROM fin.Allocation WHERE DebitOpenItemId = @Id AND Status = 1", new { Id = invoice });
+        Assert.Equal((1000m, 5050m, 5.05m, (byte)2), (allocation.DebitAmount, allocation.CreditAmount, allocation.CrossRate, allocation.CrossRateSource));
+        Assert.Equal((100m, "765", 4950m, 5050m), await Query<(decimal, string, decimal, decimal)>(
+            "SELECT DifferenceRon, GlAccountCode, CarryingAmountRon, SettlementAmountRon FROM fin.FxDifference WHERE AllocationId = @Id", new { allocation.Id }));
+        Assert.Equal((0m, 0m), await Query<(decimal, decimal)>("SELECT OpenAmount, OpenAmountRon FROM fin.OpenItem WHERE Id = @Id", new { Id = invoice }));
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%DiferentaCursInregistrata' AND Payload LIKE @Like",
+            new { Like = $"%\"allocationId\":{allocation.Id}[,}}]%" }));
+
+        // A12: desfacerea scrie diferenta inversa si reface valorile contabile ale ambelor partide.
+        Permissions.UnionWith([FinancePermissions.AllocationUndo, FinancePermissions.AllocationManage]);
+        await Send(new UndoAllocation(allocation.Id, "Test"));
+        Assert.Equal((-100m, true), await Query<(decimal, bool)>(
+            "SELECT DifferenceRon, IsReversal FROM fin.FxDifference WHERE AllocationId = @Id AND ReversalOfId IS NOT NULL", new { allocation.Id }));
+        Assert.Equal((1000m, 4950m), await Query<(decimal, decimal)>("SELECT OpenAmount, OpenAmountRon FROM fin.OpenItem WHERE Id = @Id", new { Id = invoice }));
+        var payment = await Query<long>("SELECT CreditOpenItemId FROM fin.Allocation WHERE Id = @Id", new { allocation.Id });
+        Assert.Equal((-6000m, -6000m), await Query<(decimal, decimal)>("SELECT OpenAmount, OpenAmountRon FROM fin.OpenItem WHERE Id = @Id", new { Id = payment }));
+
+        // A15: cursul ales de operator cere dreptul dedicat, se memoreaza pe alocare si da diferenta.
+        var pair = new AllocationPairInput(invoice, payment, "5100", "5.1");
+        var refused = await Assert.ThrowsAsync<ErpException>(() => Send(new AllocateManually(partner, PartnerRole.Customer, [pair])));
+        Assert.Equal("FIN_FX_MANUAL_RATE_FORBIDDEN", refused.Code);
+        Permissions.Add(FinancePermissions.FxManualCrossRate);
+        await Send(new AllocateManually(partner, PartnerRole.Customer, [pair]));
+        Assert.Equal((5.1m, (byte)4, 150m), await Query<(decimal, byte, decimal)>("""
+            SELECT a.CrossRate, a.CrossRateSource, x.DifferenceRon FROM fin.Allocation AS a JOIN fin.FxDifference AS x ON x.AllocationId = a.Id
+            WHERE a.DebitOpenItemId = @Id AND a.Status = 1
+            """, new { Id = invoice }));
     }
 
     private Task<T> SendTo<T>(int company, MediatR.IRequest<T> request) => Send(request, companyId: company);

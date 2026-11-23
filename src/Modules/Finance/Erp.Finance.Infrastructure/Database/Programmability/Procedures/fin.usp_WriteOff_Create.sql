@@ -40,9 +40,10 @@ BEGIN
 
     DECLARE @Signed decimal(19,2) = CASE WHEN @Open > 0 THEN -@Amount ELSE @Amount END;
     INSERT INTO fin.OpenItem (CompanyId, PartnerId, Role, Kind, SourceModule, SourceDocumentType, SourceDocumentId, SourceLineKey, DocumentNo, DocumentDate,
-        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, CreatedBy)
+        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, OpenAmountRon, CarryingRate, CreatedBy)
     VALUES (@CompanyId, @PartnerId, @Role, 9, 'Finance', 'Finance.WriteOff', @WriteOffId, N'', LEFT(N'AJ ' + @DocumentNo, 50), @DocumentDate, @DocumentDate,
-        @DocumentDate, @Currency, @Rate, @Signed, CASE WHEN @Signed > 0 THEN @AmountRon ELSE -@AmountRon END, @Signed, @UserId);
+        @DocumentDate, @Currency, @Rate, @Signed, CASE WHEN @Signed > 0 THEN @AmountRon ELSE -@AmountRon END, @Signed,
+        CASE WHEN @Signed > 0 THEN @AmountRon ELSE -@AmountRon END, @Rate, @UserId);
     DECLARE @WriteOffItemId bigint = SCOPE_IDENTITY();
 
     UPDATE fin.WriteOff SET WriteOffOpenItemId = @WriteOffItemId WHERE Id = @WriteOffId;

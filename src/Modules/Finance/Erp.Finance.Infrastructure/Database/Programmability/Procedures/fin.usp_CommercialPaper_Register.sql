@@ -37,10 +37,10 @@ BEGIN
 
     DECLARE @Signed decimal(19,2) = CASE WHEN @Direction = 1 THEN -@Amount ELSE @Amount END;
     INSERT INTO fin.OpenItem (CompanyId, PartnerId, Role, Kind, SourceModule, SourceDocumentType, SourceDocumentId, SourceLineKey, DocumentNo, DocumentDate,
-        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, GlAccountCode, CreatedBy)
+        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, OpenAmountRon, CarryingRate, GlAccountCode, CreatedBy)
     VALUES (@CompanyId, @PartnerId, @Direction, 8, 'Finance', 'Finance.CommercialPaper', @Id, N'',
         LEFT(CASE WHEN @Kind = 1 THEN N'CEC ' ELSE N'BO ' END + @Series + N' ' + @Number, 50), @IssueDate, @IssueDate, @MaturityDate, @CurrencyCode, @ExchangeRate,
-        @Signed, ROUND(@Signed * @ExchangeRate, 2), @Signed, @Gl, @UserId);
+        @Signed, ROUND(@Signed * @ExchangeRate, 2), @Signed, ROUND(@Signed * @ExchangeRate, 2), @ExchangeRate, @Gl, @UserId);
     DECLARE @ItemId bigint = SCOPE_IDENTITY();
 
     UPDATE fin.CommercialPaper SET OpenItemId = @ItemId WHERE Id = @Id;

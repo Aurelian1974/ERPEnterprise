@@ -70,7 +70,13 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'DIRECTOR_FINANCIAR',  N'Fin.OpenItem.BlockPayment'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.Compensation.Validate'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.Penalty.Approve'),
-        (N'AUDITOR',             N'Fin.PartnerBalance.View')
+        (N'AUDITOR',             N'Fin.PartnerBalance.View'),
+        (N'CONTABIL_DECONTARI',  N'Fin.Fx.View'),
+        (N'CONTABIL_DECONTARI',  N'Fin.Fx.ManualCrossRate'),
+        (N'CONTABIL_TREZORERIE', N'Fin.Fx.View'),
+        (N'CONTABIL_TREZORERIE', N'Fin.Fx.ManualCrossRate'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Fx.View'),
+        (N'AUDITOR',             N'Fin.Fx.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

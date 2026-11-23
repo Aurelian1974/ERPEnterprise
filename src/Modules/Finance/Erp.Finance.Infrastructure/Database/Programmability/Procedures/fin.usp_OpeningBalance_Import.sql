@@ -12,11 +12,11 @@ BEGIN
 
     DECLARE @Created TABLE (Id bigint);
     INSERT INTO fin.OpenItem (CompanyId, PartnerId, Role, Kind, SourceModule, SourceDocumentType, SourceDocumentId, SourceLineKey, DocumentNo,
-        DocumentDate, AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, VatAmount, VatAmountRon, IsVatOnCollection,
+        DocumentDate, AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, OpenAmountRon, CarryingRate, VatAmount, VatAmountRon, IsVatOnCollection,
         GlAccountCode, EInvoiceStatus, CreatedBy)
     OUTPUT inserted.Id INTO @Created (Id)
     SELECT @CompanyId, r.PartnerId, r.Role, r.Kind, 'Finance', 'Finance.OpeningBalance', r.PartnerId, r.LineKey, r.DocumentNo,
-        r.DocumentDate, r.DocumentDate, r.DueDate, r.CurrencyCode, r.ExchangeRate, r.Amount, r.AmountRon, r.Amount, 0, r.VatAmountRon, r.IsVatOnCollection,
+        r.DocumentDate, r.DocumentDate, r.DueDate, r.CurrencyCode, r.ExchangeRate, r.Amount, r.AmountRon, r.Amount, r.AmountRon, r.ExchangeRate, 0, r.VatAmountRon, r.IsVatOnCollection,
         r.GlAccountCode, 0, @UserId
     FROM @Rows AS r
     WHERE NOT EXISTS (SELECT 1 FROM fin.OpenItem AS o WITH (UPDLOCK, HOLDLOCK)

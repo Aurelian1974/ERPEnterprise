@@ -140,7 +140,8 @@ internal sealed class GetPartnerAllocationsHandler(ISettlementStore store, ICurr
 
 // ---------- Alocarea manuala si desfacerea (F3 3.3, 4.3) ----------
 
-public sealed record AllocationPairInput(long DebitOpenItemId, long CreditOpenItemId, string Amount);
+/// <summary>O pereche de alocat; intre monede diferite Amount e in moneda platii, iar CrossRate optional e cursul ales de operator (F4 3.3).</summary>
+public sealed record AllocationPairInput(long DebitOpenItemId, long CreditOpenItemId, string Amount, string? CrossRate = null);
 
 public sealed record AllocationsCreatedDto(IReadOnlyList<long> AllocationIds, IReadOnlyList<long> ClosedOpenItemIds);
 
@@ -161,6 +162,8 @@ internal sealed class AllocateManuallyValidator : AbstractValidator<AllocateManu
         {
             p.RuleFor(x => x.Amount).Must(a => Money.TryParse(a, out var v) && v > 0).WithMessage("Suma alocată trebuie să fie pozitivă.");
             p.RuleFor(x => x).Must(x => x.DebitOpenItemId != x.CreditOpenItemId).WithMessage("O partidă nu se alocă pe ea însăși.");
+            p.RuleFor(x => x.CrossRate).Must(r => CrossRateText.Parse(r) is > 0).When(x => x.CrossRate is not null)
+                .WithMessage("Cursul încrucișat este un număr pozitiv, cu cel mult 6 zecimale.");
         });
     }
 }
@@ -171,8 +174,13 @@ internal sealed class AllocateManuallyHandler(SettlementService settlement, ICur
     public async Task<AllocationsCreatedDto> Handle(AllocateManually request, CancellationToken cancellationToken)
     {
         await CashAccess.EnsureOpenPeriodAsync(periods, context.CompanyId, BusinessDay.Today(time), cancellationToken).ConfigureAwait(false);
+        if (request.Pairs.Any(p => p.CrossRate is not null) && !context.HasPermission(FinancePermissions.FxManualCrossRate))
+        {
+            throw new ErpException(ErpErrorKind.Forbidden, "FIN_FX_MANUAL_RATE_FORBIDDEN", "Nu aveți dreptul să alegeți cursul încrucișat.");
+        }
+
         var pairs = request.Pairs.Select(p => new AllocationRequest(p.DebitOpenItemId, p.CreditOpenItemId, Money.ParseOptional(p.Amount) ?? 0, null,
-            AllocationSource.Manual)).ToList();
+            AllocationSource.Manual) { CrossRate = CrossRateText.Parse(p.CrossRate) }).ToList();
         var outcome = await settlement.AllocateManuallyAsync(context.CompanyId, request.PartnerId, request.Role, pairs, request.ConfirmWarnings, cancellationToken)
             .ConfigureAwait(false);
         audit.Describe("Fin.Allocation", null, new { request.PartnerId, request.Role, Allocations = outcome.Allocations.Select(a => a.AllocationId) });
@@ -368,4 +376,12 @@ internal sealed class GetWriteOffThresholdHandler(Bank.IFinanceSettings settings
 {
     public async Task<string> Handle(GetWriteOffThreshold request, CancellationToken cancellationToken) =>
         Money.Format(await settings.WriteOffMaxAmountRonAsync(context.CompanyId, cancellationToken).ConfigureAwait(false));
+}
+
+/// <summary>Cursul incrucisat tastat: pozitiv, cu punct sau virgula zecimala, cel mult 6 zecimale (SQL-07).</summary>
+internal static class CrossRateText
+{
+    public static decimal? Parse(string? value) =>
+        decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture,
+            out var rate) && rate > 0 && decimal.Round(rate, 6) == rate ? rate : null;
 }

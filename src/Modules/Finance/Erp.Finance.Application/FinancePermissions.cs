@@ -52,6 +52,11 @@ public static class FinancePermissions
     public const string PenaltyCalculate = "Fin.Penalty.Calculate";
     public const string PenaltyApprove = "Fin.Penalty.Approve";
     public const string OpeningBalanceImport = "Fin.OpeningBalance.Import";
+    public const string FxView = "Fin.Fx.View";
+    public const string FxRevalue = "Fin.Fx.Revalue";
+    public const string FxReverseRevaluation = "Fin.Fx.ReverseRevaluation";
+    public const string FxManualCrossRate = "Fin.Fx.ManualCrossRate";
+    public const string FxSettings = "Fin.Fx.Settings";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>

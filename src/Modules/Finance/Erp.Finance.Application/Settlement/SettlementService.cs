@@ -59,10 +59,30 @@ public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItem
     public int? WriteOffId { get; init; }
 
     public int? CommercialPaperId { get; init; }
+
+    /// <summary>
+    /// Cursul incrucisat ales de operator (F4 3.3), cand partidele au monede diferite: unitati din moneda platii pentru o unitate din moneda
+    /// facturii; atunci Amount e in moneda platii. Lipsa lui: cursul propus dupa regula din profilul partenerului.
+    /// </summary>
+    public decimal? CrossRate { get; init; }
 }
 
+/// <summary>O alocare gata de scris: cererea, data ei si calculul FxCalculator (sumele pe parti, valorile in lei, cursul, diferenta).</summary>
+public sealed record PlannedAllocation(AllocationRequest Request, DateOnly AllocationDate, FxPlanRow Fx);
+
+/// <summary>O partida blocata pentru alocare (F4 4.1), cu regula de curs incrucisat din profilul partenerului.</summary>
+public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule Rule, decimal MarkupPercent);
+
+/// <summary>O diferenta de curs scrisa (sau inversata, IsReversal), pentru DiferentaCursInregistrata (F4 5.1).</summary>
+public sealed record FxDifferenceMade(long Id, DateOnly DifferenceDate, byte Source, long? AllocationId, int? PartnerId, PartnerRole? Role, long? OpenItemId,
+    string CurrencyCode, decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal);
+
 public sealed record AllocationMade(long AllocationId, int PartnerId, PartnerRole Role, AllocatedOpenItem Debit, AllocatedOpenItem Credit, decimal Amount,
-    decimal AmountRonDebit, decimal AmountRonCredit, DateOnly AllocationDate, AllocationSource Source);
+    decimal AmountRonDebit, decimal AmountRonCredit, DateOnly AllocationDate, AllocationSource Source)
+{
+    /// <summary>Suma pe partea de credit (diferita de Amount, suma pe debit, doar intre monede diferite).</summary>
+    public decimal CreditAmount { get; init; } = Amount;
+}
 
 public sealed record ChangedOpenItem(long Id, int PartnerId, PartnerRole Role, OpenItemKind Kind, string SourceDocumentType, long SourceDocumentId, DateOnly? ClosedAt);
 
@@ -70,8 +90,11 @@ public sealed record VatCashEntryMade(long Id, long OpenItemId, string SourceDoc
     decimal BaseAmountRon, decimal VatAmountRon, bool IsReversal);
 
 /// <summary>Rezultatul unui lot de alocari sau al unei desfaceri: alocarile, partidele inchise (sau redeschise) si TVA-ul la incasare.</summary>
-public sealed record AllocationOutcome(IReadOnlyList<AllocationMade> Allocations, IReadOnlyList<ChangedOpenItem> ChangedItems, IReadOnlyList<VatCashEntryMade> Vat)
+public sealed record AllocationOutcome(IReadOnlyList<AllocationMade> Allocations, IReadOnlyList<ChangedOpenItem> ChangedItems, IReadOnlyList<VatCashEntryMade> Vat,
+    IReadOnlyList<FxDifferenceMade>? Fx = null)
 {
+    public IReadOnlyList<FxDifferenceMade> FxDifferences => Fx ?? [];
+
     public static AllocationOutcome Empty { get; } = new([], [], []);
 }
 
@@ -131,7 +154,10 @@ public interface ISettlementStore
     Task<IReadOnlyList<OpenItemCandidate>> CandidatesAsync(int companyId, int partnerId, PartnerRole role, string currencyCode, byte side,
         IReadOnlyCollection<long>? ids, CancellationToken ct);
 
-    Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<AllocationRequest> allocations, int userId, CancellationToken ct);
+    Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<PlannedAllocation> allocations, int userId, CancellationToken ct);
+
+    /// <summary>Partidele unui lot de alocari, blocate in ordinea Id-urilor, cu restul in lei si regula de curs (F4 4.1).</summary>
+    Task<IReadOnlyList<FxLockedItem>> LockForAllocationAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct);
 
     Task<AllocationOutcome> UndoAsync(int companyId, IReadOnlyCollection<long> allocationIds, string? reason, bool allowDocumentSource, DateOnly today, int userId,
         CancellationToken ct);
@@ -201,6 +227,12 @@ internal static class SettlementEvents
             await outbox.EnqueueAsync(new TvaLaIncasareExigibil(v.OpenItemId, v.SourceDocumentType, v.SourceDocumentId, v.Side, v.ExigibilityDate,
                 v.BaseAmountRon, v.VatAmountRon, v.IsReversal), ct).ConfigureAwait(false);
         }
+
+        foreach (var x in outcome.FxDifferences)
+        {
+            await outbox.EnqueueAsync(new DiferentaCursInregistrata(x.Id, x.Source, x.DifferenceDate, x.PartnerId, x.Role, x.OpenItemId, x.AllocationId,
+                x.CurrencyCode, x.ForeignAmount, x.DifferenceRon, x.IsIndexed, x.GlAccountCode, x.IsReversal), ct).ConfigureAwait(false);
+        }
     }
 }
 
@@ -231,7 +263,8 @@ internal static class SettlementErrors
 /// Alocarea (F3 4.1–4.3): plata noua pe facturile indicate, apoi FIFO dupa profil; factura noua pe platile nealocate (FIFO) si storno pe factura
 /// stornata; verificarile de blocare, SPV si litigiu (3.8, 4.2). Totul in tranzactia apelantului.
 /// </summary>
-public sealed class SettlementService(ISettlementStore store, IFinanceSettings settings, IOutbox outbox, ICurrentContext context) : ISettlementService
+public sealed class SettlementService(ISettlementStore store, IFinanceSettings settings, IOutbox outbox, ICurrentContext context, IExchangeRateProvider rates)
+    : ISettlementService
 {
     public async Task<PaymentSettlementResult> RegisterPaymentAsync(PaymentSettlementRequest request, CancellationToken ct)
     {
@@ -267,13 +300,15 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             foreach (var target in request.Targets)
             {
                 var item = targets.SingleOrDefault(c => c.Id == target.OpenItemId);
-                if (item is null || item.OpenAmount == 0 || item.CurrencyCode != request.CurrencyCode || Math.Sign(item.Amount) != -Math.Sign(sign))
+                if (item is null || item.OpenAmount == 0 || Math.Sign(item.Amount) != -Math.Sign(sign))
                 {
                     throw SettlementErrors.NotAllocatable(target.OpenItemId);
                 }
 
                 Check(item, isSupplierPayment, spvRule, request.ConfirmWarnings, automatic: false);
-                var amount = Math.Min(Math.Min(target.Amount ?? decimal.MaxValue, Math.Abs(item.OpenAmount)), available);
+                // Intre monede diferite suma e in moneda platii; FxCalculator o limiteaza la restul facturii, la cursul incrucisat (F4 3.3).
+                var amount = Math.Min(Math.Min(target.Amount ?? decimal.MaxValue, item.CurrencyCode == request.CurrencyCode ? Math.Abs(item.OpenAmount) : decimal.MaxValue),
+                    available);
                 if (amount > 0)
                 {
                     plan.Add((item.Id, amount));
@@ -294,7 +329,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         var outcome = await AllocateAsync(request.CompanyId, plan.Select(p => sign > 0
             ? new AllocationRequest(created.Id, p.Id, p.Amount, null, AllocationSource.AutomaticOnPayment)
             : new AllocationRequest(p.Id, created.Id, p.Amount, null, AllocationSource.AutomaticOnPayment)).ToList(), ct).ConfigureAwait(false);
-        var allocated = plan.Sum(p => p.Amount);
+        var allocated = outcome.Allocations.Sum(a => sign > 0 ? a.Amount : a.CreditAmount);
         return new PaymentSettlementResult(created.Id, allocated, request.Amount - allocated, outcome.ChangedItems.Select(i => i.Id).ToList());
     }
 
@@ -413,10 +448,64 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             return AllocationOutcome.Empty;
         }
 
-        var outcome = await store.AllocateAsync(companyId, allocations, context.UserId, ct).ConfigureAwait(false);
+        var planned = await PlanAsync(companyId, allocations, ct).ConfigureAwait(false);
+        var outcome = await store.AllocateAsync(companyId, planned, context.UserId, ct).ConfigureAwait(false);
         await SettlementEvents.PublishAsync(outbox, outcome, false, ct).ConfigureAwait(false);
         return outcome;
     }
+
+    /// <summary>
+    /// Diferentele de curs (F4 4.1): partidele se blocheaza, data alocarii lipsa devine data documentului mai recent (F3, regula 4), cursul
+    /// incrucisat lipsa se propune dupa regula din profilul partenerului facturii (F4 3.3), apoi FxCalculator imparte valorile in lei.
+    /// </summary>
+    private async Task<IReadOnlyList<PlannedAllocation>> PlanAsync(int companyId, IReadOnlyList<AllocationRequest> allocations, CancellationToken ct)
+    {
+        var ids = allocations.SelectMany(a => new[] { a.DebitOpenItemId, a.CreditOpenItemId }).Distinct().ToArray();
+        var locked = (await store.LockForAllocationAsync(companyId, ids, ct).ConfigureAwait(false)).ToDictionary(i => i.Item.Id);
+        if (locked.Count != ids.Length)
+        {
+            throw ErpException.NotFound("FIN_INVALID_REFERENCE", "Partida nu există în firma curentă.");
+        }
+
+        var dates = new List<DateOnly>(allocations.Count);
+        var requests = new List<FxRequest>(allocations.Count);
+        foreach (var a in allocations)
+        {
+            var debit = locked[a.DebitOpenItemId];
+            var credit = locked[a.CreditOpenItemId];
+            var date = a.AllocationDate ?? (debit.DocumentDate >= credit.DocumentDate ? debit.DocumentDate : credit.DocumentDate);
+            dates.Add(date);
+            if (debit.Item.CurrencyCode == credit.Item.CurrencyCode)
+            {
+                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount));
+                continue;
+            }
+
+            if (a.CrossRate is { } chosen)
+            {
+                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, chosen, CrossRateRule.Manual));
+                continue;
+            }
+
+            var invoiceIsDebit = FxCalculator.InvoiceIsDebit(debit.Item, credit.Item);
+            var invoice = invoiceIsDebit ? debit : credit;
+            var payment = invoiceIsDebit ? credit : debit;
+            var rule = invoice.Rule == CrossRateRule.Manual ? CrossRateRule.BnrOnPaymentDate : invoice.Rule;
+            var invoicePerUnit = await PerUnitAsync(invoice.Item.CurrencyCode, date, ct).ConfigureAwait(false);
+            var paymentPerUnit = await PerUnitAsync(payment.Item.CurrencyCode, date, ct).ConfigureAwait(false);
+            var paymentOnInvoiceDate = rule == CrossRateRule.InvoiceRate
+                ? await PerUnitAsync(payment.Item.CurrencyCode, invoice.DocumentDate, ct).ConfigureAwait(false)
+                : paymentPerUnit;
+            var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent, invoice.Item.ExchangeRate, paymentOnInvoiceDate);
+            requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, rate, rule));
+        }
+
+        var plan = FxCalculator.Plan(locked.ToDictionary(i => i.Key, i => i.Value.Item), requests);
+        return allocations.Select((a, i) => new PlannedAllocation(a, dates[i], plan[i])).ToList();
+    }
+
+    private async Task<decimal> PerUnitAsync(string currency, DateOnly date, CancellationToken ct) =>
+        currency == "RON" ? 1m : (await rates.GetRateAsync(currency, date, ct).ConfigureAwait(false)).PerUnit;
 
     private static bool IsInvoiceForFifo(OpenItemCandidate c) =>
         c.Kind is OpenItemKind.Invoice or OpenItemKind.AdvanceInvoice or OpenItemKind.DebitNote or OpenItemKind.OpeningBalance && !c.IsDisputed;

@@ -50,7 +50,12 @@ USING (VALUES
     (N'Fin.BalanceConfirmation.Manage', N'Confirmări de sold'),
     (N'Fin.Penalty.Calculate',          N'Calculul penalităților de întârziere'),
     (N'Fin.Penalty.Approve',            N'Aprobarea calculului de penalități'),
-    (N'Fin.OpeningBalance.Import',      N'Importul partidelor inițiale')
+    (N'Fin.OpeningBalance.Import',      N'Importul partidelor inițiale'),
+    (N'Fin.Fx.View',                    N'Diferențe de curs, reevaluări valutare, poziția valutară'),
+    (N'Fin.Fx.Revalue',                 N'Generarea și validarea reevaluărilor valutare'),
+    (N'Fin.Fx.ReverseRevaluation',      N'Stornarea unei reevaluări valutare validate'),
+    (N'Fin.Fx.ManualCrossRate',         N'Curs încrucișat ales de operator la plată sau alocare'),
+    (N'Fin.Fx.Settings',                N'Setările multivalută')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

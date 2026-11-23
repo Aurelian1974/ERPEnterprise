@@ -49,9 +49,9 @@ BEGIN
 
     DECLARE @Number2 nvarchar(50) = LEFT(N'PVC ' + @Number, 50);
     INSERT INTO fin.OpenItem (CompanyId, PartnerId, Role, Kind, SourceModule, SourceDocumentType, SourceDocumentId, SourceLineKey, DocumentNo, DocumentDate,
-        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, CreatedBy)
+        AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, OpenAmountRon, CarryingRate, CreatedBy)
     SELECT @CompanyId, g.PartnerId, g.Role, 7, 'Finance', 'Finance.Compensation', @Id, CONCAT(N'P', g.PartnerId, N'R', g.Role), @Number2, @Date, @Date, @Date,
-        @Currency, g.Rate, g.Amount, ROUND(g.Amount * g.Rate, 2), g.Amount, @UserId
+        @Currency, g.Rate, g.Amount, ROUND(g.Amount * g.Rate, 2), g.Amount, ROUND(g.Amount * g.Rate, 2), g.Rate, @UserId
     FROM @Groups AS g;
 
     UPDATE g SET TechId = o.Id

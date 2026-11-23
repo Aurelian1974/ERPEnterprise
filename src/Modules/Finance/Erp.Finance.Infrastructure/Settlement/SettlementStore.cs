@@ -44,29 +44,39 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         .Select(r => new OpenItemCandidate(r.Id, (OpenItemKind)r.Kind, r.DocumentNo, DateOnly.FromDateTime(r.DocumentDate), DateOnly.FromDateTime(r.DueDate),
             r.CurrencyCode, r.Amount, r.OpenAmount, r.IsDisputed, r.IsBlockedForPayment, (EInvoiceStatus)r.EInvoiceStatus, r.SpvExempt)).ToList();
 
-    public async Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<AllocationRequest> allocations, int userId, CancellationToken ct)
+    public async Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<PlannedAllocation> allocations, int userId, CancellationToken ct)
     {
-        var table = new DataTable();
-        table.Columns.Add("RowNo", typeof(int));
-        table.Columns.Add("DebitOpenItemId", typeof(long));
-        table.Columns.Add("CreditOpenItemId", typeof(long));
-        table.Columns.Add("Amount", typeof(decimal));
-        table.Columns.Add("AllocationDate", typeof(DateTime));
-        table.Columns.Add("Source", typeof(byte));
-        table.Columns.Add("CompensationId", typeof(int));
-        table.Columns.Add("WriteOffId", typeof(int));
-        table.Columns.Add("CommercialPaperId", typeof(int));
+        using var table = new DataTable();
+        foreach (var (name, type) in new (string, Type)[]
+        {
+            ("RowNo", typeof(int)), ("DebitOpenItemId", typeof(long)), ("CreditOpenItemId", typeof(long)), ("DebitAmount", typeof(decimal)),
+            ("CreditAmount", typeof(decimal)), ("AmountRonDebit", typeof(decimal)), ("AmountRonCredit", typeof(decimal)), ("AllocationDate", typeof(DateTime)),
+            ("Source", typeof(byte)), ("CompensationId", typeof(int)), ("WriteOffId", typeof(int)), ("CommercialPaperId", typeof(int)),
+            ("CrossRate", typeof(decimal)), ("CrossRateSource", typeof(byte)), ("DifferenceRon", typeof(decimal)), ("FxOpenItemId", typeof(long)),
+        })
+        {
+            table.Columns.Add(name, type);
+        }
+
         for (var i = 0; i < allocations.Count; i++)
         {
-            var a = allocations[i];
-            table.Rows.Add(i + 1, a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, a.AllocationDate is { } d ? d.ToDateTime(TimeOnly.MinValue) : DBNull.Value,
-                (byte)a.Source, (object?)a.CompensationId ?? DBNull.Value, (object?)a.WriteOffId ?? DBNull.Value, (object?)a.CommercialPaperId ?? DBNull.Value);
+            var (a, date, fx) = allocations[i];
+            table.Rows.Add(i + 1, a.DebitOpenItemId, a.CreditOpenItemId, fx.DebitAmount, fx.CreditAmount, fx.AmountRonDebit, fx.AmountRonCredit, Day(date),
+                (byte)a.Source, (object?)a.CompensationId ?? DBNull.Value, (object?)a.WriteOffId ?? DBNull.Value, (object?)a.CommercialPaperId ?? DBNull.Value,
+                (object?)fx.CrossRate ?? DBNull.Value, fx.CrossRateSource is { } source ? (byte)source : DBNull.Value, fx.DifferenceRon,
+                (object?)fx.FxOpenItemId ?? DBNull.Value);
         }
 
         using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_Allocation_CreateBatch",
             new { CompanyId = companyId, Allocations = table.AsTableValuedParameter("fin.AllocationList"), UserId = userId }, ct)).ConfigureAwait(false);
         return await ReadOutcomeAsync(grid).ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<FxLockedItem>> LockForAllocationAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<LockedRow>(Command("fin.usp_OpenItem_LockForAllocation",
+            new { CompanyId = companyId, Ids = System.Text.Json.JsonSerializer.Serialize(ids) }, ct)).ConfigureAwait(false))
+        .Select(r => new FxLockedItem(new FxItem(r.Id, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.CurrencyCode.Trim(), r.ExchangeRate, r.OpenAmount, r.OpenAmountRon),
+            r.PartnerId, DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)).ToList();
 
     public async Task<AllocationOutcome> UndoAsync(int companyId, IReadOnlyCollection<long> allocationIds, string? reason, bool allowDocumentSource, DateOnly today,
         int userId, CancellationToken ct)
@@ -213,7 +223,8 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             .Select(a => new AllocationMade(a.AllocationId, a.PartnerId, (PartnerRole)a.Role,
                 new AllocatedOpenItem(a.DebitOpenItemId, a.DebitSourceDocumentType, a.DebitSourceDocumentId, a.DebitCurrencyCode, a.DebitExchangeRate),
                 new AllocatedOpenItem(a.CreditOpenItemId, a.CreditSourceDocumentType, a.CreditSourceDocumentId, a.CreditCurrencyCode, a.CreditExchangeRate),
-                a.Amount, a.AmountRonDebit, a.AmountRonCredit, DateOnly.FromDateTime(a.AllocationDate), (AllocationSource)a.Source)).ToList();
+                a.Amount, a.AmountRonDebit, a.AmountRonCredit, DateOnly.FromDateTime(a.AllocationDate), (AllocationSource)a.Source) { CreditAmount = a.CreditAmount })
+            .ToList();
         var changed = (await grid.ReadAsync<(long Id, int PartnerId, byte Role, byte Kind, string SourceDocumentType, long SourceDocumentId, DateTime? ClosedAt)>()
             .ConfigureAwait(false))
             .Select(c => new ChangedOpenItem(c.Id, c.PartnerId, (PartnerRole)c.Role, (OpenItemKind)c.Kind, c.SourceDocumentType, c.SourceDocumentId,
@@ -221,7 +232,10 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         var vat = (await grid.ReadAsync<VatRow>().ConfigureAwait(false))
             .Select(v => new VatCashEntryMade(v.Id, v.OpenItemId, v.SourceDocumentType, v.SourceDocumentId, v.Side, DateOnly.FromDateTime(v.ExigibilityDate),
                 v.BaseAmountRon, v.VatAmountRon, v.IsReversal)).ToList();
-        return new AllocationOutcome(allocations, changed, vat);
+        var fx = (await grid.ReadAsync<FxRow>().ConfigureAwait(false))
+            .Select(x => new FxDifferenceMade(x.Id, DateOnly.FromDateTime(x.DifferenceDate), x.Source, x.AllocationId, x.PartnerId, (PartnerRole?)x.Role, x.OpenItemId,
+                x.CurrencyCode, x.ForeignAmount, x.DifferenceRon, x.IsIndexed, x.GlAccountCode, x.IsReversal)).ToList();
+        return new AllocationOutcome(allocations, changed, vat, fx);
     }
 
     private static DateTime Day(DateOnly day) => day.ToDateTime(TimeOnly.MinValue);
@@ -235,7 +249,13 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
     private sealed record AllocationRow(long AllocationId, int RowNo, int PartnerId, byte Role, long DebitOpenItemId, string DebitSourceDocumentType,
         long DebitSourceDocumentId, string DebitCurrencyCode, decimal DebitExchangeRate, long CreditOpenItemId, string CreditSourceDocumentType,
         long CreditSourceDocumentId, string CreditCurrencyCode, decimal CreditExchangeRate, decimal Amount, decimal AmountRonDebit, decimal AmountRonCredit,
-        DateTime AllocationDate, byte Source);
+        DateTime AllocationDate, byte Source, decimal CreditAmount);
+
+    private sealed record FxRow(long Id, DateTime DifferenceDate, byte Source, long? AllocationId, int? PartnerId, byte? Role, long? OpenItemId, string CurrencyCode,
+        decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal);
+
+    private sealed record LockedRow(long Id, int PartnerId, byte Role, byte Kind, string CurrencyCode, decimal ExchangeRate, decimal OpenAmount, decimal OpenAmountRon,
+        DateTime DocumentDate, byte CrossCurrencyRule, decimal CrossCurrencyMarkupPercent);
 
     private sealed record VatRow(long Id, long OpenItemId, string SourceDocumentType, long SourceDocumentId, byte Side, DateTime ExigibilityDate,
         decimal BaseAmountRon, decimal VatAmountRon, bool IsReversal);

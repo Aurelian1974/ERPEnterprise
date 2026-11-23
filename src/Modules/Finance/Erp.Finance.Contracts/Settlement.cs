@@ -85,6 +85,13 @@ public sealed record PenalitatiPartener(int PartnerId, string CurrencyCode, deci
 public sealed record PenalitatiCalculate(int PenaltyCalculationId, string Number, DateOnly CalculationDate, DateOnly PeriodFrom, DateOnly PeriodTo,
     IReadOnlyList<PenalitatiPartener> Partners) : IntegrationEvent;
 
+/// <summary>
+/// O diferenta de curs realizata sau inversata (F4 3.2, 5.1): Source 1 alocare, 2 schimb valutar, 3 iesire din cont in valuta, 4 indexare;
+/// DifferenceRon pozitiv = castig (765 / 768), negativ = pierdere (665 / 668). Consumatori: partea contabila, Raportare.
+/// </summary>
+public sealed record DiferentaCursInregistrata(long FxDifferenceId, byte Source, DateOnly DifferenceDate, int? PartnerId, PartnerRole? Role, long? OpenItemId,
+    long? AllocationId, string CurrencyCode, decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal) : IntegrationEvent;
+
 /// <summary>Soldul unui partener pe rol si moneda la o data (F3 6). Sumele urmeaza conventia de semn: debit (+), credit (−).</summary>
 public sealed record PartnerBalanceDto(int CompanyId, int PartnerId, PartnerRole Role, string CurrencyCode, decimal Balance, decimal BalanceRon,
     decimal OverdueRon, int MaxOverdueDays, decimal UnallocatedPaymentsRon, DateOnly AsOf);

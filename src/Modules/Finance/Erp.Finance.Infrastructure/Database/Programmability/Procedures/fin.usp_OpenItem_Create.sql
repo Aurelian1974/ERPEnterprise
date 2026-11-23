@@ -48,10 +48,10 @@ BEGIN
             THROW 51021, N'Scadențele nu dau valoarea documentului.', 1;
 
         INSERT INTO fin.OpenItem (CompanyId, PartnerId, Role, Kind, SourceModule, SourceDocumentType, SourceDocumentId, SourceLineKey, DocumentNo,
-            DocumentDate, AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, VatAmount, VatAmountRon, IsVatOnCollection,
+            DocumentDate, AccountingDate, DueDate, CurrencyCode, ExchangeRate, Amount, AmountRon, OpenAmount, OpenAmountRon, CarryingRate, IsMonetary, VatAmount, VatAmountRon, IsVatOnCollection,
             GlAccountCode, EInvoiceStatus, EInvoiceIndexNo, CostCenterId, ProjectId, ReversalOfId, CreatedBy)
         VALUES (@CompanyId, @PartnerId, @Role, @Kind, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceLineKey, @DocumentNo,
-            @DocumentDate, @AccountingDate, @DueDate, @CurrencyCode, @ExchangeRate, @Amount, @AmountRon, @Amount, @VatAmount, @VatAmountRon, @IsVatOnCollection,
+            @DocumentDate, @AccountingDate, @DueDate, @CurrencyCode, @ExchangeRate, @Amount, @AmountRon, @Amount, @AmountRon, @ExchangeRate, CASE WHEN @Kind = 3 THEN 0 ELSE 1 END, @VatAmount, @VatAmountRon, @IsVatOnCollection,
             @GlAccountCode, @EInvoiceStatus, @EInvoiceIndexNo, @CostCenterId, @ProjectId, @ReversalOfId, @UserId);
         SET @Id = SCOPE_IDENTITY();
         SET @Created = 1;
