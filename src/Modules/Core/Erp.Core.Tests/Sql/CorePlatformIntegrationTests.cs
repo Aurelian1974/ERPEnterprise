@@ -24,7 +24,7 @@ public sealed class SqlServerCollection : ICollectionFixture<SqlServerFixture>
     public const string Name = "CoreSqlServer";
 }
 
-/// <summary>Baza ERP_IT_CORE, cu utilizatorii de test: administrator la nivel de instalare, standard pe firma 5, inactiv, extern expirat.</summary>
+/// <summary>O baza ERP_IT_CORE_<id> pentru fiecare clasa de teste care o foloseste, cu utilizatorii de test: administrator la nivel de instalare, standard pe firma 5, inactiv, extern expirat.</summary>
 public sealed class CoreDatabase(SqlServerFixture sql) : IAsyncLifetime
 {
     public string ConnectionString { get; private set; } = string.Empty;
@@ -41,7 +41,7 @@ public sealed class CoreDatabase(SqlServerFixture sql) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        ConnectionString = await sql.CreateErpDatabaseAsync("ERP_IT_CORE", CancellationToken.None);
+        ConnectionString = await sql.CreateErpDatabaseAsync($"ERP_IT_CORE_{Guid.NewGuid():N}"[..20], CancellationToken.None);
         await using var connection = new SqlConnection(ConnectionString);
         // Firmele 5 si 6 (Id-uri fixe): rolurile pe firma au cheie straina spre core.Company.
         await connection.ExecuteAsync("""
