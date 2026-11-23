@@ -44,6 +44,10 @@ public sealed class BankMatchingStore(IDbSession session) : IBankMatchingStore
         return new FinanceSaved(row.Id, row.RowVersion);
     }
 
+    public Task ReorderRulesAsync(int companyId, IReadOnlyList<int> ruleIds, int userId, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_MatchingRule_Reorder",
+            new { CompanyId = companyId, RuleIds = System.Text.Json.JsonSerializer.Serialize(ruleIds), UserId = userId }, ct));
+
     public async Task<IReadOnlyList<CardAcquirerDto>> ListAcquirersAsync(int companyId, CancellationToken ct) =>
         (await session.Connection.QueryAsync<CardAcquirerDto>(Command("fin.usp_CardAcquirer_List", new { CompanyId = companyId }, ct)).ConfigureAwait(false))
         .ToList();

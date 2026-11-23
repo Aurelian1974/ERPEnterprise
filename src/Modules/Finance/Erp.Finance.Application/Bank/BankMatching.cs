@@ -69,6 +69,8 @@ public interface IBankMatchingStore
 
     Task<FinanceSaved> SaveRuleAsync(int companyId, MatchingRuleRecord rule, int userId, CancellationToken ct);
 
+    Task ReorderRulesAsync(int companyId, IReadOnlyList<int> ruleIds, int userId, CancellationToken ct);
+
     Task<IReadOnlyList<CardAcquirerDto>> ListAcquirersAsync(int companyId, CancellationToken ct);
 
     Task<FinanceSaved> SaveAcquirerAsync(int companyId, int? id, string code, string name, string? iban, bool isActive, byte[]? rowVersion, int userId,
@@ -206,6 +208,29 @@ internal sealed class SaveMatchingRuleHandler(IBankMatchingStore store, ICurrent
         var saved = await store.SaveRuleAsync(context.CompanyId, rule, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.MatchingRule", saved.Id, new { rule.Name, rule.Priority, rule.OperationTypeId, rule.AutoValidate, rule.IsActive });
         return saved;
+    }
+}
+
+/// <summary>Noua ordine a regulilor (F2 3.5; macheta f2-04, reordonarea prin tragere): prioritatile devin 10, 20, 30... in ordinea data.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.BankRuleManage)]
+[Audited("Fin.MatchingRule.Reorder")]
+public sealed record ReorderMatchingRules(IReadOnlyList<int> RuleIds) : ICommand<bool>;
+
+internal sealed class ReorderMatchingRulesValidator : AbstractValidator<ReorderMatchingRules>
+{
+    public ReorderMatchingRulesValidator() =>
+        RuleFor(x => x.RuleIds).NotEmpty().WithMessage("Lista regulilor este goală.")
+            .Must(ids => ids.Count <= 1000 && ids.Distinct().Count() == ids.Count).WithMessage("O regulă apare de două ori.");
+}
+
+internal sealed class ReorderMatchingRulesHandler(IBankMatchingStore store, ICurrentContext context, IAuditScope audit) : ICommandHandler<ReorderMatchingRules, bool>
+{
+    public async Task<bool> Handle(ReorderMatchingRules request, CancellationToken cancellationToken)
+    {
+        await store.ReorderRulesAsync(context.CompanyId, request.RuleIds, context.UserId, cancellationToken).ConfigureAwait(false);
+        audit.Describe("Fin.MatchingRule", null, new { Order = request.RuleIds });
+        return true;
     }
 }
 

@@ -178,6 +178,16 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
         Assert.Equal(BankLineMatchStatus.Explained, lines[1].MatchStatus);
         Assert.Equal(BankLineMatchStatus.Unmatched, lines[2].MatchStatus);
         Assert.Contains(await Send(new GetMatchingRules()), r => r.Name == "Comisioane" && r.UsageCount == 1);
+
+        // Reordonarea prin tragere: „Dobânzi” trece prima; prioritatile devin 10, 20.
+        var rules = (await Send(new GetMatchingRules())).Where(r => r.TreasuryAccountId == account).ToList();
+        var interestRule = rules.Single(r => r.Name == "Dobânzi").Id;
+        var feeRule = rules.Single(r => r.Name == "Comisioane").Id;
+        await Send(new ReorderMatchingRules([interestRule, feeRule]));
+        var reordered = (await Send(new GetMatchingRules())).Where(r => r.TreasuryAccountId == account).ToDictionary(r => r.Id, r => r.Priority);
+        Assert.Equal((10, 20), (reordered[interestRule], reordered[feeRule]));
+        var foreign = await Assert.ThrowsAsync<Erp.Core.Contracts.ErpException>(() => Send(new ReorderMatchingRules([interestRule]), companyId: Database.OtherCompanyId));
+        Assert.Equal("FIN_INVALID_REFERENCE", foreign.Code);
         Assert.Contains((await Send(new GetBankLookups())).OperationTypes, t => t.Code == "BANK-COMISION");
 
         // „Tine minte”: regula din explicatia manuala a liniei, dupa textul dat.

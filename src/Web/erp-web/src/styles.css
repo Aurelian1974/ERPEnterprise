@@ -2849,3 +2849,23 @@ dl.order-kv dd {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+
+.rule-priority {
+  white-space: nowrap;
+}
+
+.drag-handle {
+  margin-right: 6px;
+  color: var(--muted);
+  cursor: grab;
+}
+
+.rule-steps {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.bank-split tr.dragging td {
+  opacity: 0.5;
+}

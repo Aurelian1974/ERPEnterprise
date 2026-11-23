@@ -1938,7 +1938,7 @@ export const ro = {
   'rules.col.usage': 'Folosiri',
   'rules.autoValidate': 'Validează automat',
   'rules.explainOnly': 'Doar explică',
-  'rules.hint': 'Regulile se aplică după potrivirile standard (OP-uri, perechi interne, card, facturi), în ordinea priorității; prima regulă care se potrivește câștigă.',
+  'rules.hint': 'Ordinea se schimbă prin tragere (sau cu ↑ ↓). Regulile se aplică după potrivirile standard (OP-uri, perechi interne, card, facturi), în ordinea priorității; prima regulă care se potrivește câștigă.',
   'rules.pick': 'Alegeți o regulă din listă sau creați una nouă.',
   'rules.in': 'intrare',
   'rules.out': 'ieșire',
@@ -1991,6 +1991,9 @@ export const ro = {
   'cfg.bank.code': 'Cod',
   'cfg.bank.name': 'Denumire',
   'bank.refusedLines': 'Linii nevalidate ({count}): {details}',
+  'rules.drag': 'Trageți ca să schimbați ordinea',
+  'rules.up': 'Mută mai sus regula {name}',
+  'rules.down': 'Mută mai jos regula {name}',
 } as const;
 
 export type TextKey = keyof typeof ro;

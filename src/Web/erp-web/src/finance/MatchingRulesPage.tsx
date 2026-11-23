@@ -33,6 +33,13 @@ export function conditionText(rule: Pick<Rule, 'direction' | 'counterpartyIban' 
   return parts.join(' · ');
 }
 
+/** Noua ordine a Id-urilor dupa mutarea regulii `moved` inaintea regulii `before` (sau la sfarsit, daca `before` lipseste). */
+export function moveRule(ids: readonly number[], moved: number, before: number | undefined): number[] {
+  const rest = ids.filter((id) => id !== moved);
+  const index = before === undefined ? rest.length : rest.indexOf(before);
+  return [...rest.slice(0, index < 0 ? rest.length : index), moved, ...rest.slice(index < 0 ? rest.length : index)];
+}
+
 /**
  * Bancă › Reguli de potrivire (02.02, F2 3.5; macheta f2-04): regulile firmei în ordinea priorității, cu condițiile, acțiunea, validarea
  * automată și numărul de linii explicate; fișa regulii cu condițiile (toate trebuie îndeplinite) și acțiunea. Validarea automată e permisă
@@ -49,6 +56,25 @@ export function MatchingRulesPage() {
   const visible = all.filter((r) => (filter === 'inactive' ? !r.isActive : filter === 'remembered' ? r.createdFromLineId != null : r.isActive));
   const current = selected === 'new' ? undefined : all.find((r) => r.id === (selected ?? visible[0]?.id));
   const accountCode = (id: number | null | undefined) => lookups.data?.accounts.find((a) => a.id === id)?.code;
+  const queryClient = useQueryClient();
+  const { notify } = useNotifier();
+  const [dragged, setDragged] = useState<number | undefined>();
+  const canReorder = canManage && filter === 'active';
+  const reorder = async (order: number[]) => {
+    try {
+      unwrap(await api.POST('/api/finance/matching-rules/reorder', { body: { ruleIds: order } }));
+      await queryClient.invalidateQueries({ queryKey: rulesKey });
+    } catch (e) {
+      notify(e instanceof ApiError ? e.message : t('common.notSaved'), 'error');
+    }
+  };
+  const ids = visible.map((r) => r.id);
+  const step = (id: number, delta: number) => {
+    const index = ids.indexOf(id);
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    void reorder(moveRule(ids, id, delta < 0 ? ids[target] : ids[target + 1]));
+  };
 
   return (
     <div className="page wide">
@@ -83,8 +109,23 @@ export function MatchingRulesPage() {
               </thead>
               <tbody>
                 {visible.map((r) => (
-                  <tr key={r.id} className={r.id === current?.id ? 'selected' : undefined} onClick={() => setSelected(r.id)} aria-selected={r.id === current?.id}>
-                    <td className="num">{r.priority}</td>
+                  <tr key={r.id} className={[r.id === current?.id ? 'selected' : '', dragged === r.id ? 'dragging' : ''].join(' ').trim() || undefined}
+                    onClick={() => setSelected(r.id)} aria-selected={r.id === current?.id}
+                    draggable={canReorder} onDragStart={() => setDragged(r.id)} onDragEnd={() => setDragged(undefined)}
+                    onDragOver={(e) => { if (canReorder && dragged !== undefined) e.preventDefault(); }}
+                    onDrop={(e) => { e.preventDefault(); if (dragged !== undefined && dragged !== r.id) void reorder(moveRule(ids, dragged, r.id)); setDragged(undefined); }}>
+                    <td className="num rule-priority">
+                      {canReorder && <span className="drag-handle" aria-hidden="true" title={t('rules.drag')}>⋮⋮</span>}
+                      {r.priority}
+                      {canReorder && (
+                        <span className="rule-steps">
+                          <button type="button" className="btn ghost small" aria-label={t('rules.up', { name: r.name })} disabled={ids.indexOf(r.id) === 0}
+                            onClick={(e) => { e.stopPropagation(); step(r.id, -1); }}>↑</button>
+                          <button type="button" className="btn ghost small" aria-label={t('rules.down', { name: r.name })} disabled={ids.indexOf(r.id) === ids.length - 1}
+                            onClick={(e) => { e.stopPropagation(); step(r.id, 1); }}>↓</button>
+                        </span>
+                      )}
+                    </td>
                     <td><strong>{r.name}</strong><div className="muted small">{conditionText(r, accountCode(r.treasuryAccountId))}</div></td>
                     <td className="small">{r.operationTypeCode}{r.partnerName == null ? '' : ` · ${r.partnerName}`}
                       <div><span className={r.autoValidate ? 'pill ok' : 'pill'}>{t(r.autoValidate ? 'rules.autoValidate' : 'rules.explainOnly')}</span></div></td>

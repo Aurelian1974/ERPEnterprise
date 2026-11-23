@@ -166,6 +166,8 @@ public static class FinanceApiRegistration
             .WithName("CreateMatchingRule").Saves();
         finance.MapPut("/matching-rules/{id:int}", (int id, SaveMatchingRule body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
             .WithName("UpdateMatchingRule").Saves();
+        finance.MapPost("/matching-rules/reorder", (ReorderMatchingRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ReorderMatchingRules").Produces<bool>().Problems();
         finance.MapPost("/bank-statement-lines/{id:long}/remember", (long id, RememberMatchingRule body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { BankStatementLineId = id }, ct))
             .WithName("RememberMatchingRule").Saves();
