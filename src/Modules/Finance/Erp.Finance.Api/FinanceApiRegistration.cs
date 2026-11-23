@@ -213,6 +213,22 @@ public static class FinanceApiRegistration
             .WithName("GetCompensationScan").Produces<DownloadedFile>().Problems();
         finance.MapGet("/compensations/{id:int}/pdf", (int id, ISender sender, CancellationToken ct) => sender.Send(new PrintCompensation(id), ct))
             .WithName("PrintCompensation").Produces<DownloadedFile>().Problems();
+        // Confirmari de sold (F3 3.9, 4.6; macheta f3-07).
+        finance.MapGet("/balance-confirmations", (int? batchId, ISender sender, CancellationToken ct) => sender.Send(new GetBalanceConfirmations(batchId), ct))
+            .WithName("GetBalanceConfirmations").Produces<BalanceConfirmationsDto>().Problems();
+        finance.MapPost("/balance-confirmations", (GenerateBalanceConfirmations body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateBalanceConfirmations").Produces<int>().Problems();
+        finance.MapPost("/balance-confirmations/batches/{batchId:int}/send", (int batchId, SendBalanceConfirmations body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { BatchId = batchId }, ct))
+            .WithName("SendBalanceConfirmations").Produces<BalanceConfirmationsSent>().Problems();
+        finance.MapPost("/balance-confirmations/{id:int}/response", (int id, RecordBalanceConfirmationResponse body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("RecordBalanceConfirmationResponse").Saves();
+        finance.MapGet("/balance-confirmations/{id:int}/pdf", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetBalanceConfirmationPdf(id), ct))
+            .WithName("GetBalanceConfirmationPdf").Produces<DownloadedFile>().Problems();
+        finance.MapGet("/balance-confirmations/{id:int}/response-file", (int id, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetBalanceConfirmationResponseFile(id), ct))
+            .WithName("GetBalanceConfirmationResponseFile").Produces<DownloadedFile>().Problems();
         // Efecte comerciale (F3 3.5, 4.5; macheta f3-06).
         finance.MapGet("/commercial-papers", (PaperDirection? direction, bool? activeOnly, DateOnly? maturityTo, int? year, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetCommercialPapers(direction, activeOnly ?? false, maturityTo, year), ct))

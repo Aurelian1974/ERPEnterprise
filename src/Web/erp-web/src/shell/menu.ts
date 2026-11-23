@@ -73,6 +73,7 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'due-schedule', label: 'menu.dueSchedule', path: '/finante/decontari/scadentar', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'compensations', label: 'menu.compensations', path: '/finante/decontari/compensari', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'commercial-papers', label: 'menu.commercialPapers', path: '/finante/decontari/efecte', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
+      { id: 'balance-confirmations', label: 'menu.balanceConfirmations', path: '/finante/decontari/confirmari', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
     ],
   },
   {

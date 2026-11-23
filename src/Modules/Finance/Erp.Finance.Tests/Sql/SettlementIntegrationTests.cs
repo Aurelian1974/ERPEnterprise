@@ -545,6 +545,62 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Contains((await Send(new GetCommercialPapers(PaperDirection.Received))).Items, p => p.Id == note.Id && p.Status == PaperStatus.Endorsed);
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F3-A12")]
+    public async Task A_balance_confirmation_lists_the_items_open_at_its_date_goes_out_by_email_and_records_a_contested_answer()
+    {
+        Permissions.Add(FinancePermissions.BalanceConfirmationManage);
+        Erp.Pdf.PdfSetup.Configure(null);
+        var partner = await NewPartner();
+        var small = await NewPartner();
+        var sale = await Register(Sale(partner, 1000m, Day, Day.AddDays(10)));
+        var later = await Register(Sale(partner, 500m, Day.AddDays(10), Day.AddDays(20)));
+        await Register(Sale(small, 40m, Day, Day.AddDays(10)));
+        await Pay(partner, PartnerRole.Customer, 600m, Day.AddDays(5), targets: new SettlementTarget(sale, 600m));
+        // O plata de dupa data confirmarii nu schimba partidele de la acea data.
+        await Pay(partner, PartnerRole.Customer, 400m, Day.AddDays(12), targets: new SettlementTarget(sale, 400m));
+        var asOf = Day.AddDays(7);
+
+        // F3-A12: partidele refacute la data trecuta.
+        var items = await InTransaction(sp => sp.GetRequiredService<IBalanceConfirmationStore>().OpenItemsAsOfAsync(Database.CompanyId, partner, PartnerRole.Customer,
+            asOf, Ct));
+        Assert.Equal([(sale, 400m)], items.Select(i => (i.OpenItemId, i.OpenAmount)));
+        Assert.DoesNotContain(items, i => i.OpenItemId == later);
+
+        // Lotul: pragul de 100 lei scoate partenerul mic; PDF-ul e generat.
+        var batchId = await Send(new GenerateBalanceConfirmations(asOf, PartnerRole.Customer, "100", [partner, small]));
+        var list = await Send(new GetBalanceConfirmations(batchId));
+        var confirmation = Assert.Single(list.Items);
+        Assert.Equal((partner, "400.00", ConfirmationStatus.Generated), (confirmation.PartnerId, confirmation.OurBalance, confirmation.Status));
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString((await Send(new GetBalanceConfirmationPdf(confirmation.Id))).Content, 0, 4));
+
+        // Fara adresa nu pleaca; cu adresa, emailul intra in outbox cu PDF-ul atasat.
+        var none = await Send(new SendBalanceConfirmations(batchId, false));
+        Assert.Equal((0, 1), (none.Sent, none.WithoutEmail.Count));
+        await Query<int>("UPDATE core.Partner SET Email = N'contabilitate@partener.ro' WHERE Id = @Id; SELECT @@ROWCOUNT", new { Id = partner });
+        var sent = await Send(new SendBalanceConfirmations(batchId, false));
+        Assert.Equal(1, sent.Sent);
+        Assert.Equal(1, await Query<int>("""
+            SELECT COUNT(*) FROM core.EmailMessage AS m JOIN core.EmailMessageAttachment AS a ON a.EmailMessageId = m.Id
+            WHERE m.EntityType = 'Finance.BalanceConfirmation' AND m.EntityId = @Id AND m.ToAddress = N'contabilitate@partener.ro'
+            """, new { confirmation.Id }));
+        confirmation = Assert.Single((await Send(new GetBalanceConfirmations(batchId))).Items);
+        Assert.Equal((ConfirmationStatus.Sent, "contabilitate@partener.ro"), (confirmation.Status, confirmation.SentTo));
+
+        // Contestarea cere soldul partenerului si explicatia; diferenta se calculeaza.
+        var invalid = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new RecordBalanceConfirmationResponse(confirmation.Id, ConfirmationStatus.Contested,
+            asOf.AddDays(20), null, null, false, null, null, confirmation.RowVersion)));
+        Assert.Contains("partnerBalance", invalid.Errors.Keys);
+        await Send(new RecordBalanceConfirmationResponse(confirmation.Id, ConfirmationStatus.Contested, asOf.AddDays(20), "300", "Plata din 06.10 lipsește la noi",
+            false, "raspuns.pdf", "%PDF-1.4 raspuns"u8.ToArray(), confirmation.RowVersion));
+        var answered = Assert.Single((await Send(new GetBalanceConfirmations(batchId))).Items);
+        Assert.Equal((ConfirmationStatus.Contested, "300.00", "-100.00"), (answered.Status, answered.PartnerBalance, answered.Difference));
+        Assert.Equal("raspuns.pdf", (await Send(new GetBalanceConfirmationResponseFile(confirmation.Id))).FileName);
+        Assert.Equal((1, 1, 0), (list.Batches[0].Total, (await Send(new GetBalanceConfirmations(batchId))).Batches.Single(b => b.Id == batchId).Contested, 0));
+        // Confirmarile cu raspuns nu se mai retrimit.
+        Assert.Equal(0, (await Send(new SendBalanceConfirmations(batchId, true))).Sent);
+    }
+
     private async Task<(int Id, string Iban)> NewBankAccount()
     {
         var iban = Bank.StatementFiles.RomanianIban("RNCB", $"9{Guid.NewGuid().ToString("N")[..15].ToUpperInvariant()}");

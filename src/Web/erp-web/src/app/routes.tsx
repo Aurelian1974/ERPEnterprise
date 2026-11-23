@@ -23,6 +23,7 @@ import { PartnerFinancePage } from '../finance/PartnerFinancePage';
 import { AllocationPage } from '../finance/AllocationPage';
 import { DueSchedulePage } from '../finance/DueSchedulePage';
 import { CompensationsPage } from '../finance/CompensationsPage';
+import { BalanceConfirmationsPage } from '../finance/BalanceConfirmationsPage';
 import { CommercialPapersPage } from '../finance/CommercialPapersPage';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -60,6 +61,7 @@ export const routes = [
       { path: 'finante/decontari/scadentar', element: <DueSchedulePage /> },
       { path: 'finante/decontari/compensari', element: <CompensationsPage /> },
       { path: 'finante/decontari/efecte', element: <CommercialPapersPage /> },
+      { path: 'finante/decontari/confirmari', element: <BalanceConfirmationsPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

@@ -54,6 +54,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<TreasurySettlement>();
         services.AddScoped<ICompensationStore, CompensationStore>();
         services.AddSingleton<ICompensationPrinter, CompensationPrinter>();
+        services.AddScoped<IBalanceConfirmationStore, BalanceConfirmationStore>();
+        services.AddSingleton<IBalanceConfirmationPrinter, BalanceConfirmationPrinter>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -138,5 +140,6 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51418] = (ErpErrorKind.Validation, "FIN_ALLOCATION_CURRENCY_MISMATCH"),
         [51419] = (ErpErrorKind.NotFound, "FIN_COMPENSATION_NOT_FOUND"),
         [51420] = (ErpErrorKind.NotFound, "FIN_COMMERCIAL_PAPER_NOT_FOUND"),
+        [51421] = (ErpErrorKind.NotFound, "FIN_BALANCE_CONFIRMATION_NOT_FOUND"),
     };
 }

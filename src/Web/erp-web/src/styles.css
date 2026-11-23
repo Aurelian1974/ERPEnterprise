@@ -2915,3 +2915,8 @@ tr.clickable.picked { background: var(--info-bg); }
 .compensation .banner { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 .paper-history { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 4px; }
 .test-email { display: inline-flex; gap: 8px; align-items: center; }
+
+/* Confirmari de sold (f3-07): diferenta nenula fata de soldul partenerului. */
+.cash-list td.diff-bad {
+  color: var(--error);
+}
