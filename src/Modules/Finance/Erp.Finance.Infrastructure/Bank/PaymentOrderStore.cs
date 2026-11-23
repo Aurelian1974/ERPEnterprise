@@ -141,6 +141,10 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public const string CardSettlementDays = "Fin.Card.SettlementDays";
     public const string RequireSpvInvoice = "Fin.Payment.RequireSpvInvoice";
     public const string WriteOffMaxAmountRon = "Fin.WriteOff.MaxAmountRon";
+    public const string RevalueAdvances = "Fin.Fx.RevalueAdvances";
+
+    public async Task<bool> RevalueAdvancesAsync(int companyId, CancellationToken ct) =>
+        string.Equals(await GetAsync(companyId, RevalueAdvances, ct).ConfigureAwait(false), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task<bool> RequireApprovalAsync(int companyId, CancellationToken ct)
     {

@@ -92,6 +92,16 @@ public sealed record PenalitatiCalculate(int PenaltyCalculationId, string Number
 public sealed record DiferentaCursInregistrata(long FxDifferenceId, byte Source, DateOnly DifferenceDate, int? PartnerId, PartnerRole? Role, long? OpenItemId,
     long? AllocationId, string CurrencyCode, decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal) : IntegrationEvent;
 
+/// <summary>Totalul unei reevaluari pe cont de diferenta (765 / 665), contul elementului reevaluat (4111, 401...) si moneda (F4 5.1).</summary>
+public sealed record ReevaluareTotal(string GlAccountCode, string? CounterGlAccountCode, string CurrencyCode, decimal DifferenceRon);
+
+/// <summary>Validarea reevaluarii valutare a unei luni (F4 4.4, 5.1). Consumatori: partea contabila (nota), Raportare.</summary>
+public sealed record ReevaluareValutaraValidata(int RunId, int PeriodYear, int PeriodMonth, DateOnly RevaluationDate, IReadOnlyList<ReevaluareTotal> Totals,
+    int LineCount) : IntegrationEvent;
+
+/// <summary>Stornarea unei reevaluari validate (F4 4.5, 5.1). Consumator: partea contabila (nota inversa).</summary>
+public sealed record ReevaluareValutaraStornata(int RunId, int PeriodYear, int PeriodMonth, DateOnly ReversalDate) : IntegrationEvent;
+
 /// <summary>Soldul unui partener pe rol si moneda la o data (F3 6). Sumele urmeaza conventia de semn: debit (+), credit (−).</summary>
 public sealed record PartnerBalanceDto(int CompanyId, int PartnerId, PartnerRole Role, string CurrencyCode, decimal Balance, decimal BalanceRon,
     decimal OverdueRon, int MaxOverdueDays, decimal UnallocatedPaymentsRon, DateOnly AsOf);

@@ -58,6 +58,7 @@ public static class FinanceInfrastructureRegistration
         services.AddSingleton<IBalanceConfirmationPrinter, BalanceConfirmationPrinter>();
         services.AddScoped<IPenaltyStore, PenaltyStore>();
         services.AddScoped<IOpeningBalanceStore, OpeningBalanceStore>();
+        services.AddScoped<Application.Fx.IFxRevaluationStore, FxRevaluationStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -145,5 +146,13 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51421] = (ErpErrorKind.NotFound, "FIN_BALANCE_CONFIRMATION_NOT_FOUND"),
         [51422] = (ErpErrorKind.NotFound, "FIN_PENALTY_CALCULATION_NOT_FOUND"),
         [51423] = (ErpErrorKind.Conflict, "FIN_PENALTY_NOT_DRAFT"),
+        [51601] = (ErpErrorKind.NotFound, "FIN_FX_RUN_NOT_FOUND"),
+        [51602] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51603] = (ErpErrorKind.Conflict, "FIN_FX_RUN_NOT_DRAFT"),
+        [51604] = (ErpErrorKind.Conflict, "FIN_FX_RUN_ALREADY_VALIDATED"),
+        [51606] = (ErpErrorKind.Conflict, "FIN_FX_LATER_RUN_EXISTS"),
+        [51609] = (ErpErrorKind.Conflict, "FIN_FX_RUN_OUT_OF_ORDER"),
+        [51610] = (ErpErrorKind.Conflict, "FIN_FX_RUN_STALE"),
+        [51611] = (ErpErrorKind.Conflict, "FIN_FX_RUN_SETTLED_AFTER"),
     };
 }

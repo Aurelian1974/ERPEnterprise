@@ -1,6 +1,7 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Application.Fx;
 using Erp.Finance.Application.Settlement;
 using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
@@ -281,6 +282,22 @@ public static class FinanceApiRegistration
                 return await sender.Send(new GetOpeningBalanceImport(id), ct);
             })
             .WithName("ConfirmOpeningBalanceImport").Produces<OpeningImportDto>().Problems();
+        // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
+        finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
+            .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
+        finance.MapGet("/fx/revaluations/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluation(id), ct))
+            .WithName("GetFxRevaluation").Produces<FxRunDto>().Problems();
+        finance.MapPost("/fx/revaluations", (GenerateFxRevaluation body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateFxRevaluation").Produces<int>().Problems();
+        finance.MapPost("/fx/revaluations/{id:int}/validate", (int id, ValidateFxRevaluation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ValidateFxRevaluation").Saves();
+        finance.MapPost("/fx/revaluations/{id:int}/reverse", (int id, ReverseFxRevaluation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ReverseFxRevaluation").Saves();
+        finance.MapPost("/fx/revaluations/{id:int}/delete", (int id, DeleteFxRevaluationDraft body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("DeleteFxRevaluationDraft").Produces<bool>().Problems();
         // Efecte comerciale (F3 3.5, 4.5; macheta f3-06).
         finance.MapGet("/commercial-papers", (PaperDirection? direction, bool? activeOnly, DateOnly? maturityTo, int? year, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetCommercialPapers(direction, activeOnly ?? false, maturityTo, year), ct))

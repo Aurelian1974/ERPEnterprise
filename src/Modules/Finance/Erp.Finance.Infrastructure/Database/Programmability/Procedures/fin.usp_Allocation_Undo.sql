@@ -49,7 +49,12 @@ BEGIN
     JOIN (SELECT ItemId, SUM(Delta) AS Delta, SUM(DeltaRon) AS DeltaRon
           FROM (SELECT DebitOpenItemId AS ItemId, DebitAmount AS Delta, AmountRonDebit AS DeltaRon FROM @Rows
                 UNION ALL
-                SELECT CreditOpenItemId, -CreditAmount, -AmountRonCredit FROM @Rows) AS u
+                SELECT CreditOpenItemId, -CreditAmount, -AmountRonCredit FROM @Rows
+                UNION ALL
+                -- Partea din reevaluare care revenise alocarii (corectia F4 de la validarea rularii) se intoarce in valoarea contabila.
+                SELECT x.OpenItemId, 0, -x.DifferenceRon FROM fin.FxDifference AS x
+                WHERE x.AllocationId IN (SELECT Id FROM @Rows) AND x.RevaluationRunId IS NOT NULL AND x.IsReversal = 0
+                  AND NOT EXISTS (SELECT 1 FROM fin.FxDifference AS r WHERE r.ReversalOfId = x.Id)) AS u
           GROUP BY ItemId) AS x ON x.ItemId = o.Id;
 
     DECLARE @Touched nvarchar(max) = (SELECT Id FROM @Items FOR JSON PATH);
@@ -57,12 +62,12 @@ BEGIN
 
     DECLARE @FxOut TABLE (Id bigint);
     INSERT INTO fin.FxDifference (CompanyId, DifferenceDate, Source, AllocationId, PartnerId, Role, OpenItemId, CurrencyCode, ForeignAmount, CarryingAmountRon,
-        SettlementAmountRon, DifferenceRon, IsIndexed, GlAccountCode, IsReversal, ReversalOfId, CreatedBy)
+        SettlementAmountRon, DifferenceRon, IsIndexed, GlAccountCode, IsReversal, ReversalOfId, RevaluationRunId, CreatedBy)
     OUTPUT inserted.Id INTO @FxOut (Id)
     SELECT x.CompanyId, @Today, x.Source, x.AllocationId, x.PartnerId, x.Role, x.OpenItemId, x.CurrencyCode, -x.ForeignAmount, -x.CarryingAmountRon,
-        -x.SettlementAmountRon, -x.DifferenceRon, x.IsIndexed, x.GlAccountCode, 1, x.Id, @UserId
+        -x.SettlementAmountRon, -x.DifferenceRon, x.IsIndexed, x.GlAccountCode, 1, x.Id, x.RevaluationRunId, @UserId
     FROM fin.FxDifference AS x
-    WHERE x.AllocationId IN (SELECT Id FROM @Rows) AND x.IsReversal = 0;
+    WHERE x.AllocationId IN (SELECT Id FROM @Rows) AND x.IsReversal = 0 AND NOT EXISTS (SELECT 1 FROM fin.FxDifference AS r WHERE r.ReversalOfId = x.Id);
 
     DECLARE @VatOut TABLE (Id bigint, OpenItemId bigint, Side tinyint, ExigibilityDate date, BaseAmountRon decimal(19,2), VatAmountRon decimal(19,2));
     INSERT INTO fin.VatCashEntry (CompanyId, OpenItemId, AllocationId, Side, ExigibilityDate, BaseAmountRon, VatAmountRon, IsReversal, CreatedBy)

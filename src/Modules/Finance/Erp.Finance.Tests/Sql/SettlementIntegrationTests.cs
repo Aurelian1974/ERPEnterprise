@@ -3,6 +3,7 @@ using Dapper;
 using Erp.Core.Contracts;
 using Erp.Core.Infrastructure.Messaging;
 using Erp.Finance.Application;
+using Erp.Finance.Application.Fx;
 using Erp.Finance.Application.Settlement;
 using Erp.Finance.Application.Treasury;
 using Erp.Finance.Contracts.Settlement;
@@ -792,6 +793,77 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
             SELECT a.CrossRate, a.CrossRateSource, x.DifferenceRon FROM fin.Allocation AS a JOIN fin.FxDifference AS x ON x.AllocationId = a.Id
             WHERE a.DebitOpenItemId = @Id AND a.Status = 1
             """, new { Id = invoice }));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.02-F4-A1")]
+    [Trait("Criteriu", "02.02-F4-A7")]
+    [Trait("Criteriu", "02.02-F4-A8")]
+    [Trait("Criteriu", "02.02-F4-A9")]
+    public async Task The_monthly_revaluation_uses_month_end_balances_corrects_later_payments_and_can_be_reversed_exactly()
+    {
+        Permissions.UnionWith([FinancePermissions.FxView, FinancePermissions.FxRevalue, FinancePermissions.FxReverseRevaluation]);
+        var company = Database.FxCompanyId;
+        foreach (var (day, rate) in new[] { (new DateOnly(2024, 1, 31), 4.97m), (new DateOnly(2024, 2, 29), 4.98m) })
+        {
+            await Query<int>("""
+                MERGE core.ExchangeRate AS t USING (SELECT 'EUR' AS CurrencyCode, @Day AS RateDate) AS s ON t.CurrencyCode = s.CurrencyCode AND t.RateDate = s.RateDate
+                WHEN MATCHED THEN UPDATE SET Rate = @Rate
+                WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, @Rate, 1, 'BNR', 1);
+                SELECT @@ROWCOUNT
+                """, new { Day = day.ToDateTime(TimeOnly.MinValue), Rate = rate });
+        }
+
+        var partner = await NewPartner();
+        var customer = await Register(Sale(partner, 1000m, new DateOnly(2024, 1, 10), new DateOnly(2024, 2, 10)) with
+        {
+            CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 4950m, CompanyId = company,
+        });
+        var supplier = await Register(Purchase(partner, 2000m, new DateOnly(2024, 1, 15)) with
+        {
+            CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 9900m, CompanyId = company,
+        });
+        var advance = await Register(Sale(partner, 500m, new DateOnly(2024, 1, 20), new DateOnly(2024, 1, 20)) with
+        {
+            CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 2475m, IsAdvanceInvoice = true, CompanyId = company,
+        });
+
+        // Incasarea din 10 februarie (1.000 EUR la 4,99), inregistrata inainte de reevaluarea lui ianuarie: castig realizat 40 fata de 4.950.
+        await InTransaction(sp => sp.GetRequiredService<ISettlementService>().RegisterPaymentAsync(new PaymentSettlementRequest(company, partner,
+            PartnerRole.Customer, "Finance.CashDocument", Interlocked.Increment(ref paymentSequence), "", "FX-IN", new DateOnly(2024, 2, 10), "EUR", 4.99m, 1000m,
+            4990m, false, [new SettlementTarget(customer, null)], false), Ct), company);
+        Assert.Equal(40m, await Query<decimal>("SELECT SUM(DifferenceRon) FROM fin.FxDifference WHERE OpenItemId = @Id", new { Id = customer }));
+
+        // A7: rularea lui ianuarie, generata dupa plata, foloseste restul de la sfarsitul lunii; A8: avansul nu intra.
+        var january = await SendTo(company, new GenerateFxRevaluation(2024, 1));
+        var draft = await SendTo(company, new GetFxRevaluation(january));
+        Assert.Equal([(customer, "1000.00", "4950.00", "4970.00", "20.00"), (supplier, "-2000.00", "-9900.00", "-9940.00", "-40.00")],
+            draft.Lines.OrderBy(l => l.OpenItemId).Select(l => (l.OpenItemId!.Value, l.ForeignAmount, l.CarryingAmountRon, l.RevaluedAmountRon, l.DifferenceRon)));
+        Assert.DoesNotContain(draft.Lines, l => l.OpenItemId == advance);
+
+        // Validarea: datoria devine −9.940 la 4,97; partea facturii platite in februarie corecteaza diferenta realizata (40 − 20), total 40 = 4.990 − 4.950.
+        var validated = await SendTo(company, new ValidateFxRevaluation(january, draft.RowVersion));
+        Assert.Equal((-9940m, 4.97m), await Query<(decimal, decimal)>("SELECT OpenAmountRon, CarryingRate FROM fin.OpenItem WHERE Id = @Id", new { Id = supplier }));
+        Assert.Equal(0m, await Query<decimal>("SELECT OpenAmountRon FROM fin.OpenItem WHERE Id = @Id", new { Id = customer }));
+        Assert.Equal(20m, await Query<decimal>("SELECT SUM(DifferenceRon) FROM fin.FxDifference WHERE OpenItemId = @Id", new { Id = customer }));
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%ReevaluareValutaraValidata' AND Payload LIKE @Like",
+            new { Like = $"%\"runId\":{january}[,}}]%" }));
+
+        // A9: a doua rulare validata pe aceeasi luna e refuzata; stornarea readuce exact valorile de dinainte.
+        Assert.Equal("FIN_FX_RUN_ALREADY_VALIDATED", (await Assert.ThrowsAsync<ErpException>(() => SendTo(company, new GenerateFxRevaluation(2024, 1)))).Code);
+        await SendTo(company, new ReverseFxRevaluation(january, validated.RowVersion));
+        Assert.Equal((-9900m, 4.95m), await Query<(decimal, decimal)>("SELECT OpenAmountRon, CarryingRate FROM fin.OpenItem WHERE Id = @Id", new { Id = supplier }));
+        Assert.Equal(40m, await Query<decimal>("SELECT SUM(DifferenceRon) FROM fin.FxDifference WHERE OpenItemId = @Id", new { Id = customer }));
+        Assert.Equal(FxRunStatus.Reversed, (await SendTo(company, new GetFxRevaluation(january))).Status);
+
+        // Dupa stornare se genereaza si se valideaza alta rulare; cu Fin.Fx.RevalueAdvances pornita, avansul intra in februarie.
+        var again = await SendTo(company, new GenerateFxRevaluation(2024, 1));
+        await SendTo(company, new ValidateFxRevaluation(again, (await SendTo(company, new GetFxRevaluation(again))).RowVersion));
+        await InTransaction(sp => sp.GetRequiredService<Application.Bank.IFinanceSettings>().SaveAsync(company, "Fin.Fx.RevalueAdvances", "true", Database.AdminId, Ct)
+            .ContinueWith(_ => 0, TaskScheduler.Default), company);
+        var february = await SendTo(company, new GetFxRevaluation(await SendTo(company, new GenerateFxRevaluation(2024, 2))));
+        Assert.Equal([(supplier, "-20.00"), (advance, "15.00")], february.Lines.OrderBy(l => l.OpenItemId).Select(l => (l.OpenItemId!.Value, l.DifferenceRon)));
+        await SendTo(company, new DeleteFxRevaluationDraft(february.Id, february.RowVersion));
     }
 
     private Task<T> SendTo<T>(int company, MediatR.IRequest<T> request) => Send(request, companyId: company);
