@@ -125,3 +125,19 @@ public interface IAttachmentStore
 
     Task<IReadOnlyList<AttachmentInfo>> ListAsync(string entityType, long entityId, CancellationToken ct);
 }
+
+/// <summary>Un email de trimis din aplicatie (02.01, 4.7): destinatarul, subiectul, textul si atasamentele (core.Attachment ale firmei).</summary>
+public sealed record EmailRequest(string To, string? Cc, string Subject, string Body, bool IsHtml, IReadOnlyList<int> AttachmentIds, string? EntityType = null,
+    long? EntityId = null);
+
+/// <summary>
+/// Emailul pleaca din outbox (02.01, 4.7): mesajul se scrie in tranzactia operatiei, impreuna cu evenimentul EmailCerut; Worker-ul il trimite
+/// prin serverul SMTP al instalarii, cu reincercarile outbox-ului.
+/// </summary>
+public interface IEmailOutbox
+{
+    Task<int> EnqueueAsync(EmailRequest email, CancellationToken ct);
+}
+
+/// <summary>Cererea de trimitere a unui email (02.01, 4.7), consumata de Worker.</summary>
+public sealed record EmailCerut(int EmailMessageId) : IntegrationEvent;

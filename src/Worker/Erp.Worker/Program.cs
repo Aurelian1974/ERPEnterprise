@@ -68,6 +68,8 @@ builder.Services.AddTransient<BnrRatesJob>();
 // Procesatorul outbox-ului (02.01, 4.5): consumatorii modulelor se inregistreaza cu AddIntegrationEventHandler.
 builder.Services.AddOutboxDispatcher(connectionString);
 // Finante (02.02, F1 5.2; F3 5.2): atribuirile la case ale utilizatorului dezactivat se inchid; facturile din Vanzari si Achizitii devin partide.
+// Emailul din aplicatie (02.01, 4.7): mesajele puse in outbox pleaca prin serverul SMTP al instalarii.
+builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.EmailCerut, Erp.Core.Infrastructure.Data.SendEmail>();
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();

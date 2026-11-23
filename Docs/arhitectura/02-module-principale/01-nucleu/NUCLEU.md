@@ -552,6 +552,8 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 3. Emailul pleacă din outbox prin serverul SMTP configurat la instalare (setările `Smtp.*`, parola criptată cu Data Protection, `NET-17`), după preferințele utilizatorului pentru fiecare tip de notificare.
 4. Notificări trimise de Nucleu: licența expiră în 30 de zile, mesaj outbox eșuat definitiv, cont blocat după încercări greșite (către administratori). Celelalte module își definesc propriile notificări.
 
+**Implementare email (23.11.2026, decizia lui Aurelian de a-l construi pentru confirmările de sold):** migrarea `2026.11.042` (`core.EmailMessage`, `core.EmailMessageAttachment`), `IEmailOutbox` în `Erp.Core.Contracts`: mesajul se scrie în tranzacția operației, împreună cu evenimentul `EmailCerut` în outbox; consumatorul `SendEmail` din Worker îl trimite prin SMTP (MailKit) cu atașamentele lui (atașamentele Nucleului), o singură dată, iar o eroare rămâne pe mesaj (`LastError`, `Attempts`) și se reia după regulile outbox-ului. Setările SMTP ale instalării (Configurare › Setări › Email, `Core.Settings.Manage`): serverul, portul, criptarea (STARTTLS, SSL), utilizatorul, expeditorul și adresa de răspuns în cheia `Smtp.Settings`, parola criptată cu Data Protection în `Smtp.Password` (nu se întoarce niciodată; gol = rămâne cea salvată); „Trimite email de test” trimite imediat (`CORE_SMTP_NOT_CONFIGURED`, `CORE_EMAIL_SEND_FAILED` 503). Rămân de făcut: suprascrierea pe firmă, limita de mesaje pe minut, BCC-ul pentru facturi, notificările (`INotificationService`) și preferințele de email pe tip de notificare.
+
 ### 4.8 Import inițial din Excel
 
 1. Utilizatorul descarcă șablonul Excel al entității (parteneri, articole; soldurile inițiale se importă în modulele lor).

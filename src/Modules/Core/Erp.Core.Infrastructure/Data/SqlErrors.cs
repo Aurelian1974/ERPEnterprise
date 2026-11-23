@@ -43,6 +43,7 @@ public sealed class CoreSqlErrors : ISqlErrorMap
         [50035] = (ErpErrorKind.Conflict, "CORE_ROLE_PROTECTED"),
         [50036] = (ErpErrorKind.Validation, "CORE_PERMISSION_OVERRIDE_INVALID"),
         [50037] = (ErpErrorKind.Forbidden, "CORE_OWNER_ACCESS_DENIED"),
+        [50040] = (ErpErrorKind.NotFound, "CORE_ATTACHMENT_NOT_FOUND"),
     };
 }
 

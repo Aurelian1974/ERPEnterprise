@@ -21,6 +21,9 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<IOutbox, OutboxWriter>();
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddScoped<IAttachmentStore, Data.AttachmentStore>();
+        services.AddScoped<IEmailOutbox, Data.EmailOutbox>();
+        services.TryAddSingleton<Application.Settings.IEmailTransport, Data.MailKitTransport>();
+        services.TryAddSingleton<Application.Settings.ISecretProtector, Data.SecretProtector>();
         services.AddScoped<IUserContextLoader, UserContextLoader>();
         services.AddScoped<Application.Organization.IOrganizationStore, Organization.OrganizationStore>();
         services.AddScoped<INumberSeriesService, Organization.NumberSeriesService>();

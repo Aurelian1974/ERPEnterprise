@@ -177,6 +177,13 @@ public static class CoreApiRegistration
     // Configurare › Setari (macheta 07f) si interogarea ANAF a unui CUI („Preia de la ANAF” pe fisa partenerului).
     private static void MapSettings(RouteGroupBuilder core)
     {
+        // Email SMTP (02.01, 4.7; macheta 07f): setarile instalarii, parola criptata, emailul de test.
+        core.MapGet("/settings/smtp", (ISender sender, CancellationToken ct) => sender.Send(new GetSmtpSettings(), ct))
+            .WithName("GetSmtpSettings").Produces<SmtpSettingsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        core.MapPut("/settings/smtp", (SaveSmtpSettings body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveSmtpSettings").Produces<SmtpSettingsDto>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status409Conflict);
+        core.MapPost("/settings/smtp/test", (SendTestEmail body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SendTestEmail").Produces<SmtpTestResultDto>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         core.MapGet("/settings", (ISender sender, CancellationToken ct) => sender.Send(new GetInstallationSettings(), ct))
             .WithName("GetInstallationSettings").Produces<InstallationSettingsDto>().ProducesProblem(StatusCodes.Status403Forbidden);
         core.MapPut("/settings", (SaveInstallationSettings body, ISender sender, CancellationToken ct) => sender.Send(body, ct))

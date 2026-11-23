@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Accesul la date al Nucleului (Dapper + proceduri stocate, NET-06/07), licenta, outbox si audit. Database\ = scripturile din kit. -->
+  <!-- Data Protection (parola SMTP criptata, NET-17), aceeasi ca in Erp.Host si Erp.Worker. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="ClosedXML" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
