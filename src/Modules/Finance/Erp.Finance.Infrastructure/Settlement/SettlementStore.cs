@@ -53,11 +53,14 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         table.Columns.Add("Amount", typeof(decimal));
         table.Columns.Add("AllocationDate", typeof(DateTime));
         table.Columns.Add("Source", typeof(byte));
+        table.Columns.Add("CompensationId", typeof(int));
+        table.Columns.Add("WriteOffId", typeof(int));
+        table.Columns.Add("CommercialPaperId", typeof(int));
         for (var i = 0; i < allocations.Count; i++)
         {
             var a = allocations[i];
             table.Rows.Add(i + 1, a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, a.AllocationDate is { } d ? d.ToDateTime(TimeOnly.MinValue) : DBNull.Value,
-                (byte)a.Source);
+                (byte)a.Source, (object?)a.CompensationId ?? DBNull.Value, (object?)a.WriteOffId ?? DBNull.Value, (object?)a.CommercialPaperId ?? DBNull.Value);
         }
 
         using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_Allocation_CreateBatch",
@@ -179,6 +182,18 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             profile.PenaltyGraceDays, profile.PenaltyCapAtPrincipal, profile.ApplyFixedRecoveryCost, profile.IsPaymentBlocked, profile.BlockReason,
             profile.BalanceConfirmationEmail, profile.RowVersion, UserId = userId,
         }, ct));
+
+    public async Task<WriteOffCreated> CreateWriteOffAsync(int companyId, long openItemId, decimal? amount, WriteOffReason reason, string? note,
+        DateOnly documentDate, decimal maxAmountRon, bool allowAboveThreshold, int userId, CancellationToken ct)
+    {
+        var r = await session.Connection.QuerySingleAsync<(int WriteOffId, long WriteOffOpenItemId, decimal Amount, bool ItemIsDebit)>(Command(
+            "fin.usp_WriteOff_Create", new
+            {
+                CompanyId = companyId, OpenItemId = openItemId, Amount = amount, Reason = (byte)reason, Note = note, DocumentDate = Day(documentDate),
+                MaxAmountRon = maxAmountRon, AllowAboveThreshold = allowAboveThreshold, UserId = userId,
+            }, ct)).ConfigureAwait(false);
+        return new WriteOffCreated(r.WriteOffId, r.WriteOffOpenItemId, r.Amount, r.ItemIsDebit);
+    }
 
     public Task<long?> FindBySourceAsync(string sourceDocumentType, long sourceDocumentId, PartnerRole role, CancellationToken ct) =>
         session.Connection.QuerySingleOrDefaultAsync<long?>(Command("fin.usp_OpenItem_FindBySource",

@@ -13,7 +13,7 @@ import { isoToRo } from '../partners/partnerModel';
 import { formatAmount } from './cashApi';
 import { parseAmount } from './TreasurySettingsTab';
 import { AllocationTable } from './PartnerFinancePage';
-import { kindLabel, pairAllocations, proposeFifo, Role, settlementKeys, useOpenItems, usePartnerAllocations, type OpenItem } from './settlementApi';
+import { kindLabel, pairAllocations, proposeFifo, Role, settlementKeys, smallRemainders, useOpenItems, usePartnerAllocations, type OpenItem } from './settlementApi';
 
 async function searchPartners(text: string): Promise<Option[]> {
   const page = unwrap(await api.GET('/api/core/partners', { params: { query: { ...(text === '' ? {} : { Search: text }), IsActive: true, PageSize: 30 } } }));
@@ -79,7 +79,7 @@ export function AllocationPage() {
           : items.isError ? <ErrorBanner message={items.error.message} />
             : items.data === undefined ? <p className="muted" role="status">{t('app.loading')}</p>
               : <Workbench key={`${partnerId}-${role}-${items.dataUpdatedAt}`} partnerId={partnerId} role={role} items={items.data}
-                canAllocate={user.permissions.includes('Fin.Allocation.Manage')} />}
+                canAllocate={user.permissions.includes('Fin.Allocation.Manage')} canWriteOff={user.permissions.includes('Fin.WriteOff.Create')} />}
       </section>
       {partnerId !== undefined && allocations.data !== undefined && allocations.data.length > 0 && (
         <section className="card">
@@ -91,8 +91,8 @@ export function AllocationPage() {
   );
 }
 
-function Workbench({ partnerId, role, items, canAllocate }: { readonly partnerId: number; readonly role: number; readonly items: readonly OpenItem[];
-  readonly canAllocate: boolean }) {
+function Workbench({ partnerId, role, items, canAllocate, canWriteOff }: { readonly partnerId: number; readonly role: number;
+  readonly items: readonly OpenItem[]; readonly canAllocate: boolean; readonly canWriteOff: boolean }) {
   const queryClient = useQueryClient();
   const { notify } = useNotifier();
   const debits = items.filter((i) => Number(i.openAmount) > 0);
@@ -100,6 +100,13 @@ function Workbench({ partnerId, role, items, canAllocate }: { readonly partnerId
   const [picked, setPicked] = useState<ReadonlyMap<number, string>>(new Map());
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const threshold = useQuery({
+    queryKey: ['finance', 'settlement', 'write-off-threshold'],
+    queryFn: async () => unwrap(await api.GET('/api/finance/write-offs/threshold')),
+    enabled: canWriteOff,
+  });
+  const [adjust, setAdjust] = useState(false);
+  const [reason, setReason] = useState(2);
 
   const amountOf = (id: number) => Number(parseAmount(picked.get(id) ?? '') ?? 0);
   const sum = (list: readonly OpenItem[]) => list.reduce((total, i) => total + (picked.has(i.openItemId) ? amountOf(i.openItemId) : 0), 0);
@@ -122,10 +129,14 @@ function Workbench({ partnerId, role, items, canAllocate }: { readonly partnerId
     setPicked(next);
   };
 
+  const take = (list: readonly OpenItem[]) => list.filter((i) => picked.has(i.openItemId)).map((i) => ({ id: i.openItemId, amount: amountOf(i.openItemId) }));
+  const plannedPairs = pairAllocations(take(debits), take(credits));
+  const small = canWriteOff && threshold.data !== undefined
+    ? smallRemainders(items, [...picked.keys()], plannedPairs, Number(threshold.data)) : [];
+
   const allocate = async (confirm = false) => {
     setError(undefined);
-    const take = (list: readonly OpenItem[]) => list.filter((i) => picked.has(i.openItemId)).map((i) => ({ id: i.openItemId, amount: amountOf(i.openItemId) }));
-    const pairs = pairAllocations(take(debits), take(credits));
+    const pairs = plannedPairs;
     if (pairs.length === 0) {
       setError(t('settle.alloc.nothing'));
       return;
@@ -134,7 +145,11 @@ function Workbench({ partnerId, role, items, canAllocate }: { readonly partnerId
     try {
       unwrap(await api.POST('/api/finance/allocations', { body: { partnerId, role, confirmWarnings: confirm,
         pairs: pairs.map((p) => ({ debitOpenItemId: p.debitId, creditOpenItemId: p.creditId, amount: p.amount.toFixed(2) })) } }));
-      notify(t('settle.alloc.done', { count: pairs.length }));
+      if (adjust && small.length > 0) {
+        unwrap(await api.POST('/api/finance/write-offs', { body: { reason, note: null, documentDate: null,
+          items: small.map((r) => ({ openItemId: r.id, amount: r.amount.toFixed(2) })) } }));
+      }
+      notify(t(adjust && small.length > 0 ? 'settle.alloc.adjusted' : 'settle.alloc.done', { count: pairs.length }));
       setPicked(new Map());
       await queryClient.invalidateQueries({ queryKey: settlementKeys.all });
     } catch (e) {
@@ -160,6 +175,21 @@ function Workbench({ partnerId, role, items, canAllocate }: { readonly partnerId
       {picked.size > 0 && difference !== 0 && (
         <div className="banner warn">{t('settle.alloc.difference', { amount: formatAmount(Math.abs(difference).toFixed(2)),
           side: t(difference > 0 ? 'settle.col.debit' : 'settle.col.credit') })}</div>
+      )}
+      {small.length > 0 && (
+        <div className="write-off-box">
+          {small.map((r) => (
+            <label key={r.id} className="check"><input type="checkbox" checked={adjust} onChange={(e) => setAdjust(e.target.checked)} />
+              {t('settle.alloc.writeOff', { amount: formatAmount(r.amount.toFixed(2)), document: r.documentNo, reason: t(reason === 1 ? 'settle.reason.1'
+                : reason === 2 ? 'settle.reason.2' : 'settle.reason.3') })}</label>
+          ))}
+          <select className="cell-input" value={reason} aria-label={t('settle.alloc.writeOffReason')} onChange={(e) => setReason(Number(e.target.value))}>
+            <option value={1}>{t('settle.reason.1')}</option>
+            <option value={2}>{t('settle.reason.2')}</option>
+            <option value={3}>{t('settle.reason.3')}</option>
+          </select>
+          <span className="muted small">{t('settle.alloc.writeOffHint', { limit: formatAmount(threshold.data ?? '0') })}</span>
+        </div>
       )}
       <ErrorBanner message={error} />
       {canAllocate && (

@@ -644,6 +644,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/write-offs/threshold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetWriteOffThreshold"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/write-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateWriteOffs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/allocations/{id}/undo": {
         parameters: {
             query?: never;
@@ -7178,6 +7210,9 @@ export interface components {
             cardFeeTolerancePercent: string;
             /** Format: int32 */
             cardSettlementDays: number;
+            /** Format: int32 */
+            requireSpvInvoice: number;
+            writeOffMaxAmountRon: string;
         };
         SaveFinanceSettings: {
             requireApproval: boolean;
@@ -7186,6 +7221,9 @@ export interface components {
             cardFeeTolerancePercent: string;
             /** Format: int32 */
             cardSettlementDays: number;
+            /** Format: int32 */
+            requireSpvInvoice: number;
+            writeOffMaxAmountRon: string;
         };
         BankLookupsDto: {
             operationTypes: components["schemas"]["BankOperationTypeDto"][];
@@ -7497,6 +7535,19 @@ export interface components {
             to: string;
             days: components["schemas"]["DueScheduleDayDto"][];
         };
+        CreateWriteOffs: {
+            items: components["schemas"]["WriteOffInput"][];
+            reason: components["schemas"]["WriteOffReason"];
+            note?: null | string;
+            /** Format: date */
+            documentDate?: null | string;
+        };
+        WriteOffInput: {
+            /** Format: int64 */
+            openItemId: number;
+            amount: null | string;
+        };
+        WriteOffReason: number;
     };
     responses: never;
     parameters: never;
@@ -10409,6 +10460,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AllocationsCreatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetWriteOffThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateWriteOffs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWriteOffs"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
                 };
             };
             /** @description Bad Request */

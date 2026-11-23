@@ -3752,6 +3752,140 @@
         }
       }
     },
+    "/api/finance/write-offs/threshold": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetWriteOffThreshold",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/write-offs": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreateWriteOffs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWriteOffs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/allocations/{id}/undo": {
       "post": {
         "tags": [
@@ -31949,7 +32083,9 @@
           "requireApproval",
           "autoValidateLevel",
           "cardFeeTolerancePercent",
-          "cardSettlementDays"
+          "cardSettlementDays",
+          "requireSpvInvoice",
+          "writeOffMaxAmountRon"
         ],
         "type": "object",
         "properties": {
@@ -31966,6 +32102,13 @@
           "cardSettlementDays": {
             "type": "integer",
             "format": "int32"
+          },
+          "requireSpvInvoice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "writeOffMaxAmountRon": {
+            "type": "string"
           }
         }
       },
@@ -31974,7 +32117,9 @@
           "requireApproval",
           "autoValidateLevel",
           "cardFeeTolerancePercent",
-          "cardSettlementDays"
+          "cardSettlementDays",
+          "requireSpvInvoice",
+          "writeOffMaxAmountRon"
         ],
         "type": "object",
         "properties": {
@@ -31991,6 +32136,13 @@
           "cardSettlementDays": {
             "type": "integer",
             "format": "int32"
+          },
+          "requireSpvInvoice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "writeOffMaxAmountRon": {
+            "type": "string"
           }
         }
       },
@@ -33128,6 +33280,59 @@
             }
           }
         }
+      },
+      "CreateWriteOffs": {
+        "required": [
+          "items",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WriteOffInput"
+            }
+          },
+          "reason": {
+            "$ref": "#/components/schemas/WriteOffReason"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "WriteOffInput": {
+        "required": [
+          "openItemId",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "WriteOffReason": {
+        "type": "integer"
       }
     }
   },

@@ -35,6 +35,14 @@ public enum AutoAllocationMode : byte
     None = 3,
 }
 
+/// <summary>Motivul ajustarii unei diferente mici (F3 3.6).</summary>
+public enum WriteOffReason : byte
+{
+    Rounding = 1,
+    FeeWithheldByPartner = 2,
+    AcceptedDifference = 3,
+}
+
 /// <summary>O partida pe care se poate aloca, in ordinea in care se aloca; Open e restul in valoare absoluta.</summary>
 public sealed record AllocationCandidate(long Id, decimal Open);
 

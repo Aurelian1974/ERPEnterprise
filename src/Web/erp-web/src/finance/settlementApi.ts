@@ -167,3 +167,17 @@ export function proposeFifo(items: readonly OpenItem[]): { debits: Map<number, n
   }
   return result;
 }
+
+/**
+ * Ce ramane pe fiecare partida aleasa dupa perechile de alocare (F3 4.3 pasul 4): restul absolut minus suma alocata pe ea; doar resturile
+ * pozitive mai mici sau egale cu pragul ajustarii (diferente mici de ajustat, F3 3.6).
+ */
+export function smallRemainders(items: readonly OpenItem[], picked: readonly number[], pairs: readonly { debitId: number; creditId: number; amount: number }[],
+  limit: number): { id: number; documentNo: string; amount: number }[] {
+  return items.filter((i) => picked.includes(i.openItemId)).map((i) => {
+    const allocated = pairs.filter((p) => p.debitId === i.openItemId || p.creditId === i.openItemId).reduce((sum, p) => sum + Math.round(p.amount * 100), 0);
+    return { id: i.openItemId, documentNo: i.documentNo, amount: (Math.round(Math.abs(Number(i.openAmount)) * 100) - allocated) / 100 };
+  }).filter((r) => r.amount > 0 && r.amount <= limit && allocatedAny(pairs, r.id));
+}
+
+const allocatedAny = (pairs: readonly { debitId: number; creditId: number }[], id: number) => pairs.some((p) => p.debitId === id || p.creditId === id);

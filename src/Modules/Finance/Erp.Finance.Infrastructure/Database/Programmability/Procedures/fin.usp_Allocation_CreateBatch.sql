@@ -52,11 +52,11 @@ BEGIN
         THROW 51403, N'Suma alocată depășește restul de plată.', 1;
 
     DECLARE @Rows TABLE (RowNo int PRIMARY KEY, DebitOpenItemId bigint, CreditOpenItemId bigint, Amount decimal(19,2), AllocationDate date, Source tinyint,
-                         AmountRonDebit decimal(19,2), AmountRonCredit decimal(19,2));
+                         AmountRonDebit decimal(19,2), AmountRonCredit decimal(19,2), CompensationId int, WriteOffId int, CommercialPaperId int);
     INSERT INTO @Rows
     SELECT a.RowNo, a.DebitOpenItemId, a.CreditOpenItemId, a.Amount,
         ISNULL(a.AllocationDate, CASE WHEN d.DocumentDate >= c.DocumentDate THEN d.DocumentDate ELSE c.DocumentDate END), a.Source,
-        ROUND(a.Amount * d.ExchangeRate, 2), ROUND(a.Amount * c.ExchangeRate, 2)
+        ROUND(a.Amount * d.ExchangeRate, 2), ROUND(a.Amount * c.ExchangeRate, 2), a.CompensationId, a.WriteOffId, a.CommercialPaperId
     FROM @Allocations AS a
     JOIN @Items AS d ON d.Id = a.DebitOpenItemId
     JOIN @Items AS c ON c.Id = a.CreditOpenItemId;
@@ -65,8 +65,10 @@ BEGIN
     MERGE fin.Allocation AS t
     USING @Rows AS a ON 1 = 0
     WHEN NOT MATCHED THEN
-        INSERT (CompanyId, DebitOpenItemId, CreditOpenItemId, DebitAmount, CreditAmount, AmountRonDebit, AmountRonCredit, AllocationDate, Source, Status, CreatedBy)
-        VALUES (@CompanyId, a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, a.Amount, a.AmountRonDebit, a.AmountRonCredit, a.AllocationDate, a.Source, 1, @UserId)
+        INSERT (CompanyId, DebitOpenItemId, CreditOpenItemId, DebitAmount, CreditAmount, AmountRonDebit, AmountRonCredit, AllocationDate, Source,
+                CompensationId, WriteOffId, CommercialPaperId, Status, CreatedBy)
+        VALUES (@CompanyId, a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, a.Amount, a.AmountRonDebit, a.AmountRonCredit, a.AllocationDate, a.Source,
+                a.CompensationId, a.WriteOffId, a.CommercialPaperId, 1, @UserId)
     OUTPUT inserted.Id, a.RowNo INTO @Inserted (AllocationId, RowNo);
 
     -- Restul de plata si data inchiderii.

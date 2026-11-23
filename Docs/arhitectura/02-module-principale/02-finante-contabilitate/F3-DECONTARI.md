@@ -670,6 +670,6 @@ Criteriile F3-A4, F3-A5 și F3-A7 sunt critice: un sold greșit sau un TVA exigi
 | # | Ce | Când |
 | --- | --- | --- |
 | 1 | Scadențar (f3-04): vizualizarea Calendar, exportul Excel și „Trimite în propunere de plată” | Cu F5 Planificarea trezoreriei |
-| 2 | Alocare (f3-03): ajustarea diferenței mici rămase (sub pragul de 5 lei) direct din ecran | Cu F3.4 (ajustările, `WriteOff`) |
+| 2 | ~~Alocare (f3-03): ajustarea diferenței mici rămase (sub pragul de 5 lei) direct din ecran~~ | Făcut în F3.4a (23.11.2026) |
 | 3 | Alocare (f3-03): propunerile pe combinații de facturi care dau suma plății (cel mult 5 facturi, F3 4.3 pasul 3) | De planificat |
 | 4 | Factura pe părțile liniei de extras (alegerea din lista facturilor deschise la explicarea liniei) | Cu pasul de potrivire pe facturi din F2 (4.3, pasul 4) |

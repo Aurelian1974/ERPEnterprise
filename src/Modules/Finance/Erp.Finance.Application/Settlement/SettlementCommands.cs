@@ -304,3 +304,68 @@ internal sealed class SavePartnerFinanceProfileHandler(ISettlementStore store, I
         return version;
     }
 }
+
+// ---------- Ajustarea diferentelor mici (F3 3.6, 4.8) ----------
+
+public sealed record WriteOffInput(long OpenItemId, string? Amount);
+
+/// <summary>
+/// Ajusteaza diferentele mici ramase pe partide (F3 3.6, 4.8): pentru fiecare, un document de ajustare cu partida lui de tip 9 si alocarea
+/// (Source = 6), cu TVA-ul la incasare si evenimentele; suma implicita e tot restul. Peste pragul Fin.WriteOff.MaxAmountRon cere
+/// Fin.WriteOff.AboveThreshold (FIN_WRITEOFF_ABOVE_THRESHOLD); perioada datei trebuie sa fie deschisa.
+/// </summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.WriteOffCreate)]
+[Audited("Fin.WriteOff.Create")]
+public sealed record CreateWriteOffs(IReadOnlyList<WriteOffInput> Items, WriteOffReason Reason, string? Note = null, DateOnly? DocumentDate = null)
+    : ICommand<IReadOnlyList<int>>;
+
+internal sealed class CreateWriteOffsValidator : AbstractValidator<CreateWriteOffs>
+{
+    public CreateWriteOffsValidator()
+    {
+        RuleFor(x => x.Items).NotEmpty().WithMessage("Alegeți cel puțin o partidă.")
+            .Must(i => i.Count <= 500 && i.Select(x => x.OpenItemId).Distinct().Count() == i.Count).WithMessage("Cel mult 500 de partide, fiecare o singură dată.");
+        RuleForEach(x => x.Items).ChildRules(i =>
+            i.RuleFor(x => x.Amount).Must(a => a is null || Money.TryParse(a, out var v) && v > 0).WithMessage("Suma ajustată trebuie să fie pozitivă."));
+        RuleFor(x => x.Reason).IsInEnum();
+        RuleFor(x => x.Note).MaximumLength(500);
+    }
+}
+
+internal sealed class CreateWriteOffsHandler(ISettlementStore store, SettlementService settlement, Bank.IFinanceSettings settings, ICurrentContext context,
+    IPeriodLock periods, TimeProvider time, IAuditScope audit) : ICommandHandler<CreateWriteOffs, IReadOnlyList<int>>
+{
+    public async Task<IReadOnlyList<int>> Handle(CreateWriteOffs request, CancellationToken cancellationToken)
+    {
+        var date = request.DocumentDate ?? BusinessDay.Today(time);
+        await CashAccess.EnsureOpenPeriodAsync(periods, context.CompanyId, date, cancellationToken).ConfigureAwait(false);
+        var threshold = await settings.WriteOffMaxAmountRonAsync(context.CompanyId, cancellationToken).ConfigureAwait(false);
+        var above = context.HasPermission(FinancePermissions.WriteOffAboveThreshold);
+        var created = new List<int>();
+        foreach (var item in request.Items)
+        {
+            var w = await store.CreateWriteOffAsync(context.CompanyId, item.OpenItemId, Money.ParseOptional(item.Amount), request.Reason,
+                string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(), date, threshold, above, context.UserId, cancellationToken).ConfigureAwait(false);
+            var pair = w.ItemIsDebit
+                ? new AllocationRequest(item.OpenItemId, w.WriteOffOpenItemId, w.Amount, date, AllocationSource.WriteOff) { WriteOffId = w.WriteOffId }
+                : new AllocationRequest(w.WriteOffOpenItemId, item.OpenItemId, w.Amount, date, AllocationSource.WriteOff) { WriteOffId = w.WriteOffId };
+            await settlement.AllocateAsync(context.CompanyId, [pair], cancellationToken).ConfigureAwait(false);
+            created.Add(w.WriteOffId);
+        }
+
+        audit.Describe("Fin.WriteOff", null, new { request.Reason, WriteOffs = created, Items = request.Items.Select(i => i.OpenItemId) });
+        return created;
+    }
+}
+
+/// <summary>Pragul ajustarii diferentelor mici, in lei (Fin.WriteOff.MaxAmountRon, implicit 5), pentru ecranul Alocare.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PartnerBalanceView)]
+public sealed record GetWriteOffThreshold : IQuery<string>;
+
+internal sealed class GetWriteOffThresholdHandler(Bank.IFinanceSettings settings, ICurrentContext context) : IQueryHandler<GetWriteOffThreshold, string>
+{
+    public async Task<string> Handle(GetWriteOffThreshold request, CancellationToken cancellationToken) =>
+        Money.Format(await settings.WriteOffMaxAmountRonAsync(context.CompanyId, cancellationToken).ConfigureAwait(false));
+}

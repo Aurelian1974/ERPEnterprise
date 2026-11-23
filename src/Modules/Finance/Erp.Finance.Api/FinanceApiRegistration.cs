@@ -199,6 +199,10 @@ public static class FinanceApiRegistration
             .WithName("SavePartnerFinanceProfile").Produces<byte[]>().Problems();
         finance.MapPost("/allocations", (AllocateManually body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("AllocateManually").Produces<AllocationsCreatedDto>().Problems();
+        finance.MapGet("/write-offs/threshold", (ISender sender, CancellationToken ct) => sender.Send(new GetWriteOffThreshold(), ct))
+            .WithName("GetWriteOffThreshold").Produces<string>().Problems();
+        finance.MapPost("/write-offs", (CreateWriteOffs body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreateWriteOffs").Produces<IReadOnlyList<int>>().Problems();
         finance.MapPost("/allocations/{id:long}/undo", (long id, UndoAllocation body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { AllocationId = id }, ct))
             .WithName("UndoAllocation").Produces<bool>().Problems();

@@ -388,6 +388,39 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Contains("to", tooLong.Errors.Keys);
     }
 
+    [Fact]
+    public async Task A_small_difference_is_written_off_under_the_threshold_with_vat_on_collection_and_needs_the_right_above_it()
+    {
+        Permissions.Add(FinancePermissions.WriteOffCreate);
+        var partner = await NewPartner();
+        var invoice = await Register(Sale(partner, 1190m, Day, Day.AddDays(30), vat: 190m, vatOnCollection: true));
+        await Pay(partner, PartnerRole.Customer, 1186.50m, Day.AddDays(1), false, new SettlementTarget(invoice, null));
+        Assert.Equal((1190m, 3.50m), await Item(invoice));
+
+        var ids = await Send(new CreateWriteOffs([new WriteOffInput(invoice, null)], WriteOffReason.FeeWithheldByPartner, "Comision bancar reținut"));
+        Assert.Equal((1190m, 0m), await Item(invoice));
+        Assert.Equal(190m, await Query<decimal>("SELECT SUM(VatAmountRon) FROM fin.VatCashEntry WHERE OpenItemId = @Id", new { Id = invoice }));
+        Assert.Equal((byte)6, await Query<byte>("SELECT Source FROM fin.Allocation WHERE WriteOffId = @Id", new { Id = Assert.Single(ids) }));
+        Assert.Equal((-3.50m, 0m, (byte)9), await Query<(decimal, decimal, byte)>(
+            "SELECT o.Amount, o.OpenAmount, o.Kind FROM fin.WriteOff AS w JOIN fin.OpenItem AS o ON o.Id = w.WriteOffOpenItemId WHERE w.Id = @Id", new { Id = ids[0] }));
+
+        // Alocarea unei ajustari nu se desface direct.
+        var allocation = await Query<long>("SELECT Id FROM fin.Allocation WHERE WriteOffId = @Id", new { Id = ids[0] });
+        var undo = await Assert.ThrowsAsync<ErpException>(() => Send(new UndoAllocation(allocation, "greșit")));
+        Assert.Equal("FIN_ALLOCATION_UNDO_NOT_ALLOWED", undo.Code);
+
+        // Peste prag: refuzata fara permisiunea dedicata; cu ea, trece. O suma mai mare decat restul e refuzata.
+        var big = await Register(Sale(partner, 50m, Day, Day.AddDays(30)));
+        var above = await Assert.ThrowsAsync<ErpException>(() => Send(new CreateWriteOffs([new WriteOffInput(big, "20")], WriteOffReason.AcceptedDifference)));
+        Assert.Equal("FIN_WRITEOFF_ABOVE_THRESHOLD", above.Code);
+        var exceeds = await Assert.ThrowsAsync<ErpException>(() => Send(new CreateWriteOffs([new WriteOffInput(big, "60")], WriteOffReason.AcceptedDifference)));
+        Assert.Equal("FIN_ALLOCATION_EXCEEDS_OPEN", exceeds.Code);
+        Permissions.Add(FinancePermissions.WriteOffAboveThreshold);
+        await Send(new CreateWriteOffs([new WriteOffInput(big, "20")], WriteOffReason.AcceptedDifference));
+        Assert.Equal((50m, 30m), await Item(big));
+        Assert.True(await Query<bool>("SELECT AboveThreshold FROM fin.WriteOff WHERE OpenItemId = @Id", new { Id = big }));
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

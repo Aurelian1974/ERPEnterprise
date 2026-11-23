@@ -85,6 +85,9 @@ public interface IFinanceSettings
     /// </summary>
     Task<int> RequireSpvInvoiceAsync(int companyId, CancellationToken ct);
 
+    /// <summary>Fin.WriteOff.MaxAmountRon (F3 3.6): pragul ajustarii unei diferente mici, in lei (implicit 5, decizia din 15.11.2026).</summary>
+    Task<decimal> WriteOffMaxAmountRonAsync(int companyId, CancellationToken ct);
+
     /// <summary>Salveaza o setare a firmei (codul e unul din cele de mai sus, valoarea invarianta).</summary>
     Task SaveAsync(int companyId, string code, string value, int userId, CancellationToken ct);
 }

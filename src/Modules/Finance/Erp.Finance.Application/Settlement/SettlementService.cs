@@ -44,12 +44,22 @@ public sealed record OpenItemRecord(int CompanyId, int PartnerId, PartnerRole Ro
     decimal ExchangeRate, decimal Amount, decimal AmountRon, decimal VatAmount, decimal VatAmountRon, bool IsVatOnCollection, string? GlAccountCode,
     EInvoiceStatus EInvoiceStatus, string? EInvoiceIndexNo, int? CostCenterId, int? ProjectId, long? ReversalOfId, IReadOnlyList<InvoiceDueDate> Schedules);
 
+public sealed record WriteOffCreated(int WriteOffId, long WriteOffOpenItemId, decimal Amount, bool ItemIsDebit);
+
 public sealed record OpenItemCreated(long Id, bool Created, AutoAllocationMode Mode, bool IsPartnerPaymentBlocked);
 
 public sealed record OpenItemCandidate(long Id, OpenItemKind Kind, string DocumentNo, DateOnly DocumentDate, DateOnly DueDate, string CurrencyCode, decimal Amount,
     decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, EInvoiceStatus EInvoiceStatus, bool SpvExempt);
 
-public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItemId, decimal Amount, DateOnly? AllocationDate, AllocationSource Source);
+public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItemId, decimal Amount, DateOnly? AllocationDate, AllocationSource Source)
+{
+    /// <summary>Documentul F3 care creeaza alocarea (F3 3.3): compensarea, ajustarea sau efectul comercial.</summary>
+    public int? CompensationId { get; init; }
+
+    public int? WriteOffId { get; init; }
+
+    public int? CommercialPaperId { get; init; }
+}
 
 public sealed record AllocationMade(long AllocationId, int PartnerId, PartnerRole Role, AllocatedOpenItem Debit, AllocatedOpenItem Credit, decimal Amount,
     decimal AmountRonDebit, decimal AmountRonCredit, DateOnly AllocationDate, AllocationSource Source);
@@ -150,6 +160,10 @@ public interface ISettlementStore
     Task<PartnerFinanceProfileDto> GetProfileAsync(int companyId, int partnerId, PartnerRole role, CancellationToken ct);
 
     Task<byte[]> SaveProfileAsync(int companyId, PartnerFinanceProfileRecord profile, int userId, CancellationToken ct);
+
+    /// <summary>Documentul de ajustare si partida lui de tip 9 (F3 3.6); alocarea o face apelantul.</summary>
+    Task<WriteOffCreated> CreateWriteOffAsync(int companyId, long openItemId, decimal? amount, WriteOffReason reason, string? note, DateOnly documentDate,
+        decimal maxAmountRon, bool allowAboveThreshold, int userId, CancellationToken ct);
 
     /// <summary>Partida unui document sursa (factura stornata), daca exista.</summary>
     Task<long?> FindBySourceAsync(string sourceDocumentType, long sourceDocumentId, PartnerRole role, CancellationToken ct);
@@ -379,7 +393,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         return await AllocateAsync(companyId, pairs, ct).ConfigureAwait(false);
     }
 
-    private async Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<AllocationRequest> allocations, CancellationToken ct)
+    internal async Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<AllocationRequest> allocations, CancellationToken ct)
     {
         if (allocations.Count == 0)
         {

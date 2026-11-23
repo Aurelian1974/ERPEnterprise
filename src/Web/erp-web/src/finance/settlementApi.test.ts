@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agingShares, balanceParams, overdueDays, pairAllocations, Role } from './settlementApi';
+import { agingShares, balanceParams, overdueDays, pairAllocations, Role, smallRemainders } from './settlementApi';
 
 describe('balanceParams', () => {
   it('maps the screen filter to the API query', () => {
@@ -34,5 +34,15 @@ describe('pairAllocations', () => {
       { debitId: 1, creditId: 10, amount: 2296.5 }, { debitId: 1, creditId: 11, amount: 3.5 }, { debitId: 2, creditId: 11, amount: 7996.5 }]);
     expect(pairAllocations([{ id: 1, amount: 100 }], [{ id: 10, amount: 0.1 }, { id: 11, amount: 0.2 }])).toEqual([
       { debitId: 1, creditId: 10, amount: 0.1 }, { debitId: 1, creditId: 11, amount: 0.2 }]);
+  });
+});
+
+describe('smallRemainders', () => {
+  it('finds the small rest left on a picked item after the pairs', () => {
+    const item = (id: number, open: string) => ({ openItemId: id, documentNo: `D-${id}`, openAmount: open }) as never;
+    const items = [item(1, '2300.00'), item(2, '-2296.50'), item(3, '900.00')];
+    const pairs = [{ debitId: 1, creditId: 2, amount: 2296.5 }];
+    expect(smallRemainders(items, [1, 2, 3], pairs, 5)).toEqual([{ id: 1, documentNo: 'D-1', amount: 3.5 }]);
+    expect(smallRemainders(items, [1, 2], pairs, 3)).toEqual([]);
   });
 });

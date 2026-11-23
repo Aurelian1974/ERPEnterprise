@@ -367,11 +367,14 @@ function BankSettings() {
 
 function BankSettingsForm({ value }: { readonly value: FinanceSettings }) {
   const save = useSave();
-  const [draft, setDraft] = useState({ ...value, cardFeeTolerancePercent: value.cardFeeTolerancePercent.replace('.', ',') });
+  const [draft, setDraft] = useState({ ...value, cardFeeTolerancePercent: value.cardFeeTolerancePercent.replace('.', ','),
+    writeOffMaxAmountRon: value.writeOffMaxAmountRon.replace('.', ',') });
   const tolerance = parseAmount(draft.cardFeeTolerancePercent);
+  const writeOff = parseAmount(draft.writeOffMaxAmountRon);
   const submit = () => {
-    if (tolerance === null) return;
-    void save(async () => unwrap(await api.PUT('/api/finance/settings', { body: { ...draft, cardFeeTolerancePercent: tolerance } })), keys.bank);
+    if (tolerance === null || writeOff === null) return;
+    void save(async () => unwrap(await api.PUT('/api/finance/settings', { body: { ...draft, cardFeeTolerancePercent: tolerance, writeOffMaxAmountRon: writeOff } })),
+      keys.bank);
   };
   return (
     <div className="settings-form">
@@ -392,7 +395,19 @@ function BankSettingsForm({ value }: { readonly value: FinanceSettings }) {
         <input className="cell-input num" type="number" min={0} max={30} value={draft.cardSettlementDays}
           onChange={(e) => setDraft({ ...draft, cardSettlementDays: Number(e.target.value) })} />
       </label>
-      <div className="actions"><button type="button" className="btn primary" disabled={tolerance === null} onClick={submit}>{t('common.save')}</button></div>
+      <h3 className="section-title">{t('settings.settle.title')}</h3>
+      <label>{t('settings.settle.spv')}
+        <select className="cell-input" value={draft.requireSpvInvoice} onChange={(e) => setDraft({ ...draft, requireSpvInvoice: Number(e.target.value) })}>
+          <option value={2}>{t('settings.settle.spv2')}</option>
+          <option value={1}>{t('settings.settle.spv1')}</option>
+          <option value={0}>{t('settings.settle.spv0')}</option>
+        </select>
+      </label>
+      <label>{t('settings.settle.writeOff')}
+        <input className="cell-input num" value={draft.writeOffMaxAmountRon} aria-invalid={writeOff === null}
+          onChange={(e) => setDraft({ ...draft, writeOffMaxAmountRon: e.target.value })} />
+      </label>
+      <div className="actions"><button type="button" className="btn primary" disabled={tolerance === null || writeOff === null} onClick={submit}>{t('common.save')}</button></div>
     </div>
   );
 }

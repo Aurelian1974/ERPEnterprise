@@ -140,6 +140,7 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public const string CardFeeTolerancePercent = "Fin.Card.FeeTolerancePercent";
     public const string CardSettlementDays = "Fin.Card.SettlementDays";
     public const string RequireSpvInvoice = "Fin.Payment.RequireSpvInvoice";
+    public const string WriteOffMaxAmountRon = "Fin.WriteOff.MaxAmountRon";
 
     public async Task<bool> RequireApprovalAsync(int companyId, CancellationToken ct)
     {
@@ -158,6 +159,10 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public async Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct) =>
         int.TryParse(await GetAsync(companyId, CardSettlementDays, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture, out var days) && days is >= 0 and <= 30 ? days : 2;
+
+    public async Task<decimal> WriteOffMaxAmountRonAsync(int companyId, CancellationToken ct) =>
+        decimal.TryParse(await GetAsync(companyId, WriteOffMaxAmountRon, ct).ConfigureAwait(false), System.Globalization.NumberStyles.AllowDecimalPoint,
+            System.Globalization.CultureInfo.InvariantCulture, out var amount) && amount >= 0 ? amount : 5m;
 
     public async Task<int> RequireSpvInvoiceAsync(int companyId, CancellationToken ct) =>
         int.TryParse(await GetAsync(companyId, RequireSpvInvoice, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,

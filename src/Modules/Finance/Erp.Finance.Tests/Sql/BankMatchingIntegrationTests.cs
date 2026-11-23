@@ -292,13 +292,14 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
     {
         Permissions.Add(FinancePermissions.TreasuryConfigure);
         var defaults = await Send(new GetFinanceSettings());
-        Assert.Equal((true, 2, "3.00", 2), (defaults.RequireApproval, defaults.AutoValidateLevel, defaults.CardFeeTolerancePercent, defaults.CardSettlementDays));
-        var invalid = await Assert.ThrowsAsync<Erp.Core.Contracts.ErpValidationException>(() => Send(new SaveFinanceSettings(true, 2, "25", 2)));
+        Assert.Equal((true, 2, "3.00", 2, 2, "5.00"), (defaults.RequireApproval, defaults.AutoValidateLevel, defaults.CardFeeTolerancePercent,
+            defaults.CardSettlementDays, defaults.RequireSpvInvoice, defaults.WriteOffMaxAmountRon));
+        var invalid = await Assert.ThrowsAsync<Erp.Core.Contracts.ErpValidationException>(() => Send(new SaveFinanceSettings(true, 2, "25", 2, 2, "5")));
         Assert.Contains("cardFeeTolerancePercent", invalid.Errors.Keys);
 
         try
         {
-            Assert.Equal("1.00", (await Send(new SaveFinanceSettings(true, 2, "1", 2))).CardFeeTolerancePercent);
+            Assert.Equal("1.00", (await Send(new SaveFinanceSettings(true, 2, "1", 2, 2, "5"))).CardFeeTolerancePercent);
             Assert.Equal("1.00", (await Send(new GetFinanceSettings())).CardFeeTolerancePercent);
 
             var (account, iban) = await NewBank();

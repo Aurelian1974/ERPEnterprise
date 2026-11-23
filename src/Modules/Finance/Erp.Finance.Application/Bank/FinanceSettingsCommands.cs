@@ -10,7 +10,8 @@ namespace Erp.Finance.Application.Bank;
 /// carduri si reguli, 2 si incasarile potrivite exact pe factura), toleranta comisionului de card (procent din brut, implicit 3%) si zilele
 /// lucratoare pana la decontarea cardului (implicit 2).
 /// </summary>
-public sealed record FinanceSettingsDto(bool RequireApproval, int AutoValidateLevel, string CardFeeTolerancePercent, int CardSettlementDays);
+public sealed record FinanceSettingsDto(bool RequireApproval, int AutoValidateLevel, string CardFeeTolerancePercent, int CardSettlementDays, int RequireSpvInvoice,
+    string WriteOffMaxAmountRon);
 
 public static class FinanceSettingCodes
 {
@@ -18,6 +19,8 @@ public static class FinanceSettingCodes
     public const string AutoValidateLevel = "Fin.Bank.AutoValidateLevel";
     public const string CardFeeTolerancePercent = "Fin.Card.FeeTolerancePercent";
     public const string CardSettlementDays = "Fin.Card.SettlementDays";
+    public const string RequireSpvInvoice = "Fin.Payment.RequireSpvInvoice";
+    public const string WriteOffMaxAmountRon = "Fin.WriteOff.MaxAmountRon";
 }
 
 [Module(FinanceModule.Code)]
@@ -32,7 +35,9 @@ internal sealed class GetFinanceSettingsHandler(IFinanceSettings settings, ICurr
         return new FinanceSettingsDto(await settings.RequireApprovalAsync(company, cancellationToken).ConfigureAwait(false),
             await settings.AutoValidateLevelAsync(company, cancellationToken).ConfigureAwait(false),
             Money.Format(await settings.CardFeeTolerancePercentAsync(company, cancellationToken).ConfigureAwait(false)),
-            await settings.CardSettlementDaysAsync(company, cancellationToken).ConfigureAwait(false));
+            await settings.CardSettlementDaysAsync(company, cancellationToken).ConfigureAwait(false),
+            await settings.RequireSpvInvoiceAsync(company, cancellationToken).ConfigureAwait(false),
+            Money.Format(await settings.WriteOffMaxAmountRonAsync(company, cancellationToken).ConfigureAwait(false)));
     }
 }
 
@@ -40,8 +45,8 @@ internal sealed class GetFinanceSettingsHandler(IFinanceSettings settings, ICurr
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.TreasuryConfigure)]
 [Audited("Fin.Settings.Save")]
-public sealed record SaveFinanceSettings(bool RequireApproval, int AutoValidateLevel, string CardFeeTolerancePercent, int CardSettlementDays)
-    : ICommand<FinanceSettingsDto>;
+public sealed record SaveFinanceSettings(bool RequireApproval, int AutoValidateLevel, string CardFeeTolerancePercent, int CardSettlementDays,
+    int RequireSpvInvoice, string WriteOffMaxAmountRon) : ICommand<FinanceSettingsDto>;
 
 internal sealed class SaveFinanceSettingsValidator : AbstractValidator<SaveFinanceSettings>
 {
@@ -51,6 +56,9 @@ internal sealed class SaveFinanceSettingsValidator : AbstractValidator<SaveFinan
         RuleFor(x => x.CardFeeTolerancePercent).Must(v => Money.TryParse(v, out var p) && p is >= 0 and <= 20)
             .WithMessage("Toleranța comisionului de card este un procent între 0 și 20, cu cel mult 2 zecimale.");
         RuleFor(x => x.CardSettlementDays).InclusiveBetween(0, 30).WithMessage("Zilele până la decontare sunt între 0 și 30.");
+        RuleFor(x => x.RequireSpvInvoice).InclusiveBetween(0, 2).WithMessage("Regula SPV este 0 (fără verificare), 1 (blocare) sau 2 (avertizare).");
+        RuleFor(x => x.WriteOffMaxAmountRon).Must(v => Money.TryParse(v, out var p) && p is >= 0 and <= 1000)
+            .WithMessage("Pragul ajustărilor este o sumă în lei între 0 și 1.000, cu cel mult 2 zecimale.");
     }
 }
 
@@ -60,12 +68,15 @@ internal sealed class SaveFinanceSettingsHandler(IFinanceSettings settings, ICur
     public async Task<FinanceSettingsDto> Handle(SaveFinanceSettings request, CancellationToken cancellationToken)
     {
         var tolerance = Money.ParseOptional(request.CardFeeTolerancePercent) ?? 0;
+        var writeOff = Money.ParseOptional(request.WriteOffMaxAmountRon) ?? 0;
         var values = new Dictionary<string, string>
         {
             [FinanceSettingCodes.RequireApproval] = request.RequireApproval ? "true" : "false",
             [FinanceSettingCodes.AutoValidateLevel] = request.AutoValidateLevel.ToString(CultureInfo.InvariantCulture),
             [FinanceSettingCodes.CardFeeTolerancePercent] = tolerance.ToString("0.00", CultureInfo.InvariantCulture),
             [FinanceSettingCodes.CardSettlementDays] = request.CardSettlementDays.ToString(CultureInfo.InvariantCulture),
+            [FinanceSettingCodes.RequireSpvInvoice] = request.RequireSpvInvoice.ToString(CultureInfo.InvariantCulture),
+            [FinanceSettingCodes.WriteOffMaxAmountRon] = writeOff.ToString("0.00", CultureInfo.InvariantCulture),
         };
         foreach (var (code, value) in values)
         {
@@ -73,6 +84,7 @@ internal sealed class SaveFinanceSettingsHandler(IFinanceSettings settings, ICur
         }
 
         audit.Describe("Fin.Settings", context.CompanyId, values);
-        return new FinanceSettingsDto(request.RequireApproval, request.AutoValidateLevel, Money.Format(tolerance), request.CardSettlementDays);
+        return new FinanceSettingsDto(request.RequireApproval, request.AutoValidateLevel, Money.Format(tolerance), request.CardSettlementDays,
+            request.RequireSpvInvoice, Money.Format(writeOff));
     }
 }
