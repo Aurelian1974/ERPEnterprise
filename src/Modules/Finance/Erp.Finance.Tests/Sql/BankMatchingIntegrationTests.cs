@@ -237,6 +237,37 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
     }
 
     [Fact]
+    public async Task The_card_fee_tolerance_is_configurable_per_company_and_drives_the_matching()
+    {
+        Permissions.Add(FinancePermissions.TreasuryConfigure);
+        var defaults = await Send(new GetFinanceSettings());
+        Assert.Equal((true, 2, "3.00", 2), (defaults.RequireApproval, defaults.AutoValidateLevel, defaults.CardFeeTolerancePercent, defaults.CardSettlementDays));
+        var invalid = await Assert.ThrowsAsync<Erp.Core.Contracts.ErpValidationException>(() => Send(new SaveFinanceSettings(true, 2, "25", 2)));
+        Assert.Contains("cardFeeTolerancePercent", invalid.Errors.Keys);
+
+        try
+        {
+            Assert.Equal("1.00", (await Send(new SaveFinanceSettings(true, 2, "1", 2))).CardFeeTolerancePercent);
+            Assert.Equal("1.00", (await Send(new GetFinanceSettings())).CardFeeTolerancePercent);
+
+            var (account, iban) = await NewBank();
+            var acquirerIban = StatementFiles.RomanianIban("INGB", $"{Random.Shared.NextInt64(1_000_000_000_000_000, 9_999_999_999_999_999)}");
+            var code = Unique("ACQ");
+            await Send(new SaveCardAcquirer(null, code, "Procesator", acquirerIban, true, null));
+            await Send(new RegisterCardSettlement(code, Day, "10000", Unique("ONLINE-")));
+
+            // Comision de 1,5% peste toleranta de 1%: linia nu se potriveste automat.
+            var line = (await ImportAndMatch(account, iban, 0m, new TestEntry(Day.AddDays(2), 9850m, Unique("TOL"), "Procesator", acquirerIban, "Decontare"))).Single();
+            Assert.Equal(BankLineMatchStatus.Unmatched, line.MatchStatus);
+        }
+        finally
+        {
+            await using var connection = new SqlConnection(Database.ConnectionString);
+            await connection.ExecuteAsync("DELETE FROM fin.CompanySetting WHERE CompanyId = @Company", new { Company = Database.CompanyId });
+        }
+    }
+
+    [Fact]
     [Trait("Criteriu", "02.02-F2-A13")]
     public async Task Importing_and_matching_a_statement_of_10000_lines_takes_under_60_seconds()
     {

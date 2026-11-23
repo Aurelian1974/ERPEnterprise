@@ -75,6 +75,9 @@ public interface IFinanceSettings
 
     /// <summary>Fin.Card.SettlementDays: zilele lucratoare pana la decontarea asteptata (implicit 2).</summary>
     Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Salveaza o setare a firmei (codul e unul din cele de mai sus, valoarea invarianta).</summary>
+    Task SaveAsync(int companyId, string code, string value, int userId, CancellationToken ct);
 }
 
 internal static class PaymentOrderErrors

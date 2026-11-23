@@ -1845,6 +1845,13 @@ export const ro = {
   'bank.newOrder.invoice': 'Factura plătită (numărul):',
   'bank.newOrder.done': 'OP-ul a fost creat, validat și confirmat pe linie.',
   'bank.removePart': 'Șterge partea',
+  'settings.bank.requireApproval': 'Aprobarea ordinelor de plată cu patru ochi (altcineva decât cel care a validat)',
+  'settings.bank.autoValidate': 'Validarea automată după potrivire',
+  'settings.bank.level0': 'Niciodată',
+  'settings.bank.level1': 'Confirmările de OP, perechile interne, cardurile și regulile cu validare automată',
+  'settings.bank.level2': 'Și încasările potrivite exact pe factură (implicit)',
+  'settings.bank.tolerance': 'Toleranța comisionului la decontările de card (% din brut)',
+  'settings.bank.settlementDays': 'Zile lucrătoare până la decontarea cardului',
 } as const;
 
 export type TextKey = keyof typeof ro;

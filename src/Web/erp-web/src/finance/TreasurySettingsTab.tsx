@@ -12,12 +12,14 @@ import { formatAmount } from './cashApi';
 type OperationType = components['schemas']['OperationTypeDto'];
 type ExpenseType = components['schemas']['ExpenseTypeDto'];
 type CashLimit = components['schemas']['CashLimitRuleDto'];
-type Section = 'operations' | 'expenses' | 'limits';
+type Section = 'operations' | 'expenses' | 'limits' | 'bank';
+type FinanceSettings = components['schemas']['FinanceSettingsDto'];
 
 const keys = {
   operations: ['finance', 'settings', 'operations'] as const,
   expenses: ['finance', 'settings', 'expenses'] as const,
   limits: ['finance', 'settings', 'limits'] as const,
+  bank: ['finance', 'settings', 'bank'] as const,
 };
 
 export const limitCategories = ['IncasarePJ', 'IncasarePF', 'PlataPJ', 'PlataPF', 'AvansPersoanaZi', 'SoldCasa'] as const;
@@ -42,10 +44,12 @@ export function TreasurySettingsTab({ user }: { readonly user: CurrentUser }) {
         {canConfigure && <SectionButton value="operations" current={section} onSelect={setSection} label={t('settings.operations')} />}
         {canConfigure && <SectionButton value="expenses" current={section} onSelect={setSection} label={t('settings.expenses')} />}
         {canLimits && <SectionButton value="limits" current={section} onSelect={setSection} label={t('settings.limits')} />}
+        {canConfigure && <SectionButton value="bank" current={section} onSelect={setSection} label={t('settings.bank')} />}
       </div>
       {section === 'operations' && canConfigure && <OperationTypes />}
       {section === 'expenses' && canConfigure && <ExpenseTypes />}
       {section === 'limits' && canLimits && <CashLimits />}
+      {section === 'bank' && canConfigure && <BankSettings />}
     </section>
   );
 }
@@ -338,5 +342,51 @@ function CashLimits() {
         </div>
       )}
     </>
+  );
+}
+
+// ---------- Setarile bancii (F2 3.6, 4.3, 4.6) ----------
+
+/**
+ * Setarile Bancii pe firma: aprobarea cu patru ochi, nivelul validarii automate dupa potrivire, toleranta comisionului la decontarile de
+ * card (procent din brut, implicit 3%) si zilele lucratoare pana la decontarea cardului.
+ */
+function BankSettings() {
+  const query = useQuery({
+    queryKey: keys.bank,
+    queryFn: async ({ signal }) => unwrap(await api.GET('/api/finance/settings', { signal })),
+  });
+  return query.data === undefined ? <p role="status" className="muted">{t('app.loading')}</p> : <BankSettingsForm key={JSON.stringify(query.data)} value={query.data} />;
+}
+
+function BankSettingsForm({ value }: { readonly value: FinanceSettings }) {
+  const save = useSave();
+  const [draft, setDraft] = useState({ ...value, cardFeeTolerancePercent: value.cardFeeTolerancePercent.replace('.', ',') });
+  const tolerance = parseAmount(draft.cardFeeTolerancePercent);
+  const submit = () => {
+    if (tolerance === null) return;
+    void save(async () => unwrap(await api.PUT('/api/finance/settings', { body: { ...draft, cardFeeTolerancePercent: tolerance } })), keys.bank);
+  };
+  return (
+    <div className="settings-form">
+      <label className="check"><input type="checkbox" checked={draft.requireApproval} onChange={(e) => setDraft({ ...draft, requireApproval: e.target.checked })} />
+        {t('settings.bank.requireApproval')}</label>
+      <label>{t('settings.bank.autoValidate')}
+        <select className="cell-input" value={draft.autoValidateLevel} onChange={(e) => setDraft({ ...draft, autoValidateLevel: Number(e.target.value) })}>
+          <option value={0}>{t('settings.bank.level0')}</option>
+          <option value={1}>{t('settings.bank.level1')}</option>
+          <option value={2}>{t('settings.bank.level2')}</option>
+        </select>
+      </label>
+      <label>{t('settings.bank.tolerance')}
+        <input className="cell-input num" value={draft.cardFeeTolerancePercent} aria-invalid={tolerance === null}
+          onChange={(e) => setDraft({ ...draft, cardFeeTolerancePercent: e.target.value })} />
+      </label>
+      <label>{t('settings.bank.settlementDays')}
+        <input className="cell-input num" type="number" min={0} max={30} value={draft.cardSettlementDays}
+          onChange={(e) => setDraft({ ...draft, cardSettlementDays: Number(e.target.value) })} />
+      </label>
+      <div className="actions"><button type="button" className="btn primary" disabled={tolerance === null} onClick={submit}>{t('common.save')}</button></div>
+    </div>
   );
 }

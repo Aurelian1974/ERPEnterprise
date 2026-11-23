@@ -127,7 +127,7 @@ public sealed class PaymentOrderStore(IDbSession session) : IPaymentOrderStore
 
 /// <summary>
 /// Setarile Finantelor pe firma din fin.CompanySetting; o setare lipsa are valoarea implicita din specificatie (toleranta comisionului de
-/// card, nespecificata, e 3% pana la decizia utilizatorului).
+/// card: implicit 3%, decizia din 23.11.2026).
 /// </summary>
 public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
 {
@@ -153,6 +153,10 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public async Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct) =>
         int.TryParse(await GetAsync(companyId, CardSettlementDays, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture, out var days) && days is >= 0 and <= 30 ? days : 2;
+
+    public Task SaveAsync(int companyId, string code, string value, int userId, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(new CommandDefinition("fin.usp_CompanySetting_Save", new { CompanyId = companyId, Code = code, Value = value, UserId = userId },
+            session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
 
     private Task<string?> GetAsync(int companyId, string code, CancellationToken ct) =>
         session.Connection.QuerySingleOrDefaultAsync<string?>(new CommandDefinition("fin.usp_CompanySetting_Get", new { CompanyId = companyId, Code = code },

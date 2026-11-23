@@ -242,6 +242,10 @@ public static class FinanceApiRegistration
         finance.MapPost("/bank-statement-lines/{id:long}/payment-order", (long id, CreatePaymentOrderFromStatementLine body, ISender sender,
                 CancellationToken ct) => sender.Send(body with { BankStatementLineId = id }, ct))
             .WithName("CreatePaymentOrderFromStatementLine").Saves();
+        finance.MapGet("/settings", (ISender sender, CancellationToken ct) => sender.Send(new GetFinanceSettings(), ct))
+            .WithName("GetFinanceSettings").Produces<FinanceSettingsDto>().Problems();
+        finance.MapPut("/settings", (SaveFinanceSettings body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveFinanceSettings").Produces<FinanceSettingsDto>().Problems();
         finance.MapGet("/bank-format-profiles", (ISender sender, CancellationToken ct) => sender.Send(new GetBankFormatProfiles(), ct))
             .WithName("GetBankFormatProfiles").Produces<IReadOnlyList<BankFormatProfileDto>>().Problems();
         finance.MapPost("/bank-format-profiles", (SaveBankFormatProfile body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))

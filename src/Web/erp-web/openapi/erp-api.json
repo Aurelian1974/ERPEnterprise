@@ -5253,6 +5253,134 @@
         }
       }
     },
+    "/api/finance/settings": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFinanceSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SaveFinanceSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFinanceSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/bank-format-profiles": {
       "get": {
         "tags": [
@@ -30486,6 +30614,56 @@
           },
           "currencyCode": {
             "type": "string"
+          }
+        }
+      },
+      "FinanceSettingsDto": {
+        "required": [
+          "requireApproval",
+          "autoValidateLevel",
+          "cardFeeTolerancePercent",
+          "cardSettlementDays"
+        ],
+        "type": "object",
+        "properties": {
+          "requireApproval": {
+            "type": "boolean"
+          },
+          "autoValidateLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cardFeeTolerancePercent": {
+            "type": "string"
+          },
+          "cardSettlementDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SaveFinanceSettings": {
+        "required": [
+          "requireApproval",
+          "autoValidateLevel",
+          "cardFeeTolerancePercent",
+          "cardSettlementDays"
+        ],
+        "type": "object",
+        "properties": {
+          "requireApproval": {
+            "type": "boolean"
+          },
+          "autoValidateLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cardFeeTolerancePercent": {
+            "type": "string"
+          },
+          "cardSettlementDays": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }
