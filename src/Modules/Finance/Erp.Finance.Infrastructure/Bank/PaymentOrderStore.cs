@@ -123,6 +123,10 @@ public sealed class PaymentOrderStore(IDbSession session) : IPaymentOrderStore
     private sealed record ItemRow(int Id, int TreasuryAccountId, string AccountCode, string? Number, DateTime DocumentDate, DateTime RequestedExecutionDate,
         byte Origin, byte Purpose, int? PartnerId, string BeneficiaryName, string BeneficiaryIban, string CurrencyCode, decimal Amount, string? RemittanceInfo,
         byte Status, byte? ConfirmationStatus, DateTime? ApprovedAt, int? PaymentBatchId, int? ReversalOfId, byte[] RowVersion);
+
+    public Task<int> OperationTypeIdAsync(string code, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<int>(new CommandDefinition("fin.usp_TreasuryOperationType_IdByCode", new { Code = code }, session.Transaction,
+            commandType: CommandType.StoredProcedure, cancellationToken: ct));
 }
 
 /// <summary>

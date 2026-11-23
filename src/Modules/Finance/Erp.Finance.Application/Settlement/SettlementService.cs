@@ -87,6 +87,20 @@ public sealed record PartnerBalanceListDto(DateOnly AsOf, PartnerBalanceTotalsDt
 
 public sealed record PartnerBalanceFilter(DateOnly AsOf, PartnerRole? Role, string? Search, bool OnlyOverdue, bool OnlyUnallocated, bool BothRoles);
 
+/// <summary>O zi din scadentar (macheta f3-04); Day null = restantele de dinaintea intervalului. Sumele in lei, pozitive.</summary>
+public sealed record DueScheduleDayDto(DateOnly? Day, int ReceivableCount, string ReceivableRon, int PayableCount, string PayableRon);
+
+public sealed record DueScheduleDto(DateOnly From, DateOnly To, IReadOnlyList<DueScheduleDayDto> Days);
+
+/// <summary>O partida scadenta in detaliul zilei (f3-04), cu observatiile pentru OP: litigiu, blocari, e-Factura, ANAF, contul partenerului.</summary>
+public sealed record DueItemDto(long OpenItemId, int PartnerId, string PartnerName, bool AnafInactive, string DocumentNo, DateOnly DocumentDate, DateOnly DueDate,
+    string CurrencyCode, string OpenAmount, string OpenRon, bool IsDisputed, bool IsBlockedForPayment, bool PartnerBlocked, EInvoiceStatus EInvoiceStatus,
+    bool SpvExempt, int? PartnerBankAccountId);
+
+/// <summary>O factura aleasa pentru OP (F2 „Din facturi scadente”): restul de plata pozitiv si contul bancar al partenerului.</summary>
+public sealed record InvoiceToPay(long OpenItemId, int PartnerId, string PartnerName, PartnerRole Role, OpenItemKind Kind, string DocumentNo, string CurrencyCode,
+    decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, bool PartnerBlocked, int? PartnerBankAccountId);
+
 /// <summary>O alocare a partenerului (tab-ul Alocari din f3-02). Status: 1 Activa, 2 Desfacuta.</summary>
 public sealed record PartnerAllocationDto(long Id, PartnerRole Role, DateOnly AllocationDate, AllocationSource Source, byte Status, string Amount, string CurrencyCode,
     long DebitOpenItemId, string DebitDocumentNo, OpenItemKind DebitKind, long CreditOpenItemId, string CreditDocumentNo, OpenItemKind CreditKind,
@@ -121,6 +135,12 @@ public interface ISettlementStore
     Task<PartnerBalanceListDto> ListBalancesAsync(int companyId, PartnerBalanceFilter filter, CancellationToken ct);
 
     Task<IReadOnlyList<PartnerAllocationDto>> ListAllocationsAsync(int companyId, int partnerId, PartnerRole? role, CancellationToken ct);
+
+    Task<IReadOnlyList<InvoiceToPay>> InvoicesToPayAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct);
+
+    Task<IReadOnlyList<DueScheduleDayDto>> DueScheduleAsync(int companyId, DateOnly from, DateOnly to, CancellationToken ct);
+
+    Task<IReadOnlyList<DueItemDto>> DueItemsAsync(int companyId, PartnerRole role, DateOnly? day, DateOnly? before, CancellationToken ct);
 
     Task<IReadOnlyList<PartnerBalanceDto>> BalanceAsync(int companyId, int partnerId, PartnerRole? role, DateOnly asOf, CancellationToken ct);
 

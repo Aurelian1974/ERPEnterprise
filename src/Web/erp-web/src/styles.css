@@ -2904,3 +2904,6 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--surface-muted
 .alloc-amount { width: 110px; }
 .alloc-side .row-between { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
 .alloc-grid + .banner, .alloc-grid ~ .actions { margin-top: 12px; }
+tr.clickable.picked { background: var(--info-bg); }
+.order-from-invoices { display: grid; gap: 8px; margin-top: 12px; }
+.due-notes .pill { white-space: nowrap; display: inline-block; margin: 1px 2px; }

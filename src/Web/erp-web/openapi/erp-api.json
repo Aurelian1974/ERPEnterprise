@@ -3169,6 +3169,247 @@
         }
       }
     },
+    "/api/finance/payment-orders/from-invoices": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "CreatePaymentOrdersFromInvoices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentOrdersFromInvoices"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/due-schedule": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetDueSchedule",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DueScheduleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/due-schedule/items": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetDueItems",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "overdue",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DueItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/partner-balances": {
       "get": {
         "tags": [
@@ -32725,6 +32966,162 @@
           },
           "vatNonExigibleDeductibleRon": {
             "type": "string"
+          }
+        }
+      },
+      "CreatePaymentOrdersFromInvoices": {
+        "required": [
+          "treasuryAccountId",
+          "openItemIds"
+        ],
+        "type": "object",
+        "properties": {
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openItemIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      },
+      "DueItemDto": {
+        "required": [
+          "openItemId",
+          "partnerId",
+          "partnerName",
+          "anafInactive",
+          "documentNo",
+          "documentDate",
+          "dueDate",
+          "currencyCode",
+          "openAmount",
+          "openRon",
+          "isDisputed",
+          "isBlockedForPayment",
+          "partnerBlocked",
+          "eInvoiceStatus",
+          "spvExempt",
+          "partnerBankAccountId"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": "string"
+          },
+          "anafInactive": {
+            "type": "boolean"
+          },
+          "documentNo": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "openAmount": {
+            "type": "string"
+          },
+          "openRon": {
+            "type": "string"
+          },
+          "isDisputed": {
+            "type": "boolean"
+          },
+          "isBlockedForPayment": {
+            "type": "boolean"
+          },
+          "partnerBlocked": {
+            "type": "boolean"
+          },
+          "eInvoiceStatus": {
+            "$ref": "#/components/schemas/EInvoiceStatus"
+          },
+          "spvExempt": {
+            "type": "boolean"
+          },
+          "partnerBankAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DueScheduleDayDto": {
+        "required": [
+          "day",
+          "receivableCount",
+          "receivableRon",
+          "payableCount",
+          "payableRon"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "receivableCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receivableRon": {
+            "type": "string"
+          },
+          "payableCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payableRon": {
+            "type": "string"
+          }
+        }
+      },
+      "DueScheduleDto": {
+        "required": [
+          "from",
+          "to",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DueScheduleDayDto"
+            }
           }
         }
       }

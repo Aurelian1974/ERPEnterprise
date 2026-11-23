@@ -56,6 +56,9 @@ public interface IPaymentOrderStore
         int userId, CancellationToken ct);
 
     Task<FinanceSaved> ReverseAsync(int companyId, int id, string number, DateOnly reversalDate, byte[] rowVersion, int userId, CancellationToken ct);
+
+    /// <summary>Id-ul unui tip de operatiune activ, dupa cod.</summary>
+    Task<int> OperationTypeIdAsync(string code, CancellationToken ct);
 }
 
 /// <summary>Setarile Finantelor pe firma (F2: patru ochi, alerte, validare automata), cu valorile implicite din specificatie.</summary>
@@ -224,6 +227,67 @@ internal sealed class SavePaymentOrderHandler(IPaymentOrderStore store, ICurrent
             Amount = lines.Sum(l => l.Amount), Lines = lines.Select(l => new { l.OperationTypeId, l.SettlementRef, l.Amount }),
         });
         return saved;
+    }
+}
+
+/// <summary>
+/// „Din facturi scadente” (F2 11, F3 macheta f3-04 „Creeaza OP-uri”): cate un OP ciorna pe furnizor, in contul ales, cu o linie
+/// PLATA-FURNIZOR pe fiecare factura (restul ei, legat prin „OI:id”), beneficiarul din contul bancar al partenerului in moneda facturii. Facturile
+/// in litigiu, blocate la plata, de la un furnizor blocat, fara cont bancar sau care nu sunt datorii deschise sunt refuzate, cu numele lor.
+/// OP-urile se valideaza apoi pe rand (cu avertizarile ANAF si SPV).
+/// </summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PaymentOrderCreate)]
+[Audited("Fin.PaymentOrder.CreateFromInvoices")]
+public sealed record CreatePaymentOrdersFromInvoices(int TreasuryAccountId, IReadOnlyList<long> OpenItemIds) : ICommand<IReadOnlyList<int>>;
+
+internal sealed class CreatePaymentOrdersFromInvoicesValidator : AbstractValidator<CreatePaymentOrdersFromInvoices>
+{
+    public CreatePaymentOrdersFromInvoicesValidator() =>
+        RuleFor(x => x.OpenItemIds).NotEmpty().WithMessage("Alegeți cel puțin o factură.")
+            .Must(ids => ids.Count <= 200 && ids.Distinct().Count() == ids.Count).WithMessage("Cel mult 200 de facturi, fiecare o singură dată.");
+}
+
+internal sealed class CreatePaymentOrdersFromInvoicesHandler(IPaymentOrderStore store, Settlement.ISettlementStore settlement, ICurrentContext context,
+    TimeProvider time, IAuditScope audit) : ICommandHandler<CreatePaymentOrdersFromInvoices, IReadOnlyList<int>>
+{
+    public async Task<IReadOnlyList<int>> Handle(CreatePaymentOrdersFromInvoices request, CancellationToken cancellationToken)
+    {
+        var invoices = await settlement.InvoicesToPayAsync(context.CompanyId, request.OpenItemIds, cancellationToken).ConfigureAwait(false);
+        var problems = request.OpenItemIds.Where(id => invoices.All(i => i.OpenItemId != id)).Select(id => $"partida {id} nu există").ToList();
+        foreach (var i in invoices)
+        {
+            var reason = i.Role != Contracts.Settlement.PartnerRole.Supplier || i.OpenAmount <= 0 ? "nu este o datorie deschisă"
+                : i.IsDisputed ? "este în litigiu"
+                : i.IsBlockedForPayment ? "este blocată la plată"
+                : i.PartnerBlocked ? "furnizorul este blocat la plată"
+                : i.PartnerBankAccountId is null ? $"furnizorul nu are cont bancar în {i.CurrencyCode}" : null;
+            if (reason is not null)
+            {
+                problems.Add($"{i.DocumentNo} ({i.PartnerName}) {reason}");
+            }
+        }
+
+        if (problems.Count > 0)
+        {
+            throw Settlement.SettlementErrors.Invalid("openItemIds", "Nu se pot crea ordinele de plată: " + string.Join("; ", problems) + ".");
+        }
+
+        var today = BusinessDay.Today(time);
+        var type = await store.OperationTypeIdAsync("PLATA-FURNIZOR", cancellationToken).ConfigureAwait(false);
+        var created = new List<int>();
+        foreach (var group in invoices.GroupBy(i => (i.PartnerId, i.PartnerBankAccountId, i.CurrencyCode)))
+        {
+            var lines = group.Select((i, n) => new PaymentOrderLineRecord((short)(n + 1), type, Settlement.TreasurySettlement.Reference([i.OpenItemId]), i.OpenAmount,
+                null, null)).ToList();
+            var draft = new PaymentOrderDraft(null, request.TreasuryAccountId, today, today, false, PaymentOrderOrigin.PaymentOrders, PaymentPurpose.Suppliers,
+                group.Key.PartnerId, null, group.Key.PartnerBankAccountId, null, null, null, null, false,
+                PaymentOrderRules.Remittance(group.Select(i => i.DocumentNo), 140), null, null, lines, null);
+            created.Add((await store.SaveAsync(context.CompanyId, draft, context.UserId, cancellationToken).ConfigureAwait(false)).Id);
+        }
+
+        audit.Describe("Fin.PaymentOrder", null, new { request.TreasuryAccountId, Orders = created, Invoices = request.OpenItemIds });
+        return created;
     }
 }
 

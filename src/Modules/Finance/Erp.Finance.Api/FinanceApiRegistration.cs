@@ -180,6 +180,13 @@ public static class FinanceApiRegistration
         finance.MapGet("/partners/{partnerId:int}/allocations", (int partnerId, PartnerRole? role, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetPartnerAllocations(partnerId, role), ct))
             .WithName("GetPartnerAllocations").Produces<IReadOnlyList<PartnerAllocationDto>>().Problems();
+        finance.MapPost("/payment-orders/from-invoices", (CreatePaymentOrdersFromInvoices body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreatePaymentOrdersFromInvoices").Produces<IReadOnlyList<int>>().Problems();
+        finance.MapGet("/due-schedule", (DateOnly? from, DateOnly? to, ISender sender, CancellationToken ct) => sender.Send(new GetDueSchedule(from, to), ct))
+            .WithName("GetDueSchedule").Produces<DueScheduleDto>().Problems();
+        finance.MapGet("/due-schedule/items", (PartnerRole role, DateOnly day, bool? overdue, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetDueItems(role, day, overdue ?? false), ct))
+            .WithName("GetDueItems").Produces<IReadOnlyList<DueItemDto>>().Problems();
         finance.MapGet("/partner-balances", (DateOnly? asOf, PartnerRole? role, string? search, bool? onlyOverdue, bool? onlyUnallocated, bool? bothRoles,
                 ISender sender, CancellationToken ct) =>
                 sender.Send(new GetPartnerBalances(asOf, role, search, onlyOverdue ?? false, onlyUnallocated ?? false, bothRoles ?? false), ct))

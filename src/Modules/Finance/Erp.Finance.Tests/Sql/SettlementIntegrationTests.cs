@@ -358,6 +358,36 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal(("90.00", AllocationSource.AutomaticOnPayment), (allocations[0].Amount, allocations[0].Source));
     }
 
+    [Fact]
+    public async Task The_due_schedule_groups_receivables_and_payables_by_day_with_installments_and_overdue()
+    {
+        var partner = await NewPartner();
+        var from = new DateOnly(2027, 3, 1);
+        var installments = Sale(partner, 1000m, from.AddDays(-20), from.AddDays(2)) with
+        {
+            DueDates = [new InvoiceDueDate(from.AddDays(-5), 400m), new InvoiceDueDate(from.AddDays(2), 600m)],
+        };
+        var invoice = await Register(installments);
+        var supplierInvoice = await Register(Purchase(partner, 300m, from.AddDays(-28))); // scadenta from + 2
+        await Pay(partner, PartnerRole.Customer, 100m, from.AddDays(-1), false, new SettlementTarget(invoice, null));
+
+        var schedule = await Send(new GetDueSchedule(from, from.AddDays(6)));
+        var overdue = Assert.Single(schedule.Days, d => d.Day is null);
+        Assert.True(overdue.ReceivableCount >= 1);
+        var day = Assert.Single(schedule.Days, d => d.Day == from.AddDays(2));
+        Assert.True(day.ReceivableCount >= 1 && day.PayableCount >= 1);
+
+        var dayItems = await Send(new GetDueItems(PartnerRole.Customer, from.AddDays(2)));
+        Assert.Equal("600.00", Assert.Single(dayItems, i => i.OpenItemId == invoice).OpenAmount);
+        var late = await Send(new GetDueItems(PartnerRole.Customer, from, Overdue: true));
+        Assert.Equal("300.00", Assert.Single(late, i => i.OpenItemId == invoice).OpenAmount); // prima rata, dupa plata de 100
+        var payables = await Send(new GetDueItems(PartnerRole.Supplier, from.AddDays(2)));
+        Assert.Equal(("300.00", false), (Assert.Single(payables, i => i.OpenItemId == supplierInvoice).OpenAmount, payables[0].IsBlockedForPayment));
+
+        var tooLong = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new GetDueSchedule(from, from.AddDays(200))));
+        Assert.Contains("to", tooLong.Errors.Keys);
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

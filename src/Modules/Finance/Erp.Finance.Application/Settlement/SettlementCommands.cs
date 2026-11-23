@@ -95,6 +95,37 @@ internal sealed class GetPartnerBalancesHandler(ISettlementStore store, ICurrent
             cancellationToken);
 }
 
+/// <summary>Scadentarul pe zile, cu restantele (F3 10, macheta f3-04); implicit urmatoarele 14 zile, cel mult 92.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PartnerBalanceView)]
+public sealed record GetDueSchedule(DateOnly? From = null, DateOnly? To = null) : IQuery<DueScheduleDto>;
+
+internal sealed class GetDueScheduleHandler(ISettlementStore store, ICurrentContext context, TimeProvider time) : IQueryHandler<GetDueSchedule, DueScheduleDto>
+{
+    public async Task<DueScheduleDto> Handle(GetDueSchedule request, CancellationToken cancellationToken)
+    {
+        var from = request.From ?? BusinessDay.Today(time);
+        var to = request.To ?? from.AddDays(13);
+        if (to < from || to.DayNumber - from.DayNumber > 92)
+        {
+            throw SettlementErrors.Invalid("to", "Intervalul scadențarului are cel mult 92 de zile.");
+        }
+
+        return new DueScheduleDto(from, to, await store.DueScheduleAsync(context.CompanyId, from, to, cancellationToken).ConfigureAwait(false));
+    }
+}
+
+/// <summary>Partidele scadente intr-o zi sau restante (Overdue, inainte de Day), pe rol (detaliul zilei din f3-04).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PartnerBalanceView)]
+public sealed record GetDueItems(PartnerRole Role, DateOnly Day, bool Overdue = false) : IQuery<IReadOnlyList<DueItemDto>>;
+
+internal sealed class GetDueItemsHandler(ISettlementStore store, ICurrentContext context) : IQueryHandler<GetDueItems, IReadOnlyList<DueItemDto>>
+{
+    public Task<IReadOnlyList<DueItemDto>> Handle(GetDueItems request, CancellationToken cancellationToken) =>
+        store.DueItemsAsync(context.CompanyId, request.Role, request.Overdue ? null : request.Day, request.Overdue ? request.Day : null, cancellationToken);
+}
+
 /// <summary>Alocarile unui partener, cele mai noi intai (F3 3.3; tab-ul Alocari din f3-02).</summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.PartnerBalanceView)]

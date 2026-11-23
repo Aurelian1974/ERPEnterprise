@@ -145,4 +145,32 @@ public sealed class SettlementTreasuryIntegrationTests : BankTestBase, IClassFix
         Assert.Equal(1200m, -await Query<decimal>(
             "SELECT SUM(Amount) FROM fin.OpenItem WHERE SourceDocumentType = 'Finance.BankStatementLine' AND SourceDocumentId = @Id", new { line.Id }));
     }
+
+    [Fact]
+    public async Task Payment_orders_are_created_per_supplier_from_due_invoices_and_settle_them_when_validated()
+    {
+        var (account, _) = await NewBank();
+        var (supplier, _, _) = await NewPartner();
+        var first = await Purchase(supplier, 120m);
+        var second = await Purchase(supplier, 80.50m);
+        var (other, _, _) = await NewPartner();
+        var third = await Purchase(other, 40m);
+
+        var created = await Send(new CreatePaymentOrdersFromInvoices(account, [first, second, third]));
+        Assert.Equal(2, created.Count);
+        var order = await Send(new GetPaymentOrder(created[0]));
+        Assert.Equal(("200.50", 2, $"OI:{first}"), (order.Amount, order.Lines.Count, order.Lines[0].SettlementRef));
+
+        await Send(new ValidatePaymentOrder(order.Id, order.RowVersion));
+        Assert.Equal((0m, 0m), (await Open(first), await Open(second)));
+
+        // O factura blocata sau deja platita e refuzata, cu numele ei.
+        var blocked = await Purchase(other, 10m);
+        var version = await Query<byte[]>("SELECT RowVersion FROM fin.OpenItem WHERE Id = @Id", new { Id = blocked });
+        Permissions.Add(FinancePermissions.OpenItemBlockPayment);
+        await Send(new SetOpenItemPaymentBlock(blocked, true, version));
+        var refused = await Assert.ThrowsAsync<ErpValidationException>(() => Send(new CreatePaymentOrdersFromInvoices(account, [blocked, first])));
+        Assert.Contains("blocată la plată", refused.Errors["openItemIds"][0]);
+        Assert.Contains("nu este o datorie deschisă", refused.Errors["openItemIds"][0]);
+    }
 }

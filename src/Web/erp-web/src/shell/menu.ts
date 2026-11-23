@@ -70,6 +70,7 @@ export const menuGroups: readonly MenuGroup[] = [
         permission: 'Fin.PartnerBalance.View',
       },
       { id: 'allocation', label: 'menu.allocation', path: '/finante/decontari/alocare', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
+      { id: 'due-schedule', label: 'menu.dueSchedule', path: '/finante/decontari/scadentar', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
     ],
   },
   {

@@ -128,6 +128,27 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             Money.Format(a.Amount), a.CurrencyCode, a.DebitOpenItemId, a.DebitDocumentNo, (OpenItemKind)a.DebitKind, a.CreditOpenItemId, a.CreditDocumentNo,
             (OpenItemKind)a.CreditKind, a.UndoneAt, a.UndoReason, a.CreatedAt, a.CreatedByName)).ToList();
 
+    public async Task<IReadOnlyList<InvoiceToPay>> InvoicesToPayAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<InvoiceToPayRow>(Command("fin.usp_OpenItem_ForPaymentOrders",
+            new { CompanyId = companyId, Ids = System.Text.Json.JsonSerializer.Serialize(ids) }, ct)).ConfigureAwait(false))
+        .Select(r => new InvoiceToPay(r.OpenItemId, r.PartnerId, r.PartnerName, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.DocumentNo, r.CurrencyCode, r.OpenAmount,
+            r.IsDisputed, r.IsBlockedForPayment, r.PartnerBlocked, r.PartnerBankAccountId)).ToList();
+
+    public async Task<IReadOnlyList<DueScheduleDayDto>> DueScheduleAsync(int companyId, DateOnly from, DateOnly to, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<(DateTime? DueDay, int ReceivableCount, decimal ReceivableRon, int PayableCount, decimal PayableRon)>(Command(
+            "fin.usp_DueSchedule_Report", new { CompanyId = companyId, From = Day(from), To = Day(to) }, ct)).ConfigureAwait(false))
+        .Select(d => new DueScheduleDayDto(d.DueDay is { } day ? DateOnly.FromDateTime(day) : null, d.ReceivableCount, Money.Format(d.ReceivableRon), d.PayableCount,
+            Money.Format(d.PayableRon))).ToList();
+
+    public async Task<IReadOnlyList<DueItemDto>> DueItemsAsync(int companyId, PartnerRole role, DateOnly? day, DateOnly? before, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<DueItemRow>(Command("fin.usp_DueSchedule_Items", new
+        {
+            CompanyId = companyId, Role = (byte)role, Day = day is { } d ? Day(d) : (DateTime?)null, Before = before is { } b ? Day(b) : (DateTime?)null,
+        }, ct)).ConfigureAwait(false))
+        .Select(r => new DueItemDto(r.OpenItemId, r.PartnerId, r.PartnerName, r.AnafInactive, r.DocumentNo, DateOnly.FromDateTime(r.DocumentDate),
+            DateOnly.FromDateTime(r.DueDate), r.CurrencyCode, Money.Format(r.OpenAmount), Money.Format(r.OpenRon), r.IsDisputed, r.IsBlockedForPayment,
+            r.PartnerBlocked, (EInvoiceStatus)r.EInvoiceStatus, r.SpvExempt, r.PartnerBankAccountId)).ToList();
+
     public async Task<IReadOnlyList<PartnerBalanceDto>> BalanceAsync(int companyId, int partnerId, PartnerRole? role, DateOnly asOf, CancellationToken ct) =>
         (await session.Connection.QueryAsync<BalanceRow>(Command("fin.usp_PartnerBalance_Get",
             new { CompanyId = companyId, PartnerId = partnerId, Role = (byte?)role, AsOf = Day(asOf) }, ct)).ConfigureAwait(false))
@@ -216,6 +237,13 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
 
     private sealed record TotalsRow(decimal ReceivablesRon, int CustomersWithBalance, decimal OverdueReceivablesRon, int CustomersOverdue, decimal PayablesRon,
         int SuppliersWithBalance, decimal UnallocatedRon, int UnallocatedCount, decimal VatNonExigibleCollectedRon, decimal VatNonExigibleDeductibleRon);
+
+    private sealed record InvoiceToPayRow(long OpenItemId, int PartnerId, string PartnerName, byte Role, byte Kind, string DocumentNo, string CurrencyCode,
+        decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, bool PartnerBlocked, int? PartnerBankAccountId);
+
+    private sealed record DueItemRow(long OpenItemId, int PartnerId, string PartnerName, bool AnafInactive, string DocumentNo, DateTime DocumentDate,
+        DateTime DueDate, string CurrencyCode, decimal OpenAmount, decimal OpenRon, bool IsDisputed, bool IsBlockedForPayment, bool PartnerBlocked,
+        byte EInvoiceStatus, bool SpvExempt, int? PartnerBankAccountId);
 
     private sealed record PartnerAllocationRow(long Id, byte Role, DateTime AllocationDate, byte Source, byte Status, decimal Amount, string CurrencyCode,
         long DebitOpenItemId, string DebitDocumentNo, byte DebitKind, long CreditOpenItemId, string CreditDocumentNo, byte CreditKind, DateTime? UndoneAt,

@@ -10,6 +10,7 @@ export type PartnerBalance = components['schemas']['PartnerBalanceDto'];
 export type OpenItem = components['schemas']['OpenItemListDto'];
 export type PartnerAllocation = components['schemas']['PartnerAllocationDto'];
 export type FinanceProfile = components['schemas']['PartnerFinanceProfileDto'];
+export type DueItem = components['schemas']['DueItemDto'];
 
 /** Rolul partenerului in decontari (F3 3.1). */
 export const Role = { Customer: 1, Supplier: 2 } as const;
