@@ -16,6 +16,7 @@ import { AdvancesPage } from '../finance/AdvancesPage';
 import { ExpenseReportsPage } from '../finance/ExpenseReportsPage';
 import { BankStatementsPage } from '../finance/BankStatementsPage';
 import { BankReconcilePage } from '../finance/BankReconcilePage';
+import { PenaltiesPage } from '../finance/PenaltiesPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
 import { PartnerBalancesPage } from '../finance/PartnerBalancesPage';
@@ -62,6 +63,7 @@ export const routes = [
       { path: 'finante/decontari/compensari', element: <CompensationsPage /> },
       { path: 'finante/decontari/efecte', element: <CommercialPapersPage /> },
       { path: 'finante/decontari/confirmari', element: <BalanceConfirmationsPage /> },
+      { path: 'finante/decontari/penalitati', element: <PenaltiesPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

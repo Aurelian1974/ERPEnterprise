@@ -73,6 +73,18 @@ public sealed record CompensareValidata(int CompensationId, string Number, DateO
 public sealed record EfectComercialModificat(int CommercialPaperId, byte Direction, byte Kind, byte Status, decimal Amount, int PartnerId, DateOnly EventDate)
     : IntegrationEvent;
 
+/// <summary>O linie a penalitatilor unui partener (F3 5.1): factura, intervalul si zilele, baza, rata (pe zi sau anuala) si penalitatea; Kind 2 e
+/// suma fixa de recuperare (Legea 72/2013), fara interval.</summary>
+public sealed record PenalitateLinie(byte Kind, long OpenItemId, string InvoiceNo, DateOnly DueDate, DateOnly? FromDate, DateOnly? ToDate, int Days,
+    decimal BaseAmount, decimal? RatePerDay, decimal? AnnualRate, decimal PenaltyAmount);
+
+/// <summary>Penalitatile unui partener intr-o moneda; Vanzari emite din ele o factura de penalitati ciorna.</summary>
+public sealed record PenalitatiPartener(int PartnerId, string CurrencyCode, decimal Total, IReadOnlyList<PenalitateLinie> Lines);
+
+/// <summary>Aprobarea unui calcul de penalitati (F3 4.7 pasul 3, 5.1). Consumator: Vanzari (factura de penalitati ca ciorna, una pe partener).</summary>
+public sealed record PenalitatiCalculate(int PenaltyCalculationId, string Number, DateOnly CalculationDate, DateOnly PeriodFrom, DateOnly PeriodTo,
+    IReadOnlyList<PenalitatiPartener> Partners) : IntegrationEvent;
+
 /// <summary>Soldul unui partener pe rol si moneda la o data (F3 6). Sumele urmeaza conventia de semn: debit (+), credit (−).</summary>
 public sealed record PartnerBalanceDto(int CompanyId, int PartnerId, PartnerRole Role, string CurrencyCode, decimal Balance, decimal BalanceRon,
     decimal OverdueRon, int MaxOverdueDays, decimal UnallocatedPaymentsRon, DateOnly AsOf);

@@ -2920,3 +2920,14 @@ tr.clickable.picked { background: var(--info-bg); }
 .cash-list td.diff-bad {
   color: var(--error);
 }
+
+/* Penalitati (f3-08): lista calculelor ingusta, fisa cu liniile lata. */
+.split.cash-document.penalty-split {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+@media (max-width: 1100px) {
+  .split.cash-document.penalty-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

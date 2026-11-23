@@ -56,6 +56,7 @@ public static class FinanceInfrastructureRegistration
         services.AddSingleton<ICompensationPrinter, CompensationPrinter>();
         services.AddScoped<IBalanceConfirmationStore, BalanceConfirmationStore>();
         services.AddSingleton<IBalanceConfirmationPrinter, BalanceConfirmationPrinter>();
+        services.AddScoped<IPenaltyStore, PenaltyStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -141,5 +142,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51419] = (ErpErrorKind.NotFound, "FIN_COMPENSATION_NOT_FOUND"),
         [51420] = (ErpErrorKind.NotFound, "FIN_COMMERCIAL_PAPER_NOT_FOUND"),
         [51421] = (ErpErrorKind.NotFound, "FIN_BALANCE_CONFIRMATION_NOT_FOUND"),
+        [51422] = (ErpErrorKind.NotFound, "FIN_PENALTY_CALCULATION_NOT_FOUND"),
+        [51423] = (ErpErrorKind.Conflict, "FIN_PENALTY_NOT_DRAFT"),
     };
 }

@@ -229,6 +229,29 @@ public static class FinanceApiRegistration
         finance.MapGet("/balance-confirmations/{id:int}/response-file", (int id, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetBalanceConfirmationResponseFile(id), ct))
             .WithName("GetBalanceConfirmationResponseFile").Produces<DownloadedFile>().Problems();
+        // Penalitati de intarziere si ratele de referinta (F3 3.10, 4.7; macheta f3-08).
+        finance.MapGet("/penalties", (int? year, PenaltyStatus? status, ISender sender, CancellationToken ct) => sender.Send(new GetPenaltyCalculations(year, status), ct))
+            .WithName("GetPenaltyCalculations").Produces<IReadOnlyList<PenaltyCalculationItemDto>>().Problems();
+        finance.MapGet("/penalties/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPenaltyCalculation(id), ct))
+            .WithName("GetPenaltyCalculation").Produces<PenaltyCalculationDto>().Problems();
+        finance.MapPost("/penalties", (CalculatePenalties body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CalculatePenalties").Saves();
+        finance.MapPost("/penalties/{id:int}/recalculate", (int id, RecalculatePenalties body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("RecalculatePenalties").Saves();
+        finance.MapPost("/penalties/{id:int}/remove-lines", (int id, RemovePenaltyLines body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("RemovePenaltyLines").Saves();
+        finance.MapPost("/penalties/{id:int}/approve", (int id, ApprovePenaltyCalculation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ApprovePenaltyCalculation").Saves();
+        finance.MapPost("/penalties/{id:int}/cancel", (int id, CancelPenaltyCalculation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("CancelPenaltyCalculation").Saves();
+        finance.MapGet("/reference-rates", (ISender sender, CancellationToken ct) => sender.Send(new GetReferenceRates(), ct))
+            .WithName("GetReferenceRates").Produces<IReadOnlyList<ReferenceRateDto>>().Problems();
+        finance.MapPost("/reference-rates", (SaveReferenceRate body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveReferenceRate").Produces<bool>().Problems();
         // Efecte comerciale (F3 3.5, 4.5; macheta f3-06).
         finance.MapGet("/commercial-papers", (PaperDirection? direction, bool? activeOnly, DateOnly? maturityTo, int? year, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetCommercialPapers(direction, activeOnly ?? false, maturityTo, year), ct))

@@ -601,6 +601,61 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal(0, (await Send(new SendBalanceConfirmations(batchId, true))).Sent);
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F3-A11")]
+    public async Task Penalties_follow_the_contract_or_the_legal_rate_skip_disputed_items_and_approval_publishes_them()
+    {
+        Permissions.UnionWith([FinancePermissions.PenaltyCalculate, FinancePermissions.PenaltyApprove, FinancePermissions.TreasuryConfigure]);
+        await Send(new SaveReferenceRate(new DateOnly(2026, 1, 1), "6.75"));
+        await Send(new SaveReferenceRate(new DateOnly(2026, 7, 1), "6.5"));
+        Assert.Contains(await Send(new GetReferenceRates()), r => r.ValidFrom == new DateOnly(2026, 7, 1) && r.Rate == "6.5");
+        var (from, to) = (new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31));
+
+        // Contract 0,10%/zi cu suma fixa de 40 EUR; 400 platiti pe 10.10: doua intervale cu baze diferite.
+        var contract = await NewPartner();
+        var invoice = await Register(Sale(contract, 1000m, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)));
+        await Query<int>("""
+            UPDATE fin.PartnerFinanceProfile SET PenaltyRatePerDay = 0.1, ApplyFixedRecoveryCost = 1 WHERE CompanyId = @CompanyId AND PartnerId = @PartnerId AND Role = 1;
+            SELECT @@ROWCOUNT
+            """, new { Database.CompanyId, PartnerId = contract });
+        await Pay(contract, PartnerRole.Customer, 400m, new DateOnly(2026, 10, 10), targets: new SettlementTarget(invoice, 400m));
+        var draft = await Send(new CalculatePenalties(from, to, contract));
+        var calculation = await Send(new GetPenaltyCalculation(draft.Id));
+        Assert.Equal([(PenaltyLineKind.Interval, 10, "1000.00", "10.00", "RON"), (PenaltyLineKind.Interval, 21, "600.00", "12.60", "RON"),
+            (PenaltyLineKind.FixedRecoveryCost, 0, "1000.00", "40.00", "EUR")],
+            calculation.Lines.Select(l => (l.Kind, l.Days, l.BaseAmount, l.PenaltyAmount, l.CurrencyCode)));
+        Assert.Equal([("RON", "22.60"), ("EUR", "40.00")], calculation.Totals.Select(t => (t.CurrencyCode, t.Total)));
+
+        // Linia scoasa dispare; recalcularea o reface.
+        var removed = await Send(new RemovePenaltyLines(draft.Id, [calculation.Lines[2].Id], calculation.RowVersion));
+        Assert.Equal(2, (await Send(new GetPenaltyCalculation(draft.Id))).Lines.Count);
+        var recalculated = await Send(new RecalculatePenalties(draft.Id, removed.RowVersion));
+        Assert.Equal(3, (await Send(new GetPenaltyCalculation(draft.Id))).Lines.Count);
+
+        await Send(new ApprovePenaltyCalculation(draft.Id, recalculated.RowVersion));
+        Assert.Equal(PenaltyStatus.Approved, (await Send(new GetPenaltyCalculation(draft.Id))).Status);
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%PenalitatiCalculate' AND Payload LIKE @Like",
+            new { Like = $"%\"penaltyCalculationId\":{draft.Id}[,}}]%" }));
+
+        // Aceeasi perioada nu se mai penalizeaza o data; un calcul gol nu se aproba si se anuleaza.
+        var again = await Send(new CalculatePenalties(from, to, contract));
+        var empty = await Send(new GetPenaltyCalculation(again.Id));
+        Assert.Empty(empty.Lines);
+        Assert.Equal("FIN_PENALTY_EMPTY", (await Assert.ThrowsAsync<ErpException>(() => Send(new ApprovePenaltyCalculation(again.Id, empty.RowVersion)))).Code);
+        await Send(new CancelPenaltyCalculation(again.Id, empty.RowVersion));
+        var cancelled = await Send(new GetPenaltyCalculation(again.Id));
+        Assert.Equal("FIN_PENALTY_NOT_DRAFT", (await Assert.ThrowsAsync<ErpException>(() => Send(new CancelPenaltyCalculation(again.Id, cancelled.RowVersion)))).Code);
+
+        // Fara rata in contract: dobanda legala 6,50% + 8 = 14,50% pe an; factura in litigiu se exclude si se numara.
+        var legal = await NewPartner();
+        await Register(Sale(legal, 2000m, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)));
+        var disputed = await Register(Sale(legal, 500m, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 30)));
+        await Query<int>("UPDATE fin.OpenItem SET IsDisputed = 1 WHERE Id = @Id; SELECT @@ROWCOUNT", new { Id = disputed });
+        var legalCalculation = await Send(new GetPenaltyCalculation((await Send(new CalculatePenalties(from, to, legal))).Id));
+        var line = Assert.Single(legalCalculation.Lines);
+        Assert.Equal((31, "14.5", "24.63", 1), (line.Days, line.AnnualRate, line.PenaltyAmount, legalCalculation.DisputedCount));
+    }
+
     private async Task<(int Id, string Iban)> NewBankAccount()
     {
         var iban = Bank.StatementFiles.RomanianIban("RNCB", $"9{Guid.NewGuid().ToString("N")[..15].ToUpperInvariant()}");
