@@ -1,3 +1,4 @@
+using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Settlement;
@@ -252,6 +253,34 @@ public static class FinanceApiRegistration
             .WithName("GetReferenceRates").Produces<IReadOnlyList<ReferenceRateDto>>().Problems();
         finance.MapPost("/reference-rates", (SaveReferenceRate body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SaveReferenceRate").Produces<bool>().Problems();
+        // Soldurile initiale (F3 4.9; mecanismul de import 02.01, 4.8): sablon, incarcare si validare, confirmare in loturi, randuri cu erori.
+        finance.MapGet("/opening-balances/template", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalanceTemplate(), ct))
+            .WithName("GetOpeningBalanceTemplate").Produces<DownloadedFile>().Problems();
+        finance.MapPost("/opening-balances", (UploadOpeningBalances body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("UploadOpeningBalances").Produces<OpeningImportDto>().Problems();
+        finance.MapGet("/opening-balances/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalanceImport(id), ct))
+            .WithName("GetOpeningBalanceImport").Produces<OpeningImportDto>().Problems();
+        finance.MapGet("/opening-balances/{id:int}/errors", (int id, ISender sender, CancellationToken ct) => sender.Send(new DownloadOpeningBalanceErrors(id), ct))
+            .WithName("DownloadOpeningBalanceErrors").Produces<DownloadedFile>().Problems();
+        finance.MapPost("/opening-balances/{id:int}/cancel", (int id, ISender sender, CancellationToken ct) => sender.Send(new CancelOpeningBalanceImport(id), ct))
+            .WithName("CancelOpeningBalanceImport").Produces<OpeningImportDto>().Problems();
+        // Confirmarea: loturi de cate 500 de randuri, fiecare in tranzactia lui (02.01, 4.8 pasul 4); un lot esuat lasa importul partial.
+        finance.MapPost("/opening-balances/{id:int}/confirm", async (int id, ISender sender, CancellationToken ct) =>
+            {
+                try
+                {
+                    while (!(await sender.Send(new ImportOpeningOpenItems(id), ct)).Done)
+                    {
+                    }
+                }
+                catch (ErpException ex) when (ex.Code is not ("CORE_IMPORT_NOT_PENDING" or "CORE_ENTITY_NOT_FOUND" or CoreErrorCodes.Forbidden))
+                {
+                    return await sender.Send(new FailOpeningBalanceImport(id, ex.Message), CancellationToken.None);
+                }
+
+                return await sender.Send(new GetOpeningBalanceImport(id), ct);
+            })
+            .WithName("ConfirmOpeningBalanceImport").Produces<OpeningImportDto>().Problems();
         // Efecte comerciale (F3 3.5, 4.5; macheta f3-06).
         finance.MapGet("/commercial-papers", (PaperDirection? direction, bool? activeOnly, DateOnly? maturityTo, int? year, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetCommercialPapers(direction, activeOnly ?? false, maturityTo, year), ct))

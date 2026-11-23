@@ -27,6 +27,8 @@ import { AuditTab } from '../audit/AuditTab';
 import { SeriesRules } from './SeriesRules';
 import { DuplicatesTab } from './DuplicatesTab';
 import { AttributesTab } from './AttributesTab';
+import { OpeningBalancesTab } from '../finance/OpeningBalancesTab';
+import { ReferenceRatesTab } from '../finance/ReferenceRatesTab';
 import { TreasurySettingsTab } from '../finance/TreasurySettingsTab';
 
 /** Administrare › Configurare (02.01, 11.1): tab-urile apar dupa permisiuni; acum Serii si Licenta (celelalte vin cu etapele lor). */
@@ -49,6 +51,9 @@ export function ConfigPage() {
   // Finante (02.02, F1): familia apare doar cu modulul licentiat si cu dreptul pe trezorerie sau pe plafoane.
   const canTreasury = user.modules.includes('Finance')
     && (user.permissions.includes('Fin.Treasury.Configure') || user.permissions.includes('Fin.CashLimit.Manage') || user.permissions.includes('Fin.BankFormat.Manage'));
+  // F3: ratele de referinta BNR (dobanda legala) si importul soldurilor initiale (F3 4.9, 11).
+  const canReferenceRates = user.modules.includes('Finance') && user.permissions.includes('Fin.Treasury.Configure');
+  const canOpeningBalances = user.modules.includes('Finance') && user.permissions.includes('Fin.OpeningBalance.Import');
   const path = useLocation().pathname;
   const tab = path.endsWith('/licenta') && canLicense ? 'license'
     : path.endsWith('/tipuri-adrese') && canAddressTypes ? 'addressTypes'
@@ -64,12 +69,15 @@ export function ConfigPage() {
                         : path.endsWith('/audit') && canAudit ? 'audit'
                           : path.endsWith('/dubluri') && canDuplicates ? 'duplicates'
                             : path.endsWith('/atribute') && canNomenclatures ? 'attributes'
-                              : path.endsWith('/finante-trezorerie') && canTreasury ? 'treasury' : 'series';
+                              : path.endsWith('/finante-trezorerie') && canTreasury ? 'treasury'
+                                : path.endsWith('/finante-rate-referinta') && canReferenceRates ? 'referenceRates'
+                                  : path.endsWith('/finante-solduri-initiale') && canOpeningBalances ? 'openingBalances' : 'series';
   // Fara tab cerut (sau fara dreptul lui), primul tab permis: un auditor ajunge direct in Audit.
   const first = ([
     [canSeries, 'serii'], [canPrecision, 'precizie'], [canNomenclatures, 'nomenclatoare'], [canRates, 'cursuri'], [canDimensions, 'dimensiuni'],
     [canAddressTypes, 'tipuri-adrese'], [canPartnerGroups, 'grupe-parteneri'], [canProperties, 'proprietati'], [canRoles, 'roluri'], [canAudit, 'audit'],
     [canSettings, 'setari'], [canImport, 'import'], [canLicense, 'licenta'], [canDuplicates, 'dubluri'], [canTreasury, 'finante-trezorerie'],
+    [canOpeningBalances, 'finante-solduri-initiale'],
   ] as const).find(([allowed]) => allowed)?.[1];
   if (tab === 'series' && !canSeries && first !== undefined) {
     return <Navigate to={`/admin/config/${first}`} replace />;
@@ -77,7 +85,8 @@ export function ConfigPage() {
   const tabTitle = tab === 'license' ? t('config.tab.license') : tab === 'addressTypes' ? t('config.tab.addressTypes')
     : tab === 'partnerGroups' ? t('config.tab.partnerGroups') : tab === 'settings' ? t('config.tab.settings')
       : tab === 'properties' ? t('config.tab.properties') : tab === 'import' ? t('config.tab.import')
-        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : tab === 'audit' ? t('config.tab.audit') : tab === 'duplicates' ? t('config.tab.duplicates') : tab === 'attributes' ? t('config.tab.attributes') : tab === 'treasury' ? t('config.tab.treasury') : t('config.tab.series');
+        : tab === 'nomenclatures' ? t('config.tab.nomenclatures') : tab === 'roles' ? t('config.tab.roles') : tab === 'rates' ? t('config.tab.rates') : tab === 'dimensions' ? t('config.tab.dimensions') : tab === 'precision' ? t('config.tab.precision') : tab === 'audit' ? t('config.tab.audit') : tab === 'duplicates' ? t('config.tab.duplicates') : tab === 'attributes' ? t('config.tab.attributes') : tab === 'treasury' ? t('config.tab.treasury')
+    : tab === 'referenceRates' ? t('config.tab.referenceRates') : tab === 'openingBalances' ? t('config.tab.openingBalances') : t('config.tab.series');
   return (
     <div className="page wide">
       <div className="crumb">{t('menu.admin')} › {t('menu.config')} › {tabTitle}</div>
@@ -163,12 +172,24 @@ export function ConfigPage() {
             )}
           </div>
         )}
-        {canTreasury && (
+        {(canTreasury || canOpeningBalances) && (
           <div className="family">
             <span className="family-name">{t('config.family.finance')}</span>
-            <NavLink to="/admin/config/finante-trezorerie" className="tab">
-              ▤ {t('config.tab.treasury')}
-            </NavLink>
+            {canTreasury && (
+              <NavLink to="/admin/config/finante-trezorerie" className="tab">
+                ▤ {t('config.tab.treasury')}
+              </NavLink>
+            )}
+            {canReferenceRates && (
+              <NavLink to="/admin/config/finante-rate-referinta" className="tab">
+                % {t('config.tab.referenceRates')}
+              </NavLink>
+            )}
+            {canOpeningBalances && (
+              <NavLink to="/admin/config/finante-solduri-initiale" className="tab">
+                ⇧ {t('config.tab.openingBalances')}
+              </NavLink>
+            )}
           </div>
         )}
         {(canSettings || canImport || canLicense) && (
@@ -194,7 +215,7 @@ export function ConfigPage() {
       </nav>
       {tab === 'license' ? <LicenseTab /> : tab === 'addressTypes' ? <AddressTypesTab /> : tab === 'partnerGroups' ? <PartnerGroupsTab />
         : tab === 'settings' ? <SettingsTab /> : tab === 'properties' ? <PropertiesTab /> : tab === 'import' ? <ImportTab />
-        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab /> : tab === 'audit' ? <AuditTab /> : tab === 'duplicates' ? <DuplicatesTab user={user} /> : tab === 'attributes' ? <AttributesTab /> : tab === 'treasury' ? <TreasurySettingsTab user={user} />
+        : tab === 'nomenclatures' ? <NomenclaturesTab /> : tab === 'roles' ? <RolesTab user={user} /> : tab === 'rates' ? <ExchangeRatesTab user={user} /> : tab === 'dimensions' ? <DimensionsTab user={user} /> : tab === 'precision' ? <PrecisionTab /> : tab === 'audit' ? <AuditTab /> : tab === 'duplicates' ? <DuplicatesTab user={user} /> : tab === 'attributes' ? <AttributesTab /> : tab === 'treasury' ? <TreasurySettingsTab user={user} /> : tab === 'referenceRates' ? <ReferenceRatesTab /> : tab === 'openingBalances' ? <OpeningBalancesTab />
         : canSeries && <SeriesTab user={user} />}
     </div>
   );

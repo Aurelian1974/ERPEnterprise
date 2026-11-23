@@ -141,3 +141,56 @@ public interface IEmailOutbox
 
 /// <summary>Cererea de trimitere a unui email (02.01, 4.7), consumata de Worker.</summary>
 public sealed record EmailCerut(int EmailMessageId) : IntegrationEvent;
+
+/// <summary>O coloana a foii Excel de import (02.01, 4.8): cheia tehnica, antetul din fisier, daca e obligatorie si un exemplu pentru sablon.</summary>
+public sealed record SpreadsheetColumn(string Key, string Header, bool Required, string Example);
+
+/// <summary>O lista de valori permise, pusa in foaia „Liste” a sablonului si legata ca lista derulanta de coloanele date.</summary>
+public sealed record SpreadsheetList(string Header, IReadOnlyList<string> Values, IReadOnlyList<string> ColumnKeys);
+
+/// <summary>Un rand nevid citit din foaie: numarul lui in Excel si valorile, in ordinea coloanelor.</summary>
+public sealed record SpreadsheetRow(int RowNumber, IReadOnlyList<string?> Values);
+
+/// <summary>
+/// Foile Excel ale importurilor (02.01, 4.8), pentru modulele care isi importa singure datele (soldurile initiale): sablonul cu antetul si
+/// listele, fisierul cu randurile gresite (coloana „Eroare”) si citirea randurilor; un fisier care nu are antetul sablonului e refuzat cu
+/// ErpValidationException pe „file”. Cel mult 50.000 de randuri.
+/// </summary>
+public interface ISpreadsheetFiles
+{
+    byte[] Write(string sheetName, IReadOnlyList<SpreadsheetColumn> columns, IReadOnlyList<IReadOnlyList<string?>> rows, IReadOnlyList<SpreadsheetList> lists,
+        IReadOnlyList<string>? errors = null);
+
+    IReadOnlyList<SpreadsheetRow> Read(string sheetName, IReadOnlyList<SpreadsheetColumn> columns, byte[] content);
+}
+
+/// <summary>Starea unui job de import (core.ImportJob).</summary>
+public static class ImportStatus
+{
+    public const byte Validated = 1;
+    public const byte Imported = 2;
+    public const byte Cancelled = 3;
+    public const byte Partial = 4;
+}
+
+/// <summary>Un import validat, de salvat ca job pana la confirmare: raportul si randurile valide, ca JSON in formatul modulului.</summary>
+public sealed record ImportJobDraft(string EntityType, string FileName, int TotalRows, int ValidRows, int ErrorRows, int WarningRows, string ReportJson,
+    string PayloadJson);
+
+/// <summary>Un job de import citit din baza, cu raportul si randurile lui (PayloadJson lipseste dupa incheiere).</summary>
+public sealed record ImportJobState(int Id, string EntityType, int? CompanyId, string FileName, byte Status, int TotalRows, int ValidRows, int ErrorRows,
+    int ImportedRows, string? LastError, DateTime CreatedAt, DateTime? CompletedAt, string? ReportJson, string? PayloadJson);
+
+/// <summary>
+/// Joburile de import ale Nucleului (02.01, 4.8, core.ImportJob), pentru importurile altor module: validarea devine job, confirmarea il
+/// importa in loturi, fiecare in tranzactia lui, iar starea si randurile importate raman pe job (reluare, istoric). Firma si utilizatorul
+/// vin din contextul curent.
+/// </summary>
+public interface IImportJobs
+{
+    Task<int> CreateAsync(ImportJobDraft job, CancellationToken ct);
+
+    Task<ImportJobState?> GetAsync(int id, bool forUpdate, CancellationToken ct);
+
+    Task UpdateAsync(int id, byte status, int importedRows, string? lastError, bool clearPayload, CancellationToken ct);
+}

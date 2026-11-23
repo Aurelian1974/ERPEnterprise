@@ -58,14 +58,6 @@ public interface IImportJobStore
 public sealed record NewImportJob(string EntityType, int CompanyId, string FileName, bool AnafCheck, int TotalRows, int ValidRows, int ErrorRows,
     int WarningRows, string Report, string Payload);
 
-public static class ImportStatus
-{
-    public const byte Validated = 1;
-    public const byte Imported = 2;
-    public const byte Cancelled = 3;
-    public const byte Partial = 4;
-}
-
 /// <summary>
 /// Pasul 2–3 al importului (4.8): citirea fisierului, validarea fiecarui rand cu acelasi validator ca fisa (SavePartnerValidator),
 /// optional completarea dupa CUI de la ANAF, potrivirea cu partenerii existenti. Interogare: nu scrie nimic si ruleaza in afara

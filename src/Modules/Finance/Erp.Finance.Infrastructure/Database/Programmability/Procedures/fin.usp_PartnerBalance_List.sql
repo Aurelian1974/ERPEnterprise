@@ -60,7 +60,7 @@ BEGIN
     FROM fin.OpenItem AS o
     CROSS APPLY (SELECT ABS(o.VatAmountRon) - ISNULL((SELECT SUM(e.VatAmountRon) FROM fin.VatCashEntry AS e
                                                       WHERE e.OpenItemId = o.Id AND e.ExigibilityDate <= @AsOf), 0) AS Remaining) AS v
-    WHERE o.CompanyId = @CompanyId AND o.IsVatOnCollection = 1 AND o.Kind IN (1, 3, 4) AND o.DocumentDate <= @AsOf;
+    WHERE o.CompanyId = @CompanyId AND o.IsVatOnCollection = 1 AND o.Kind IN (1, 3, 4, 6) AND o.DocumentDate <= @AsOf;
 
     SELECT ISNULL(SUM(CASE WHEN Role = 1 AND BalanceRon > 0 THEN BalanceRon END), 0) AS ReceivablesRon,
         SUM(CASE WHEN Role = 1 AND BalanceRon > 0 THEN 1 ELSE 0 END) AS CustomersWithBalance,

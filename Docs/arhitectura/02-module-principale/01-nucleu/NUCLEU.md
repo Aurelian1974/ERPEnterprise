@@ -562,6 +562,8 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 4. La confirmare, rândurile valide se salvează în loturi de 500, fiecare lot în tranzacția lui, prin aceleași comenzi ca interfața (cu audit). Rândurile cu erori se descarcă, se corectează și se reîncarcă.
 5. Importul se poate relua: un rând cu același cod sau CUI actualizează înregistrarea existentă, nu o dublează.
 
+**Import pentru celelalte module (23.11.2026, pentru soldurile inițiale din 02.02, F3 4.9):** `ISpreadsheetFiles` (șablonul cu listele, citirea rândurilor, fișierul cu rândurile greșite, prin același cititor ClosedXML; o celulă de tip dată se citește ISO, AAAA-LL-ZZ) și `IImportJobs` (crearea, citirea și actualizarea jobului `core.ImportJob`, cu firma și utilizatorul din context) în `Erp.Core.Contracts`. Modulul își face singur validarea, raportul și loturile, cu propriile permisiuni și rute; jobul rămâne în istoricul importurilor. Migrarea `2026.11.046` lasă orice tip de entitate nevid pe job (nu doar `Partner` și `Item`).
+
 ### 4.9 Retenția datelor
 
 | Date | Păstrare | Motiv |

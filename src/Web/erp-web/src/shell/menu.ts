@@ -31,6 +31,7 @@ export const CONFIG_PERMISSIONS = [
   'Core.NumberSeries.Manage', 'Core.Precision.Manage', 'Core.Nomenclature.Manage', 'Core.ExchangeRate.ManageManual', 'Core.Dimension.Manage',
   'Core.Company.Manage', 'Core.Property.Manage', 'Core.Role.Manage', 'Core.Audit.View', 'Core.Settings.Manage', 'Core.Import.Run',
   'Core.License.Manage', 'Core.Partner.Manage', 'Core.Item.Manage', 'Fin.Treasury.Configure', 'Fin.CashLimit.Manage', 'Fin.BankFormat.Manage',
+  'Fin.OpeningBalance.Import',
 ] as const;
 
 export const homeItem: MenuItem = { id: 'home', label: 'menu.home', path: '/', icon: '⌂' };

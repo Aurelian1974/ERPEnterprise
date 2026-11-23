@@ -131,9 +131,13 @@ public sealed class PartnerSpreadsheet : IPartnerSpreadsheet
         }
 
         // O celula numerica (de exemplu CUI-ul tastat ca numar) se citeste fara separatoare si zecimale inutile.
-        var text = cell.DataType == XLDataType.Number
-            ? cell.GetDouble().ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture)
-            : cell.GetFormattedString();
+        // O data (soldurile initiale) se citeste ISO, indiferent de formatul celulei.
+        var text = cell.DataType switch
+        {
+            XLDataType.Number => cell.GetDouble().ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture),
+            XLDataType.DateTime => cell.GetDateTime().ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            _ => cell.GetFormattedString(),
+        };
         return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
     }
 

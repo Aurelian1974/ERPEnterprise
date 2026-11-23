@@ -94,7 +94,7 @@ BEGIN
     FROM @Rows AS r
     CROSS APPLY (VALUES (r.DebitOpenItemId), (r.CreditOpenItemId)) AS v(ItemId)
     JOIN @Items AS i ON i.Id = v.ItemId
-    WHERE r.Source <> 4 AND i.IsVatOnCollection = 1 AND i.Kind IN (1, 3, 4) AND i.VatAmountRon <> 0;
+    WHERE r.Source <> 4 AND i.IsVatOnCollection = 1 AND i.Kind IN (1, 3, 4, 6) AND i.VatAmountRon <> 0;
 
     DECLARE @VatOut TABLE (Id bigint, OpenItemId bigint, AllocationId bigint, Side tinyint, ExigibilityDate date, BaseAmountRon decimal(19,2),
                            VatAmountRon decimal(19,2));

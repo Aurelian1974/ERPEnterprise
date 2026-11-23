@@ -57,6 +57,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<IBalanceConfirmationStore, BalanceConfirmationStore>();
         services.AddSingleton<IBalanceConfirmationPrinter, BalanceConfirmationPrinter>();
         services.AddScoped<IPenaltyStore, PenaltyStore>();
+        services.AddScoped<IOpeningBalanceStore, OpeningBalanceStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;

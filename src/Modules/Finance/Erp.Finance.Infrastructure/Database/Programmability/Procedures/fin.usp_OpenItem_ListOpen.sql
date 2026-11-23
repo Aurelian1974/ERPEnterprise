@@ -14,7 +14,7 @@ BEGIN
 
     SELECT o.Id AS OpenItemId, o.Role, o.Kind, o.SourceDocumentType, o.SourceDocumentId, o.DocumentNo, o.DocumentDate, o.DueDate, o.CurrencyCode,
         o.Amount, o.OpenAmount, o.IsDisputed, o.DisputeNote, o.IsBlockedForPayment, o.EInvoiceStatus, o.IsVatOnCollection, o.VatAmount,
-        CASE WHEN o.IsVatOnCollection = 1 AND o.Kind IN (1, 3, 4)
+        CASE WHEN o.IsVatOnCollection = 1 AND o.Kind IN (1, 3, 4, 6)
              THEN ABS(o.VatAmountRon) - ISNULL((SELECT SUM(e.VatAmountRon) FROM fin.VatCashEntry AS e WHERE e.OpenItemId = o.Id), 0) ELSE 0 END
             AS VatNonExigibleRon,
         o.ClosedAt, o.RowVersion

@@ -29,7 +29,8 @@ const filters: readonly { readonly value: Filter; readonly label: TextKey; reado
 const statusPills: Readonly<Record<number, string>> = { 1: 'pill warn', 2: 'pill info', 3: 'pill ok', 4: 'pill' };
 const statusLabel = (status: number): TextKey => (['pen.status.1', 'pen.status.2', 'pen.status.3', 'pen.status.4'] as const)[status - 1] ?? 'pen.status.1';
 const keys = { all: ['finance', 'penalties'] as const };
-const percent = (value: string | number): string =>
+/** Un procent in format romanesc, cu 2–4 zecimale (6,50; 0,0500). */
+export const percent = (value: string | number): string =>
   Number(value).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
 /** Totalurile pe moneda, ca în macheta f3-08: „822,38 + 50,49 EUR” (leii fără monedă, primii). */
@@ -76,7 +77,6 @@ export function PenaltiesPage() {
   const current = selected ?? items[0]?.id;
   const canCalculate = user.permissions.includes('Fin.Penalty.Calculate');
   const canApprove = user.permissions.includes('Fin.Penalty.Approve');
-  const canConfigure = user.permissions.includes('Fin.Treasury.Configure');
   const latest = rates.data?.find((r) => r.validFrom <= isoToday()) ?? rates.data?.[0];
 
   return (
@@ -124,7 +124,6 @@ export function PenaltiesPage() {
             {latest === undefined ? t('pen.refRateMissing')
               : t('pen.refRate', { date: isoToRo(latest.validFrom), rate: percent(latest.rate), legal: percent(Number(latest.rate) + 8) })}
           </p>
-          {canConfigure && <ReferenceRates rates={rates.data ?? []} />}
         </section>
         <aside className="card cash-side">
           {current === 'new' ? <CalculateForm onSaved={(id) => setSelected(id)} />
@@ -133,45 +132,6 @@ export function PenaltiesPage() {
         </aside>
       </div>
     </div>
-  );
-}
-
-function ReferenceRates({ rates }: { readonly rates: readonly components['schemas']['ReferenceRateDto'][] }) {
-  const queryClient = useQueryClient();
-  const { notify } = useNotifier();
-  const [draft, setDraft] = useState({ validFrom: isoToday(), rate: '' });
-  const [error, setError] = useState<string | undefined>();
-  const save = async (validFrom: string, rate: string, remove: boolean) => {
-    setError(undefined);
-    try {
-      unwrap(await api.POST('/api/finance/reference-rates', { body: { validFrom, rate: rate.replace(',', '.'), delete: remove } }));
-      notify(t('pen.rateSaved'));
-      await queryClient.invalidateQueries({ queryKey: keys.all });
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : t('common.notSaved'));
-    }
-  };
-
-  return (
-    <details>
-      <summary>{t('pen.rates')}</summary>
-      <table className="partner-list cash-list">
-        <tbody>
-          {rates.map((r) => (
-            <tr key={r.validFrom}>
-              <td>{isoToRo(r.validFrom)}</td><td className="num">{percent(r.rate)}%</td>
-              <td><button type="button" className="btn ghost" onClick={() => void save(r.validFrom, '0', true)}>{t('pen.rateDelete')}</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="order-from-invoices">
-        <label>{t('pen.rateFrom')}<input className="cell-input" type="date" value={draft.validFrom} onChange={(e) => setDraft({ ...draft, validFrom: e.target.value })} /></label>
-        <label>{t('pen.rateValue')}<input className="cell-input num" value={draft.rate} onChange={(e) => setDraft({ ...draft, rate: e.target.value })} /></label>
-        <button type="button" className="btn ghost" disabled={draft.rate.trim() === ''} onClick={() => void save(draft.validFrom, draft.rate, false)}>{t('pen.rateAdd')}</button>
-      </div>
-      <ErrorBanner message={error} />
-    </details>
   );
 }
 

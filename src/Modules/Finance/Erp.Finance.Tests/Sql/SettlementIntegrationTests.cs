@@ -656,6 +656,86 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal((31, "14.5", "24.63", 1), (line.Days, line.AnnualRate, line.PenaltyAmount, legalCalculation.DisputedCount));
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F3-A13")]
+    public async Task An_opening_balance_import_of_50000_invoices_has_no_duplicates_and_its_totals_per_role_match_the_file()
+    {
+        Permissions.Add(FinancePermissions.OpeningBalanceImport);
+        var prefix = Unique("SI");
+        await using (var connection = new SqlConnection(Database.ConnectionString))
+        {
+            await connection.ExecuteAsync("""
+                INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, IsCustomer, IsSupplier, VatPayer, Address, City, CountyCode, CountryCode, IsActive, CreatedBy)
+                SELECT CONCAT(@Prefix, '-', n), CONCAT(N'Partener sold inițial ', n), 1, CAST(@Base + n AS nvarchar(20)), 1, 1, 1, N'Str. 1', N'Iași', N'IS', 'RO', 1, 1
+                FROM (SELECT TOP (50) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n FROM sys.all_objects) AS x
+                """, new { Prefix = prefix, Base = Random.Shared.Next(10_000_000, 89_999_000) });
+        }
+
+        // 50.000 de randuri: facturi si plati nealocate, client si furnizor, cateva in EUR.
+        var rows = new List<IReadOnlyList<string?>>();
+        var expected = new Dictionary<PartnerRole, decimal> { [PartnerRole.Customer] = 0m, [PartnerRole.Supplier] = 0m };
+        for (var i = 0; i < 50_000; i++)
+        {
+            var role = i % 3 == 0 ? PartnerRole.Supplier : PartnerRole.Customer;
+            var payment = i % 10 == 0;
+            var eur = i % 25 == 0;
+            var amount = 100m + (i % 900) + 0.5m;
+            var open = amount - (i % 7);
+            var rate = eur ? 4.9750m : 1m;
+            var debit = (role == PartnerRole.Customer) != payment;
+            expected[role] += (debit ? 1 : -1) * Math.Round(open * rate, 2, MidpointRounding.AwayFromZero);
+            var date = new DateOnly(2026, 6, 30).AddDays(-(i % 100));
+            rows.Add([$"{prefix}-{i % 50 + 1}", role == PartnerRole.Customer ? "Client" : "Furnizor", payment ? "Plată nealocată" : "Factură", $"SI-{i}",
+                date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                date.AddDays(30).ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture), eur ? "EUR" : "RON", eur ? "4,9750" : null,
+                amount.ToString(System.Globalization.CultureInfo.InvariantCulture), open.ToString(System.Globalization.CultureInfo.InvariantCulture), "Nu", null]);
+        }
+
+        var file = await InTransaction(sp => Task.FromResult(sp.GetRequiredService<ISpreadsheetFiles>().Write(OpeningSheet.SheetName, OpeningSheet.Columns, rows,
+            OpeningSheet.Lists)));
+        var upload = await Send(new UploadOpeningBalances("sold initial.xlsx", Convert.ToBase64String(file)));
+        Assert.Equal((50_000, 50_000, 0, 0), (upload.TotalRows, upload.ValidRows, upload.ErrorRows, upload.ExistingRows));
+        Assert.Equal([("RON-Customer", expected[PartnerRole.Customer]), ("RON-Supplier", expected[PartnerRole.Supplier])],
+            upload.Totals.GroupBy(t => t.Role).Select(g => ($"RON-{g.Key}", g.Sum(t => decimal.Parse(t.TotalRon, System.Globalization.CultureInfo.InvariantCulture)))));
+
+        while (!(await Send(new ImportOpeningOpenItems(upload.JobId))).Done)
+        {
+        }
+
+        Assert.Equal((ImportStatus.Imported, 50_000), ((await Send(new GetOpeningBalanceImport(upload.JobId))).Status, (await Send(new GetOpeningBalanceImport(upload.JobId))).ImportedRows));
+        const string Totals = """
+            SELECT o.Role, COUNT(*) AS Items, SUM(o.AmountRon) AS TotalRon, SUM(CASE WHEN o.OpenAmount = o.Amount THEN 0 ELSE 1 END) AS NotOpen
+            FROM fin.OpenItem AS o JOIN core.Partner AS p ON p.Id = o.PartnerId
+            WHERE o.SourceDocumentType = 'Finance.OpeningBalance' AND p.Code LIKE @Like AND o.CompanyId = @CompanyId
+            GROUP BY o.Role ORDER BY o.Role
+            """;
+        var imported = (await QueryAll<(byte Role, int Items, decimal TotalRon, int NotOpen)>(Totals, new { Like = prefix + "-%", Database.CompanyId })).ToList();
+        Assert.Equal(50_000, imported.Sum(r => r.Items));
+        Assert.Equal([((byte)1, expected[PartnerRole.Customer]), ((byte)2, expected[PartnerRole.Supplier])], imported.Select(r => (r.Role, r.TotalRon)));
+        Assert.All(imported, r => Assert.Equal(0, r.NotOpen));
+
+        // Reluarea aceluiasi fisier: toate randurile sunt deja importate, nimic nu se dubleaza.
+        var again = await Send(new UploadOpeningBalances("sold initial.xlsx", Convert.ToBase64String(file)));
+        Assert.Equal((0, 50_000), (again.ValidRows, again.ExistingRows));
+        Assert.True((await Send(new ImportOpeningOpenItems(again.JobId))).Done);
+        Assert.Equal(50_000, (await QueryAll<(byte Role, int Items, decimal TotalRon, int NotOpen)>(Totals, new { Like = prefix + "-%", Database.CompanyId }))
+            .Sum(r => r.Items));
+
+        // Randurile gresite raman in raport si se descarca, cu coloana „Eroare”.
+        var bad = await InTransaction(sp => Task.FromResult(sp.GetRequiredService<ISpreadsheetFiles>().Write(OpeningSheet.SheetName, OpeningSheet.Columns,
+        [
+            ["NU-EXISTA", "Client", "Factură", "X-1", "2026-06-30", null, "RON", null, "100", "50", "Nu", null],
+            [$"{prefix}-1", "Client", "Factură", "X-2", "2026-06-30", null, "RON", null, "100", "150", "Nu", null],
+            [$"{prefix}-1", "Furnizor", "Factură", "X-3", "30.06.2026", null, "EUR", null, "100", "100", "Da", "5"],
+        ], OpeningSheet.Lists)));
+        var checkedFile = await Send(new UploadOpeningBalances("gresit.xlsx", Convert.ToBase64String(bad)));
+        Assert.Equal((3, 0, 3), (checkedFile.TotalRows, checkedFile.ValidRows, checkedFile.ErrorRows));
+        Assert.Contains(checkedFile.Errors, e => e.Message.Contains("Partenerul nu există", StringComparison.Ordinal));
+        Assert.Contains(checkedFile.Errors, e => e.Message.Contains("Restul nu poate depăși", StringComparison.Ordinal));
+        Assert.Contains(checkedFile.Errors, e => e.Message.Contains("Cursul este obligatoriu", StringComparison.Ordinal));
+        Assert.StartsWith("PK", System.Text.Encoding.ASCII.GetString((await Send(new DownloadOpeningBalanceErrors(checkedFile.JobId))).Content, 0, 2));
+    }
+
     private async Task<(int Id, string Iban)> NewBankAccount()
     {
         var iban = Bank.StatementFiles.RomanianIban("RNCB", $"9{Guid.NewGuid().ToString("N")[..15].ToUpperInvariant()}");

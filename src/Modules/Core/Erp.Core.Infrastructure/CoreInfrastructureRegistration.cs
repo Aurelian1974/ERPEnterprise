@@ -32,6 +32,8 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Settings.ISettingsStore, SettingsStore>();
         services.AddScoped<Application.Properties.IPropertyDefinitionStore, PropertyDefinitionStore>();
         services.AddScoped<Application.Partners.IImportJobStore, ImportJobStore>();
+        services.AddScoped<IImportJobs, ImportJobs>();
+        services.AddSingleton<ISpreadsheetFiles, SpreadsheetFiles>();
         services.AddScoped<Application.Items.IItemStore, Items.ItemStore>();
         services.AddScoped<Application.Users.IUserStore, UserStore>();
         services.AddScoped<Application.Users.IRoleStore, RoleStore>();
