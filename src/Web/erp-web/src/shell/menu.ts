@@ -72,6 +72,7 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'allocation', label: 'menu.allocation', path: '/finante/decontari/alocare', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'due-schedule', label: 'menu.dueSchedule', path: '/finante/decontari/scadentar', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'compensations', label: 'menu.compensations', path: '/finante/decontari/compensari', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
+      { id: 'commercial-papers', label: 'menu.commercialPapers', path: '/finante/decontari/efecte', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
     ],
   },
   {

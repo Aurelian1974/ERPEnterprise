@@ -2913,3 +2913,4 @@ tr.clickable.picked { background: var(--info-bg); }
 .proposal-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
 .year-input { width: 80px; }
 .compensation .banner { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.paper-history { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 4px; }

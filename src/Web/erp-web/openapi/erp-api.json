@@ -4164,6 +4164,318 @@
         }
       }
     },
+    "/api/finance/commercial-papers": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetCommercialPapers",
+        "parameters": [
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PaperDirection"
+            }
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "maturityTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialPaperListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "RegisterCommercialPaper",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCommercialPaper"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/commercial-papers/{id}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetCommercialPaper",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialPaperDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/commercial-papers/{id}/status": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ChangeCommercialPaperStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeCommercialPaperStatus"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/due-schedule": {
       "get": {
         "tags": [
@@ -34664,6 +34976,515 @@
           "rowVersion": {
             "type": "string",
             "format": "byte"
+          }
+        }
+      },
+      "ChangeCommercialPaperStatus": {
+        "required": [
+          "id",
+          "status",
+          "eventDate",
+          "treasuryAccountId",
+          "bankStatementLineId",
+          "endorsedToPartnerId",
+          "endorsedInvoiceIds",
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaperStatus"
+          },
+          "eventDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bankStatementLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "endorsedToPartnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "endorsedInvoiceIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          },
+          "confirmWarnings": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "CommercialPaperDetailDto": {
+        "required": [
+          "id",
+          "partnerId",
+          "partnerName",
+          "direction",
+          "kind",
+          "series",
+          "number",
+          "issuerBank",
+          "issuerAccount",
+          "amount",
+          "currencyCode",
+          "issueDate",
+          "maturityDate",
+          "treasuryAccountId",
+          "treasuryAccountCode",
+          "status",
+          "glAccountCode",
+          "openItemId",
+          "endorsedToPartnerId",
+          "endorsedToPartnerName",
+          "note",
+          "events",
+          "invoices",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/PaperDirection"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaperKind"
+          },
+          "series": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "issuerBank": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issuerAccount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "issueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "maturityDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "treasuryAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "treasuryAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaperStatus"
+          },
+          "glAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openItemId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "endorsedToPartnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "endorsedToPartnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialPaperEventDto"
+            }
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialPaperInvoiceDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "CommercialPaperEventDto": {
+        "required": [
+          "status",
+          "eventDate",
+          "treasuryAccountCode",
+          "bankStatementLineId",
+          "note",
+          "createdAt",
+          "createdByName"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/PaperStatus"
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "treasuryAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bankStatementLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CommercialPaperInvoiceDto": {
+        "required": [
+          "openItemId",
+          "documentNo",
+          "documentDate",
+          "amount",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentNo": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CommercialPaperItemDto": {
+        "required": [
+          "id",
+          "partnerId",
+          "partnerName",
+          "direction",
+          "kind",
+          "series",
+          "number",
+          "amount",
+          "currencyCode",
+          "issueDate",
+          "maturityDate",
+          "status",
+          "treasuryAccountCode"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/PaperDirection"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaperKind"
+          },
+          "series": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "issueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "maturityDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaperStatus"
+          },
+          "treasuryAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CommercialPaperListDto": {
+        "required": [
+          "totals",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/CommercialPaperTotalsDto"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommercialPaperItemDto"
+            }
+          }
+        }
+      },
+      "CommercialPaperTotalsDto": {
+        "required": [
+          "inPortfolio",
+          "inPortfolioCount",
+          "deposited",
+          "depositedCount",
+          "issuedToPay",
+          "issuedToPayCount",
+          "refused",
+          "refusedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "inPortfolio": {
+            "type": "string"
+          },
+          "inPortfolioCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deposited": {
+            "type": "string"
+          },
+          "depositedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedToPay": {
+            "type": "string"
+          },
+          "issuedToPayCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "refused": {
+            "type": "string"
+          },
+          "refusedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PaperDirection": {
+        "type": "integer"
+      },
+      "PaperKind": {
+        "type": "integer"
+      },
+      "PaperStatus": {
+        "type": "integer"
+      },
+      "RegisterCommercialPaper": {
+        "required": [
+          "partnerId",
+          "direction",
+          "kind",
+          "series",
+          "number",
+          "issuerBank",
+          "issuerAccount",
+          "amount",
+          "currencyCode",
+          "issueDate",
+          "maturityDate",
+          "note",
+          "invoiceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/PaperDirection"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaperKind"
+          },
+          "series": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "issuerBank": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issuerAccount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "issueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "maturityDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "invoiceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         }
       }

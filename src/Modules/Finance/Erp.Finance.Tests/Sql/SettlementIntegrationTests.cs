@@ -504,6 +504,61 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         _ = validated;
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F3-A10")]
+    public async Task A_refused_cheque_reopens_the_invoice_settled_on_receipt_and_an_endorsed_note_pays_a_supplier()
+    {
+        Permissions.Add(FinancePermissions.CommercialPaperManage);
+        var customer = await NewPartner();
+        var invoice = await Register(Sale(customer, 6450m, Day, Day.AddDays(10)));
+        var series = Unique("BRD");
+        var saved = await Send(new RegisterCommercialPaper(customer, PaperDirection.Received, PaperKind.Cheque, series, "1188306", "BRD", null, "6450", "RON",
+            Day.AddDays(5), Day.AddDays(5), null, [invoice]));
+        Assert.Equal((6450m, 0m), await Item(invoice));
+        var duplicate = await Assert.ThrowsAsync<ErpException>(() => Send(new RegisterCommercialPaper(customer, PaperDirection.Received, PaperKind.Cheque, series,
+            "1188306", null, null, "10", "RON", Day.AddDays(5), Day.AddDays(5), null, [])));
+        Assert.Equal("FIN_COMMERCIAL_PAPER_DUPLICATE", duplicate.Code);
+
+        var (account, _) = await NewBankAccount();
+        var deposited = await Send(new ChangeCommercialPaperStatus(saved.Id, PaperStatus.Deposited, Day.AddDays(6), account, null, null, null, null, saved.RowVersion));
+        var wrong = await Assert.ThrowsAsync<ErpException>(() => Send(new ChangeCommercialPaperStatus(saved.Id, PaperStatus.Endorsed, Day.AddDays(7), null, null,
+            customer, null, null, deposited.RowVersion)));
+        Assert.Equal("FIN_COMMERCIAL_PAPER_STATUS_INVALID", wrong.Code);
+
+        await Send(new ChangeCommercialPaperStatus(saved.Id, PaperStatus.Refused, Day.AddDays(8), null, null, null, null, "Lipsă disponibil", deposited.RowVersion));
+        Assert.Equal((6450m, 6450m), await Item(invoice));
+        var detail = await Send(new GetCommercialPaper(saved.Id));
+        Assert.Equal((PaperStatus.Refused, 3), (detail.Status, detail.Events.Count));
+        Assert.Equal(0m, await Query<decimal>("SELECT SUM(OpenAmount) FROM fin.OpenItem WHERE SourceDocumentType = 'Finance.CommercialPaper' AND SourceDocumentId = @Id",
+            new { saved.Id }));
+        Assert.Equal(3, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%EfectComercialModificat' AND Payload LIKE @Like",
+            new { Like = $"%\"commercialPaperId\":{saved.Id}[,}}]%" }));
+
+        // Un bilet la ordin primit si girat catre un furnizor: stinge factura clientului la primire si factura furnizorului la gir.
+        var invoice2 = await Register(Sale(customer, 1000m, Day, Day.AddDays(30)));
+        var note = await Send(new RegisterCommercialPaper(customer, PaperDirection.Received, PaperKind.PromissoryNote, Unique("BT"), "4471203", "BT", null, "1000", "RON",
+            Day.AddDays(1), Day.AddDays(40), null, [invoice2]));
+        var supplier = await NewPartner();
+        var supplierInvoice = await Register(Purchase(supplier, 1000m, Day));
+        await Send(new ChangeCommercialPaperStatus(note.Id, PaperStatus.Endorsed, Day.AddDays(2), null, null, supplier, [supplierInvoice], null, note.RowVersion));
+        Assert.Equal((0m, 0m), ((await Item(invoice2)).Open, (await Item(supplierInvoice)).Open));
+        Assert.Contains((await Send(new GetCommercialPapers(PaperDirection.Received))).Items, p => p.Id == note.Id && p.Status == PaperStatus.Endorsed);
+    }
+
+    private async Task<(int Id, string Iban)> NewBankAccount()
+    {
+        var iban = Bank.StatementFiles.RomanianIban("RNCB", $"9{Guid.NewGuid().ToString("N")[..15].ToUpperInvariant()}");
+        await using var connection = new SqlConnection(Database.ConnectionString);
+        var bankAccountId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO core.CompanyBankAccount (CompanyId, Iban, BankName, Currency, IsDefault, IsActive, CreatedBy)
+            VALUES (@CompanyId, @Iban, N'BCR', 'RON', 0, 1, 1);
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """, new { CompanyId = Database.CompanyId, Iban = iban });
+        var saved = await Send(new SaveTreasuryAccount(null, Contracts.Treasury.TreasuryAccountKind.Bank, Unique("BANCA-"), "Cont efecte", null, "RON", bankAccountId,
+            null, null, null, null, null, null, Erp.Finance.Domain.Treasury.CashCloseMode.OnDemand, null, true, [], null));
+        return (saved.Id, iban);
+    }
+
     private async Task<IEnumerable<T>> QueryAll<T>(string sql, object parameters)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

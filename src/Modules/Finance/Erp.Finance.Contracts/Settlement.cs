@@ -66,6 +66,13 @@ public sealed record CompensareValidataLinie(long OpenItemId, int PartnerId, Par
 /// <summary>Validarea unui PV de compensare (F3 5.1). Consumator: partea contabila.</summary>
 public sealed record CompensareValidata(int CompensationId, string Number, DateOnly DocumentDate, IReadOnlyList<CompensareValidataLinie> Lines) : IntegrationEvent;
 
+/// <summary>
+/// Orice schimbare de stare a unui efect comercial (F3 5.1). Direction: 1 primit, 2 emis; Kind: 1 CEC, 2 bilet la ordin; Status: 1 in portofoliu,
+/// 2 depus, 3 incasat / platit, 4 refuzat, 5 girat, 6 stornat. Consumatori: partea contabila, Raportare.
+/// </summary>
+public sealed record EfectComercialModificat(int CommercialPaperId, byte Direction, byte Kind, byte Status, decimal Amount, int PartnerId, DateOnly EventDate)
+    : IntegrationEvent;
+
 /// <summary>Soldul unui partener pe rol si moneda la o data (F3 6). Sumele urmeaza conventia de semn: debit (+), credit (−).</summary>
 public sealed record PartnerBalanceDto(int CompanyId, int PartnerId, PartnerRole Role, string CurrencyCode, decimal Balance, decimal BalanceRon,
     decimal OverdueRon, int MaxOverdueDays, decimal UnallocatedPaymentsRon, DateOnly AsOf);

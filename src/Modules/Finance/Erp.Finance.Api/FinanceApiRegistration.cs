@@ -213,6 +213,17 @@ public static class FinanceApiRegistration
             .WithName("GetCompensationScan").Produces<DownloadedFile>().Problems();
         finance.MapGet("/compensations/{id:int}/pdf", (int id, ISender sender, CancellationToken ct) => sender.Send(new PrintCompensation(id), ct))
             .WithName("PrintCompensation").Produces<DownloadedFile>().Problems();
+        // Efecte comerciale (F3 3.5, 4.5; macheta f3-06).
+        finance.MapGet("/commercial-papers", (PaperDirection? direction, bool? activeOnly, DateOnly? maturityTo, int? year, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetCommercialPapers(direction, activeOnly ?? false, maturityTo, year), ct))
+            .WithName("GetCommercialPapers").Produces<CommercialPaperListDto>().Problems();
+        finance.MapGet("/commercial-papers/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetCommercialPaper(id), ct))
+            .WithName("GetCommercialPaper").Produces<CommercialPaperDetailDto>().Problems();
+        finance.MapPost("/commercial-papers", (RegisterCommercialPaper body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RegisterCommercialPaper").Saves();
+        finance.MapPost("/commercial-papers/{id:int}/status", (int id, ChangeCommercialPaperStatus body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ChangeCommercialPaperStatus").Saves();
         finance.MapGet("/due-schedule", (DateOnly? from, DateOnly? to, ISender sender, CancellationToken ct) => sender.Send(new GetDueSchedule(from, to), ct))
             .WithName("GetDueSchedule").Produces<DueScheduleDto>().Problems();
         finance.MapGet("/due-schedule/items", (PartnerRole role, DateOnly day, bool? overdue, ISender sender, CancellationToken ct) =>

@@ -298,8 +298,20 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         return new PaymentSettlementResult(created.Id, allocated, request.Amount - allocated, outcome.ChangedItems.Select(i => i.Id).ToList());
     }
 
-    public async Task ReversePaymentAsync(int companyId, string sourceDocumentType, long sourceDocumentId, string? sourceLineKey, DateOnly reversalDate,
-        CancellationToken ct)
+    public Task ReversePaymentAsync(int companyId, string sourceDocumentType, long sourceDocumentId, string? sourceLineKey, DateOnly reversalDate,
+        CancellationToken ct) =>
+        ReverseAsync(companyId, sourceDocumentType, sourceDocumentId, sourceLineKey, reversalDate, false, ct);
+
+    /// <summary>
+    /// Anularea partidelor unui document F3 (efect comercial refuzat sau stornat, F3 4.5 pasul 4): ca stornarea platii, dar desface si alocarile
+    /// documentului (Source = 5).
+    /// </summary>
+    public Task ReverseDocumentAsync(int companyId, string sourceDocumentType, long sourceDocumentId, string? sourceLineKey, DateOnly reversalDate,
+        CancellationToken ct) =>
+        ReverseAsync(companyId, sourceDocumentType, sourceDocumentId, sourceLineKey, reversalDate, true, ct);
+
+    private async Task ReverseAsync(int companyId, string sourceDocumentType, long sourceDocumentId, string? sourceLineKey, DateOnly reversalDate,
+        bool allowDocumentSource, CancellationToken ct)
     {
         var (items, allocations) = await store.PaymentItemsAsync(companyId, sourceDocumentType, sourceDocumentId, sourceLineKey, ct).ConfigureAwait(false);
         var pending = items.Where(i => !i.IsReversed).ToList();
@@ -312,7 +324,8 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         var undo = allocations.Where(a => ids.Contains(a.DebitOpenItemId) || ids.Contains(a.CreditOpenItemId)).Select(a => a.Id).ToArray();
         if (undo.Length > 0)
         {
-            var undone = await store.UndoAsync(companyId, undo, "Stornarea documentului de plată", false, reversalDate, context.UserId, ct).ConfigureAwait(false);
+            var undone = await store.UndoAsync(companyId, undo, "Stornarea documentului de plată", allowDocumentSource, reversalDate, context.UserId, ct)
+                .ConfigureAwait(false);
             await SettlementEvents.PublishAsync(outbox, undone, true, ct).ConfigureAwait(false);
         }
 

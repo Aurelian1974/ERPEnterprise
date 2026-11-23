@@ -708,6 +708,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/commercial-papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCommercialPapers"];
+        put?: never;
+        post: operations["RegisterCommercialPaper"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/commercial-papers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCommercialPaper"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/commercial-papers/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangeCommercialPaperStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/due-schedule": {
         parameters: {
             query?: never;
@@ -7808,6 +7856,138 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
         };
+        ChangeCommercialPaperStatus: {
+            /** Format: int32 */
+            id: number;
+            status: components["schemas"]["PaperStatus"];
+            /** Format: date */
+            eventDate: null | string;
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            /** Format: int64 */
+            bankStatementLineId: null | number;
+            /** Format: int32 */
+            endorsedToPartnerId: null | number;
+            endorsedInvoiceIds: null | number[];
+            note: null | string;
+            /** Format: byte */
+            rowVersion: string;
+            /** @default false */
+            confirmWarnings: boolean;
+        };
+        CommercialPaperDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            partnerId: number;
+            partnerName: string;
+            direction: components["schemas"]["PaperDirection"];
+            kind: components["schemas"]["PaperKind"];
+            series: string;
+            number: string;
+            issuerBank: null | string;
+            issuerAccount: null | string;
+            amount: string;
+            currencyCode: string;
+            /** Format: date */
+            issueDate: string;
+            /** Format: date */
+            maturityDate: string;
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            treasuryAccountCode: null | string;
+            status: components["schemas"]["PaperStatus"];
+            glAccountCode: null | string;
+            /** Format: int64 */
+            openItemId: null | number;
+            /** Format: int32 */
+            endorsedToPartnerId: null | number;
+            endorsedToPartnerName: null | string;
+            note: null | string;
+            events: components["schemas"]["CommercialPaperEventDto"][];
+            invoices: components["schemas"]["CommercialPaperInvoiceDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        CommercialPaperEventDto: {
+            status: components["schemas"]["PaperStatus"];
+            /** Format: date */
+            eventDate: string;
+            treasuryAccountCode: null | string;
+            /** Format: int64 */
+            bankStatementLineId: null | number;
+            note: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            createdByName: null | string;
+        };
+        CommercialPaperInvoiceDto: {
+            /** Format: int64 */
+            openItemId: number;
+            documentNo: string;
+            /** Format: date */
+            documentDate: string;
+            amount: string;
+            isActive: boolean;
+        };
+        CommercialPaperItemDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            partnerId: number;
+            partnerName: string;
+            direction: components["schemas"]["PaperDirection"];
+            kind: components["schemas"]["PaperKind"];
+            series: string;
+            number: string;
+            amount: string;
+            currencyCode: string;
+            /** Format: date */
+            issueDate: string;
+            /** Format: date */
+            maturityDate: string;
+            status: components["schemas"]["PaperStatus"];
+            treasuryAccountCode: null | string;
+        };
+        CommercialPaperListDto: {
+            totals: components["schemas"]["CommercialPaperTotalsDto"];
+            items: components["schemas"]["CommercialPaperItemDto"][];
+        };
+        CommercialPaperTotalsDto: {
+            inPortfolio: string;
+            /** Format: int32 */
+            inPortfolioCount: number;
+            deposited: string;
+            /** Format: int32 */
+            depositedCount: number;
+            issuedToPay: string;
+            /** Format: int32 */
+            issuedToPayCount: number;
+            refused: string;
+            /** Format: int32 */
+            refusedCount: number;
+        };
+        PaperDirection: number;
+        PaperKind: number;
+        PaperStatus: number;
+        RegisterCommercialPaper: {
+            /** Format: int32 */
+            partnerId: number;
+            direction: components["schemas"]["PaperDirection"];
+            kind: components["schemas"]["PaperKind"];
+            series: string;
+            number: string;
+            issuerBank: null | string;
+            issuerAccount: null | string;
+            amount: string;
+            currencyCode: string;
+            /** Format: date */
+            issueDate: string;
+            /** Format: date */
+            maturityDate: string;
+            note: null | string;
+            invoiceIds: number[];
+        };
     };
     responses: never;
     parameters: never;
@@ -11076,6 +11256,247 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DownloadedFile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCommercialPapers: {
+        parameters: {
+            query?: {
+                direction?: components["schemas"]["PaperDirection"];
+                activeOnly?: boolean;
+                maturityTo?: string;
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialPaperListDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RegisterCommercialPaper: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterCommercialPaper"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCommercialPaper: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialPaperDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeCommercialPaperStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeCommercialPaperStatus"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
                 };
             };
             /** @description Bad Request */
