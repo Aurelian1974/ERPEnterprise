@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Documentele PDF ale aplicatiei (registrul de casa, chitanta, ordinul de plata...) cu QuestPDF: licenta si setarile comune.
+       Licenta Community e gratuita sub 1.000.000 USD venit anual; peste prag (sau pentru institutii publice si firme listate) se cumpara
+       Professional / Enterprise si se schimba doar setarea Pdf:QuestPdfLicense din configurarea instalarii. -->
+  <ItemGroup>
+    <PackageReference Include="QuestPDF" />
+  </ItemGroup>
+
+</Project>

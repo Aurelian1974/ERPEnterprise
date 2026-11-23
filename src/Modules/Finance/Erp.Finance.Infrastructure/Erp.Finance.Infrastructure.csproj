@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Erp.Finance.Application\Erp.Finance.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Erp.Pdf\Erp.Pdf.csproj" />
   </ItemGroup>
 
   <ItemGroup>

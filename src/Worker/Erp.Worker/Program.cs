@@ -33,6 +33,8 @@ builder.Services.AddSingleton(sp => new SchemaVersionGuard(sp.GetRequiredService
     sp.GetRequiredService<ILogger<SchemaVersionGuard>>(), TimeProvider.System, allowUnversionedBuild: development));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SchemaVersionGuard>());
 builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:MaintenanceFlagPath"], TimeProvider.System));
+// Documentele PDF (QuestPDF): licenta din configurarea instalarii, implicit Community.
+Erp.Pdf.PdfSetup.Configure(builder.Configuration[Erp.Pdf.PdfSetup.ConfigurationKey]);
 
 // Acelasi inel de chei Data Protection ca Erp.Host (08, 5.12): Worker-ul citeste secretele criptate (de exemplu parola SMTP).
 builder.Services.AddErpDataProtection(builder.Configuration, () => new SqlConnection(connectionString), development);

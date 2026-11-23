@@ -38,6 +38,7 @@
     <Project Path="src/Shared/Erp.Configuration/Erp.Configuration.csproj" />
     <Project Path="src/Shared/Erp.Hosting/Erp.Hosting.csproj" />
     <Project Path="src/Shared/Erp.Bnr/Erp.Bnr.csproj" />
+    <Project Path="src/Shared/Erp.Pdf/Erp.Pdf.csproj" />
     <Project Path="src/Shared/Erp.Licensing/Erp.Licensing.csproj" />
     <Project Path="src/Shared/Erp.Security.Passwords/Erp.Security.Passwords.csproj" />
   </Folder>

@@ -50,6 +50,8 @@ builder.Services.AddSingleton(sp => new SchemaVersionGuard(sp.GetRequiredService
     sp.GetRequiredService<ILogger<SchemaVersionGuard>>(), TimeProvider.System, allowUnversionedBuild: development));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SchemaVersionGuard>());
 builder.Services.AddSingleton(new MaintenanceFlag(builder.Configuration["Erp:MaintenanceFlagPath"], TimeProvider.System));
+// Documentele PDF (QuestPDF): licenta din configurarea instalarii, implicit Community.
+Erp.Pdf.PdfSetup.Configure(builder.Configuration[Erp.Pdf.PdfSetup.ConfigurationKey]);
 builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 
 // Nucleul (02.01): pipeline-ul comun al comenzilor, contextul cererii, ProblemDetails. Modulele se adauga aici, dupa licenta.
