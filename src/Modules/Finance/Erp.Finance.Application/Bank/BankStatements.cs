@@ -77,6 +77,8 @@ public interface IBankStatementStore
     Task<BankReconciliationDto?> GetReconciliationAsync(int companyId, int treasuryAccountId, CancellationToken ct);
 
     Task<IReadOnlyList<BankAccountLookupDto>> ListAccountsAsync(int companyId, CancellationToken ct);
+
+    Task<IReadOnlyList<BankOperationTypeDto>> ListOperationTypesAsync(CancellationToken ct);
 }
 
 /// <summary>O linie nevalidata a contului in ecranul Extras de cont.</summary>
@@ -319,4 +321,18 @@ internal sealed class GetBankAccountsHandler(IBankStatementStore store, ICurrent
 {
     public Task<IReadOnlyList<BankAccountLookupDto>> Handle(GetBankAccounts request, CancellationToken cancellationToken) =>
         store.ListAccountsAsync(context.CompanyId, cancellationToken);
+}
+
+/// <summary>Listele editoarelor Bancii (reguli, OP-uri): tipurile de operatiuni bancare si conturile bancare ale firmei.</summary>
+public sealed record BankLookupsDto(IReadOnlyList<BankOperationTypeDto> OperationTypes, IReadOnlyList<BankAccountLookupDto> Accounts);
+
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.BankView)]
+public sealed record GetBankLookups : IQuery<BankLookupsDto>;
+
+internal sealed class GetBankLookupsHandler(IBankStatementStore store, ICurrentContext context) : IQueryHandler<GetBankLookups, BankLookupsDto>
+{
+    public async Task<BankLookupsDto> Handle(GetBankLookups request, CancellationToken cancellationToken) =>
+        new(await store.ListOperationTypesAsync(cancellationToken).ConfigureAwait(false),
+            await store.ListAccountsAsync(context.CompanyId, cancellationToken).ConfigureAwait(false));
 }

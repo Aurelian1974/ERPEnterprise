@@ -177,6 +177,8 @@ public sealed class BankMatchingIntegrationTests : BankTestBase, IClassFixture<F
         Assert.Equal(BankLineMatchStatus.Validated, lines[0].MatchStatus);
         Assert.Equal(BankLineMatchStatus.Explained, lines[1].MatchStatus);
         Assert.Equal(BankLineMatchStatus.Unmatched, lines[2].MatchStatus);
+        Assert.Contains(await Send(new GetMatchingRules()), r => r.Name == "Comisioane" && r.UsageCount == 1);
+        Assert.Contains((await Send(new GetBankLookups())).OperationTypes, t => t.Code == "BANK-COMISION");
 
         // „Tine minte”: regula din explicatia manuala a liniei, dupa textul dat.
         var explained = await Send(new ExplainBankStatementLine(lines[2].Id,

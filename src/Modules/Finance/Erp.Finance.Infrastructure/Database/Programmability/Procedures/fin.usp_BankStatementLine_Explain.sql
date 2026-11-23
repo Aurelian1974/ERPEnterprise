@@ -122,7 +122,7 @@ BEGIN
     UPDATE fin.BankStatementLine
     SET MatchStatus = CASE WHEN @HasParts = 1 THEN 3 ELSE 1 END,
         MatchSource = CASE WHEN @HasParts = 0 THEN NULL WHEN EXISTS (SELECT 1 FROM @Parts WHERE PaymentOrderId IS NOT NULL) THEN 1 ELSE 6 END,
-        PartnerId = COALESCE(@Partner, PartnerId), ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+        PartnerId = COALESCE(@Partner, PartnerId), MatchingRuleId = NULL, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @BankStatementLineId;
 
     UPDATE fin.BankStatement SET Status = 2, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @StatementId AND Status = 1;

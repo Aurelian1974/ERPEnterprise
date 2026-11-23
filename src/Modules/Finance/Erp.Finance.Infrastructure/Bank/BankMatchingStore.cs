@@ -31,7 +31,7 @@ public sealed class BankMatchingStore(IDbSession session) : IBankMatchingStore
         .Select(r => new MatchingRuleDto(r.Id, r.Priority, r.Name, r.TreasuryAccountId, r.Direction, r.CounterpartyIban, r.CounterpartyFiscalCode,
             r.RemittanceContains, r.BankTransactionCode, r.AmountFrom is { } f ? Money.Format(f) : null, r.AmountTo is { } t ? Money.Format(t) : null,
             r.OperationTypeId, r.OperationTypeCode, r.PartnerId, r.PartnerName, r.CostCenterId, r.ProjectId, r.NoteTemplate, r.AutoValidate, r.CreatedFromLineId,
-            r.IsActive, r.RowVersion)).ToList();
+            r.IsActive, r.RowVersion) { UsageCount = r.UsageCount }).ToList();
 
     public async Task<FinanceSaved> SaveRuleAsync(int companyId, MatchingRuleRecord rule, int userId, CancellationToken ct)
     {
@@ -89,7 +89,7 @@ public sealed class BankMatchingStore(IDbSession session) : IBankMatchingStore
     private sealed record RuleRow(int Id, int Priority, string Name, int? TreasuryAccountId, byte? Direction, string? CounterpartyIban,
         string? CounterpartyFiscalCode, string? RemittanceContains, string? BankTransactionCode, decimal? AmountFrom, decimal? AmountTo, int OperationTypeId,
         string OperationTypeCode, int? PartnerId, string? PartnerName, int? CostCenterId, int? ProjectId, string? NoteTemplate, bool AutoValidate,
-        long? CreatedFromLineId, bool IsActive, byte[] RowVersion);
+        long? CreatedFromLineId, bool IsActive, byte[] RowVersion, int UsageCount);
 
     private sealed record CardRow(int Id, string AcquirerCode, DateTime SalesDate, decimal GrossAmount, DateTime ExpectedSettlementDate, string SourceModule,
         string SourceRef, decimal? SettledAmount, decimal? FeeAmount, byte Status, long? BankStatementLineId, string? Note, byte[] RowVersion);

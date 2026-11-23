@@ -134,6 +134,9 @@ public sealed class BankStatementStore(IDbSession session) : IBankStatementStore
             new { CompanyId = companyId }, ct)).ConfigureAwait(false)).Select(a => new BankAccountLookupDto(a.Id, a.Code, a.Name, a.Kind, a.CurrencyCode.Trim()))
         .ToList();
 
+    public async Task<IReadOnlyList<BankOperationTypeDto>> ListOperationTypesAsync(CancellationToken ct) =>
+        (await session.Connection.QueryAsync<BankOperationTypeDto>(Command("fin.usp_BankOperationType_List", new { }, ct)).ConfigureAwait(false)).ToList();
+
     private sealed record ReconciliationRow(int TreasuryAccountId, string AccountCode, string AccountName, string CurrencyCode, int? BankStatementId,
         string? StatementNo, DateTime? StatementDate, decimal? ClosingBalance, decimal UnconfirmedAmount, int OpenLineCount);
 

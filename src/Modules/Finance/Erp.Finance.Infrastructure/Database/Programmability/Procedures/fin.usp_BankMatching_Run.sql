@@ -166,6 +166,7 @@ BEGIN
 
     UPDATE l
     SET MatchStatus = CASE WHEN m.LineId IS NOT NULL THEN 3 ELSE 1 END, MatchSource = m.Source,
+        MatchingRuleId = (SELECT x.RuleId FROM @Rule AS x WHERE x.LineId = l.Id),
         PartnerId = COALESCE((SELECT CASE WHEN COUNT(DISTINCT p.PartnerId) = 1 THEN MAX(p.PartnerId) END FROM @Parts AS p WHERE p.LineId = l.Id), k.PartnerId),
         ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     FROM fin.BankStatementLine AS l

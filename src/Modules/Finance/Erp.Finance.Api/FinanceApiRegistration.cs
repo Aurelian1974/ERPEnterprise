@@ -187,6 +187,8 @@ public static class FinanceApiRegistration
         finance.MapPost("/bank-statements/{id:int}/accept-gap", (int id, AcceptGapBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new AcceptStatementGap(id, body.Reason, body.RowVersion), ct))
             .WithName("AcceptStatementGap").Produces<byte[]>().Problems();
+        finance.MapGet("/bank-lookups", (ISender sender, CancellationToken ct) => sender.Send(new GetBankLookups(), ct))
+            .WithName("GetBankLookups").Produces<BankLookupsDto>().Problems();
         finance.MapGet("/bank-accounts", (ISender sender, CancellationToken ct) => sender.Send(new GetBankAccounts(), ct))
             .WithName("GetBankAccounts").Produces<IReadOnlyList<BankAccountLookupDto>>().Problems();
         finance.MapGet("/bank-reconciliation/{accountId:int}", (int accountId, ISender sender, CancellationToken ct) =>

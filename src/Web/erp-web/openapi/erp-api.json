@@ -3496,6 +3496,66 @@
         }
       }
     },
+    "/api/finance/bank-lookups": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetBankLookups",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankLookupsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/bank-accounts": {
       "get": {
         "tags": [
@@ -29922,6 +29982,10 @@
           "rowVersion": {
             "type": "string",
             "format": "byte"
+          },
+          "usageCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -30664,6 +30728,27 @@
           "cardSettlementDays": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "BankLookupsDto": {
+        "required": [
+          "operationTypes",
+          "accounts"
+        ],
+        "type": "object",
+        "properties": {
+          "operationTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankOperationTypeDto"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankAccountLookupDto"
+            }
           }
         }
       }

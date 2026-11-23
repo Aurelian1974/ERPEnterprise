@@ -28,7 +28,11 @@ public sealed record MatchingResultDto(int Considered, int Explained, int Propos
 public sealed record MatchingRuleDto(int Id, int Priority, string Name, int? TreasuryAccountId, byte? Direction, string? CounterpartyIban,
     string? CounterpartyFiscalCode, string? RemittanceContains, string? BankTransactionCode, string? AmountFrom, string? AmountTo, int OperationTypeId,
     string OperationTypeCode, int? PartnerId, string? PartnerName, int? CostCenterId, int? ProjectId, string? NoteTemplate, bool AutoValidate,
-    long? CreatedFromLineId, bool IsActive, byte[] RowVersion);
+    long? CreatedFromLineId, bool IsActive, byte[] RowVersion)
+{
+    /// <summary>Liniile de extras explicate de regula (macheta f2-04, coloana Folosiri).</summary>
+    public int UsageCount { get; init; }
+}
 
 public sealed record MatchingRuleRecord(int? Id, int Priority, string Name, int? TreasuryAccountId, byte? Direction, string? CounterpartyIban,
     string? CounterpartyFiscalCode, string? RemittanceContains, string? BankTransactionCode, decimal? AmountFrom, decimal? AmountTo, int OperationTypeId,

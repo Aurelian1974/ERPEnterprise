@@ -7,7 +7,8 @@ BEGIN
 
     SELECT r.Id, r.Priority, r.Name, r.TreasuryAccountId, r.Direction, r.CounterpartyIban, r.CounterpartyFiscalCode, r.RemittanceContains, r.BankTransactionCode,
         r.AmountFrom, r.AmountTo, r.TreasuryOperationTypeId AS OperationTypeId, t.Code AS OperationTypeCode, r.PartnerId, p.Name AS PartnerName, r.CostCenterId,
-        r.ProjectId, r.NoteTemplate, r.AutoValidate, r.CreatedFromLineId, r.IsActive, r.RowVersion
+        r.ProjectId, r.NoteTemplate, r.AutoValidate, r.CreatedFromLineId, r.IsActive, r.RowVersion,
+        (SELECT COUNT(*) FROM fin.BankStatementLine AS l WHERE l.MatchingRuleId = r.Id) AS UsageCount
     FROM fin.MatchingRule AS r
     JOIN fin.TreasuryOperationType AS t ON t.Id = r.TreasuryOperationTypeId
     LEFT JOIN core.Partner AS p ON p.Id = r.PartnerId
