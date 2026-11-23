@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agingShares, balanceParams, overdueDays, Role } from './settlementApi';
+import { agingShares, balanceParams, overdueDays, pairAllocations, Role } from './settlementApi';
 
 describe('balanceParams', () => {
   it('maps the screen filter to the API query', () => {
@@ -25,5 +25,14 @@ describe('overdueDays', () => {
     expect(overdueDays('2026-10-29', '2026-11-13')).toBe(15);
     expect(overdueDays('2026-11-13', '2026-11-13')).toBe(0);
     expect(overdueDays('2026-11-20', '2026-11-13')).toBe(0);
+  });
+});
+
+describe('pairAllocations', () => {
+  it('pairs debits and credits in order, cent-exact, leaving the surplus', () => {
+    expect(pairAllocations([{ id: 1, amount: 2300 }, { id: 2, amount: 8000 }], [{ id: 10, amount: 2296.5 }, { id: 11, amount: 8000 }])).toEqual([
+      { debitId: 1, creditId: 10, amount: 2296.5 }, { debitId: 1, creditId: 11, amount: 3.5 }, { debitId: 2, creditId: 11, amount: 7996.5 }]);
+    expect(pairAllocations([{ id: 1, amount: 100 }], [{ id: 10, amount: 0.1 }, { id: 11, amount: 0.2 }])).toEqual([
+      { debitId: 1, creditId: 10, amount: 0.1 }, { debitId: 1, creditId: 11, amount: 0.2 }]);
   });
 });

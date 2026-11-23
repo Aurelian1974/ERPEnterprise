@@ -69,6 +69,7 @@ export const menuGroups: readonly MenuGroup[] = [
         id: 'partner-balances', label: 'menu.partnerBalances', path: '/finante/decontari/solduri', icon: '', module: 'Finance',
         permission: 'Fin.PartnerBalance.View',
       },
+      { id: 'allocation', label: 'menu.allocation', path: '/finante/decontari/alocare', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
     ],
   },
   {

@@ -120,3 +120,49 @@ export function agingShares(row: Pick<PartnerBalanceRow, 'currentRon' | 'days30R
   const total = values.reduce((a, b) => a + b, 0);
   return total === 0 ? [0, 0, 0, 0] : values.map((v) => Math.round((v * 1000) / total) / 10);
 }
+
+/** O partida aleasa in ecranul Alocare, cu suma de alocat (pozitiva, in moneda partidei). */
+export interface AllocationPick {
+  readonly id: number;
+  readonly amount: number;
+}
+
+/**
+ * Perechile de alocare din partidele alese (F3 4.3): debitele si creditele se potrivesc in ordinea data (doi indici), fiecare pereche cu
+ * minimul dintre ce mai e de alocat pe cele doua; ce depaseste pe o parte ramane nealocat.
+ */
+export function pairAllocations(debits: readonly AllocationPick[], credits: readonly AllocationPick[]): { debitId: number; creditId: number; amount: number }[] {
+  const pairs: { debitId: number; creditId: number; amount: number }[] = [];
+  const d = debits.map((x) => ({ ...x, left: Math.round(x.amount * 100) }));
+  const c = credits.map((x) => ({ ...x, left: Math.round(x.amount * 100) }));
+  let i = 0;
+  let j = 0;
+  while (i < d.length && j < c.length) {
+    const debit = d[i];
+    const credit = c[j];
+    if (debit === undefined || credit === undefined) break;
+    const cents = Math.min(debit.left, credit.left);
+    if (cents > 0) pairs.push({ debitId: debit.id, creditId: credit.id, amount: cents / 100 });
+    debit.left -= cents;
+    credit.left -= cents;
+    if (debit.left === 0) i += 1;
+    if (credit.left === 0) j += 1;
+  }
+  return pairs;
+}
+
+/**
+ * Propunerea FIFO (F3 4.3 pasul 3): toate creditele deschise (in ordinea lor) pe cele mai vechi debite, fara partidele in litigiu; intoarce
+ * sumele propuse pe fiecare parte (doar cele cu suma > 0).
+ */
+export function proposeFifo(items: readonly OpenItem[]): { debits: Map<number, number>; credits: Map<number, number> } {
+  const open = items.filter((i) => !i.isDisputed && i.currencyCode === (items[0]?.currencyCode ?? 'RON'));
+  const debits = open.filter((i) => Number(i.openAmount) > 0).map((i) => ({ id: i.openItemId, amount: Number(i.openAmount) }));
+  const credits = open.filter((i) => Number(i.openAmount) < 0).map((i) => ({ id: i.openItemId, amount: -Number(i.openAmount) }));
+  const result = { debits: new Map<number, number>(), credits: new Map<number, number>() };
+  for (const p of pairAllocations(debits, credits)) {
+    result.debits.set(p.debitId, Math.round(((result.debits.get(p.debitId) ?? 0) + p.amount) * 100) / 100);
+    result.credits.set(p.creditId, Math.round(((result.credits.get(p.creditId) ?? 0) + p.amount) * 100) / 100);
+  }
+  return result;
+}

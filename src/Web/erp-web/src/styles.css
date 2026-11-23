@@ -2898,3 +2898,9 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--surface-muted
 .inline-form { display: inline-flex; gap: 6px; align-items: center; }
 .items-block + .items-block { margin-top: 18px; }
 .split.two-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.alloc-partner { min-width: 320px; flex: 1 1 320px; }
+.alloc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+.alloc-side tr.picked { background: var(--info-bg); }
+.alloc-amount { width: 110px; }
+.alloc-side .row-between { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.alloc-grid + .banner, .alloc-grid ~ .actions { margin-top: 12px; }
