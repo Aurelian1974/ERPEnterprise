@@ -2895,6 +2895,658 @@
         }
       }
     },
+    "/api/finance/partners/{partnerId}/balance": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetPartnerBalance",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PartnerBalanceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/partners/{partnerId}/open-items": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetOpenItems",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpenItemListDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/partners/{partnerId}/finance-profile/{role}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetPartnerFinanceProfile",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerFinanceProfileDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SavePartnerFinanceProfile",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PartnerRole"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePartnerFinanceProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/allocations": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "AllocateManually",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocateManually"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationsCreatedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/allocations/{id}/undo": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "UndoAllocation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoAllocation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/open-items/{id}/dispute": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SetOpenItemDispute",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOpenItemDispute"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/open-items/{id}/payment-block": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SetOpenItemPaymentBlock",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOpenItemPaymentBlock"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/matching-rules/test": {
       "post": {
         "tags": [
@@ -31191,6 +31843,418 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "AllocateManually": {
+        "required": [
+          "partnerId",
+          "role",
+          "pairs"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllocationPairInput"
+            }
+          },
+          "confirmWarnings": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "AllocationPairInput": {
+        "required": [
+          "debitOpenItemId",
+          "creditOpenItemId",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "debitOpenItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditOpenItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": "string"
+          }
+        }
+      },
+      "AllocationsCreatedDto": {
+        "required": [
+          "allocationIds",
+          "closedOpenItemIds"
+        ],
+        "type": "object",
+        "properties": {
+          "allocationIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "closedOpenItemIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      },
+      "AutoAllocationMode": {
+        "type": "integer"
+      },
+      "EInvoiceStatus": {
+        "type": "integer"
+      },
+      "OpenItemKind": {
+        "type": "integer"
+      },
+      "OpenItemListDto": {
+        "required": [
+          "openItemId",
+          "role",
+          "kind",
+          "sourceDocumentType",
+          "sourceDocumentId",
+          "documentNo",
+          "documentDate",
+          "dueDate",
+          "currencyCode",
+          "amount",
+          "openAmount",
+          "isDisputed",
+          "disputeNote",
+          "isBlockedForPayment",
+          "eInvoiceStatus",
+          "isVatOnCollection",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OpenItemKind"
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentNo": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "openAmount": {
+            "type": "string"
+          },
+          "isDisputed": {
+            "type": "boolean"
+          },
+          "disputeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isBlockedForPayment": {
+            "type": "boolean"
+          },
+          "eInvoiceStatus": {
+            "$ref": "#/components/schemas/EInvoiceStatus"
+          },
+          "isVatOnCollection": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "PartnerBalanceDto": {
+        "required": [
+          "companyId",
+          "partnerId",
+          "role",
+          "currencyCode",
+          "balance",
+          "balanceRon",
+          "overdueRon",
+          "maxOverdueDays",
+          "unallocatedPaymentsRon",
+          "asOf"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
+          },
+          "balanceRon": {
+            "type": "number",
+            "format": "double"
+          },
+          "overdueRon": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxOverdueDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unallocatedPaymentsRon": {
+            "type": "number",
+            "format": "double"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "PartnerFinanceProfileDto": {
+        "required": [
+          "partnerId",
+          "role",
+          "autoAllocationMode",
+          "penaltyRatePerDay",
+          "penaltyGraceDays",
+          "penaltyCapAtPrincipal",
+          "applyFixedRecoveryCost",
+          "isPaymentBlocked",
+          "blockReason",
+          "balanceConfirmationEmail",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "autoAllocationMode": {
+            "$ref": "#/components/schemas/AutoAllocationMode"
+          },
+          "penaltyRatePerDay": {
+            "type": "string"
+          },
+          "penaltyGraceDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "penaltyCapAtPrincipal": {
+            "type": "boolean"
+          },
+          "applyFixedRecoveryCost": {
+            "type": "boolean"
+          },
+          "isPaymentBlocked": {
+            "type": "boolean"
+          },
+          "blockReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "balanceConfirmationEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "PartnerRole": {
+        "type": "integer"
+      },
+      "SavePartnerFinanceProfile": {
+        "required": [
+          "partnerId",
+          "role",
+          "autoAllocationMode",
+          "penaltyRatePerDay",
+          "penaltyGraceDays",
+          "penaltyCapAtPrincipal",
+          "applyFixedRecoveryCost",
+          "isPaymentBlocked",
+          "blockReason",
+          "balanceConfirmationEmail",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PartnerRole"
+          },
+          "autoAllocationMode": {
+            "$ref": "#/components/schemas/AutoAllocationMode"
+          },
+          "penaltyRatePerDay": {
+            "type": "string"
+          },
+          "penaltyGraceDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "penaltyCapAtPrincipal": {
+            "type": "boolean"
+          },
+          "applyFixedRecoveryCost": {
+            "type": "boolean"
+          },
+          "isPaymentBlocked": {
+            "type": "boolean"
+          },
+          "blockReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "balanceConfirmationEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "SetOpenItemDispute": {
+        "required": [
+          "openItemId",
+          "isDisputed",
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isDisputed": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "SetOpenItemPaymentBlock": {
+        "required": [
+          "openItemId",
+          "isBlocked",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "openItemId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isBlocked": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "UndoAllocation": {
+        "required": [
+          "allocationId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "allocationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string"
           }
         }
       }

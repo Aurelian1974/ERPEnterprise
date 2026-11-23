@@ -158,6 +158,18 @@ public abstract class FinanceTestBase(FinanceDatabase database)
         return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request, Ct);
     }
 
+    /// <summary>Ruleaza un serviciu intern (ISettlementService, consumatori) in tranzactia proprie, ca apelantul lui real (F1, F2, Worker).</summary>
+    protected async Task<T> InTransaction<T>(Func<IServiceProvider, Task<T>> work, int? companyId = null)
+    {
+        await using var provider = Services(null, companyId);
+        await using var scope = provider.CreateAsyncScope();
+        var unit = scope.ServiceProvider.GetRequiredService<Erp.Core.Application.Abstractions.IUnitOfWork>();
+        await unit.BeginAsync(Ct);
+        var result = await work(scope.ServiceProvider);
+        await unit.CommitAsync(Ct);
+        return result;
+    }
+
     protected async Task<T> Query<T>(string sql, object? parameters = null)
     {
         await using var connection = new SqlConnection(Database.ConnectionString);

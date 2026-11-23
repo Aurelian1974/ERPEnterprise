@@ -113,14 +113,18 @@ public sealed class TreasuryAccountIntegrationTests(FinanceDatabase database) : 
     {
         Assert.Equal(13, await Query<int>("SELECT COUNT(*) FROM fin.TreasuryOperationType WHERE IsSystem = 1 AND AppliesToCash = 1"));
         Assert.Equal(2, await Query<byte>("SELECT Direction FROM fin.TreasuryOperationType WHERE Code = N'PLATA-AVANS-DECONTARE'"));
-        // 15 permisiuni F1 + 16 F2 (F2 8).
-        Assert.Equal(31, await Query<int>("SELECT COUNT(*) FROM core.Permission WHERE ModuleCode = N'Fin'"));
+        // 15 permisiuni F1 + 16 F2 (F2 8) + 15 F3 (F3 8).
+        Assert.Equal(46, await Query<int>("SELECT COUNT(*) FROM core.Permission WHERE ModuleCode = N'Fin'"));
         Assert.Equal(0, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Permission AS p ON p.Id = rp.PermissionId WHERE p.Code = N'Fin.PaymentOrder.FreeIban'
             """));
-        Assert.Equal(2, await Query<int>("""
+        Assert.Equal(6, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId
             WHERE r.Code = N'DIRECTOR_FINANCIAR' AND p.ModuleCode = N'Fin'
+            """));
+        Assert.Equal(8, await Query<int>("""
+            SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId
+            WHERE r.Code = N'CONTABIL_DECONTARI' AND p.ModuleCode = N'Fin'
             """));
         Assert.Equal(4, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId

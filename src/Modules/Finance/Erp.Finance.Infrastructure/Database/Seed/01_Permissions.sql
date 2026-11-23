@@ -35,7 +35,22 @@ USING (VALUES
     (N'Fin.PaymentOrder.Export',      N'Loturi de plată și export fișier către bancă'),
     (N'Fin.PaymentOrder.ReExport',    N'Reexportul unui lot de plată, cu motiv'),
     (N'Fin.PaymentOrder.Cancel',      N'Anularea unui lot exportat dar netrimis'),
-    (N'Fin.PaymentOrder.FreeIban',    N'IBAN beneficiar tastat direct, nu din fișa partenerului')
+    (N'Fin.PaymentOrder.FreeIban',    N'IBAN beneficiar tastat direct, nu din fișa partenerului'),
+    (N'Fin.PartnerBalance.View',        N'Solduri parteneri, fișa financiară a partenerului, scadențar, vechime'),
+    (N'Fin.Allocation.Manage',          N'Alocarea manuală a plăților pe facturi'),
+    (N'Fin.Allocation.Undo',            N'Desfacerea alocărilor (auditată)'),
+    (N'Fin.OpenItem.SetDispute',        N'Marcarea partidelor în litigiu'),
+    (N'Fin.OpenItem.BlockPayment',      N'Blocarea la plată a facturilor și a furnizorilor'),
+    (N'Fin.PartnerProfile.Manage',      N'Profilul financiar al partenerului (alocare, penalități)'),
+    (N'Fin.Compensation.Create',        N'Procese-verbale de compensare'),
+    (N'Fin.Compensation.Validate',      N'Validarea proceselor-verbale de compensare'),
+    (N'Fin.CommercialPaper.Manage',     N'Efecte comerciale (CEC, bilet la ordin)'),
+    (N'Fin.WriteOff.Create',            N'Ajustarea diferențelor mici, sub prag'),
+    (N'Fin.WriteOff.AboveThreshold',    N'Ajustări peste prag'),
+    (N'Fin.BalanceConfirmation.Manage', N'Confirmări de sold'),
+    (N'Fin.Penalty.Calculate',          N'Calculul penalităților de întârziere'),
+    (N'Fin.Penalty.Approve',            N'Aprobarea calculului de penalități'),
+    (N'Fin.OpeningBalance.Import',      N'Importul partidelor inițiale')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

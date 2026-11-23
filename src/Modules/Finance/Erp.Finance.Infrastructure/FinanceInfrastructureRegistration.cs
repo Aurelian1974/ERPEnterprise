@@ -1,10 +1,13 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Application.Settlement;
 using Erp.Finance.Application.Treasury;
 using Erp.Finance.Contracts.Bank;
+using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Contracts.Treasury;
 using Erp.Finance.Infrastructure.Bank;
 using Erp.Finance.Infrastructure.Bank.Formats;
+using Erp.Finance.Infrastructure.Settlement;
 using Erp.Finance.Infrastructure.Treasury;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,12 +47,17 @@ public static class FinanceInfrastructureRegistration
         services.AddSingleton<IStatementParser, Camt053Parser>();
         services.AddSingleton<IStatementParser, Mt940Parser>();
         services.AddSingleton<IStatementParser, CsvStatementParser>();
+        services.AddScoped<ISettlementStore, SettlementStore>();
+        services.AddScoped<SettlementService>();
+        services.AddScoped<ISettlementService>(sp => sp.GetRequiredService<SettlementService>());
+        services.AddScoped<InvoiceOpenItems>();
+        services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
     }
 }
 
 /// <summary>
-/// Codurile THROW ale Finantelor (02.02, F1 7): plaja 51000–51999, impartita pe sub-parti (F1 51000–51199, F2 51200–51399; 51224–51226 adaugate la implementare). 51010 e retras
+/// Codurile THROW ale Finantelor (02.02, F1 7): plaja 51000–51999, impartita pe sub-parti (F1 51000–51199, F2 51200–51399, F3 51400–51599; 51224–51226 si 51418 adaugate la implementare). 51010 e retras
 /// (anularea chitantei nu mai exista, decizia din 15.11.2026) si nu se refoloseste.
 /// </summary>
 public sealed class FinanceSqlErrors : ISqlErrorMap
@@ -106,5 +114,23 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51224] = (ErpErrorKind.NotFound, "FIN_BANK_STATEMENT_NOT_FOUND"),
         [51225] = (ErpErrorKind.NotFound, "FIN_PAYMENT_ORDER_NOT_FOUND"),
         [51226] = (ErpErrorKind.NotFound, "FIN_PAYMENT_BATCH_NOT_FOUND"),
+        [51401] = (ErpErrorKind.Validation, "FIN_ALLOCATION_SIDES_INVALID"),
+        [51402] = (ErpErrorKind.Validation, "FIN_ALLOCATION_PARTNER_MISMATCH"),
+        [51403] = (ErpErrorKind.Conflict, "FIN_ALLOCATION_EXCEEDS_OPEN"),
+        [51404] = (ErpErrorKind.Conflict, "FIN_ALLOCATION_UNDO_NOT_ALLOWED"),
+        [51405] = (ErpErrorKind.Conflict, "FIN_OPEN_ITEM_DUPLICATE_SOURCE"),
+        [51406] = (ErpErrorKind.Conflict, "FIN_OPEN_ITEM_BLOCKED_FOR_PAYMENT"),
+        [51407] = (ErpErrorKind.Conflict, "FIN_OPEN_ITEM_NOT_IN_SPV"),
+        [51408] = (ErpErrorKind.Conflict, "FIN_OPEN_ITEM_NOT_IN_SPV_UNCONFIRMED"),
+        [51409] = (ErpErrorKind.Conflict, "FIN_OPEN_ITEM_DISPUTED_UNCONFIRMED"),
+        [51410] = (ErpErrorKind.Validation, "FIN_COMPENSATION_NOT_BALANCED"),
+        [51411] = (ErpErrorKind.Conflict, "FIN_COMPENSATION_NOT_DRAFT"),
+        [51412] = (ErpErrorKind.Conflict, "FIN_COMMERCIAL_PAPER_DUPLICATE"),
+        [51413] = (ErpErrorKind.Conflict, "FIN_COMMERCIAL_PAPER_STATUS_INVALID"),
+        [51414] = (ErpErrorKind.Forbidden, "FIN_WRITEOFF_ABOVE_THRESHOLD"),
+        [51415] = (ErpErrorKind.Conflict, "FIN_PENALTY_ALREADY_INVOICED"),
+        [51416] = (ErpErrorKind.Conflict, "FIN_REFERENCE_RATE_MISSING"),
+        [51417] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51418] = (ErpErrorKind.Validation, "FIN_ALLOCATION_CURRENCY_MISMATCH"),
     };
 }

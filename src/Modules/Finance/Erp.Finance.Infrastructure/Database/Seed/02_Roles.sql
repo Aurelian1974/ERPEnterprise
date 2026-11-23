@@ -1,4 +1,4 @@
--- Rolurile de sistem ale Finantelor si permisiunile lor (02.02, F1 8 si F2 8; Fin.PaymentOrder.FreeIban nu e in niciun rol livrat). Rolurile se creeaza daca lipsesc; legaturile se adauga doar daca
+-- Rolurile de sistem ale Finantelor si permisiunile lor (02.02, F1 8, F2 8 si F3 8; Fin.PaymentOrder.FreeIban nu e in niciun rol livrat). Rolurile se creeaza daca lipsesc; legaturile se adauga doar daca
 -- lipsesc: clientul poate extinde rolurile, iar o rerulare nu sterge nimic (MIG-06). ADMIN primeste si permisiunile Fin (matricea
 -- rolurilor il arata complet), iar AUDITOR pe cele de consultare.
 SET NOCOUNT ON;
@@ -10,7 +10,8 @@ USING (VALUES
     (N'CONTABIL_TREZORERIE', N'Contabil trezorerie', N'Casa, avansurile spre decontare și deconturile de cheltuieli.'),
     (N'CONTABIL_SEF',        N'Contabil șef',        N'Toate permisiunile Finanțelor.'),
     (N'APROBATOR_DECONTURI', N'Aprobator deconturi', N'Aprobarea deconturilor de cheltuieli (șeful direct).'),
-    (N'DIRECTOR_FINANCIAR',  N'Director financiar',  N'Consultarea băncilor și aprobarea ordinelor de plată (patru ochi).')
+    (N'DIRECTOR_FINANCIAR',  N'Director financiar',  N'Consultarea băncilor și aprobarea ordinelor de plată (patru ochi).'),
+    (N'CONTABIL_DECONTARI',  N'Contabil clienți / furnizori', N'Soldurile partenerilor, alocări, litigii, compensări, efecte, ajustări sub prag, confirmări de sold și calculul penalităților.')
 ) AS source (Code, Name, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR ISNULL(target.Description, N'') <> source.Description) THEN
@@ -55,7 +56,21 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'CONTABIL_TREZORERIE', N'Fin.PaymentOrder.Export'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.Bank.View'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.PaymentOrder.Approve'),
-        (N'AUDITOR',             N'Fin.Bank.View')
+        (N'AUDITOR',             N'Fin.Bank.View'),
+        (N'CONTABIL_DECONTARI',  N'Fin.PartnerBalance.View'),
+        (N'CONTABIL_DECONTARI',  N'Fin.Allocation.Manage'),
+        (N'CONTABIL_DECONTARI',  N'Fin.OpenItem.SetDispute'),
+        (N'CONTABIL_DECONTARI',  N'Fin.Compensation.Create'),
+        (N'CONTABIL_DECONTARI',  N'Fin.CommercialPaper.Manage'),
+        (N'CONTABIL_DECONTARI',  N'Fin.WriteOff.Create'),
+        (N'CONTABIL_DECONTARI',  N'Fin.BalanceConfirmation.Manage'),
+        (N'CONTABIL_DECONTARI',  N'Fin.Penalty.Calculate'),
+        (N'CONTABIL_DECONTARI',  N'Core.Partner.View'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.PartnerBalance.View'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.OpenItem.BlockPayment'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Compensation.Validate'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Penalty.Approve'),
+        (N'AUDITOR',             N'Fin.PartnerBalance.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

@@ -135,6 +135,7 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public const string AutoValidateLevel = "Fin.Bank.AutoValidateLevel";
     public const string CardFeeTolerancePercent = "Fin.Card.FeeTolerancePercent";
     public const string CardSettlementDays = "Fin.Card.SettlementDays";
+    public const string RequireSpvInvoice = "Fin.Payment.RequireSpvInvoice";
 
     public async Task<bool> RequireApprovalAsync(int companyId, CancellationToken ct)
     {
@@ -153,6 +154,10 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public async Task<int> CardSettlementDaysAsync(int companyId, CancellationToken ct) =>
         int.TryParse(await GetAsync(companyId, CardSettlementDays, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture, out var days) && days is >= 0 and <= 30 ? days : 2;
+
+    public async Task<int> RequireSpvInvoiceAsync(int companyId, CancellationToken ct) =>
+        int.TryParse(await GetAsync(companyId, RequireSpvInvoice, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out var level) && level is >= 0 and <= 2 ? level : 2;
 
     public Task SaveAsync(int companyId, string code, string value, int userId, CancellationToken ct) =>
         session.Connection.ExecuteAsync(new CommandDefinition("fin.usp_CompanySetting_Save", new { CompanyId = companyId, Code = code, Value = value, UserId = userId },

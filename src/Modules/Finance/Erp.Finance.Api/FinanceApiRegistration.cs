@@ -1,5 +1,7 @@
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Application.Settlement;
+using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -168,6 +170,30 @@ public static class FinanceApiRegistration
             .WithName("UpdateMatchingRule").Saves();
         finance.MapPost("/matching-rules/reorder", (ReorderMatchingRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("ReorderMatchingRules").Produces<bool>().Problems();
+        // Decontari cu partenerii (F3 6, 8): solduri, partide deschise, alocari, litigii, blocari, profil financiar.
+        finance.MapGet("/partners/{partnerId:int}/balance", (int partnerId, PartnerRole? role, DateOnly? asOf, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetPartnerBalance(partnerId, role, asOf), ct))
+            .WithName("GetPartnerBalance").Produces<IReadOnlyList<PartnerBalanceDto>>().Problems();
+        finance.MapGet("/partners/{partnerId:int}/open-items", (int partnerId, PartnerRole? role, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetOpenItems(partnerId, role), ct))
+            .WithName("GetOpenItems").Produces<IReadOnlyList<OpenItemListDto>>().Problems();
+        finance.MapGet("/partners/{partnerId:int}/finance-profile/{role}", (int partnerId, PartnerRole role, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetPartnerFinanceProfile(partnerId, role), ct))
+            .WithName("GetPartnerFinanceProfile").Produces<PartnerFinanceProfileDto>().Problems();
+        finance.MapPut("/partners/{partnerId:int}/finance-profile/{role}", (int partnerId, PartnerRole role, SavePartnerFinanceProfile body, ISender sender,
+                CancellationToken ct) => sender.Send(body with { PartnerId = partnerId, Role = role }, ct))
+            .WithName("SavePartnerFinanceProfile").Produces<byte[]>().Problems();
+        finance.MapPost("/allocations", (AllocateManually body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("AllocateManually").Produces<AllocationsCreatedDto>().Problems();
+        finance.MapPost("/allocations/{id:long}/undo", (long id, UndoAllocation body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { AllocationId = id }, ct))
+            .WithName("UndoAllocation").Produces<bool>().Problems();
+        finance.MapPost("/open-items/{id:long}/dispute", (long id, SetOpenItemDispute body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { OpenItemId = id }, ct))
+            .WithName("SetOpenItemDispute").Produces<byte[]>().Problems();
+        finance.MapPost("/open-items/{id:long}/payment-block", (long id, SetOpenItemPaymentBlock body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { OpenItemId = id }, ct))
+            .WithName("SetOpenItemPaymentBlock").Produces<byte[]>().Problems();
         finance.MapPost("/matching-rules/test", (TestMatchingRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("TestMatchingRule").Produces<MatchingRuleTestDto>().Problems();
         finance.MapPost("/bank-statement-lines/{id:long}/remember", (long id, RememberMatchingRule body, ISender sender, CancellationToken ct) =>

@@ -37,6 +37,21 @@ public static class FinancePermissions
     public const string PaymentOrderReExport = "Fin.PaymentOrder.ReExport";
     public const string PaymentOrderCancel = "Fin.PaymentOrder.Cancel";
     public const string PaymentOrderFreeIban = "Fin.PaymentOrder.FreeIban";
+    public const string PartnerBalanceView = "Fin.PartnerBalance.View";
+    public const string AllocationManage = "Fin.Allocation.Manage";
+    public const string AllocationUndo = "Fin.Allocation.Undo";
+    public const string OpenItemSetDispute = "Fin.OpenItem.SetDispute";
+    public const string OpenItemBlockPayment = "Fin.OpenItem.BlockPayment";
+    public const string PartnerProfileManage = "Fin.PartnerProfile.Manage";
+    public const string CompensationCreate = "Fin.Compensation.Create";
+    public const string CompensationValidate = "Fin.Compensation.Validate";
+    public const string CommercialPaperManage = "Fin.CommercialPaper.Manage";
+    public const string WriteOffCreate = "Fin.WriteOff.Create";
+    public const string WriteOffAboveThreshold = "Fin.WriteOff.AboveThreshold";
+    public const string BalanceConfirmationManage = "Fin.BalanceConfirmation.Manage";
+    public const string PenaltyCalculate = "Fin.Penalty.Calculate";
+    public const string PenaltyApprove = "Fin.Penalty.Approve";
+    public const string OpeningBalanceImport = "Fin.OpeningBalance.Import";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>
