@@ -16,6 +16,9 @@ public sealed record PaymentSettlementRequest(int CompanyId, int PartnerId, Part
     /// <summary>Plata facuta de un angajat, din decont (tip 10); altfel incasare / plata (tip 5).</summary>
     public bool IsEmployeePayment { get; init; }
 
+    /// <summary>Restul de dupa facturile indicate merge FIFO dupa profil; false la avansuri (raman nealocate).</summary>
+    public bool AllowFifo { get; init; } = true;
+
     /// <summary>Modulul documentului (Finance pentru F1, F2).</summary>
     public string SourceModule { get; init; } = "Finance";
 }
@@ -107,6 +110,9 @@ public interface ISettlementStore
 
     /// <summary>Partida unui document sursa (factura stornata), daca exista.</summary>
     Task<long?> FindBySourceAsync(string sourceDocumentType, long sourceDocumentId, PartnerRole role, CancellationToken ct);
+
+    /// <summary>Tipurile de operatiuni de trezorerie: decontarea (SettlementKind) si sensul (1 intrare, 2 iesire, 3 ambele), dupa cod.</summary>
+    Task<IReadOnlyDictionary<string, (byte SettlementKind, byte Direction)>> OperationTypeKindsAsync(CancellationToken ct);
 
     /// <summary>Data unei alocari active a firmei (pentru verificarea perioadei inainte de desfacere).</summary>
     Task<DateOnly?> AllocationDateAsync(int companyId, long allocationId, CancellationToken ct);
@@ -219,7 +225,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             }
         }
 
-        if (available > 0 && created.Mode == AutoAllocationMode.IndicatedThenFifo)
+        if (available > 0 && request.AllowFifo && created.Mode == AutoAllocationMode.IndicatedThenFifo)
         {
             var taken = plan.Select(p => p.Id).ToHashSet();
             var fifo = (await store.CandidatesAsync(request.CompanyId, request.PartnerId, request.Role, request.CurrencyCode, side, null, ct).ConfigureAwait(false))

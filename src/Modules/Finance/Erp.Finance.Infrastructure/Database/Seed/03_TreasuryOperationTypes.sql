@@ -1,6 +1,6 @@
 -- Tipurile de operatiuni de casa livrate (02.02, F1 3.2; MIG-06). MERGE pe Code: tipurile livrate (IsSystem = 1) se actualizeaza la
 -- fiecare versiune, cele ale clientului nu se ating. Directia: 1 Intrare, 2 Iesire. SettlementKind: 0 nimic, 1 facturi client,
--- 2 facturi furnizor, 3 avans spre decontare, 4 decont. CashLimitCategory: Incasare / Plata (plafonul PJ sau PF se alege dupa tipul
+-- 2 facturi furnizor, 3 avans spre decontare, 4 decont, 5 avans client, 6 avans furnizor (F3 4.2). CashLimitCategory: Incasare / Plata (plafonul PJ sau PF se alege dupa tipul
 -- partenerului, F1 3.6 regula 3), AvansPersoanaZi, sau NULL (fara plafon: operatiuni interne, salarii, deconturi).
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -8,13 +8,13 @@ SET XACT_ABORT ON;
 MERGE fin.TreasuryOperationType AS target
 USING (VALUES
     (N'INC-CLIENT',             N'Încasare de la client',                         1, 1, 0, 0, 1, N'4111', 'Incasare'),
-    (N'INC-AVANS-CLIENT',       N'Avans încasat de la client',                    1, 1, 0, 0, 0, N'419',  'Incasare'),
+    (N'INC-AVANS-CLIENT',       N'Avans încasat de la client',                    1, 1, 0, 0, 5, N'419',  'Incasare'),
     (N'INC-RESTITUIRE-AVANS',   N'Restituire avans spre decontare',               1, 0, 1, 0, 3, N'542',  NULL),
     (N'INC-RIDICARE-BANCA',     N'Numerar ridicat din bancă',                     1, 0, 0, 1, 0, N'581',  NULL),
     (N'INC-VANZARI-POS',        N'Încasări din vânzări cu amănuntul (raport Z)',  1, 0, 0, 0, 0, N'4111', NULL),
     (N'INC-DIVERSE',            N'Alte încasări',                                 1, 0, 0, 0, 0, NULL,    'Incasare'),
     (N'PLATA-FURNIZOR',         N'Plată către furnizor',                          2, 1, 0, 0, 2, N'401',  'Plata'),
-    (N'PLATA-AVANS-FURNIZOR',   N'Avans plătit furnizorului',                     2, 1, 0, 0, 0, N'409',  'Plata'),
+    (N'PLATA-AVANS-FURNIZOR',   N'Avans plătit furnizorului',                     2, 1, 0, 0, 6, N'409',  'Plata'),
     (N'PLATA-AVANS-DECONTARE',  N'Avans spre decontare acordat',                  2, 0, 1, 0, 3, N'542',  'AvansPersoanaZi'),
     (N'PLATA-DIFERENTA-DECONT', N'Diferență de plătit din decont',                2, 0, 1, 0, 4, N'542',  NULL),
     (N'PLATA-DEPUNERE-BANCA',   N'Numerar depus la bancă',                        2, 0, 0, 1, 0, N'581',  NULL),

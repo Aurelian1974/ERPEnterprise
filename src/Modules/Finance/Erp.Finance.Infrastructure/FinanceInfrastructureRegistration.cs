@@ -51,6 +51,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<SettlementService>();
         services.AddScoped<ISettlementService>(sp => sp.GetRequiredService<SettlementService>());
         services.AddScoped<InvoiceOpenItems>();
+        services.AddScoped<TreasurySettlement>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
     }

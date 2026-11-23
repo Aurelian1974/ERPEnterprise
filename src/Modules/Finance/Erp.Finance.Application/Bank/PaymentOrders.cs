@@ -106,14 +106,14 @@ internal sealed class PaymentOrderLineInputValidator : AbstractValidator<Payment
 
 /// <summary>Salvarea si validarea unui OP, comune ecranului Ordine de plata si „OP nou” din extras.</summary>
 public sealed class PaymentOrderWorkflow(IPaymentOrderStore store, INumberSeriesService numbers, IPeriodLock periods, IExchangeRateProvider rates,
-    IPrecisionService precision, IOutbox outbox, ICurrentContext context)
+    IPrecisionService precision, IOutbox outbox, ICurrentContext context, Settlement.TreasurySettlement settlement)
 {
     /// <summary>
     /// Valideaza un OP ciorna (F2 3.6 regula 2): partenerul inactiv la ANAF cere confirmare (regula 4), perioada documentului deschisa,
     /// numarul din seria OP, apoi PlataInregistrata (cate o intrare pe linie) in aceeasi tranzactie.
     /// </summary>
     public async Task<(PaymentOrderState Order, string Number, byte[] RowVersion)> ValidateAsync(int id, byte[] rowVersion, bool confirmAnafInactive,
-        CancellationToken ct)
+        CancellationToken ct, bool confirmWarnings = false)
     {
         var state = await store.GetAsync(context.CompanyId, id, ct).ConfigureAwait(false) ?? throw PaymentOrderErrors.NotFound();
         var order = state.Order;
@@ -140,6 +140,11 @@ public sealed class PaymentOrderWorkflow(IPaymentOrderStore store, INumberSeries
         {
             CompanyId = context.CompanyId,
         }, ct).ConfigureAwait(false);
+        // Legarea de factura stinge factura prin F3, in aceeasi tranzactie (F2 4.2 pasul 2, F3 4.2).
+        await settlement.RegisterAsync(new Settlement.TreasurySettlementDocument(context.CompanyId, PaymentOrderRules.DocumentType, order.Id, number,
+            order.DocumentDate, order.CurrencyCode, rate.PerUnit,
+            state.Lines.Select((l, i) => new Settlement.TreasurySettlementLine(l.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                codes[l.LineNumber], order.PartnerId, l.Amount, ron[i], l.SettlementRef)).ToList(), confirmWarnings), ct).ConfigureAwait(false);
         return (state, number, version);
     }
 }
@@ -246,13 +251,14 @@ internal sealed class DeletePaymentOrderHandler(IPaymentOrderStore store, ICurre
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.PaymentOrderValidate)]
 [Audited("Fin.PaymentOrder.Validate")]
-public sealed record ValidatePaymentOrder(int Id, byte[] RowVersion, bool ConfirmAnafInactive = false) : ICommand<FinanceSaved>;
+public sealed record ValidatePaymentOrder(int Id, byte[] RowVersion, bool ConfirmAnafInactive = false, bool ConfirmWarnings = false) : ICommand<FinanceSaved>;
 
 internal sealed class ValidatePaymentOrderHandler(PaymentOrderWorkflow workflow, IAuditScope audit) : ICommandHandler<ValidatePaymentOrder, FinanceSaved>
 {
     public async Task<FinanceSaved> Handle(ValidatePaymentOrder request, CancellationToken cancellationToken)
     {
-        var (state, number, version) = await workflow.ValidateAsync(request.Id, request.RowVersion, request.ConfirmAnafInactive, cancellationToken)
+        var (state, number, version) = await workflow.ValidateAsync(request.Id, request.RowVersion, request.ConfirmAnafInactive, cancellationToken,
+            request.ConfirmWarnings)
             .ConfigureAwait(false);
         audit.Describe("Fin.PaymentOrder", request.Id, new
         {
@@ -319,7 +325,7 @@ internal sealed class ApprovePaymentOrdersHandler(IPaymentOrderStore store, IFin
 public sealed record ReversePaymentOrder(int Id, byte[] RowVersion) : ICommand<FinanceSaved>;
 
 internal sealed class ReversePaymentOrderHandler(IPaymentOrderStore store, INumberSeriesService numbers, IPeriodLock periods, IOutbox outbox,
-    ICurrentContext context, IAuditScope audit, TimeProvider time) : ICommandHandler<ReversePaymentOrder, FinanceSaved>
+    ICurrentContext context, IAuditScope audit, TimeProvider time, Settlement.ISettlementService settlement) : ICommandHandler<ReversePaymentOrder, FinanceSaved>
 {
     public async Task<FinanceSaved> Handle(ReversePaymentOrder request, CancellationToken cancellationToken)
     {
@@ -336,6 +342,7 @@ internal sealed class ReversePaymentOrderHandler(IPaymentOrderStore store, INumb
         {
             CompanyId = context.CompanyId, DocumentType = PaymentOrderRules.DocumentType,
         }, cancellationToken).ConfigureAwait(false);
+        await settlement.ReversePaymentAsync(context.CompanyId, PaymentOrderRules.DocumentType, request.Id, null, date, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.PaymentOrder", request.Id, new { ReversalId = reversal.Id, Number = number, Date = date, state.Order.Amount });
         return reversal;
     }
@@ -351,7 +358,7 @@ internal sealed class ReversePaymentOrderHandler(IPaymentOrderStore store, INumb
 [Audited("Fin.PaymentOrder.CreateFromStatementLine")]
 public sealed record CreatePaymentOrderFromStatementLine(long BankStatementLineId, byte[] LineRowVersion, PaymentPurpose Purpose, int? PartnerId,
     int? EmployeeId, int? PartnerBankAccountId, string? BeneficiaryFiscalCode, string? BudgetObligationRef, IReadOnlyList<PaymentOrderLineInput> Lines,
-    bool ConfirmAnafInactive = false) : ICommand<FinanceSaved>;
+    bool ConfirmAnafInactive = false, bool ConfirmWarnings = false) : ICommand<FinanceSaved>;
 
 internal sealed class CreatePaymentOrderFromStatementLineValidator : AbstractValidator<CreatePaymentOrderFromStatementLine>
 {
@@ -394,7 +401,8 @@ internal sealed class CreatePaymentOrderFromStatementLineHandler(IPaymentOrderSt
             PaymentOrderRules.Remittance(orderLines.Select(l => l.SettlementRef), 500) ?? line.RemittanceInfo, request.BudgetObligationRef?.Trim(), null,
             orderLines, null);
         var saved = await store.SaveAsync(context.CompanyId, draft, context.UserId, cancellationToken).ConfigureAwait(false);
-        var (state, number, version) = await workflow.ValidateAsync(saved.Id, saved.RowVersion, request.ConfirmAnafInactive, cancellationToken).ConfigureAwait(false);
+        var (state, number, version) = await workflow.ValidateAsync(saved.Id, saved.RowVersion, request.ConfirmAnafInactive, cancellationToken,
+            request.ConfirmWarnings).ConfigureAwait(false);
 
         var codes = state.Order.Lines.ToDictionary(l => l.LineNumber, l => l.OperationTypeId);
         var parts = orderLines.Select(l => new BankLinePartRecord(l.LineNumber, codes[l.LineNumber], -l.Amount, request.PartnerId, request.EmployeeId,

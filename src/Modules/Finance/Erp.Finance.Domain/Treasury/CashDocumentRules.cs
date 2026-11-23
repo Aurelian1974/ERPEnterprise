@@ -44,6 +44,9 @@ public static class CashDocumentRules
     public const string IncasareCategory = "Incasare";
     public const string PlataCategory = "Plata";
     public const string AdvanceCategory = "AvansPersoanaZi";
+
+    /// <summary>Tipul documentului sursa al partidelor de plata din casa (F3 3.1).</summary>
+    public const string SettlementSource = "Finance.CashDocument";
     public const string CashBalanceCategory = "SoldCasa";
 
     /// <summary>Chitanta, dispozitia de incasare si soldul initial au doar linii de intrare; dispozitia de plata doar de iesire (regula 1).</summary>

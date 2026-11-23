@@ -206,7 +206,7 @@ internal sealed class ValidateBankStatementLinesHandler(BankLineValidation valid
 /// seturi, IncasareInregistrata / PlataInregistrata (partile pe OP nu republica plata), OrdinPlataConfirmat si OrdinPlataRespins.
 /// </summary>
 public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLock periods, IExchangeRateProvider rates, IPrecisionService precision,
-    IFinanceSettings settings, IOutbox outbox, ICurrentContext context)
+    IFinanceSettings settings, IOutbox outbox, ICurrentContext context, Settlement.TreasurySettlement settlement)
 {
     /// <summary>
     /// Valideaza fiecare linie care poate trece si raporteaza motivul pentru celelalte (F2 4.4 pasul 4); procedura primeste doar liniile bune,
@@ -343,6 +343,14 @@ public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLoc
                 : new PlataInregistrata(line.TreasuryAccountId, line.AccountKind, BankLineRules.DocumentType, lineId, BankLineRules.Number(line),
                     line.BookingDate, line.PartnerId, employee, line.CurrencyCode, perUnit, amounts.Sum(), totalRon, movement);
             await outbox.EnqueueAsync(evt with { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
+
+            // Partile pe partener sting facturile legate prin F3 (F2 4.4, F3 4.2); facturile au fost alese explicit la explicarea liniei, deci
+            // avertizarile (litigiu) sunt considerate confirmate. Platile catre furnizori trec prin OP (51223), cu regula SPV la validarea OP-ului.
+            await settlement.RegisterAsync(new Settlement.TreasurySettlementDocument(context.CompanyId, BankLineRules.DocumentType, line.Id,
+                BankLineRules.Number(line), line.BookingDate, line.CurrencyCode, perUnit,
+                included.Select((p, i) => new Settlement.TreasurySettlementLine(p.PartNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    p.OperationTypeCode, p.PartnerId ?? line.PartnerId, p.Amount, ron[i], p.SettlementRef) { Incoming = p.Amount > 0 }).ToList(), true),
+                cancellationToken).ConfigureAwait(false);
         }
 
         return (lines, saved);
@@ -368,7 +376,7 @@ internal sealed class UnvalidateBankStatementLineValidator : AbstractValidator<U
 }
 
 internal sealed class UnvalidateBankStatementLineHandler(IBankStatementLineStore store, IPeriodLock periods, IOutbox outbox, ICurrentContext context,
-    IAuditScope audit) : ICommandHandler<UnvalidateBankStatementLine, BankLineSaved>
+    IAuditScope audit, Settlement.ISettlementService settlement) : ICommandHandler<UnvalidateBankStatementLine, BankLineSaved>
 {
     public async Task<BankLineSaved> Handle(UnvalidateBankStatementLine request, CancellationToken cancellationToken)
     {
@@ -381,6 +389,8 @@ internal sealed class UnvalidateBankStatementLineHandler(IBankStatementLineStore
         {
             CompanyId = context.CompanyId, DocumentType = BankLineRules.DocumentType,
         }, cancellationToken).ConfigureAwait(false);
+        // Facturile stinse de linie redevin deschise (F3 4.2 pasul 6).
+        await settlement.ReversePaymentAsync(context.CompanyId, BankLineRules.DocumentType, line.Id, null, line.BookingDate, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.BankStatementLine", request.Id, new { Reason = request.Reason.Trim(), line.BookingDate, line.Amount });
         return new BankLineSaved(request.Id, version);
     }

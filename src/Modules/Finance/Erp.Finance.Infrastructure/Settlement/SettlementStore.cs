@@ -139,6 +139,10 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         await session.Connection.QuerySingleOrDefaultAsync<DateTime?>(Command("fin.usp_Allocation_Date", new { CompanyId = companyId, AllocationId = allocationId }, ct))
             .ConfigureAwait(false) is { } date ? DateOnly.FromDateTime(date) : null;
 
+    public async Task<IReadOnlyDictionary<string, (byte SettlementKind, byte Direction)>> OperationTypeKindsAsync(CancellationToken ct) =>
+        (await session.Connection.QueryAsync<(string Code, byte SettlementKind, byte Direction)>(Command("fin.usp_TreasuryOperationType_Kinds", new { }, ct))
+            .ConfigureAwait(false)).ToDictionary(t => t.Code, t => (t.SettlementKind, t.Direction), StringComparer.Ordinal);
+
     private static async Task<AllocationOutcome> ReadOutcomeAsync(SqlMapper.GridReader grid)
     {
         var allocations = (await grid.ReadAsync<AllocationRow>().ConfigureAwait(false))

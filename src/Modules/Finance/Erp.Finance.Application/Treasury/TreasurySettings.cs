@@ -62,7 +62,7 @@ internal sealed class SaveOperationTypeValidator : AbstractValidator<SaveOperati
             .WithMessage("Codul are 1–30 de caractere: litere, cifre, „.”, „_”, „/” sau „-”.");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Denumirea este obligatorie.").MaximumLength(200);
         RuleFor(x => x.Direction).IsInEnum().WithMessage("Alegeți sensul.");
-        RuleFor(x => x.SettlementKind).InclusiveBetween((byte)0, (byte)4);
+        RuleFor(x => x.SettlementKind).InclusiveBetween((byte)0, (byte)6);
         RuleFor(x => x.CounterGlAccountCode).Matches(SettingsRules.GlPattern).When(x => !string.IsNullOrWhiteSpace(x.CounterGlAccountCode))
             .WithMessage("Simbolul contului are 3–6 cifre, opțional cu analitic.");
         RuleFor(x => x).Must(x => !(x.AppliesToCash && x.Direction == CashDirection.Both)).WithName("direction")

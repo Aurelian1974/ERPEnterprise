@@ -6584,6 +6584,8 @@ export interface components {
             lines: components["schemas"]["PaymentOrderLineInput"][];
             /** @default false */
             confirmAnafInactive: boolean;
+            /** @default false */
+            confirmWarnings: boolean;
         };
         PaymentConfirmationStatus: number;
         PaymentOrderDetailDto: {

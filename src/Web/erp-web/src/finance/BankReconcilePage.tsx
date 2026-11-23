@@ -381,7 +381,7 @@ function NewOrderButton({ line, typeId, onDone }: { readonly line: BankLineDetai
         body: {
           bankStatementLineId: line.id, lineRowVersion: line.rowVersion, purpose: 1, partnerId: line.partnerId ?? null, employeeId: null, partnerBankAccountId: null,
           beneficiaryFiscalCode: null, budgetObligationRef: null, lines: [{ operationTypeId: typeId, amount: line.amount.slice(1), settlementRef: invoice.trim(),
-            costCenterId: null, projectId: null }], confirmAnafInactive: false,
+            costCenterId: null, projectId: null }], confirmAnafInactive: false, confirmWarnings: false,
         },
       }));
       notify(t('bank.newOrder.done'));

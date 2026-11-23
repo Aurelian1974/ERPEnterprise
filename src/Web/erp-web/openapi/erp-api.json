@@ -29495,6 +29495,10 @@
           "confirmAnafInactive": {
             "type": "boolean",
             "default": false
+          },
+          "confirmWarnings": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

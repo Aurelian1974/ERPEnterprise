@@ -314,7 +314,7 @@ internal sealed class DeleteCashDocumentHandler(ICashDocumentStore store, ICurre
 public sealed record ValidateCashDocument(int Id, byte[] RowVersion, bool ConfirmWarnings = false) : ICommand<CashValidatedDto>;
 
 internal sealed class ValidateCashDocumentHandler(ICashDocumentStore store, ICashLimitLog limitLog, INumberSeriesService numbers, IPeriodLock periods,
-    IOutbox outbox, ICurrentContext context, IAuditScope audit) : ICommandHandler<ValidateCashDocument, CashValidatedDto>
+    IOutbox outbox, ICurrentContext context, IAuditScope audit, Settlement.TreasurySettlement settlement) : ICommandHandler<ValidateCashDocument, CashValidatedDto>
 {
     private static readonly System.Globalization.CultureInfo Romanian = System.Globalization.CultureInfo.GetCultureInfo("ro-RO");
 
@@ -359,6 +359,16 @@ internal sealed class ValidateCashDocumentHandler(ICashDocumentStore store, ICas
         }
 
         await outbox.EnqueueAsync(Event(state, documentType ?? "Finance.OpeningBalance", number), cancellationToken).ConfigureAwait(false);
+        // Incasarea sau plata catre partener stinge facturile indicate, apoi FIFO dupa profil (F1 4.1 pasul 5, F3 4.2); avertizarile F3
+        // (factura neprimita in SPV, litigiu) se confirma cu aceeasi confirmare ca plafoanele.
+        if (doc.Kind != CashDocumentKind.OpeningBalance && doc.PartnerId is { } partnerId)
+        {
+            await settlement.RegisterAsync(new Settlement.TreasurySettlementDocument(context.CompanyId, CashDocumentRules.SettlementSource, doc.Id, number ?? "",
+                doc.DocumentDate, doc.CurrencyCode, decimal.Parse(doc.ExchangeRate, System.Globalization.CultureInfo.InvariantCulture),
+                state.Lines.Select(l => new Settlement.TreasurySettlementLine(l.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), l.OperationTypeCode,
+                    partnerId, l.Amount, l.AmountRon, l.SettlementRef)).ToList(), request.ConfirmWarnings), cancellationToken).ConfigureAwait(false);
+        }
+
         // Plata avansului spre decontare il acorda (F1 4.4 pasul 2).
         if (state.CashAdvanceId is { } advanceId && state.AdvanceDueDate is { } due && state.Lines.Any(l => l.OperationTypeCode == "PLATA-AVANS-DECONTARE"))
         {
@@ -445,7 +455,7 @@ internal sealed class ValidateCashDocumentHandler(ICashDocumentStore store, ICas
 public sealed record ReverseCashDocument(int Id, byte[] RowVersion) : ICommand<CashValidatedDto>;
 
 internal sealed class ReverseCashDocumentHandler(ICashDocumentStore store, INumberSeriesService numbers, IPeriodLock periods, IOutbox outbox,
-    ICurrentContext context, IAuditScope audit, TimeProvider time) : ICommandHandler<ReverseCashDocument, CashValidatedDto>
+    ICurrentContext context, IAuditScope audit, TimeProvider time, Settlement.ISettlementService settlement) : ICommandHandler<ReverseCashDocument, CashValidatedDto>
 {
     public async Task<CashValidatedDto> Handle(ReverseCashDocument request, CancellationToken cancellationToken)
     {
@@ -477,6 +487,8 @@ internal sealed class ReverseCashDocumentHandler(ICashDocumentStore store, INumb
             .ConfigureAwait(false);
         await outbox.EnqueueAsync(new DocumentTrezorerieStornat(doc.Id, result.CashDocumentId, today) { CompanyId = context.CompanyId }, cancellationToken)
             .ConfigureAwait(false);
+        // Facturile stinse de document redevin deschise (F3 4.2 pasul 6).
+        await settlement.ReversePaymentAsync(context.CompanyId, CashDocumentRules.SettlementSource, doc.Id, null, today, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.CashDocument", doc.Id, new { ReversalId = result.CashDocumentId, ReversalNumber = result.Number, Day = today });
         return new CashValidatedDto(result.CashDocumentId, result.Number, Money.Format(result.DayClosingBalance), result.RowVersion);
     }
