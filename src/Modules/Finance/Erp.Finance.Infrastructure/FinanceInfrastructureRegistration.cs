@@ -43,6 +43,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Declarations.IVatRegisterStore, Declarations.VatRegisterStore>();
         services.AddScoped<Application.Declarations.ITaxReturnStore, Declarations.TaxReturnStore>();
         services.AddScoped<Application.Declarations.TaxReturnService>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D300XmlGenerator>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
@@ -245,6 +246,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51942] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_CONCURRENCY_CONFLICT"),
         [51943] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_PERIOD_OPEN"),
         [51944] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_DATA_CHANGED"),
+        [51946] = (ErpErrorKind.Validation, "FIN_TAX_RETURN_REASON_REQUIRED"),
         [51947] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_ALREADY_SUBMITTED"),
         [51948] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_NOT_GENERATED"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Erp.Core.Contracts;
 using Erp.Finance.Application.Periods;
+using Erp.Finance.Domain;
 using Erp.Finance.Domain.Declarations;
 using FluentValidation;
 
@@ -8,12 +9,19 @@ namespace Erp.Finance.Application.Declarations;
 
 public sealed record TaxReturnLineDto(string RowCode, string ColumnCode, string Label, bool IsManual, string CalculatedValue, string? ManualValue, string? ManualReason);
 
+/// <summary>Un rand al comparatiei cu P300 (macheta c4-02): valoarea declarata, cea precompletata, diferenta, marcajul peste prag, explicatia.</summary>
+public sealed record TaxComparisonDto(string RowCode, string ColumnCode, string Declared, string Precompleted, string Difference, bool IsOverThreshold,
+    string? Explanation);
+
+public sealed record PrecompletedValue(string RowCode, string ColumnCode, string Value);
+
 public sealed record TaxReturnFileDto(int Id, byte Kind, string FileName, long Size, DateTime CreatedAt);
 
 /// <summary>O declaratie (machetele c4-01, c4-02). Status: 1 ciorna, 2 verificata, 3 generata, 4 depusa, 5 inlocuita.</summary>
 public sealed record TaxReturnDto(int Id, string FormCode, string FormName, DateOnly PeriodFrom, DateOnly PeriodTo, byte Kind, byte Status, bool NeedsReview,
     DateOnly? DueDate, DateTime? CalculatedAt, DateTime? GeneratedAt, DateTime? SubmittedAt, string? RegistrationNumber, string AmountDue, string AmountRefundable,
-    byte[] RowVersion, IReadOnlyList<TaxReturnLineDto> Lines, IReadOnlyList<TaxReturnFileDto> Files);
+    DateTime? PrecompletedAt, byte[] RowVersion, IReadOnlyList<TaxReturnLineDto> Lines, IReadOnlyList<TaxReturnFileDto> Files,
+    IReadOnlyList<TaxComparisonDto> Comparison);
 
 /// <summary>Un termen al calendarului fiscal (macheta c4-01), cu declaratia perioadei si starea ei.</summary>
 public sealed record TaxCalendarItemDto(string FormCode, string FormName, DateOnly PeriodFrom, DateOnly PeriodTo, DateOnly DueDate, int? ReturnId, byte? Status,
@@ -35,6 +43,10 @@ public interface ITaxReturnStore
 
     Task<TaxReturnState> TransitionAsync(int companyId, int id, byte[] rowVersion, string action, int? hash, string? registrationNumber, int userId,
         CancellationToken ct);
+
+    Task SaveComparisonAsync(int companyId, int id, IReadOnlyList<PrecompletedDifference> rows, bool imported, int userId, CancellationToken ct);
+
+    Task ExplainAsync(int companyId, int id, string rowCode, string columnCode, string explanation, int userId, CancellationToken ct);
 
     Task SaveFileAsync(int companyId, int id, byte kind, string fileName, byte[] content, int userId, CancellationToken ct);
 
@@ -76,6 +88,14 @@ public sealed class TaxReturnService(ITaxReturnStore store, IEnumerable<ITaxRetu
 
         var (rows, hash) = await store.VatSummaryAsync(companyId, from, to, ct).ConfigureAwait(false);
         return (D300.Compute(rows), hash);
+    }
+
+    /// <summary>Compara randurile calculate ale declaratiei cu valorile P300 (RO e-TVA, decizia 5).</summary>
+    public static IReadOnlyList<PrecompletedDifference> Compare(IEnumerable<TaxReturnLineDto> lines, IReadOnlyDictionary<(string Row, string Column), decimal> precompleted)
+    {
+        var declared = PrecompletedVatComparison.Declared(lines.Select(l => new TaxLine(l.RowCode, l.ColumnCode, l.Label, 0,
+            Money.ParseOptional(l.ManualValue ?? l.CalculatedValue) ?? 0)));
+        return PrecompletedVatComparison.Compare(declared, precompleted);
     }
 
     public async Task<TaxFile> GenerateAsync(int companyId, TaxReturnDto taxReturn, CancellationToken ct)
@@ -178,11 +198,54 @@ internal sealed class SubmitTaxReturnValidator : AbstractValidator<SubmitTaxRetu
     public SubmitTaxReturnValidator() => RuleFor(x => x.RegistrationNumber).NotEmpty().WithMessage("Scrieți numărul de înregistrare din recipisă.").MaximumLength(50);
 }
 
+/// <summary>Preia decontul precompletat P300 (C4 3.4): valorile pe randurile formularului, din SPV prin Integrari sau incarcate de contabil.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.TaxPrepare)]
+[Audited("Fin.Tax.Precompleted")]
+public sealed record ImportPrecompletedVat(int Id, IReadOnlyList<PrecompletedValue> Rows) : ICommand<IReadOnlyList<TaxComparisonDto>>;
+
+internal sealed class ImportPrecompletedVatValidator : AbstractValidator<ImportPrecompletedVat>
+{
+    public ImportPrecompletedVatValidator() => RuleForEach(x => x.Rows).Must(r => !string.IsNullOrWhiteSpace(r.RowCode) && Money.TryParse(r.Value, out _))
+        .WithMessage("Fiecare rând P300 are cod și valoare cu cel mult două zecimale.");
+}
+
+/// <summary>Explica o diferenta fata de P300 (decizia 5); explicatia ramane la recalculare.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.TaxPrepare)]
+[Audited("Fin.Tax.Explain")]
+public sealed record ExplainTaxDifference(int Id, string RowCode, string ColumnCode, string Explanation) : ICommand<bool>;
+
+internal sealed class ExplainTaxDifferenceValidator : AbstractValidator<ExplainTaxDifference>
+{
+    public ExplainTaxDifferenceValidator() => RuleFor(x => x.Explanation).NotEmpty().WithMessage("Scrieți explicația diferenței.").MaximumLength(1000);
+}
+
 internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStore store, IAccountingPeriodStore periods, ICurrentContext context, IAuditScope audit) :
     IQueryHandler<GetTaxReturn, TaxReturnDto>, IQueryHandler<GetTaxCalendar, IReadOnlyList<TaxCalendarItemDto>>, IQueryHandler<DownloadTaxReturnFile, Settlement.DownloadedFile>,
     ICommandHandler<GenerateTaxCalendar, int>, ICommandHandler<CalculateTaxReturn, int>, ICommandHandler<VerifyTaxReturn, byte[]>,
-    ICommandHandler<GenerateTaxReturn, byte[]>, ICommandHandler<SubmitTaxReturn, byte[]>
+    ICommandHandler<GenerateTaxReturn, byte[]>, ICommandHandler<SubmitTaxReturn, byte[]>,
+    ICommandHandler<ImportPrecompletedVat, IReadOnlyList<TaxComparisonDto>>, ICommandHandler<ExplainTaxDifference, bool>
 {
+    public async Task<IReadOnlyList<TaxComparisonDto>> Handle(ImportPrecompletedVat request, CancellationToken cancellationToken)
+    {
+        var current = await store.GetAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false) ?? throw NotFound();
+        var precompleted = request.Rows.GroupBy(r => (r.RowCode.Trim(), r.ColumnCode.Trim()))
+            .ToDictionary(g => g.Key, g => g.Sum(r => Money.ParseOptional(r.Value) ?? 0));
+        var rows = TaxReturnService.Compare(current.Lines, precompleted);
+        await store.SaveComparisonAsync(context.CompanyId, request.Id, rows, true, context.UserId, cancellationToken).ConfigureAwait(false);
+        audit.Describe("Fin.TaxReturn", request.Id, new { Rows = request.Rows.Count, Over = rows.Count(r => r.IsOverThreshold) });
+        return (await store.GetAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false))!.Comparison;
+    }
+
+    public async Task<bool> Handle(ExplainTaxDifference request, CancellationToken cancellationToken)
+    {
+        await store.ExplainAsync(context.CompanyId, request.Id, request.RowCode, request.ColumnCode, request.Explanation.Trim(), context.UserId, cancellationToken)
+            .ConfigureAwait(false);
+        audit.Describe("Fin.TaxReturn", request.Id, new { request.RowCode, request.ColumnCode });
+        return true;
+    }
+
     public async Task<TaxReturnDto> Handle(GetTaxReturn request, CancellationToken cancellationToken) =>
         await store.GetAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false) ?? throw NotFound();
 
@@ -214,6 +277,14 @@ internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStor
             .FirstOrDefault(c => c.FormCode == request.FormCode && c.PeriodFrom == request.PeriodFrom)?.DueDate;
         var id = await store.SaveAsync(context.CompanyId, request.FormCode, request.PeriodFrom, request.PeriodTo, due, computation, hash, context.UserId,
             cancellationToken).ConfigureAwait(false);
+        var saved = await store.GetAsync(context.CompanyId, id, cancellationToken).ConfigureAwait(false);
+        if (saved is { PrecompletedAt: not null })
+        {
+            var precompleted = saved.Comparison.ToDictionary(c => (c.RowCode, c.ColumnCode), c => Money.ParseOptional(c.Precompleted) ?? 0);
+            await store.SaveComparisonAsync(context.CompanyId, id, TaxReturnService.Compare(saved.Lines, precompleted).Where(r => r.Precompleted != 0 || r.Declared != 0)
+                .ToList(), false, context.UserId, cancellationToken).ConfigureAwait(false);
+        }
+
         audit.Describe("Fin.TaxReturn", id, new { request.FormCode, request.PeriodFrom, computation.AmountDue, computation.AmountRefundable });
         return id;
     }

@@ -4180,6 +4180,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/tax-returns/{id}/precompleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ImportPrecompletedVat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/tax-returns/{id}/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExplainTaxDifference"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/tax-return-files/{id}": {
         parameters: {
             query?: never;
@@ -12059,10 +12091,13 @@ export interface components {
             registrationNumber: null | string;
             amountDue: string;
             amountRefundable: string;
+            /** Format: date-time */
+            precompletedAt: null | string;
             /** Format: byte */
             rowVersion: string;
             lines: components["schemas"]["TaxReturnLineDto"][];
             files: components["schemas"]["TaxReturnFileDto"][];
+            comparison: components["schemas"]["TaxComparisonDto"][];
         };
         TaxReturnFileDto: {
             /** Format: int32 */
@@ -12089,6 +12124,32 @@ export interface components {
             id: number;
             /** Format: byte */
             rowVersion: string;
+        };
+        ExplainTaxDifference: {
+            /** Format: int32 */
+            id: number;
+            rowCode: string;
+            columnCode: string;
+            explanation: string;
+        };
+        ImportPrecompletedVat: {
+            /** Format: int32 */
+            id: number;
+            rows: components["schemas"]["PrecompletedValue"][];
+        };
+        PrecompletedValue: {
+            rowCode: string;
+            columnCode: string;
+            value: string;
+        };
+        TaxComparisonDto: {
+            rowCode: string;
+            columnCode: string;
+            declared: string;
+            precompleted: string;
+            difference: string;
+            isOverThreshold: boolean;
+            explanation: null | string;
         };
     };
     responses: never;
@@ -29324,6 +29385,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ImportPrecompletedVat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportPrecompletedVat"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxComparisonDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ExplainTaxDifference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainTaxDifference"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Bad Request */

@@ -45,9 +45,11 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
             .Select(l => new TaxReturnLineDto(l.RowCode, l.ColumnCode, l.Label, l.IsManual, Money.Format(l.CalculatedValue),
                 l.ManualValue is { } m ? Money.Format(m) : null, l.ManualReason)).ToList();
         var files = (await grid.ReadAsync<TaxReturnFileDto>().ConfigureAwait(false)).ToList();
+        var comparison = (await grid.ReadAsync<ComparisonRow>().ConfigureAwait(false)).Select(c => new TaxComparisonDto(c.RowCode, c.ColumnCode,
+            Money.Format(c.DeclaredValue), Money.Format(c.PrecompletedValue), Money.Format(c.DeclaredValue - c.PrecompletedValue), c.IsOverThreshold, c.Explanation)).ToList();
         return new TaxReturnDto(h.Id, h.FormCode, h.FormName, DateOnly.FromDateTime(h.PeriodFrom), DateOnly.FromDateTime(h.PeriodTo), h.Kind, h.Status, h.NeedsReview,
             h.DueDate is { } due ? DateOnly.FromDateTime(due) : null, h.CalculatedAt, h.GeneratedAt, h.SubmittedAt, h.RegistrationNumber, Money.Format(h.AmountDue),
-            Money.Format(h.AmountRefundable), h.RowVersion, lines, files);
+            Money.Format(h.AmountRefundable), h.PrecompletedAt, h.RowVersion, lines, files, comparison);
     }
 
     public async Task<TaxReturnState> TransitionAsync(int companyId, int id, byte[] rowVersion, string action, int? hash, string? registrationNumber, int userId,
@@ -60,6 +62,22 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
         return new TaxReturnState(s.Id, s.FormCode, DateOnly.FromDateTime(s.PeriodFrom), DateOnly.FromDateTime(s.PeriodTo), s.Status, s.AmountDue,
             s.DueDate is { } due ? DateOnly.FromDateTime(due) : null, s.RowVersion);
     }
+
+    public Task SaveComparisonAsync(int companyId, int id, IReadOnlyList<PrecompletedDifference> rows, bool imported, int userId, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_TaxReturn_SaveComparison", new
+        {
+            CompanyId = companyId, Id = id, Imported = imported, UserId = userId,
+            Rows = JsonSerializer.Serialize(rows.Select(r => new
+            {
+                rowCode = r.RowCode, columnCode = r.ColumnCode, declared = r.Declared, precompleted = r.Precompleted, isOverThreshold = r.IsOverThreshold,
+            })),
+        }, ct));
+
+    public Task ExplainAsync(int companyId, int id, string rowCode, string columnCode, string explanation, int userId, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_TaxReturn_Explain", new
+        {
+            CompanyId = companyId, Id = id, RowCode = rowCode, ColumnCode = columnCode, Explanation = explanation, UserId = userId,
+        }, ct));
 
     public Task SaveFileAsync(int companyId, int id, byte kind, string fileName, byte[] content, int userId, CancellationToken ct) =>
         session.Connection.ExecuteAsync(Command("fin.usp_TaxReturn_SaveFile", new
@@ -103,7 +121,9 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
 
     private sealed record Header(int Id, string FormCode, string FormName, DateTime PeriodFrom, DateTime PeriodTo, byte Kind, byte Status, bool NeedsReview,
         DateTime? DueDate, DateTime? CalculatedAt, int? CalculationHash, DateTime? GeneratedAt, DateTime? SubmittedAt, string? RegistrationNumber, decimal AmountDue,
-        decimal AmountRefundable, byte[] RowVersion);
+        decimal AmountRefundable, DateTime? PrecompletedAt, byte[] RowVersion);
+
+    private sealed record ComparisonRow(string RowCode, string ColumnCode, decimal DeclaredValue, decimal PrecompletedValue, bool IsOverThreshold, string? Explanation);
 
     private sealed record LineRow(string RowCode, string ColumnCode, string Label, bool IsManual, decimal CalculatedValue, decimal? ManualValue, string? ManualReason);
 

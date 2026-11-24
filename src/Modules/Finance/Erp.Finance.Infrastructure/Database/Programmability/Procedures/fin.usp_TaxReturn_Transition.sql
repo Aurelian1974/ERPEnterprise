@@ -26,7 +26,11 @@ BEGIN
         THROW 51947, N'Declarația e depusă; o corecție se face prin rectificativă.', 1;
 
     IF @Action = 'Verify'
+    BEGIN
+        IF EXISTS (SELECT 1 FROM fin.TaxReturnComparison WHERE ReturnId = @Id AND IsOverThreshold = 1 AND Explanation IS NULL)
+            THROW 51946, N'Explicați diferențele față de decontul precompletat peste prag.', 1;
         UPDATE fin.TaxReturn SET Status = 2, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @Id;
+    END
     ELSE IF @Action = 'Generate'
     BEGIN
         IF @Status < 2

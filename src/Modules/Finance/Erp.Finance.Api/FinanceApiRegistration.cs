@@ -528,6 +528,11 @@ public static class FinanceApiRegistration
             .WithName("GenerateTaxReturn").Produces<byte[]>().Problems();
         finance.MapPost("/tax-returns/{id:int}/submit", (int id, SubmitTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
             .WithName("SubmitTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/precompleted", (int id, ImportPrecompletedVat body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ImportPrecompletedVat").Produces<IReadOnlyList<TaxComparisonDto>>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/explain", (int id, ExplainTaxDifference body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ExplainTaxDifference").Produces<bool>().Problems();
         finance.MapGet("/tax-return-files/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DownloadTaxReturnFile(id), ct))
             .WithName("DownloadTaxReturnFile").Produces<DownloadedFile>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
