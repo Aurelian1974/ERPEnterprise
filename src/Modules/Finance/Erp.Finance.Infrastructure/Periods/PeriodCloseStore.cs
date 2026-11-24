@@ -64,6 +64,34 @@ public sealed class PeriodCloseStore(IDbSession session) : IPeriodCloseStore
                 Domain.Money.Format(e.Amount))).ToList())).ToList();
     }
 
+    public async Task<ClosingWrite> GenerateClosingAsync(int companyId, int periodId, ClosingKind kind, bool annualOnly, int userId, CancellationToken ct)
+    {
+        var r = await session.Connection.QuerySingleAsync<(long? EntryId, bool IsNew, int OldVersion, decimal OldTotal)>(Command("fin.usp_ClosingEntry_Generate", new
+        {
+            CompanyId = companyId, PeriodId = periodId, Kind = (byte)kind, AnnualOnly = annualOnly, Preview = false, UserId = userId,
+        }, ct)).ConfigureAwait(false);
+        return new ClosingWrite(r.EntryId, r.IsNew, r.OldVersion, r.OldTotal);
+    }
+
+    public async Task<IReadOnlyList<ClosingLineDto>> PreviewClosingAsync(int companyId, int periodId, ClosingKind kind, bool annualOnly, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<(string Code, string Name, byte Side, decimal Amount)>(Command("fin.usp_ClosingEntry_Generate", new
+        {
+            CompanyId = companyId, PeriodId = periodId, Kind = (byte)kind, AnnualOnly = annualOnly, Preview = true, UserId = 1,
+        }, ct)).ConfigureAwait(false)).Select(l => new ClosingLineDto(l.Code, l.Name, l.Side, Domain.Money.Format(l.Amount))).ToList();
+
+    public async Task<Application.Accounting.JournalEntryHeader> HeaderAsync(long entryId, CancellationToken ct)
+    {
+        var h = await session.Connection.QuerySingleAsync<(long Id, int CompanyId, string JournalCode, int Number, DateTime AccountingDate, byte SourceKind,
+            string? SourceDocumentType, long? SourceDocumentId, decimal TotalDebit, byte[] RowVersion)>(Command("fin.usp_JournalEntry_Header", new { Id = entryId }, ct))
+            .ConfigureAwait(false);
+        return new Application.Accounting.JournalEntryHeader(h.Id, h.CompanyId, h.JournalCode, h.Number, DateOnly.FromDateTime(h.AccountingDate),
+            (Contracts.Accounting.EntrySourceKind)h.SourceKind, h.SourceDocumentType, h.SourceDocumentId, h.TotalDebit, h.RowVersion);
+    }
+
+    public async Task<bool> AnnualOnlyAsync(int companyId, CancellationToken ct) =>
+        string.Equals(await session.Connection.QuerySingleOrDefaultAsync<string?>(Command("fin.usp_CompanySetting_Get",
+            new { CompanyId = companyId, Code = ClosingEntries.AnnualOnlySetting }, ct)).ConfigureAwait(false), "true", StringComparison.OrdinalIgnoreCase);
+
     private CommandDefinition Command(string name, object? parameters, CancellationToken ct) =>
         new(name, parameters, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct);
 

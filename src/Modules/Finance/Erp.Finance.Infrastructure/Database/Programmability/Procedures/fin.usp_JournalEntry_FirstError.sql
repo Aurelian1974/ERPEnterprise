@@ -6,7 +6,7 @@ AS
 BEGIN
     -- Verificarile unei note inainte de validare (C2 3.1 regulile 2 si 8), pe set, fara sa arunce: prima eroare (codul si mesajul, cu contul
     -- liniei) sau 0. Echilibrul pe lei (51843), conturile (frunza activa a planului romanesc, permisa firmei, in vigoare la data contabila; 51844),
-    -- dimensiunile cerute sau interzise de cont (51845), partenerul sau angajatul cerut (51846), moneda permisa (51847). Contarea automata o
+    -- dimensiunile cerute sau interzise de cont (51845; nu si pe notele de inchidere si de deschidere, fara dimensiuni prin definitie, C3 3.5), partenerul sau angajatul cerut (51846), moneda permisa (51847). Contarea automata o
     -- foloseste ca sa puna nota in coada fara sa anuleze tranzactia; validarea manuala, prin fin.usp_JournalEntry_Check, care arunca.
     SET NOCOUNT ON;
     SELECT @ErrorCode = 0, @ErrorMessage = NULL;
@@ -36,7 +36,8 @@ BEGIN
     CROSS APPLY fin.ufn_GlAccount_DimensionModes(l.AccountId) AS m
     CROSS APPLY (SELECT CASE m.DimensionType WHEN 'COST_CENTER' THEN l.CostCenterId WHEN 'PROJECT' THEN l.ProjectId WHEN 'WAREHOUSE' THEN l.WarehouseId
                         WHEN 'SITE' THEN l.SiteId END AS Value) AS v
-    WHERE l.EntryId = @EntryId AND ((m.Mode = 2 AND v.Value IS NULL) OR (m.Mode = 0 AND v.Value IS NOT NULL))
+    WHERE l.EntryId = @EntryId AND (SELECT SourceKind FROM fin.JournalEntry WHERE Id = @EntryId) NOT IN (4, 5)
+      AND ((m.Mode = 2 AND v.Value IS NULL) OR (m.Mode = 0 AND v.Value IS NOT NULL))
     ORDER BY l.LineNumber;
     IF @Code IS NOT NULL
     BEGIN

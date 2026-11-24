@@ -495,6 +495,8 @@ public static class FinanceApiRegistration
         // Lista de verificari la inchiderea lunii (C3 3.3, 4.1; macheta c3-02).
         finance.MapGet("/reconciliation", (DateOnly asOf, ISender sender, CancellationToken ct) => sender.Send(new GetReconciliation(asOf), ct))
             .WithName("GetReconciliation").Produces<IReadOnlyList<ReconciliationRowDto>>().Problems();
+        finance.MapGet("/periods/{id:int}/closing-entries", (int id, ISender sender, CancellationToken ct) => sender.Send(new PreviewClosingEntries(id), ct))
+            .WithName("PreviewClosingEntries").Produces<ClosingPreviewDto>().Problems();
         finance.MapGet("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodCloseRun(id), ct))
             .WithName("GetPeriodCloseRun").Produces<CloseRunDto>().Problems();
         finance.MapPost("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new RunPeriodClose(id), ct))

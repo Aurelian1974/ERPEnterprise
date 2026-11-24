@@ -36,6 +36,65 @@ public interface IPeriodCloseStore
     Task OverrideAsync(int companyId, long runId, string stepCode, string reason, int userId, CancellationToken ct);
 
     Task<IReadOnlyList<ReconciliationRowDto>> ReconciliationAsync(int companyId, DateOnly asOf, CancellationToken ct);
+
+    Task<ClosingWrite> GenerateClosingAsync(int companyId, int periodId, ClosingKind kind, bool annualOnly, int userId, CancellationToken ct);
+
+    Task<IReadOnlyList<ClosingLineDto>> PreviewClosingAsync(int companyId, int periodId, ClosingKind kind, bool annualOnly, CancellationToken ct);
+
+    Task<Accounting.JournalEntryHeader> HeaderAsync(long entryId, CancellationToken ct);
+
+    Task<bool> AnnualOnlyAsync(int companyId, CancellationToken ct);
+}
+
+/// <summary>Felul notei de inchidere (C3 3.5): regularizarea TVA sau inchiderea veniturilor si cheltuielilor in 121.</summary>
+public enum ClosingKind : byte
+{
+    VatSettlement = 1,
+    ProfitAndLoss = 2,
+}
+
+/// <summary>Rezultatul scrierii unei note de inchidere: nota (null daca nu era nimic de inchis), noua sau rescrisa (versiunea veche si totalul).</summary>
+public sealed record ClosingWrite(long? EntryId, bool IsNew, int OldVersion, decimal OldTotal);
+
+public sealed record ClosingLineDto(string AccountCode, string AccountName, byte Side, string AmountRon);
+
+/// <summary>Notele de inchidere ale unei luni in simulare (macheta c3-04): regularizarea TVA si inchiderea in 121, fara scriere.</summary>
+public sealed record ClosingPreviewDto(IReadOnlyList<ClosingLineDto> VatSettlement, IReadOnlyList<ClosingLineDto> ProfitAndLoss);
+
+/// <summary>
+/// Notele de inchidere la inchiderea lunii (C3 3.5, 4.1 pasul 5): regularizarea TVA si inchiderea claselor 6 si 7 in 121, scrise inainte de
+/// trecerea lunii in Inchisa; la reinchiderea dupa o redeschidere se rescrie aceeasi nota (C3-A7). Setarea Fin.Closing.AnnualOnly inchide
+/// clasele 6 si 7 doar in ultima luna a anului (decizia 5).
+/// </summary>
+public sealed class ClosingEntries(IPeriodCloseStore store, IOutbox outbox)
+{
+    public const string AnnualOnlySetting = "Fin.Closing.AnnualOnly";
+
+    public async Task WriteAsync(int companyId, int periodId, int userId, CancellationToken ct)
+    {
+        var annualOnly = await store.AnnualOnlyAsync(companyId, ct).ConfigureAwait(false);
+        foreach (var kind in new[] { ClosingKind.VatSettlement, ClosingKind.ProfitAndLoss })
+        {
+            var written = await store.GenerateClosingAsync(companyId, periodId, kind, annualOnly, userId, ct).ConfigureAwait(false);
+            if (written.EntryId is not { } id)
+            {
+                continue;
+            }
+
+            var header = await store.HeaderAsync(id, ct).ConfigureAwait(false);
+            IntegrationEvent evt = written.IsNew
+                ? Accounting.JournalEntryNumbers.Event(header) with { CompanyId = companyId }
+                : new Contracts.Accounting.NotaContabilaRecontata(id, written.OldVersion, written.OldTotal, header.TotalDebit) { CompanyId = companyId };
+            await outbox.EnqueueAsync(evt, ct).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<ClosingPreviewDto> PreviewAsync(int companyId, int periodId, CancellationToken ct)
+    {
+        var annualOnly = await store.AnnualOnlyAsync(companyId, ct).ConfigureAwait(false);
+        return new ClosingPreviewDto(await store.PreviewClosingAsync(companyId, periodId, ClosingKind.VatSettlement, annualOnly, ct).ConfigureAwait(false),
+            await store.PreviewClosingAsync(companyId, periodId, ClosingKind.ProfitAndLoss, annualOnly, ct).ConfigureAwait(false));
+    }
 }
 
 /// <summary>
@@ -108,6 +167,17 @@ internal sealed class OverrideCloseStepValidator : AbstractValidator<OverrideClo
         RuleFor(x => x.Reason).NotEmpty().WithMessage("Scrieți motivul.").MaximumLength(500);
         RuleFor(x => x.StepCode).NotEmpty().MaximumLength(40);
     }
+}
+
+/// <summary>Notele de inchidere ale unei luni in simulare (C3 3.5): se pot vedea oricand, inainte de inchidere.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PeriodView)]
+public sealed record PreviewClosingEntries(int PeriodId) : IQuery<ClosingPreviewDto>;
+
+internal sealed class PreviewClosingEntriesHandler(ClosingEntries closing, ICurrentContext context) : IQueryHandler<PreviewClosingEntries, ClosingPreviewDto>
+{
+    public Task<ClosingPreviewDto> Handle(PreviewClosingEntries request, CancellationToken cancellationToken) =>
+        closing.PreviewAsync(context.CompanyId, request.PeriodId, cancellationToken);
 }
 
 /// <summary>Concordantele la o data (C3 3.4, macheta c3-03): diferentele dintre contabilitate si evidenta operativa, cu documentele care le explica.</summary>

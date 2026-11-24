@@ -36,6 +36,7 @@ public static class FinanceInfrastructureRegistration
         services.AddTransient<Periods.FiscalYearCreation>();
         services.AddScoped<Application.Periods.IPeriodCloseStore, Periods.PeriodCloseStore>();
         services.AddScoped<Application.Periods.PeriodCloseService>();
+        services.AddScoped<Application.Periods.ClosingEntries>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,

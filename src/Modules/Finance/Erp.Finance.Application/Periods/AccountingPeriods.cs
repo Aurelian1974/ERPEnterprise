@@ -105,8 +105,8 @@ public sealed record SoftClosePeriod(int Id, byte[] RowVersion) : ICommand<Finan
 
 /// <summary>
 /// Inchide o luna (C3 4.1 pasul 5): ruleaza lista de verificari (o rulare noua, cu trecerile peste pasi ale celei anterioare) si refuza inchiderea
-/// cu codul primului pas blocant esuat; coada „De contat” si evenimentele in tranzit se re-verifica in tranzactia inchiderii. Notele de
-/// inchidere vin cu C3.2.
+/// cu codul primului pas blocant esuat; scrie notele de inchidere (regularizarea TVA, inchiderea in 121) si trece luna in Inchisa; coada „De
+/// contat” si evenimentele in tranzit se re-verifica in tranzactia inchiderii.
 /// </summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.PeriodClose)]
@@ -124,7 +124,7 @@ internal sealed class ReopenPeriodValidator : AbstractValidator<ReopenPeriod>
     public ReopenPeriodValidator() => RuleFor(x => x.Reason).NotEmpty().WithMessage("Scrieți motivul redeschiderii.").MaximumLength(500);
 }
 
-internal sealed class PeriodStatusHandlers(IAccountingPeriodStore store, PeriodCloseService checklist, IOutbox outbox, ICurrentContext context, IAuditScope audit) :
+internal sealed class PeriodStatusHandlers(IAccountingPeriodStore store, PeriodCloseService checklist, ClosingEntries closing, IOutbox outbox, ICurrentContext context, IAuditScope audit) :
     ICommandHandler<SoftClosePeriod, FinanceSaved>, ICommandHandler<ClosePeriod, FinanceSaved>, ICommandHandler<ReopenPeriod, FinanceSaved>
 {
     public Task<FinanceSaved> Handle(SoftClosePeriod request, CancellationToken cancellationToken) =>
@@ -138,6 +138,7 @@ internal sealed class PeriodStatusHandlers(IAccountingPeriodStore store, PeriodC
             throw PeriodCloseService.Refusal(run);
         }
 
+        await closing.WriteAsync(context.CompanyId, request.Id, context.UserId, cancellationToken).ConfigureAwait(false);
         return await Change(request.Id, PeriodState.Closed, null, request.RowVersion, cancellationToken).ConfigureAwait(false);
     }
 

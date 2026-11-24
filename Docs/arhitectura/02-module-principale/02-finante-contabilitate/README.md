@@ -89,6 +89,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C5a.2 | Ecranele Balanță de verificare și Fișa contului (c5-01, c5-02) | Implementat (export, cartea mare în ecran în RAMAS 1.24) |
 | C3.1a | Lista de verificări la închiderea lunii (luna anterioară, evenimente în tranzit, zile de casă, coada „De contat”, ciorne de note, maparea completă, solduri anormale), rulările și trecerea peste pași cu motiv; închiderea condiționată de listă; testele C3-A2, A3 | Implementat |
 | C3.1b | Concordanțele clienți, furnizori (pe partener, față de partidele F3) și casă (față de registrul de casă), cu documentele din coadă care explică diferența; pasul `RECONCILIATION`; testul C3-A8 | Implementat (bănci, 542, 4428, stocuri în RAMAS 1.25) |
+| C3.2 | Notele de închidere la închiderea lunii (regularizarea TVA, clasele 6 și 7 în 121), cu simularea și rescrierea la reînchidere; testele C3-A5, A6, A7 | Implementat (comparația cu D300 cu C4; soldurile materializate în RAMAS 1.26) |
 
 ## Machete de ecran (`ecrane/`)
 

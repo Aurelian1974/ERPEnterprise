@@ -21601,6 +21601,77 @@
         }
       }
     },
+    "/api/finance/periods/{id}/closing-entries": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "PreviewClosingEntries",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/periods/{id}/close-run": {
       "get": {
         "tags": [
@@ -52418,6 +52489,51 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReconciliationExplanationDto"
+            }
+          }
+        }
+      },
+      "ClosingLineDto": {
+        "required": [
+          "accountCode",
+          "accountName",
+          "side",
+          "amountRon"
+        ],
+        "type": "object",
+        "properties": {
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "side": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "amountRon": {
+            "type": "string"
+          }
+        }
+      },
+      "ClosingPreviewDto": {
+        "required": [
+          "vatSettlement",
+          "profitAndLoss"
+        ],
+        "type": "object",
+        "properties": {
+          "vatSettlement": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosingLineDto"
+            }
+          },
+          "profitAndLoss": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosingLineDto"
             }
           }
         }
