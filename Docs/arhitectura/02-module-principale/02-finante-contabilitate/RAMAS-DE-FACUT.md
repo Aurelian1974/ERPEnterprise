@@ -64,6 +64,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 2.11 | Partea contabilă a modulului: C1 Planuri de conturi, C2 Modele de contare și note, C3 Închideri, C4 Declarații, C5 Rapoarte | Fazele C1–C5 | [C1](C1-PLANURI-DE-CONTURI.md)…[C5](C5-RAPOARTE.md) |
 | 2.12 | Declarațiile prin Integrări: XML-ul validat cu DUKIntegrator (51953 la lipsă), PDF-ul cu XML-ul atașat, descărcarea P300 din SPV (`P300Descarcat`) și facturile din e-Factura care explică diferențele; criteriul C4-A6 | Modulul Integrări (02.14) | C4 nota C4.3 |
 | 2.13 | D406 active (anual) și D406 stocuri (la cerere), prin `ISaftAssetsSource` și `ISaftStockSource` | Mijloace fixe, Stocuri | C4 nota C4.5 |
+| 2.14 | Registrul inventar: valorile de inventar din listele de inventariere (Stocuri, Mijloace fixe) și din confirmările de sold (F3), elementele pe gestiune și pe mijloc fix, arhivarea PDF-ului în atașamentele Nucleului | Stocuri, Mijloace fixe, Nucleu (atașamente) | C5 nota C5.3 |
 
 ## 3. Criterii de acceptare fără test
 

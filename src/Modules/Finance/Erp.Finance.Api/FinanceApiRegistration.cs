@@ -580,6 +580,13 @@ public static class FinanceApiRegistration
         finance.MapGet("/financial-statements/{year:int}/file", (int year, byte? kind, ISender sender, CancellationToken ct) =>
                 sender.Send(new DownloadFinancialStatements(year, kind ?? 1), ct))
             .WithName("DownloadFinancialStatements").Produces<DownloadedFile>().Problems();
+        // Registrul inventar (C5 3.4).
+        finance.MapGet("/inventory-register/{year:int}", (int year, ISender sender, CancellationToken ct) => sender.Send(new GetInventoryRegister(year), ct))
+            .WithName("GetInventoryRegister").Produces<InventoryRegisterDto>().Problems();
+        finance.MapPost("/inventory-register/{year:int}", (int year, ISender sender, CancellationToken ct) => sender.Send(new GenerateInventoryRegister(year), ct))
+            .WithName("GenerateInventoryRegister").Produces<int>().Problems();
+        finance.MapGet("/inventory-register/{year:int}/pdf", (int year, ISender sender, CancellationToken ct) => sender.Send(new DownloadInventoryRegister(year), ct))
+            .WithName("DownloadInventoryRegister").Produces<DownloadedFile>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();

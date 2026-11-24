@@ -79,6 +79,7 @@ USING (VALUES
     (N'Fin.Report.TrialBalance',        N'Balanța de verificare, fișa contului și cartea mare'),
     (N'Fin.Report.Statements',          N'Situațiile financiare: calculul și generarea fișierului'),
     (N'Fin.Report.StatementsSubmit',    N'Înregistrarea depunerii situațiilor financiare'),
+    (N'Fin.Report.InventoryRegister',   N'Registrul inventar anual'),
     (N'Fin.Report.Define',              N'Rapoartele definite ale clientului (rânduri cu formule pe conturi și dimensiuni)'),
     (N'Fin.Tax.View',                   N'Registrul și jurnalele de TVA, declarațiile, calendarul fiscal'),
     (N'Fin.Tax.Prepare',                N'Calculul și verificarea declarațiilor, rândurile manuale, explicațiile P300'),

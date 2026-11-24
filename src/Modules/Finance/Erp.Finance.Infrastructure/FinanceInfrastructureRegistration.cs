@@ -107,6 +107,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Reporting.IReportDefinitionStore, Reporting.ReportDefinitionStore>();
         services.AddScoped<Application.Reporting.ReportEngine>();
         services.AddScoped<Application.Reporting.IFinancialStatementStore, Reporting.FinancialStatementStore>();
+        services.AddScoped<Application.Reporting.IInventoryRegisterStore, Reporting.InventoryRegisterStore>();
+        services.AddSingleton<Application.Reporting.IInventoryRegisterPrinter, Reporting.InventoryRegisterPrinter>();
         services.AddScoped<Contracts.Reporting.IBalanceQuery>(sp => sp.GetRequiredService<Application.Reporting.BalanceService>());
         services.AddTransient<Accounting.RecurringEntryGeneration>();
         services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());

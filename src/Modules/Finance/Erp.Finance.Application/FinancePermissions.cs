@@ -77,6 +77,8 @@ public static class FinancePermissions
 
     public const string ReportDefine = "Fin.Report.Define";
 
+    public const string ReportInventoryRegister = "Fin.Report.InventoryRegister";
+
     public const string ReportStatements = "Fin.Report.Statements";
 
     public const string ReportStatementsSubmit = "Fin.Report.StatementsSubmit";
