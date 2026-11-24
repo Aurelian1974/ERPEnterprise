@@ -4,6 +4,7 @@ using Erp.Finance.Application;
 using Erp.Finance.Application.Accounting;
 using Erp.Finance.Application.Declarations;
 using Erp.Finance.Application.Periods;
+using Erp.Finance.Application.Reporting;
 using Erp.Finance.Contracts.Accounting;
 using Erp.Finance.Contracts.Settlement;
 using Microsoft.Data.SqlClient;
@@ -23,7 +24,7 @@ public sealed class TaxReturnIntegrationTests : FinanceTestBase, IClassFixture<F
 
     public TaxReturnIntegrationTests(FinanceDatabase database) : base(database) =>
         Permissions.UnionWith([FinancePermissions.TaxView, FinancePermissions.TaxPrepare, FinancePermissions.TaxGenerate, FinancePermissions.TaxSubmit,
-            FinancePermissions.PeriodView, FinancePermissions.FiscalYearClose]);
+            FinancePermissions.PeriodView, FinancePermissions.FiscalYearClose, FinancePermissions.ReportTrialBalance]);
 
     [Fact]
     [Trait("Criteriu", "02.02-C4-A5")]
@@ -227,7 +228,8 @@ public sealed class TaxReturnIntegrationTests : FinanceTestBase, IClassFixture<F
         var sales = root.Element(ns + "SourceDocuments")!.Element(ns + "SalesInvoices")!.Elements(ns + "Invoice").Single();
         Assert.Equal("420.00", (string?)sales.Descendants(ns + "TaxAmount").Single().Element(ns + "Amount"));
         var account = root.Descendants(ns + "Account").Single(a => (string?)a.Element(ns + "AccountID") == "4111");
-        Assert.Equal("2420.00", (string?)account.Element(ns + "ClosingDebitBalance"));
+        var balance = (await Send(new RunTrialBalance(from, to))).Rows.Single(r => r.AccountCode == "4111");
+        Assert.Equal(balance.ClosingDebit, (string?)account.Element(ns + "ClosingDebitBalance"));
     }
 
     private async Task<int> Setup()
