@@ -41,6 +41,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Periods.FiscalYearClosing>();
         services.AddScoped<Application.Periods.IOpeningBalanceStore, Periods.OpeningBalanceStore>();
         services.AddScoped<Application.Declarations.IVatRegisterStore, Declarations.VatRegisterStore>();
+        services.AddScoped<Application.Declarations.ITaxReturnStore, Declarations.TaxReturnStore>();
+        services.AddScoped<Application.Declarations.TaxReturnService>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
@@ -239,6 +241,12 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51854] = (ErpErrorKind.Conflict, "FIN_REPOST_PERIOD_CLOSED"),
         [51855] = (ErpErrorKind.NotFound, "FIN_POSTING_MODEL_MISSING"),
         [51973] = (ErpErrorKind.Validation, "FIN_BALANCE_CROSSES_YEARS"),
+        [51941] = (ErpErrorKind.NotFound, "FIN_TAX_RETURN_NOT_FOUND"),
+        [51942] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_CONCURRENCY_CONFLICT"),
+        [51943] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_PERIOD_OPEN"),
+        [51944] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_DATA_CHANGED"),
+        [51947] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_ALREADY_SUBMITTED"),
+        [51948] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_NOT_GENERATED"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
         [51903] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSE_BLOCKED"),

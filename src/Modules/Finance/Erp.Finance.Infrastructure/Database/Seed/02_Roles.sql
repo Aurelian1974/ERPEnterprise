@@ -122,7 +122,8 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'DIRECTOR_FINANCIAR',  N'Fin.Report.TrialBalance'),
         (N'CONTABIL',            N'Fin.Tax.View'),
         (N'AUDITOR',             N'Fin.Tax.View'),
-        (N'DIRECTOR_FINANCIAR',  N'Fin.Tax.View')
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Tax.View'),
+        (N'CONTABIL',            N'Fin.Tax.Prepare')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

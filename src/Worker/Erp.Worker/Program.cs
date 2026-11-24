@@ -83,6 +83,9 @@ builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.Dif
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.CompensareValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.DecontCheltuieliValidat, Erp.Finance.Infrastructure.Events.PostEvents>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaRedeschisa, Erp.Finance.Infrastructure.Accounting.RetryQueueOnReopen>();
+// Declaratiile (02.02, C4 4.1): redeschiderea lunii marcheaza declaratiile depuse „De verificat”; reinchiderea fara schimbari sterge marcajul.
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaRedeschisa, Erp.Finance.Infrastructure.Declarations.MarkTaxReturnsOnReopen>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaInchisa, Erp.Finance.Infrastructure.Declarations.RecheckTaxReturnsOnClose>();
 builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
     TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
     sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));

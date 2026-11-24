@@ -513,6 +513,23 @@ public static class FinanceApiRegistration
         finance.MapGet("/vat-journal", (int year, int month, byte direction, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetVatJournal(year, month, direction), ct))
             .WithName("GetVatJournal").Produces<VatJournalDto>().Problems();
+        // Declaratiile si calendarul fiscal (C4 3.3, 3.7, 4.1; machetele c4-01, c4-02).
+        finance.MapGet("/tax-calendar", (DateOnly from, DateOnly to, ISender sender, CancellationToken ct) => sender.Send(new GetTaxCalendar(from, to), ct))
+            .WithName("GetTaxCalendar").Produces<IReadOnlyList<TaxCalendarItemDto>>().Problems();
+        finance.MapPost("/tax-calendar", (GenerateTaxCalendar body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateTaxCalendar").Produces<int>().Problems();
+        finance.MapPost("/tax-returns", (CalculateTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CalculateTaxReturn").Produces<int>().Problems();
+        finance.MapGet("/tax-returns/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetTaxReturn(id), ct))
+            .WithName("GetTaxReturn").Produces<TaxReturnDto>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/verify", (int id, VerifyTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("VerifyTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/generate", (int id, GenerateTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("GenerateTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/submit", (int id, SubmitTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SubmitTaxReturn").Produces<byte[]>().Problems();
+        finance.MapGet("/tax-return-files/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DownloadTaxReturnFile(id), ct))
+            .WithName("DownloadTaxReturnFile").Produces<DownloadedFile>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();

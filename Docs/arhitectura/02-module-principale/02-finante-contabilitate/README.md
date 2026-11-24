@@ -94,6 +94,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C3.4 | Soldurile inițiale la punerea în funcțiune (oricare lună de start): importul verificat, validarea cu notele de deschidere și rulajele cumulate, lunile anterioare închise ca importate, concordanța cu evidența preluată, anularea; testul C3-A11 | Implementat (citirea din Excel cu ecranul C3.5) |
 | C3.5 | Ecranele Închiderea lunii, Concordanțe, Note de închidere, Închiderea anului (c3-02…c3-05) | Implementat (import Excel al balanței de deschidere și raportul PDF în RAMAS 1.28) |
 | C4.1 | Registrul de TVA scris odată cu nota (facturi, TVA la încasare devenită exigibilă, stornări), tipurile de operațiuni fiscale, jurnalele de vânzări și de cumpărări; testele C4-A1, A3 | Implementat (deconturi și deducere limitată în RAMAS 1.29) |
+| C4.2 | Cadrul declarațiilor: calendarul fiscal cu termenele pe ziua lucrătoare, ciorna D300 calculată din registru, verificarea, generarea doar pe lunile închise și cu datele neschimbate, depunerea cu obligația de plată în prognoză, marcajul „De verificat” la redeschidere; testele C4-A5, A10, A11 | Implementat (XML-ul în C4.3; evenimentele obligației în RAMAS 1.30) |
 
 ## Machete de ecran (`ecrane/`)
 
