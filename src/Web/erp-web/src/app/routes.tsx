@@ -20,6 +20,9 @@ import { PenaltiesPage } from '../finance/PenaltiesPage';
 import { FxDifferencesPage } from '../finance/FxDifferencesPage';
 import { FxExposurePage } from '../finance/FxExposurePage';
 import { ChartOfAccountsPage } from '../finance/ChartOfAccountsPage';
+import { AltChartsPage } from '../finance/AltChartsPage';
+import { MappingRulesPage } from '../finance/MappingRulesPage';
+import { MappingCheckPage } from '../finance/MappingCheckPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
@@ -72,6 +75,9 @@ export const routes = [
       { path: 'finante/valuta/diferente', element: <FxDifferencesPage /> },
       { path: 'finante/valuta/pozitie', element: <FxExposurePage /> },
       { path: 'finante/contabilitate/plan-de-conturi', element: <ChartOfAccountsPage /> },
+      { path: 'finante/contabilitate/planuri-alternative', element: <AltChartsPage /> },
+      { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },
+      { path: 'finante/contabilitate/verificare-mapare', element: <MappingCheckPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
