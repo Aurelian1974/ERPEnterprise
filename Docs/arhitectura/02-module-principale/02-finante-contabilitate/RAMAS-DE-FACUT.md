@@ -27,6 +27,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.16 | Contarea efectelor comerciale (`EfectComercialModificat`) și a stornărilor de trezorerie (`DocumentTrezorerieStornat`, cu conturile notei inițiale) | C2 nota C2.2 | — |
 | 1.17 | Diferențele de curs fără partener (schimb valutar, transferuri; sursele 2 și 3) | C2 nota C2.2 | — |
 | 1.18 | Liniile de decont plătite pe o factură de furnizor (401 / 542) | C2 nota C2.2 | Restul decontului se contează |
+| 1.19 | Notele recurente cu sume calculate dintr-un sold (de exemplu 1/12 din soldul `471`) | C2 3.8; nota C2.4b | Șabloanele au doar sume fixe |
 
 ## 2. Depinde de alte module sau de Nucleu
 

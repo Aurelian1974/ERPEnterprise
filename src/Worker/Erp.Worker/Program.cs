@@ -143,6 +143,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Accounting.PostingQueueRetry>(Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C2 3.8: ciornele notelor recurente scadente, zilnic la 00:40 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration>(Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions
             {

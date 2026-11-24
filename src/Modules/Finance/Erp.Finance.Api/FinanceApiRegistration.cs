@@ -456,6 +456,19 @@ public static class FinanceApiRegistration
             .WithName("PreviewRepost").Produces<IReadOnlyList<RepostChangeDto>>().Problems();
         finance.MapPost("/repost", (RepostEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("RepostEntries").Produces<int>().Problems();
+        // Notele recurente (C2 3.8).
+        finance.MapGet("/recurring-entries", (ISender sender, CancellationToken ct) => sender.Send(new GetRecurringTemplates(), ct))
+            .WithName("GetRecurringTemplates").Produces<IReadOnlyList<RecurringTemplateDto>>().Problems();
+        finance.MapPost("/recurring-entries", (SaveRecurringTemplate body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateRecurringTemplate").Produces<int>().Problems();
+        finance.MapPut("/recurring-entries/{id:int}", (int id, SaveRecurringTemplate body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateRecurringTemplate").Produces<int>().Problems();
+        finance.MapPost("/recurring-entries/{id:int}/active", (int id, SetRecurringTemplateActive body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("SetRecurringTemplateActive").Produces<bool>().Problems();
+        finance.MapPost("/recurring-entries/generate", (GenerateRecurringEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateRecurringEntries").Produces<int>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
