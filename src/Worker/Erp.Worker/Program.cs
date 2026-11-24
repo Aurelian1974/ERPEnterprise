@@ -114,6 +114,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue>(Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Treasury.CashAdvanceOverdue.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, F5 3.4: istoricul de plata al clientilor pe intervale de intarziere, lunar pe 1 la 01:30 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation>(Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions
             {

@@ -73,6 +73,9 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
     /// <summary>Firma testelor de propuneri de plata (F5), care lucreaza pe toate datoriile firmei.</summary>
     public int PlanningCompanyId { get; private set; }
 
+    /// <summary>Firma testelor de prognoza de cash-flow (F5), care lucreaza pe toate conturile si partidele firmei.</summary>
+    public int CashFlowCompanyId { get; private set; }
+
     public int LimitBranchId { get; private set; }
 
     public async ValueTask InitializeAsync()
@@ -94,8 +97,9 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
         FxBankCompanyId = await NewCompany(connection, "EXFXB", "Exemplu Valută Bancă SRL", "16180339");
         FxSettingsCompanyId = await NewCompany(connection, "EXFXS", "Exemplu Valută Setări SRL", "14142135");
         PlanningCompanyId = await NewCompany(connection, "EXPLAN", "Exemplu Planificare SRL", "17320508");
+        CashFlowCompanyId = await NewCompany(connection, "EXCF", "Exemplu Cash-Flow SRL", "22360679");
         LimitBranchId = await NewBranch(connection, LimitCompanyId, "SEDIU", "Sediu Iași", "Iași", "IS");
-        foreach (var company in new[] { CompanyId, LimitCompanyId, PlanningCompanyId })
+        foreach (var company in new[] { CompanyId, LimitCompanyId, PlanningCompanyId, CashFlowCompanyId })
         {
             await connection.ExecuteAsync("""
                 INSERT INTO core.NumberSeries (CompanyId, BranchId, DocumentTypeId, Prefix, [Year], NextNumber, Padding, IsFiscal, IsDefault, FirstNumber,

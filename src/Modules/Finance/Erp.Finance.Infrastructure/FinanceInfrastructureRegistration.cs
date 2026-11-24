@@ -30,6 +30,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<ITreasurySettingsStore, TreasurySettingsStore>();
         services.AddScoped<CashDraftFactory>();
         services.AddTransient<CashAdvanceOverdue>();
+        services.AddTransient<PaymentBehaviorRecalculation>();
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -62,6 +63,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Fx.IFxTreasuryStore, FxTreasuryStore>();
         services.AddScoped<Application.Fx.IFxReportStore, FxReportStore>();
         services.AddScoped<Application.Planning.IPaymentProposalStore, PaymentProposalStore>();
+        services.AddScoped<Application.Planning.ICashFlowStore, CashFlowStore>();
+        services.AddScoped<Application.Planning.CashFlowForecaster>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -167,5 +170,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51706] = (ErpErrorKind.Forbidden, "FIN_PROPOSAL_APPROVER_NOT_ALLOWED"),
         [51707] = (ErpErrorKind.Conflict, "FIN_PROPOSAL_INVOICE_ALREADY_PROPOSED"),
         [51708] = (ErpErrorKind.Validation, "FIN_PROPOSAL_AMOUNT_EXCEEDS_OPEN"),
+        [51711] = (ErpErrorKind.Validation, "FIN_CASHFLOW_HORIZON_TOO_LONG"),
+        [51712] = (ErpErrorKind.NotFound, "FIN_CASHFLOW_PLAN_ITEM_NOT_FOUND"),
     };
 }

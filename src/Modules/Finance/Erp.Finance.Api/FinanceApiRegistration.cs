@@ -3,6 +3,7 @@ using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
 using Erp.Finance.Application.Planning;
+using Erp.Finance.Domain.Planning;
 using Erp.Finance.Application.Settlement;
 using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
@@ -311,6 +312,28 @@ public static class FinanceApiRegistration
             .WithName("GetPaymentApprovalRules").Produces<ApprovalRulesDto>().Problems();
         finance.MapPut("/payment-approval-rules", (SavePaymentApprovalRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SavePaymentApprovalRules").Produces<ApprovalRulesDto>().Problems();
+        // Prognoza de cash-flow (F5 3.4, 3.5, 4.4; machetele f5-03, cf-10).
+        finance.MapGet("/cash-flow/forecast", (DateOnly? from, DateOnly? to, Granularity? granularity, int? treasuryAccountId, string? currencyCode, bool? prudent,
+                int? extraDays, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetCashFlowForecast(from, to, granularity ?? Granularity.Week, treasuryAccountId, currencyCode, prudent ?? false, extraDays ?? 0), ct))
+            .WithName("GetCashFlowForecast").Produces<CashFlowForecastDto>().Problems();
+        finance.MapGet("/cash-flow/categories", (ISender sender, CancellationToken ct) => sender.Send(new GetCashFlowCategories(), ct))
+            .WithName("GetCashFlowCategories").Produces<IReadOnlyList<CashFlowCategoryDto>>().Problems();
+        finance.MapGet("/cash-flow/plan-items", (bool? includeInactive, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetCashFlowPlanItems(includeInactive ?? false), ct))
+            .WithName("GetCashFlowPlanItems").Produces<IReadOnlyList<CashFlowPlanItemDto>>().Problems();
+        finance.MapPost("/cash-flow/plan-items", (SaveCashFlowPlanItem body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateCashFlowPlanItem").Produces<int>().Problems();
+        finance.MapPut("/cash-flow/plan-items/{id:int}", (int id, SaveCashFlowPlanItem body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateCashFlowPlanItem").Produces<int>().Problems();
+        finance.MapDelete("/cash-flow/plan-items/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DeleteCashFlowPlanItem(id), ct))
+            .WithName("DeleteCashFlowPlanItem").Produces<bool>().Problems();
+        finance.MapGet("/cash-flow/delay-buckets", (ISender sender, CancellationToken ct) => sender.Send(new GetPaymentDelayBuckets(), ct))
+            .WithName("GetPaymentDelayBuckets").Produces<IReadOnlyList<DelayBucketDto>>().Problems();
+        finance.MapPut("/cash-flow/delay-buckets", (SavePaymentDelayBuckets body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SavePaymentDelayBuckets").Produces<IReadOnlyList<DelayBucketDto>>().Problems();
+        finance.MapPost("/cash-flow/payment-behavior/recalculate", (ISender sender, CancellationToken ct) => sender.Send(new RecalculatePaymentBehavior(), ct))
+            .WithName("RecalculatePaymentBehavior").Produces<int>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
