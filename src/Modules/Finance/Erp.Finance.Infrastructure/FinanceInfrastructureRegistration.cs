@@ -60,6 +60,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<IOpeningBalanceStore, OpeningBalanceStore>();
         services.AddScoped<Application.Fx.IFxRevaluationStore, FxRevaluationStore>();
         services.AddScoped<Application.Fx.IFxTreasuryStore, FxTreasuryStore>();
+        services.AddScoped<Application.Fx.IFxReportStore, FxReportStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -152,6 +153,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51603] = (ErpErrorKind.Conflict, "FIN_FX_RUN_NOT_DRAFT"),
         [51604] = (ErpErrorKind.Conflict, "FIN_FX_RUN_ALREADY_VALIDATED"),
         [51605] = (ErpErrorKind.Conflict, "FIN_FX_RATE_MISSING"),
+        [51607] = (ErpErrorKind.Conflict, "FIN_FX_MONTH_REVALUED"),
         [51606] = (ErpErrorKind.Conflict, "FIN_FX_LATER_RUN_EXISTS"),
         [51609] = (ErpErrorKind.Conflict, "FIN_FX_RUN_OUT_OF_ORDER"),
         [51610] = (ErpErrorKind.Conflict, "FIN_FX_RUN_STALE"),

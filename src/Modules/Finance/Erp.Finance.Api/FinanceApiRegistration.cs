@@ -287,6 +287,16 @@ public static class FinanceApiRegistration
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
         finance.MapGet("/fx/revaluations/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluation(id), ct))
             .WithName("GetFxRevaluation").Produces<FxRunDto>().Problems();
+        finance.MapGet("/fx/differences", (DateOnly? from, DateOnly? to, byte? source, string? currencyCode, int? partnerId, string? search, ISender sender,
+                CancellationToken ct) => sender.Send(new GetFxDifferences(from, to, source, currencyCode, partnerId, search), ct))
+            .WithName("GetFxDifferences").Produces<FxDifferencesDto>().Problems();
+        finance.MapGet("/fx/exposure", (DateOnly? asOf, bool? includeAdvances, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetFxExposure(asOf, includeAdvances), ct))
+            .WithName("GetFxExposure").Produces<FxExposureDto>().Problems();
+        finance.MapGet("/fx/settings", (ISender sender, CancellationToken ct) => sender.Send(new GetFxSettings(), ct))
+            .WithName("GetFxSettings").Produces<FxSettingsDto>().Problems();
+        finance.MapPut("/fx/settings", (SaveFxSettings body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveFxSettings").Produces<FxSettingsDto>().Problems();
         finance.MapGet("/fx/treasury-values", (DateOnly? asOf, int? treasuryAccountId, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetTreasuryFxValues(asOf, treasuryAccountId), ct))
             .WithName("GetTreasuryFxValues").Produces<IReadOnlyList<TreasuryRonValueDto>>().Problems();

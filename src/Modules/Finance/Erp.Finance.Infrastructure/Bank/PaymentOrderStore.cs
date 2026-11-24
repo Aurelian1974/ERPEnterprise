@@ -142,6 +142,21 @@ public sealed class FinanceSettings(IDbSession session) : IFinanceSettings
     public const string RequireSpvInvoice = "Fin.Payment.RequireSpvInvoice";
     public const string WriteOffMaxAmountRon = "Fin.WriteOff.MaxAmountRon";
     public const string RevalueAdvances = "Fin.Fx.RevalueAdvances";
+    public const string FxCrossCurrencyRule = "Fin.Fx.CrossCurrencyRule";
+    public const string FxCrossCurrencyMarkupPercent = "Fin.Fx.CrossCurrencyMarkupPercent";
+    public const string BlockAllocationsInRevaluedMonth = "Fin.Fx.BlockAllocationsInRevaluedMonth";
+
+    public async Task<Domain.Settlement.CrossRateRule> FxCrossCurrencyRuleAsync(int companyId, CancellationToken ct) =>
+        byte.TryParse(await GetAsync(companyId, FxCrossCurrencyRule, ct).ConfigureAwait(false), System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out var rule) && rule is >= 1 and <= 3 ? (Domain.Settlement.CrossRateRule)rule
+            : Domain.Settlement.CrossRateRule.BnrOnPaymentDate;
+
+    public async Task<decimal> FxCrossCurrencyMarkupPercentAsync(int companyId, CancellationToken ct) =>
+        decimal.TryParse(await GetAsync(companyId, FxCrossCurrencyMarkupPercent, ct).ConfigureAwait(false), System.Globalization.NumberStyles.AllowDecimalPoint,
+            System.Globalization.CultureInfo.InvariantCulture, out var percent) && percent is >= 0 and < 100 ? percent : 1m;
+
+    public async Task<bool> BlockAllocationsInRevaluedMonthAsync(int companyId, CancellationToken ct) =>
+        string.Equals(await GetAsync(companyId, BlockAllocationsInRevaluedMonth, ct).ConfigureAwait(false), "true", StringComparison.OrdinalIgnoreCase);
 
     public async Task<bool> RevalueAdvancesAsync(int companyId, CancellationToken ct) =>
         string.Equals(await GetAsync(companyId, RevalueAdvances, ct).ConfigureAwait(false), "true", StringComparison.OrdinalIgnoreCase);

@@ -10,7 +10,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT o.Id, o.PartnerId, o.Role, o.Kind, o.CurrencyCode, o.ExchangeRate, o.OpenAmount, o.OpenAmountRon, o.DocumentDate,
-        ISNULL(p.CrossCurrencyRule, 1) AS CrossCurrencyRule, ISNULL(p.CrossCurrencyMarkupPercent, 0) AS CrossCurrencyMarkupPercent,
+        p.CrossCurrencyRule, p.CrossCurrencyMarkupPercent,
         o.IndexCurrencyCode, o.IndexedOpenAmount, CASE WHEN o.IndexedAmount IS NULL THEN NULL ELSE ROUND(o.Amount / o.IndexedAmount, 6) END AS IndexRate
     FROM fin.OpenItem AS o WITH (UPDLOCK, ROWLOCK)
     LEFT JOIN fin.PartnerFinanceProfile AS p ON p.CompanyId = o.CompanyId AND p.PartnerId = o.PartnerId AND p.Role = o.Role

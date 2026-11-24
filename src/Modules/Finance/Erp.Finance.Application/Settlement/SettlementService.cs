@@ -75,7 +75,7 @@ public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItem
 public sealed record PlannedAllocation(AllocationRequest Request, DateOnly AllocationDate, FxPlanRow Fx);
 
 /// <summary>O partida blocata pentru alocare (F4 4.1), cu regula de curs incrucisat din profilul partenerului.</summary>
-public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule Rule, decimal MarkupPercent)
+public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule? Rule, decimal? MarkupPercent)
 {
     /// <summary>Cursul de emitere al unei facturi indexate: lei pentru o unitate din valuta de referinta (F4 4.2).</summary>
     public decimal IndexRate { get; init; }
@@ -482,6 +482,9 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             throw ErpException.NotFound("FIN_INVALID_REFERENCE", "Partida nu există în firma curentă.");
         }
 
+        var block = await settings.BlockAllocationsInRevaluedMonthAsync(companyId, ct).ConfigureAwait(false);
+        var defaultRule = await settings.FxCrossCurrencyRuleAsync(companyId, ct).ConfigureAwait(false);
+        var defaultMarkup = await settings.FxCrossCurrencyMarkupPercentAsync(companyId, ct).ConfigureAwait(false);
         var dates = new List<DateOnly>(allocations.Count);
         var requests = new List<FxRequest>(allocations.Count);
         foreach (var a in allocations)
@@ -490,6 +493,13 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             var credit = locked[a.CreditOpenItemId];
             var date = a.AllocationDate ?? (debit.DocumentDate >= credit.DocumentDate ? debit.DocumentDate : credit.DocumentDate);
             dates.Add(date);
+            // Fin.Fx.BlockAllocationsInRevaluedMonth (F4 4.6, oprita implicit): alocarea cu data intr-o luna deja reevaluata a partidelor e refuzata.
+            if (block && debit.Runs.Concat(credit.Runs).Any(r => r.RevaluationDate >= date))
+            {
+                throw ErpException.Conflict("FIN_FX_MONTH_REVALUED",
+                    "Alocarea are data într-o lună deja reevaluată; stornați reevaluarea sau alegeți o dată ulterioară.");
+            }
+
             if (debit.Item.CurrencyCode == credit.Item.CurrencyCode && !FxCalculator.IsIndexedPair(debit.Item, credit.Item))
             {
                 requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount) { AllocationDate = date });
@@ -509,13 +519,14 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             var payment = invoiceIsDebit ? credit : debit;
             var invoiceCurrency = invoice.Item.IndexCurrencyCode ?? invoice.Item.CurrencyCode;
             var invoiceRate = isIndexed ? invoice.IndexRate : invoice.Item.ExchangeRate;
-            var rule = invoice.Rule == CrossRateRule.Manual ? CrossRateRule.BnrOnPaymentDate : invoice.Rule;
+            var partnerRule = invoice.Rule ?? defaultRule;
+            var rule = partnerRule == CrossRateRule.Manual ? CrossRateRule.BnrOnPaymentDate : partnerRule;
             var invoicePerUnit = await PerUnitAsync(invoiceCurrency, date, ct).ConfigureAwait(false);
             var paymentPerUnit = await PerUnitAsync(payment.Item.CurrencyCode, date, ct).ConfigureAwait(false);
             var paymentOnInvoiceDate = rule == CrossRateRule.InvoiceRate
                 ? await PerUnitAsync(payment.Item.CurrencyCode, invoice.DocumentDate, ct).ConfigureAwait(false)
                 : paymentPerUnit;
-            var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent, invoiceRate, paymentOnInvoiceDate);
+            var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent ?? defaultMarkup, invoiceRate, paymentOnInvoiceDate);
             requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, rate, rule) { AllocationDate = date });
         }
 

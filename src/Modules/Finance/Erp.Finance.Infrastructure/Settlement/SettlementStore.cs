@@ -100,7 +100,7 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             .ToLookup(r => r.OpenItemId, r => new FxRunShare(r.RunId, DateOnly.FromDateTime(r.RevaluationDate), r.AppliedDifferenceRon, r.AppliedOn));
         return items.Select(r => new FxLockedItem(new FxItem(r.Id, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.CurrencyCode.Trim(), r.ExchangeRate, r.OpenAmount,
             r.OpenAmountRon) { IndexCurrencyCode = r.IndexCurrencyCode?.Trim(), IndexedOpenAmount = r.IndexedOpenAmount ?? 0 }, r.PartnerId,
-            DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)
+            DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule?)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)
         {
             Runs = runs[r.Id].ToList(), IndexRate = r.IndexRate ?? 0,
         }).ToList();
@@ -287,7 +287,7 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal);
 
     private sealed record LockedRow(long Id, int PartnerId, byte Role, byte Kind, string CurrencyCode, decimal ExchangeRate, decimal OpenAmount, decimal OpenAmountRon,
-        DateTime DocumentDate, byte CrossCurrencyRule, decimal CrossCurrencyMarkupPercent, string? IndexCurrencyCode, decimal? IndexedOpenAmount,
+        DateTime DocumentDate, byte? CrossCurrencyRule, decimal? CrossCurrencyMarkupPercent, string? IndexCurrencyCode, decimal? IndexedOpenAmount,
         decimal? IndexRate);
 
     private sealed record VatRow(long Id, long OpenItemId, string SourceDocumentType, long SourceDocumentId, byte Side, DateTime ExigibilityDate,

@@ -951,6 +951,57 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal(790.34m, await Query<decimal>("SELECT SUM(VatAmountRon) FROM fin.VatCashEntry WHERE OpenItemId = @Id", new { Id = invoice }));
     }
 
+    [Fact]
+    public async Task Fx_settings_can_block_allocations_in_a_revalued_month_and_the_reports_show_the_exposure_and_the_differences()
+    {
+        Permissions.UnionWith([FinancePermissions.FxView, FinancePermissions.FxRevalue, FinancePermissions.FxSettings]);
+        var company = Database.FxSettingsCompanyId;
+        foreach (var (day, rate) in new[] { (new DateOnly(2024, 1, 20), 4.96m), (new DateOnly(2024, 1, 31), 4.97m) })
+        {
+            await Query<int>("""
+                MERGE core.ExchangeRate AS t USING (SELECT 'EUR' AS CurrencyCode, @Day AS RateDate) AS s ON t.CurrencyCode = s.CurrencyCode AND t.RateDate = s.RateDate
+                WHEN MATCHED THEN UPDATE SET Rate = @Rate
+                WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, @Rate, 1, 'BNR', 1);
+                SELECT @@ROWCOUNT
+                """, new { Day = day.ToDateTime(TimeOnly.MinValue), Rate = rate });
+        }
+
+        var defaults = await SendTo(company, new GetFxSettings());
+        Assert.Equal((CrossRateRule.BnrOnPaymentDate, "1.00", false, false), (defaults.CrossCurrencyRule, defaults.CrossCurrencyMarkupPercent,
+            defaults.RevalueAdvances, defaults.BlockAllocationsInRevaluedMonth));
+
+        var partner = await NewPartner();
+        var invoice = await Register(Sale(partner, 1000m, new DateOnly(2024, 1, 10), new DateOnly(2024, 2, 10)) with
+        {
+            CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 4950m, CompanyId = company,
+        });
+        var run = await SendTo(company, new GenerateFxRevaluation(2024, 1));
+        await SendTo(company, new ValidateFxRevaluation(run, (await SendTo(company, new GetFxRevaluation(run))).RowVersion));
+
+        // Pozitia valutara la 31.01: o creanta de 1.000 EUR la 4,97; impactul unei aprecieri de 1% e 49,70.
+        var exposure = Assert.Single((await SendTo(company, new GetFxExposure(new DateOnly(2024, 1, 31)))).Currencies);
+        Assert.Equal(("EUR", "1000.00", "1000.00", "4970.00", "49.70"), (exposure.CurrencyCode, exposure.Receivables, exposure.Net, exposure.NetRon,
+            exposure.ImpactOnePercentRon));
+
+        // Cu blocarea pornita, o incasare cu data in ianuarie (luna reevaluata) e refuzata; oprita, se accepta.
+        await SendTo(company, new SaveFxSettings(CrossRateRule.BnrOnPaymentDatePlusMarkup, "2", false, true));
+        Task<PaymentSettlementResult> PayIn() => InTransaction(sp => sp.GetRequiredService<ISettlementService>().RegisterPaymentAsync(new PaymentSettlementRequest(
+            company, partner, PartnerRole.Customer, "Finance.CashDocument", Interlocked.Increment(ref paymentSequence), "", "FX-SET", new DateOnly(2024, 1, 20), "EUR",
+            4.96m, 1000m, 4960m, false, [new SettlementTarget(invoice, null)], false), Ct), company);
+        Assert.Equal("FIN_FX_MONTH_REVALUED", (await Assert.ThrowsAsync<ErpException>(PayIn)).Code);
+        var saved = await SendTo(company, new GetFxSettings());
+        Assert.Equal((CrossRateRule.BnrOnPaymentDatePlusMarkup, "2.00", true), (saved.CrossCurrencyRule, saved.CrossCurrencyMarkupPercent,
+            saved.BlockAllocationsInRevaluedMonth));
+        await SendTo(company, new SaveFxSettings(CrossRateRule.BnrOnPaymentDate, "1", false, false));
+        await PayIn();
+
+        // Diferentele de curs din ianuarie: incasarea fata de valoarea de dinaintea reevaluarii (4.960 − 4.950).
+        var differences = await SendTo(company, new GetFxDifferences(new DateOnly(2024, 1, 1), new DateOnly(2024, 1, 31)));
+        var row = Assert.Single(differences.Items);
+        Assert.Equal(((byte)1, "10.00", "765", "1000.00"), (row.Source, row.DifferenceRon, row.GlAccountCode, row.ForeignAmount));
+        Assert.Equal(("10.00", "0.00", "10.00"), (differences.GainRon, differences.LossRon, differences.NetRon));
+    }
+
     private Task<T> SendTo<T>(int company, MediatR.IRequest<T> request) => Send(request, companyId: company);
 
     private async Task<(int Id, string Iban)> NewBankAccount()

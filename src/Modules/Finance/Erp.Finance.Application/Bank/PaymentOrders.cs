@@ -7,6 +7,8 @@ using Erp.Finance.Domain.Bank;
 using Erp.Finance.Domain.Treasury;
 using FluentValidation;
 
+using Erp.Finance.Domain.Settlement;
+
 namespace Erp.Finance.Application.Bank;
 
 public sealed record PaymentOrderLineInput(int OperationTypeId, string Amount, string? SettlementRef, int? CostCenterId, int? ProjectId);
@@ -90,6 +92,15 @@ public interface IFinanceSettings
 
     /// <summary>Fin.Fx.RevalueAdvances (F4 2, regula 1): reevaluarea avansurilor in valuta (implicit oprita, decizia din 15.11.2026).</summary>
     Task<bool> RevalueAdvancesAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Fin.Fx.CrossCurrencyRule (F4 3.3, cf-08): regula implicita de curs incrucisat a firmei (implicit BNR din ziua platii).</summary>
+    Task<CrossRateRule> FxCrossCurrencyRuleAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Fin.Fx.CrossCurrencyMarkupPercent (cf-08): marja implicita peste BNR, in procente (implicit 1).</summary>
+    Task<decimal> FxCrossCurrencyMarkupPercentAsync(int companyId, CancellationToken ct);
+
+    /// <summary>Fin.Fx.BlockAllocationsInRevaluedMonth (F4 4.6): blocarea alocarilor cu data intr-o luna reevaluata (implicit oprita).</summary>
+    Task<bool> BlockAllocationsInRevaluedMonthAsync(int companyId, CancellationToken ct);
 
     /// <summary>Salveaza o setare a firmei (codul e unul din cele de mai sus, valoarea invarianta).</summary>
     Task SaveAsync(int companyId, string code, string value, int userId, CancellationToken ct);

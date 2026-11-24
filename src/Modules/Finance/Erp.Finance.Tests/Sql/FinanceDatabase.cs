@@ -67,6 +67,9 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
     /// <summary>Firma testelor de trezorerie in valuta (F4-A6, A10).</summary>
     public int FxBankCompanyId { get; private set; }
 
+    /// <summary>Firma testului setarilor si rapoartelor multivaluta (F4 cf-08, f4-02, f4-03).</summary>
+    public int FxSettingsCompanyId { get; private set; }
+
     public int LimitBranchId { get; private set; }
 
     public async ValueTask InitializeAsync()
@@ -86,6 +89,7 @@ public sealed class FinanceDatabase(SqlServerFixture sql) : IAsyncLifetime
         FxCompanyId = await NewCompany(connection, "EXFX", "Exemplu Valută SRL", "31415926");
         FxRetroCompanyId = await NewCompany(connection, "EXFXR", "Exemplu Valută Retro SRL", "27182818");
         FxBankCompanyId = await NewCompany(connection, "EXFXB", "Exemplu Valută Bancă SRL", "16180339");
+        FxSettingsCompanyId = await NewCompany(connection, "EXFXS", "Exemplu Valută Setări SRL", "14142135");
         LimitBranchId = await NewBranch(connection, LimitCompanyId, "SEDIU", "Sediu Iași", "Iași", "IS");
         foreach (var company in new[] { CompanyId, LimitCompanyId })
         {
