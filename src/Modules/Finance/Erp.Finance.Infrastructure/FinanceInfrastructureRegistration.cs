@@ -37,6 +37,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Periods.IPeriodCloseStore, Periods.PeriodCloseStore>();
         services.AddScoped<Application.Periods.PeriodCloseService>();
         services.AddScoped<Application.Periods.ClosingEntries>();
+        services.AddScoped<Application.Periods.IFiscalYearCloseStore, Periods.FiscalYearCloseStore>();
+        services.AddScoped<Application.Periods.FiscalYearClosing>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
@@ -245,6 +247,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51908] = (ErpErrorKind.Conflict, "FIN_PERIOD_EVENTS_IN_TRANSIT"),
         [51909] = (ErpErrorKind.Forbidden, "FIN_PERIOD_OVERRIDE_FORBIDDEN"),
         [51911] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_NOT_CLOSABLE"),
+        [51913] = (ErpErrorKind.Validation, "FIN_LEGAL_RESERVE_INVALID"),
         [51912] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_LOCKED"),
     };
 }

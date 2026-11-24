@@ -495,6 +495,19 @@ public static class FinanceApiRegistration
         // Lista de verificari la inchiderea lunii (C3 3.3, 4.1; macheta c3-02).
         finance.MapGet("/reconciliation", (DateOnly asOf, ISender sender, CancellationToken ct) => sender.Send(new GetReconciliation(asOf), ct))
             .WithName("GetReconciliation").Produces<IReadOnlyList<ReconciliationRowDto>>().Problems();
+        // Inchiderea anului (C3 3.6, 4.3; macheta c3-05).
+        finance.MapGet("/fiscal-years/{year:int}/close", (int year, ISender sender, CancellationToken ct) => sender.Send(new GetYearClose(year), ct))
+            .WithName("GetYearClose").Produces<YearCloseDto>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/legal-reserve", (int year, PostLegalReserve body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("PostLegalReserve").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/close", (int year, ISender sender, CancellationToken ct) => sender.Send(new CloseFiscalYear(year), ct))
+            .WithName("CloseFiscalYear").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/lock", (int year, ISender sender, CancellationToken ct) => sender.Send(new LockFiscalYear(year), ct))
+            .WithName("LockFiscalYear").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/unlock", (int year, UnlockFiscalYear body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("UnlockFiscalYear").Produces<bool>().Problems();
         finance.MapGet("/periods/{id:int}/closing-entries", (int id, ISender sender, CancellationToken ct) => sender.Send(new PreviewClosingEntries(id), ct))
             .WithName("PreviewClosingEntries").Produces<ClosingPreviewDto>().Problems();
         finance.MapGet("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodCloseRun(id), ct))

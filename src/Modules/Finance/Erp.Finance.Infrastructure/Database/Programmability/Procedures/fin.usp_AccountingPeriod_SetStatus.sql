@@ -61,6 +61,11 @@ BEGIN
 
         INSERT INTO fin.PeriodStatusHistory (PeriodId, FromStatus, ToStatus, Reason, ChangedBy)
         VALUES (@Id, @Current, @Status, NULLIF(LTRIM(@Reason), N''), @UserId);
+
+        -- Redeschiderea unei luni dintr-un an inchis redeschide anul (C3 4.3): soldurile reportate se recalculeaza la reinchidere (C3-A9).
+        IF @Status < @Current
+            UPDATE y SET Status = 1, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+            FROM fin.FiscalYear AS y JOIN fin.AccountingPeriod AS p ON p.FiscalYearId = y.Id WHERE p.Id = @Id AND y.Status = 2;
     END;
     COMMIT TRANSACTION;
 

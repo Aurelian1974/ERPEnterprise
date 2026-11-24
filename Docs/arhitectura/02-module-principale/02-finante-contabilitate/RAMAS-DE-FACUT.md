@@ -35,6 +35,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.24 | Din machetele c5-01, c5-02: exportul Excel și PDF al balanței și fișei, ecranul cărții mari, deschiderea notei și a documentului sursă din fișă, balanța în valută | C5 nota C5a.2 | Datele sunt în API |
 | 1.25 | Concordanțele rămase: băncile (soldul ultimului extras), avansurile spre decontare `542`, TVA neexigibilă `4428`, stocurile (cu modulul Stocuri, prin `ISubledgerBalanceProvider`); pașii `BANK_STATEMENTS`, `FX_REVALUATION`, pașii proprii ai clientului și închiderea operativă automată | C3 nota C3.1b | Concordanțele clienți, furnizori și casă rulează |
 | 1.26 | Soldurile lunare materializate (`AccountPeriodBalance`) la închidere și ștergerea lor la redeschidere; nota de închidere rămasă fără solduri la reînchidere (de stornat) | C3 nota C3.2; C5 3.1 | Balanța citește din linii |
+| 1.27 | Nucleul refuză atribuirea rolului „Deblocare an” unui utilizator cu alte roluri; șablonul „Repartizarea profitului” cu hotărârea AGA atașată; impozitul pe profit contat înainte de închiderea lui decembrie (cu C4) | C3 3.6, 8; nota C3.3 | Repartizarea se face cu o notă manuală |
 
 ## 2. Depinde de alte module sau de Nucleu
 
