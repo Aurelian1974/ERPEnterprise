@@ -34,6 +34,11 @@ public sealed record FacturaEmisa(long InvoiceId, int PartnerId, string Number, 
     string? EInvoiceIndexNo) : IntegrationEvent
 {
     public const string DocumentType = "Sales.Invoice";
+
+    /// <summary>Factura in lei decontata la cursul unei valute (F4 4.2): valuta de referinta si suma in ea; ambele lipsa pentru o factura obisnuita.</summary>
+    public string? IndexCurrencyCode { get; init; }
+
+    public decimal? IndexedAmount { get; init; }
 }
 
 /// <summary>Factura de furnizor validata in Achizitii (02.04), acelasi continut minim ca FacturaEmisa (F3 4.1); definita aici din acelasi motiv.</summary>
@@ -43,6 +48,11 @@ public sealed record FacturaFurnizorValidata(long InvoiceId, int PartnerId, stri
     string? EInvoiceIndexNo) : IntegrationEvent
 {
     public const string DocumentType = "Purchasing.SupplierInvoice";
+
+    /// <summary>Factura in lei decontata la cursul unei valute (F4 4.2), ca la FacturaEmisa.</summary>
+    public string? IndexCurrencyCode { get; init; }
+
+    public decimal? IndexedAmount { get; init; }
 }
 
 /// <summary>O parte a unei alocari, in evenimentul AlocareInregistrata (F3 5.1).</summary>

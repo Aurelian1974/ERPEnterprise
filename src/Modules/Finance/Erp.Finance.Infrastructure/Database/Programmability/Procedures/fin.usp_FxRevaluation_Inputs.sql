@@ -8,9 +8,9 @@ BEGIN
     -- cu rest diferit de zero la data) si ultima luna cu rulare validata a firmei.
     SET NOCOUNT ON;
 
-    SELECT DISTINCT o.CurrencyCode
+    SELECT DISTINCT COALESCE(o.IndexCurrencyCode, o.CurrencyCode)
     FROM fin.OpenItem AS o
-    WHERE o.CompanyId = @CompanyId AND o.CurrencyCode <> 'RON' AND o.DocumentDate <= @RevaluationDate AND (o.IsMonetary = 1 OR @IncludeAdvances = 1)
+    WHERE o.CompanyId = @CompanyId AND (o.CurrencyCode <> 'RON' OR o.IndexCurrencyCode IS NOT NULL) AND o.DocumentDate <= @RevaluationDate AND (o.IsMonetary = 1 OR @IncludeAdvances = 1)
       AND (o.OpenAmount <> 0 OR EXISTS (SELECT 1 FROM fin.Allocation AS a
                                         WHERE a.Status = 1 AND a.AllocationDate > @RevaluationDate AND (a.DebitOpenItemId = o.Id OR a.CreditOpenItemId = o.Id)))
     UNION

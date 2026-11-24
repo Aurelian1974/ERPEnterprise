@@ -44,6 +44,7 @@ BEGIN
 
     UPDATE o
     SET OpenAmount = o.OpenAmount + x.Delta, OpenAmountRon = o.OpenAmountRon + x.DeltaRon, ClosedAt = NULL, ModifiedAt = SYSUTCDATETIME(),
+        IndexedOpenAmount = CASE WHEN o.IndexedAmount IS NULL THEN NULL ELSE ROUND(o.IndexedAmount * (o.OpenAmount + x.Delta) / o.Amount, 2) END,
         ModifiedBy = @UserId
     FROM fin.OpenItem AS o
     JOIN (SELECT ItemId, SUM(Delta) AS Delta, SUM(DeltaRon) AS DeltaRon

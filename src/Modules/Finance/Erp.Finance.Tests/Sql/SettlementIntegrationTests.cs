@@ -921,6 +921,36 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
         Assert.Equal(10m, total);
     }
 
+    [Fact]
+    [Trait("Criteriu", "02.02-F4-A5")]
+    public async Task An_indexed_invoice_paid_at_a_higher_rate_realizes_the_difference_on_768_and_keeps_its_vat()
+    {
+        var partner = await NewPartner();
+        var (invoiceDate, payDay) = (new DateOnly(2025, 3, 3), new DateOnly(2025, 3, 10));
+        await Query<int>("""
+            MERGE core.ExchangeRate AS t USING (SELECT 'EUR' AS CurrencyCode, @Day AS RateDate) AS s ON t.CurrencyCode = s.CurrencyCode AND t.RateDate = s.RateDate
+            WHEN MATCHED THEN UPDATE SET Rate = 4.99
+            WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, 4.99, 1, 'BNR', 1);
+            SELECT @@ROWCOUNT
+            """, new { Day = payDay.ToDateTime(TimeOnly.MinValue) });
+
+        // 4.950 RON = 1.000 EUR la 4,95, cu TVA la incasare 790,34; incasarea la 4,99: 4.990 RON stinge 1.000 EUR, diferenta 40 pe 768.
+        var invoice = await Register(Sale(partner, 4950m, invoiceDate, invoiceDate.AddDays(15), vat: 790.34m, vatOnCollection: true) with
+        {
+            IndexCurrencyCode = "EUR", IndexedAmount = 1000m,
+        });
+        Assert.Equal(("EUR", 1000m, 1000m), await Query<(string, decimal, decimal)>(
+            "SELECT IndexCurrencyCode, IndexedAmount, IndexedOpenAmount FROM fin.OpenItem WHERE Id = @Id", new { Id = invoice }));
+        var paid = await Pay(partner, PartnerRole.Customer, 5000m, payDay, false, new SettlementTarget(invoice, null));
+        Assert.Equal((4990m, 10m), (paid.AllocatedAmount, paid.UnallocatedAmount));
+        Assert.Equal(((byte)4, 40m, "768", true, "EUR", 1000m), await Query<(byte, decimal, string, bool, string, decimal)>(
+            "SELECT Source, DifferenceRon, GlAccountCode, IsIndexed, CurrencyCode, ForeignAmount FROM fin.FxDifference WHERE OpenItemId = @Id", new { Id = invoice }));
+        Assert.Equal((0m, 0m, 0m), await Query<(decimal, decimal, decimal)>(
+            "SELECT OpenAmount, OpenAmountRon, IndexedOpenAmount FROM fin.OpenItem WHERE Id = @Id", new { Id = invoice }));
+        // TVA-ul ramane cel de pe factura: devine exigibil integral, nu pe suma platita.
+        Assert.Equal(790.34m, await Query<decimal>("SELECT SUM(VatAmountRon) FROM fin.VatCashEntry WHERE OpenItemId = @Id", new { Id = invoice }));
+    }
+
     private Task<T> SendTo<T>(int company, MediatR.IRequest<T> request) => Send(request, companyId: company);
 
     private async Task<(int Id, string Iban)> NewBankAccount()

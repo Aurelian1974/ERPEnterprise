@@ -49,7 +49,11 @@ public sealed record WriteOffCreated(int WriteOffId, long WriteOffOpenItemId, de
 public sealed record OpenItemCreated(long Id, bool Created, AutoAllocationMode Mode, bool IsPartnerPaymentBlocked);
 
 public sealed record OpenItemCandidate(long Id, OpenItemKind Kind, string DocumentNo, DateOnly DocumentDate, DateOnly DueDate, string CurrencyCode, decimal Amount,
-    decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, EInvoiceStatus EInvoiceStatus, bool SpvExempt);
+    decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, EInvoiceStatus EInvoiceStatus, bool SpvExempt)
+{
+    /// <summary>Factura in lei indexata la o valuta (F4 4.2): se plateste doar indicata sau manual, nu FIFO.</summary>
+    public bool IsIndexed { get; init; }
+}
 
 public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItemId, decimal Amount, DateOnly? AllocationDate, AllocationSource Source)
 {
@@ -73,6 +77,9 @@ public sealed record PlannedAllocation(AllocationRequest Request, DateOnly Alloc
 /// <summary>O partida blocata pentru alocare (F4 4.1), cu regula de curs incrucisat din profilul partenerului.</summary>
 public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule Rule, decimal MarkupPercent)
 {
+    /// <summary>Cursul de emitere al unei facturi indexate: lei pentru o unitate din valuta de referinta (F4 4.2).</summary>
+    public decimal IndexRate { get; init; }
+
     /// <summary>Rularile de reevaluare validate ale partidei (F4 4.6).</summary>
     public IReadOnlyList<FxRunShare> Runs { get; init; } = [];
 }
@@ -201,6 +208,9 @@ public interface ISettlementStore
     /// <summary>Tipurile de operatiuni de trezorerie: decontarea (SettlementKind) si sensul (1 intrare, 2 iesire, 3 ambele), dupa cod.</summary>
     Task<IReadOnlyDictionary<string, (byte SettlementKind, byte Direction)>> OperationTypeKindsAsync(CancellationToken ct);
 
+    /// <summary>Valuta si suma de referinta ale unei facturi in lei indexate (F4 4.2).</summary>
+    Task SetIndexAsync(int companyId, long openItemId, string indexCurrencyCode, decimal indexedAmount, CancellationToken ct);
+
     /// <summary>Data unei alocari active a firmei (pentru verificarea perioadei inainte de desfacere).</summary>
     Task<DateOnly?> AllocationDateAsync(int companyId, long allocationId, CancellationToken ct);
 }
@@ -311,7 +321,8 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
 
                 Check(item, isSupplierPayment, spvRule, request.ConfirmWarnings, automatic: false);
                 // Intre monede diferite suma e in moneda platii; FxCalculator o limiteaza la restul facturii, la cursul incrucisat (F4 3.3).
-                var amount = Math.Min(Math.Min(target.Amount ?? decimal.MaxValue, item.CurrencyCode == request.CurrencyCode ? Math.Abs(item.OpenAmount) : decimal.MaxValue),
+                var amount = Math.Min(Math.Min(target.Amount ?? decimal.MaxValue,
+                        item.CurrencyCode == request.CurrencyCode && !item.IsIndexed ? Math.Abs(item.OpenAmount) : decimal.MaxValue),
                     available);
                 if (amount > 0)
                 {
@@ -389,7 +400,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
     /// (cele mai vechi intai). Platile catre un furnizor blocat sau pe o factura blocata la plata nu se aloca automat.
     /// </summary>
     public async Task<AllocationOutcome> AllocateNewInvoiceAsync(int companyId, int partnerId, PartnerRole role, long invoiceId, decimal amount, string currencyCode,
-        long? reversedId, AutoAllocationMode mode, bool partnerBlocked, CancellationToken ct)
+        long? reversedId, AutoAllocationMode mode, bool partnerBlocked, CancellationToken ct, bool isIndexed = false)
     {
         var plan = new List<AllocationRequest>();
         var open = Math.Abs(amount);
@@ -408,7 +419,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         }
 
         var isSupplierInvoice = role == PartnerRole.Supplier && amount < 0;
-        if (open > 0 && mode == AutoAllocationMode.IndicatedThenFifo && !(isSupplierInvoice && partnerBlocked))
+        if (open > 0 && mode == AutoAllocationMode.IndicatedThenFifo && !(isSupplierInvoice && partnerBlocked) && !isIndexed)
         {
             var payments = (await store.CandidatesAsync(companyId, partnerId, role, currencyCode, side, null, ct).ConfigureAwait(false))
                 .Where(c => c.Kind is OpenItemKind.Payment or OpenItemKind.EmployeePayment or OpenItemKind.OpeningBalance && !c.IsDisputed)
@@ -479,7 +490,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             var credit = locked[a.CreditOpenItemId];
             var date = a.AllocationDate ?? (debit.DocumentDate >= credit.DocumentDate ? debit.DocumentDate : credit.DocumentDate);
             dates.Add(date);
-            if (debit.Item.CurrencyCode == credit.Item.CurrencyCode)
+            if (debit.Item.CurrencyCode == credit.Item.CurrencyCode && !FxCalculator.IsIndexedPair(debit.Item, credit.Item))
             {
                 requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount) { AllocationDate = date });
                 continue;
@@ -491,16 +502,20 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
                 continue;
             }
 
-            var invoiceIsDebit = FxCalculator.InvoiceIsDebit(debit.Item, credit.Item);
+            // Factura indexata (F4 4.2): „moneda facturii” e valuta de referinta, iar cursul facturii e cel de la emitere (lei / unitate de referinta).
+            var isIndexed = FxCalculator.IsIndexedPair(debit.Item, credit.Item);
+            var invoiceIsDebit = isIndexed ? debit.Item.IndexCurrencyCode is not null : FxCalculator.InvoiceIsDebit(debit.Item, credit.Item);
             var invoice = invoiceIsDebit ? debit : credit;
             var payment = invoiceIsDebit ? credit : debit;
+            var invoiceCurrency = invoice.Item.IndexCurrencyCode ?? invoice.Item.CurrencyCode;
+            var invoiceRate = isIndexed ? invoice.IndexRate : invoice.Item.ExchangeRate;
             var rule = invoice.Rule == CrossRateRule.Manual ? CrossRateRule.BnrOnPaymentDate : invoice.Rule;
-            var invoicePerUnit = await PerUnitAsync(invoice.Item.CurrencyCode, date, ct).ConfigureAwait(false);
+            var invoicePerUnit = await PerUnitAsync(invoiceCurrency, date, ct).ConfigureAwait(false);
             var paymentPerUnit = await PerUnitAsync(payment.Item.CurrencyCode, date, ct).ConfigureAwait(false);
             var paymentOnInvoiceDate = rule == CrossRateRule.InvoiceRate
                 ? await PerUnitAsync(payment.Item.CurrencyCode, invoice.DocumentDate, ct).ConfigureAwait(false)
                 : paymentPerUnit;
-            var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent, invoice.Item.ExchangeRate, paymentOnInvoiceDate);
+            var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent, invoiceRate, paymentOnInvoiceDate);
             requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, rate, rule) { AllocationDate = date });
         }
 
@@ -513,7 +528,7 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
         currency == "RON" ? 1m : (await rates.GetRateAsync(currency, date, ct).ConfigureAwait(false)).PerUnit;
 
     private static bool IsInvoiceForFifo(OpenItemCandidate c) =>
-        c.Kind is OpenItemKind.Invoice or OpenItemKind.AdvanceInvoice or OpenItemKind.DebitNote or OpenItemKind.OpeningBalance && !c.IsDisputed;
+        c.Kind is OpenItemKind.Invoice or OpenItemKind.AdvanceInvoice or OpenItemKind.DebitNote or OpenItemKind.OpeningBalance && !c.IsDisputed && !c.IsIndexed;
 
     private static bool Allowed(OpenItemCandidate c, bool isSupplierPayment, int spvRule) =>
         !isSupplierPayment || (!c.IsBlockedForPayment && (spvRule == 0 || c.SpvExempt || c.EInvoiceStatus != EInvoiceStatus.NotReceivedFromSpv));

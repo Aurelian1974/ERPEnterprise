@@ -42,7 +42,8 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             Ids = ids is null ? null : System.Text.Json.JsonSerializer.Serialize(ids),
         }, ct)).ConfigureAwait(false))
         .Select(r => new OpenItemCandidate(r.Id, (OpenItemKind)r.Kind, r.DocumentNo, DateOnly.FromDateTime(r.DocumentDate), DateOnly.FromDateTime(r.DueDate),
-            r.CurrencyCode, r.Amount, r.OpenAmount, r.IsDisputed, r.IsBlockedForPayment, (EInvoiceStatus)r.EInvoiceStatus, r.SpvExempt)).ToList();
+            r.CurrencyCode, r.Amount, r.OpenAmount, r.IsDisputed, r.IsBlockedForPayment, (EInvoiceStatus)r.EInvoiceStatus, r.SpvExempt) { IsIndexed = r.IsIndexed })
+            .ToList();
 
     public async Task<AllocationOutcome> AllocateAsync(int companyId, IReadOnlyList<PlannedAllocation> allocations, int userId, CancellationToken ct)
     {
@@ -53,6 +54,7 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             ("CreditAmount", typeof(decimal)), ("AmountRonDebit", typeof(decimal)), ("AmountRonCredit", typeof(decimal)), ("AllocationDate", typeof(DateTime)),
             ("Source", typeof(byte)), ("CompensationId", typeof(int)), ("WriteOffId", typeof(int)), ("CommercialPaperId", typeof(int)),
             ("CrossRate", typeof(decimal)), ("CrossRateSource", typeof(byte)), ("DifferenceRon", typeof(decimal)), ("FxOpenItemId", typeof(long)),
+            ("IsIndexed", typeof(bool)), ("IndexedAmount", typeof(decimal)),
         })
         {
             table.Columns.Add(name, type);
@@ -64,7 +66,7 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
             table.Rows.Add(i + 1, a.DebitOpenItemId, a.CreditOpenItemId, fx.DebitAmount, fx.CreditAmount, fx.AmountRonDebit, fx.AmountRonCredit, Day(date),
                 (byte)a.Source, (object?)a.CompensationId ?? DBNull.Value, (object?)a.WriteOffId ?? DBNull.Value, (object?)a.CommercialPaperId ?? DBNull.Value,
                 (object?)fx.CrossRate ?? DBNull.Value, fx.CrossRateSource is { } source ? (byte)source : DBNull.Value, fx.DifferenceRon,
-                (object?)fx.FxOpenItemId ?? DBNull.Value);
+                (object?)fx.FxOpenItemId ?? DBNull.Value, fx.IsIndexed, (object?)fx.IndexedAmount ?? DBNull.Value);
         }
 
         using var corrections = new DataTable();
@@ -97,11 +99,16 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         var runs = (await grid.ReadAsync<(long OpenItemId, int RunId, DateTime RevaluationDate, decimal AppliedDifferenceRon, decimal AppliedOn)>().ConfigureAwait(false))
             .ToLookup(r => r.OpenItemId, r => new FxRunShare(r.RunId, DateOnly.FromDateTime(r.RevaluationDate), r.AppliedDifferenceRon, r.AppliedOn));
         return items.Select(r => new FxLockedItem(new FxItem(r.Id, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.CurrencyCode.Trim(), r.ExchangeRate, r.OpenAmount,
-            r.OpenAmountRon), r.PartnerId, DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)
+            r.OpenAmountRon) { IndexCurrencyCode = r.IndexCurrencyCode?.Trim(), IndexedOpenAmount = r.IndexedOpenAmount ?? 0 }, r.PartnerId,
+            DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)
         {
-            Runs = runs[r.Id].ToList(),
+            Runs = runs[r.Id].ToList(), IndexRate = r.IndexRate ?? 0,
         }).ToList();
     }
+
+    public Task SetIndexAsync(int companyId, long openItemId, string indexCurrencyCode, decimal indexedAmount, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_OpenItem_SetIndex",
+            new { CompanyId = companyId, Id = openItemId, IndexCurrencyCode = indexCurrencyCode, IndexedAmount = indexedAmount }, ct));
 
     public async Task<AllocationOutcome> UndoAsync(int companyId, IReadOnlyCollection<long> allocationIds, string? reason, bool allowDocumentSource, DateOnly today,
         int userId, CancellationToken ct)
@@ -269,7 +276,7 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         new(name, parameters, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct);
 
     private sealed record CandidateRow(long Id, byte Kind, string DocumentNo, DateTime DocumentDate, DateTime DueDate, string CurrencyCode, decimal Amount,
-        decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, byte EInvoiceStatus, bool SpvExempt);
+        decimal OpenAmount, bool IsDisputed, bool IsBlockedForPayment, byte EInvoiceStatus, bool SpvExempt, bool IsIndexed);
 
     private sealed record AllocationRow(long AllocationId, int RowNo, int PartnerId, byte Role, long DebitOpenItemId, string DebitSourceDocumentType,
         long DebitSourceDocumentId, string DebitCurrencyCode, decimal DebitExchangeRate, long CreditOpenItemId, string CreditSourceDocumentType,
@@ -280,7 +287,8 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
         decimal ForeignAmount, decimal DifferenceRon, bool IsIndexed, string GlAccountCode, bool IsReversal);
 
     private sealed record LockedRow(long Id, int PartnerId, byte Role, byte Kind, string CurrencyCode, decimal ExchangeRate, decimal OpenAmount, decimal OpenAmountRon,
-        DateTime DocumentDate, byte CrossCurrencyRule, decimal CrossCurrencyMarkupPercent);
+        DateTime DocumentDate, byte CrossCurrencyRule, decimal CrossCurrencyMarkupPercent, string? IndexCurrencyCode, decimal? IndexedOpenAmount,
+        decimal? IndexRate);
 
     private sealed record VatRow(long Id, long OpenItemId, string SourceDocumentType, long SourceDocumentId, byte Side, DateTime ExigibilityDate,
         decimal BaseAmountRon, decimal VatAmountRon, bool IsReversal);

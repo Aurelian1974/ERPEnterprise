@@ -12,7 +12,14 @@ public enum CrossRateRule : byte
 }
 
 /// <summary>Starea unei partide la alocare, citita sub blocare: restul in moneda ei si valoarea lui contabila in lei, ambele cu semnul partidei.</summary>
-public sealed record FxItem(long Id, PartnerRole Role, OpenItemKind Kind, string CurrencyCode, decimal ExchangeRate, decimal OpenAmount, decimal OpenAmountRon);
+public sealed record FxItem(long Id, PartnerRole Role, OpenItemKind Kind, string CurrencyCode, decimal ExchangeRate, decimal OpenAmount, decimal OpenAmountRon)
+{
+    /// <summary>Valuta de referinta a unei facturi in lei indexate (F4 4.2); null pentru celelalte partide.</summary>
+    public string? IndexCurrencyCode { get; init; }
+
+    /// <summary>Restul de referinta, cu semnul partidei.</summary>
+    public decimal IndexedOpenAmount { get; init; }
+}
 
 /// <summary>
 /// O alocare de calculat. Cu aceeasi moneda, Amount e in moneda comuna. Cu monede diferite, Amount e in moneda platii (partea de plata;
@@ -40,6 +47,11 @@ public sealed record FxCorrection(long OpenItemId, int RunId, decimal ForeignAmo
 public sealed record FxPlanRow(long DebitId, long CreditId, decimal DebitAmount, decimal CreditAmount, decimal AmountRonDebit, decimal AmountRonCredit,
     decimal? CrossRate, CrossRateRule? CrossRateSource, decimal DifferenceRon, long? FxOpenItemId)
 {
+    /// <summary>Alocare pe o factura indexata (F4 4.2): diferenta merge pe 768 / 668, iar IndexedAmount e suma de referinta stinsa.</summary>
+    public bool IsIndexed { get; init; }
+
+    public decimal? IndexedAmount { get; init; }
+
     /// <summary>Corectiile in asteptare (F4 4.6), cand alocarea are data intr-o luna deja reevaluata a uneia dintre partide.</summary>
     public IReadOnlyList<FxCorrection> Corrections { get; init; } = [];
 }
@@ -63,6 +75,10 @@ public static class FxCalculator
     public static decimal Carrying(decimal openAbs, decimal openRonAbs, decimal amount) =>
         amount >= openAbs ? openRonAbs : Math.Round(amount * openRonAbs / openAbs, 2, MidpointRounding.AwayFromZero);
 
+    /// <summary>O alocare intre o factura indexata si o partida neindexata, in aceeasi moneda (lei): se stinge suma de referinta (F4 4.2).</summary>
+    public static bool IsIndexedPair(FxItem debit, FxItem credit) =>
+        debit.CurrencyCode == credit.CurrencyCode && (debit.IndexCurrencyCode is null) != (credit.IndexCurrencyCode is null);
+
     /// <summary>Partea „factura” a unei alocari intre monede diferite: cea care nu e plata (fara plata, debitul).</summary>
     public static bool InvoiceIsDebit(FxItem debit, FxItem credit) => !IsPayment(debit.Kind) || IsPayment(credit.Kind);
 
@@ -72,6 +88,7 @@ public static class FxCalculator
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(requests);
         var open = items.ToDictionary(i => i.Key, i => (Amount: Math.Abs(i.Value.OpenAmount), Ron: Math.Abs(i.Value.OpenAmountRon)));
+        var indexedOpen = items.Where(i => i.Value.IndexCurrencyCode is not null).ToDictionary(i => i.Key, i => Math.Abs(i.Value.IndexedOpenAmount));
         var result = new List<FxPlanRow>(requests.Count);
         foreach (var r in requests)
         {
@@ -79,7 +96,34 @@ public static class FxCalculator
             var credit = items[r.CreditId];
             decimal debitAmount, creditAmount;
             decimal? crossRate = null;
-            if (debit.CurrencyCode == credit.CurrencyCode)
+            decimal? indexed = null;
+            if (IsIndexedPair(debit, credit))
+            {
+                // Factura indexata: plata (in lei) / curs = suma de referinta stinsa; partea din factura in lei, proportionala cu ea, iar daca
+                // se stinge tot restul de referinta, tot restul in lei; surplusul platii ramane nealocat.
+                var rate = r.CrossRate ?? throw new InvalidOperationException("Lipsește cursul valutei de indexare.");
+                var invoice = debit.IndexCurrencyCode is not null ? debit : credit;
+                var reference = indexedOpen[invoice.Id];
+                var invoiceOpen = open[invoice.Id].Amount;
+                var stins = Math.Round(r.Amount / rate, 2, MidpointRounding.AwayFromZero);
+                decimal invoiceAmount, paymentAmount = r.Amount;
+                if (stins >= reference)
+                {
+                    stins = reference;
+                    invoiceAmount = invoiceOpen;
+                    paymentAmount = Math.Min(r.Amount, Math.Round(reference * rate, 2, MidpointRounding.AwayFromZero));
+                }
+                else
+                {
+                    invoiceAmount = Math.Round(invoiceOpen * stins / reference, 2, MidpointRounding.AwayFromZero);
+                }
+
+                indexedOpen[invoice.Id] = reference - stins;
+                (debitAmount, creditAmount) = invoice == debit ? (invoiceAmount, paymentAmount) : (paymentAmount, invoiceAmount);
+                crossRate = rate;
+                indexed = stins;
+            }
+            else if (debit.CurrencyCode == credit.CurrencyCode)
             {
                 debitAmount = creditAmount = r.Amount;
             }
@@ -109,12 +153,16 @@ public static class FxCalculator
             // F4 4.6: partea din reevaluarile de la data alocarii incolo nu intra in diferenta realizata (se masoara fata de valoarea de dinainte),
             // ci devine corectie in asteptare, anulata de rularea urmatoare. Pe debit reevaluarea marise valoarea, pe credit o scazuse (semnul ei).
             var corrections = new List<FxCorrection>();
-            var revaluedDebit = Retro(runs, debit.Id, r.AllocationDate, debitAmount, corrections);
-            var revaluedCredit = Retro(runs, credit.Id, r.AllocationDate, creditAmount, corrections);
-            var difference = debit.CurrencyCode == "RON" && credit.CurrencyCode == "RON" ? 0 : (ronCredit + revaluedCredit) - (ronDebit - revaluedDebit);
-            long? fxItem = difference == 0 ? null : InvoiceIsDebit(debit, credit) ? debit.Id : credit.Id;
+            var revaluedDebit = Retro(runs, debit.Id, r.AllocationDate, debit.IndexCurrencyCode is null ? debitAmount : indexed ?? 0, corrections);
+            var revaluedCredit = Retro(runs, credit.Id, r.AllocationDate, credit.IndexCurrencyCode is null ? creditAmount : indexed ?? 0, corrections);
+            var difference = debit.CurrencyCode == "RON" && credit.CurrencyCode == "RON" && indexed is null
+                ? 0
+                : (ronCredit + revaluedCredit) - (ronDebit - revaluedDebit);
+            long? fxItem = difference == 0 ? null
+                : indexed is not null ? (debit.IndexCurrencyCode is not null ? debit.Id : credit.Id)
+                : InvoiceIsDebit(debit, credit) ? debit.Id : credit.Id;
             result.Add(new FxPlanRow(r.DebitId, r.CreditId, debitAmount, creditAmount, ronDebit, ronCredit, crossRate, crossRate is null ? null : r.CrossRateSource,
-                difference, fxItem) { Corrections = corrections });
+                difference, fxItem) { Corrections = corrections, IsIndexed = indexed is not null, IndexedAmount = indexed });
         }
 
         return result;

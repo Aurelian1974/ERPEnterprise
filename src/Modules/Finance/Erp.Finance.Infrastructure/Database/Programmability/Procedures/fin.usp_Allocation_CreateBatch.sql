@@ -47,7 +47,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM @Allocations AS a
                JOIN @Items AS d ON d.Id = a.DebitOpenItemId
                JOIN @Items AS c ON c.Id = a.CreditOpenItemId
-               WHERE (d.CurrencyCode <> c.CurrencyCode AND a.CrossRate IS NULL) OR (d.CurrencyCode = c.CurrencyCode AND a.DebitAmount <> a.CreditAmount))
+               WHERE (d.CurrencyCode <> c.CurrencyCode AND a.CrossRate IS NULL) OR (d.CurrencyCode = c.CurrencyCode AND a.DebitAmount <> a.CreditAmount AND a.IsIndexed = 0))
         THROW 51418, N'Partidele au monede diferite; alocarea cere un curs încrucișat.', 1;
     IF EXISTS (SELECT 1 FROM @Items AS i
                CROSS APPLY (SELECT SUM(a.DebitAmount) AS D FROM @Allocations AS a WHERE a.DebitOpenItemId = i.Id) AS dd
@@ -57,10 +57,11 @@ BEGIN
 
     DECLARE @Rows TABLE (RowNo int PRIMARY KEY, DebitOpenItemId bigint, CreditOpenItemId bigint, DebitAmount decimal(19,2), CreditAmount decimal(19,2),
                          AllocationDate date, Source tinyint, AmountRonDebit decimal(19,2), AmountRonCredit decimal(19,2), CompensationId int, WriteOffId int,
-                         CommercialPaperId int, CrossRate decimal(19,6), CrossRateSource tinyint, DifferenceRon decimal(19,2), FxOpenItemId bigint);
+                         CommercialPaperId int, CrossRate decimal(19,6), CrossRateSource tinyint, DifferenceRon decimal(19,2), FxOpenItemId bigint,
+                         IsIndexed bit, IndexedAmount decimal(19,2));
     INSERT INTO @Rows
     SELECT a.RowNo, a.DebitOpenItemId, a.CreditOpenItemId, a.DebitAmount, a.CreditAmount, a.AllocationDate, a.Source, a.AmountRonDebit, a.AmountRonCredit,
-        a.CompensationId, a.WriteOffId, a.CommercialPaperId, a.CrossRate, a.CrossRateSource, a.DifferenceRon, a.FxOpenItemId
+        a.CompensationId, a.WriteOffId, a.CommercialPaperId, a.CrossRate, a.CrossRateSource, a.DifferenceRon, a.FxOpenItemId, a.IsIndexed, a.IndexedAmount
     FROM @Allocations AS a;
 
     DECLARE @Inserted TABLE (AllocationId bigint, RowNo int);
@@ -77,6 +78,7 @@ BEGIN
     UPDATE o
     SET OpenAmount    = o.OpenAmount - x.Delta,
         OpenAmountRon = CASE WHEN o.OpenAmount - x.Delta = 0 THEN 0 ELSE o.OpenAmountRon - x.DeltaRon END,
+        IndexedOpenAmount = CASE WHEN o.IndexedAmount IS NULL THEN NULL ELSE ROUND(o.IndexedAmount * (o.OpenAmount - x.Delta) / o.Amount, 2) END,
         ClosedAt      = CASE WHEN o.OpenAmount - x.Delta = 0 THEN x.LastDate END,
         ModifiedAt    = SYSUTCDATETIME(), ModifiedBy = @UserId
     FROM fin.OpenItem AS o
@@ -93,16 +95,20 @@ BEGIN
     -- Diferentele de curs realizate (F4 3.2): partida in valuta, suma ei, valoarea ei contabila si valoarea de decontare (cealalta parte).
     DECLARE @FxOut TABLE (Id bigint, AllocationId bigint);
     INSERT INTO fin.FxDifference (CompanyId, DifferenceDate, Source, AllocationId, PartnerId, Role, OpenItemId, CurrencyCode, ForeignAmount, CarryingAmountRon,
-        SettlementAmountRon, DifferenceRon, GlAccountCode, CreatedBy)
+        SettlementAmountRon, DifferenceRon, IsIndexed, GlAccountCode, CreatedBy)
     OUTPUT inserted.Id, inserted.AllocationId INTO @FxOut (Id, AllocationId)
-    SELECT @CompanyId, r.AllocationDate, 1, ins.AllocationId, f.PartnerId, f.Role, r.FxOpenItemId, f.CurrencyCode,
-        CASE WHEN r.FxOpenItemId = r.DebitOpenItemId THEN r.DebitAmount ELSE r.CreditAmount END,
+    SELECT @CompanyId, r.AllocationDate, CASE WHEN r.IsIndexed = 1 THEN 4 ELSE 1 END, ins.AllocationId, f.PartnerId, f.Role, r.FxOpenItemId,
+        CASE WHEN r.IsIndexed = 1 THEN o.IndexCurrencyCode ELSE f.CurrencyCode END,
+        CASE WHEN r.IsIndexed = 1 THEN r.IndexedAmount WHEN r.FxOpenItemId = r.DebitOpenItemId THEN r.DebitAmount ELSE r.CreditAmount END,
         CASE WHEN r.FxOpenItemId = r.DebitOpenItemId THEN r.AmountRonDebit ELSE r.AmountRonCredit END,
         CASE WHEN r.FxOpenItemId = r.DebitOpenItemId THEN r.AmountRonCredit ELSE r.AmountRonDebit END,
-        r.DifferenceRon, CASE WHEN r.DifferenceRon > 0 THEN N'765' ELSE N'665' END, @UserId
+        r.DifferenceRon, r.IsIndexed,
+        CASE WHEN r.IsIndexed = 1 THEN CASE WHEN r.DifferenceRon > 0 THEN N'768' ELSE N'668' END ELSE CASE WHEN r.DifferenceRon > 0 THEN N'765' ELSE N'665' END END,
+        @UserId
     FROM @Rows AS r
     JOIN @Inserted AS ins ON ins.RowNo = r.RowNo
     JOIN @Items AS f ON f.Id = r.FxOpenItemId
+    JOIN fin.OpenItem AS o ON o.Id = r.FxOpenItemId
     WHERE r.DifferenceRon <> 0;
 
     -- Ratele: restul de plata se repartizeaza pe scadente, in ordinea lor.

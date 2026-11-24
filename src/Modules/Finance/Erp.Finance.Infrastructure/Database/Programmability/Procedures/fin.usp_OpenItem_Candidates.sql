@@ -23,7 +23,8 @@ BEGIN
     ORDER BY o.Id;
 
     SELECT o.Id, o.Kind, o.DocumentNo, o.DocumentDate, o.DueDate, o.CurrencyCode, o.Amount, o.OpenAmount, o.IsDisputed, o.IsBlockedForPayment,
-        o.EInvoiceStatus, CAST(CASE WHEN p.CountryCode <> 'RO' OR p.PartnerType = 4 THEN 1 ELSE 0 END AS bit) AS SpvExempt
+        o.EInvoiceStatus, CAST(CASE WHEN p.CountryCode <> 'RO' OR p.PartnerType = 4 THEN 1 ELSE 0 END AS bit) AS SpvExempt,
+        CAST(CASE WHEN o.IndexCurrencyCode IS NULL THEN 0 ELSE 1 END AS bit) AS IsIndexed
     FROM @Locked AS l
     JOIN fin.OpenItem AS o ON o.Id = l.Id
     JOIN core.Partner AS p ON p.Id = o.PartnerId

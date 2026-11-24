@@ -45,19 +45,26 @@ BEGIN
     INSERT INTO fin.FxRevaluationRate (RunId, CurrencyCode, Rate, Multiplier, RateDate, Source)
     SELECT @RunId, CurrencyCode, Rate, Multiplier, RateDate, Source FROM @Rates;
 
-    INSERT INTO fin.FxRevaluationLine (RunId, ElementKind, OpenItemId, PartnerId, Role, CurrencyCode, ForeignAmount, Rate, CarryingAmountRon, RevaluedAmountRon,
-        DifferenceRon, GlAccountCode, CounterGlAccountCode, CreatedBy)
-    SELECT @RunId, 1, x.Id, x.PartnerId, x.Role, x.CurrencyCode, x.ForeignAsOf, r.Rate, x.Carrying, v.Revalued, v.Revalued - x.Carrying,
-        CASE WHEN v.Revalued - x.Carrying >= 0 THEN N'765' ELSE N'665' END, x.CounterGl, @UserId
-    FROM (SELECT o.Id, o.PartnerId, o.Role, o.CurrencyCode, ISNULL(o.GlAccountCode, CASE WHEN o.Role = 1 THEN N'4111' ELSE N'401' END) AS CounterGl,
-                 o.OpenAmount + ISNULL(d.Amount, 0) - ISNULL(c.Amount, 0) AS ForeignAsOf,
+    -- Facturile in lei indexate (F4 4.2 pasul 4): restul de referinta la data (proportional cu restul in lei), la cursul valutei de referinta,
+    -- cu diferenta pe 768 / 668.
+    INSERT INTO fin.FxRevaluationLine (RunId, ElementKind, OpenItemId, PartnerId, Role, CurrencyCode, IsIndexed, ForeignAmount, Rate, CarryingAmountRon,
+        RevaluedAmountRon, DifferenceRon, GlAccountCode, CounterGlAccountCode, CreatedBy)
+    SELECT @RunId, 1, x.Id, x.PartnerId, x.Role, x.CurrencyCode, x.IsIndexed, x.ForeignAsOf, r.Rate, x.Carrying, v.Revalued, v.Revalued - x.Carrying,
+        CASE WHEN x.IsIndexed = 1 THEN CASE WHEN v.Revalued - x.Carrying >= 0 THEN N'768' ELSE N'668' END
+             ELSE CASE WHEN v.Revalued - x.Carrying >= 0 THEN N'765' ELSE N'665' END END, x.CounterGl, @UserId
+    FROM (SELECT o.Id, o.PartnerId, o.Role, COALESCE(o.IndexCurrencyCode, o.CurrencyCode) AS CurrencyCode,
+                 CAST(CASE WHEN o.IndexCurrencyCode IS NULL THEN 0 ELSE 1 END AS bit) AS IsIndexed,
+                 ISNULL(o.GlAccountCode, CASE WHEN o.Role = 1 THEN N'4111' ELSE N'401' END) AS CounterGl,
+                 CASE WHEN o.IndexCurrencyCode IS NULL THEN o.OpenAmount + ISNULL(d.Amount, 0) - ISNULL(c.Amount, 0)
+                      ELSE ROUND(o.IndexedAmount * (o.OpenAmount + ISNULL(d.Amount, 0) - ISNULL(c.Amount, 0)) / o.Amount, 2) END AS ForeignAsOf,
                  o.OpenAmountRon + ISNULL(d.Ron, 0) - ISNULL(c.Ron, 0) AS Carrying
           FROM fin.OpenItem AS o
           OUTER APPLY (SELECT SUM(a.DebitAmount) AS Amount, SUM(a.AmountRonDebit) AS Ron FROM fin.Allocation AS a
                        WHERE a.DebitOpenItemId = o.Id AND a.Status = 1 AND a.AllocationDate > @RevaluationDate) AS d
           OUTER APPLY (SELECT SUM(a.CreditAmount) AS Amount, SUM(a.AmountRonCredit) AS Ron FROM fin.Allocation AS a
                        WHERE a.CreditOpenItemId = o.Id AND a.Status = 1 AND a.AllocationDate > @RevaluationDate) AS c
-          WHERE o.CompanyId = @CompanyId AND o.CurrencyCode <> 'RON' AND o.DocumentDate <= @RevaluationDate AND (o.IsMonetary = 1 OR @IncludeAdvances = 1)) AS x
+          WHERE o.CompanyId = @CompanyId AND (o.CurrencyCode <> 'RON' OR o.IndexCurrencyCode IS NOT NULL) AND o.DocumentDate <= @RevaluationDate
+            AND (o.IsMonetary = 1 OR @IncludeAdvances = 1)) AS x
     JOIN @Rates AS r ON r.CurrencyCode = x.CurrencyCode
     CROSS APPLY (SELECT ROUND(x.ForeignAsOf * r.Rate / r.Multiplier, 2) AS Revalued) AS v
     WHERE x.ForeignAsOf <> 0;

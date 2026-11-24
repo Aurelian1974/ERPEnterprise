@@ -16,13 +16,14 @@ public sealed class InvoiceOpenItems(ISettlementStore store, SettlementService s
     public Task<long> RegisterAsync(FacturaEmisa evt, CancellationToken ct) =>
         RegisterAsync(CompanyOf(evt), PartnerRole.Customer, "Sales", FacturaEmisa.DocumentType, evt.InvoiceId, evt.PartnerId, evt.Number, evt.DocumentDate,
             evt.AccountingDate, evt.CurrencyCode, evt.ExchangeRate, evt.TotalAmount, evt.TotalAmountRon, evt.VatAmount, evt.VatAmountRon, evt.IsVatOnCollection,
-            evt.IsReversal, evt.ReversedInvoiceId, evt.IsAdvanceInvoice, evt.DueDates, evt.CostCenterId, evt.ProjectId, evt.EInvoiceStatus, evt.EInvoiceIndexNo, ct);
+            evt.IsReversal, evt.ReversedInvoiceId, evt.IsAdvanceInvoice, evt.DueDates, evt.CostCenterId, evt.ProjectId, evt.EInvoiceStatus, evt.EInvoiceIndexNo,
+            evt.IndexCurrencyCode, evt.IndexedAmount, ct);
 
     public Task<long> RegisterAsync(FacturaFurnizorValidata evt, CancellationToken ct) =>
         RegisterAsync(CompanyOf(evt), PartnerRole.Supplier, "Purchasing", FacturaFurnizorValidata.DocumentType, evt.InvoiceId, evt.PartnerId, evt.Number,
             evt.DocumentDate, evt.AccountingDate, evt.CurrencyCode, evt.ExchangeRate, evt.TotalAmount, evt.TotalAmountRon, evt.VatAmount, evt.VatAmountRon,
             evt.IsVatOnCollection, evt.IsReversal, evt.ReversedInvoiceId, evt.IsAdvanceInvoice, evt.DueDates, evt.CostCenterId, evt.ProjectId, evt.EInvoiceStatus,
-            evt.EInvoiceIndexNo, ct);
+            evt.EInvoiceIndexNo, evt.IndexCurrencyCode, evt.IndexedAmount, ct);
 
     // Firma din anvelopa evenimentului; procesatorul outbox-ului o pune si in context (cand publicatorul nu a completat-o in eveniment).
     private int CompanyOf(IntegrationEvent evt) => evt.CompanyId != 0 ? evt.CompanyId : context.CompanyId;
@@ -30,7 +31,7 @@ public sealed class InvoiceOpenItems(ISettlementStore store, SettlementService s
     private async Task<long> RegisterAsync(int companyId, PartnerRole role, string module, string documentType, long invoiceId, int partnerId, string number,
         DateOnly documentDate, DateOnly accountingDate, string currencyCode, decimal exchangeRate, decimal total, decimal totalRon, decimal vat, decimal vatRon,
         bool vatOnCollection, bool isReversal, long? reversedInvoiceId, bool isAdvance, IReadOnlyList<InvoiceDueDate> dueDates, int? costCenterId, int? projectId,
-        EInvoiceStatus eInvoiceStatus, string? eInvoiceIndexNo, CancellationToken ct)
+        EInvoiceStatus eInvoiceStatus, string? eInvoiceIndexNo, string? indexCurrencyCode, decimal? indexedAmount, CancellationToken ct)
     {
         var isCustomer = role == PartnerRole.Customer;
         var sign = SettlementRules.InvoiceSign(isCustomer);
@@ -46,10 +47,16 @@ public sealed class InvoiceOpenItems(ISettlementStore store, SettlementService s
             documentType, invoiceId, "", number, documentDate, accountingDate, due, currencyCode, exchangeRate, sign * total, sign * totalRon, sign * vat,
             sign * vatRon, vatOnCollection, SettlementRules.InvoiceGlAccount(isCustomer), eInvoiceStatus, eInvoiceIndexNo, costCenterId, projectId, reversalOf,
             schedules), context.UserId, ct).ConfigureAwait(false);
+        var isIndexed = currencyCode == "RON" && !string.IsNullOrWhiteSpace(indexCurrencyCode) && indexedAmount is > 0;
+        if (created.Created && isIndexed)
+        {
+            await store.SetIndexAsync(companyId, created.Id, indexCurrencyCode!.Trim().ToUpperInvariant(), indexedAmount!.Value, ct).ConfigureAwait(false);
+        }
+
         if (created.Created)
         {
             await settlement.AllocateNewInvoiceAsync(companyId, partnerId, role, created.Id, sign * total, currencyCode, reversalOf, created.Mode,
-                created.IsPartnerPaymentBlocked, ct).ConfigureAwait(false);
+                created.IsPartnerPaymentBlocked, ct, isIndexed).ConfigureAwait(false);
         }
 
         return created.Id;
