@@ -352,6 +352,10 @@ public static class FinanceApiRegistration
         finance.MapGet("/gl-accounts", (int? chartId, bool? includeInactive, ISender sender, CancellationToken ct) =>
                 sender.Send(new GetGlAccounts(chartId, includeInactive ?? false), ct))
             .WithName("GetGlAccounts").Produces<IReadOnlyList<GlAccountItemDto>>().Problems();
+        finance.MapGet("/gl-accounts/import-template", (ISender sender, CancellationToken ct) => sender.Send(new GetGlAccountImportTemplate(), ct))
+            .WithName("GetGlAccountImportTemplate").Produces<DownloadedFile>().Problems();
+        finance.MapPost("/gl-accounts/import", (ImportGlAccounts body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ImportGlAccounts").Produces<GlAccountImportDto>().Problems();
         finance.MapGet("/gl-accounts/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetGlAccount(id), ct))
             .WithName("GetGlAccount").Produces<GlAccountDetailDto>().Problems();
         finance.MapPost("/gl-accounts", (SaveGlAccount body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))

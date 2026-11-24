@@ -105,6 +105,39 @@ public sealed class ChartOfAccountsIntegrationTests : FinanceTestBase, IClassFix
         Assert.Equal("FIN_ACCOUNT_NOT_POSTABLE", refused.Code);
     }
 
+    [Fact]
+    public async Task Analytics_are_imported_from_excel_with_parents_from_the_file_and_rejected_rows_reported()
+    {
+        string?[][] rows =
+        [
+            ["4111.01.EXP", "Clienți interni - export în așteptare", null, "Nu"],
+            ["4111.01", "Clienți interni", null, "Nu"],
+            ["4111.02", "Clienți UE", "EUR", "Da"],
+            ["999.01", "Fără părinte", null, null],
+            ["4111.02", "Dublură", null, null],
+        ];
+        var file = Convert.ToBase64String(await InTransaction(sp => Task.FromResult(sp.GetRequiredService<ISpreadsheetFiles>().Write(GlAccountSheet.SheetName,
+            GlAccountSheet.Columns, rows, GlAccountSheet.Lists))));
+
+        var check = await Send(new ImportGlAccounts("analitice.xlsx", file, false));
+        Assert.Equal((5, 3, 2, 0), (check.TotalRows, check.ValidRows, check.ErrorRows, check.ImportedRows));
+        Assert.Contains(check.Errors, e => e.Code == "999.01" && e.Message.Contains("999", StringComparison.Ordinal));
+        Assert.NotNull(check.ErrorFile);
+
+        var done = await Send(new ImportGlAccounts("analitice.xlsx", file, true));
+        Assert.Equal(3, done.ImportedRows);
+        var accounts = await Send(new GetGlAccounts());
+        Assert.False(accounts.Single(a => a.Code == "4111").IsPostable);
+        Assert.False(accounts.Single(a => a.Code == "4111.01").IsPostable);
+        Assert.True(accounts.Single(a => a.Code == "4111.01.EXP").IsPostable);
+        var euro = accounts.Single(a => a.Code == "4111.02");
+        Assert.Equal(((byte)2, "EUR", (int?)Database.CompanyId, "4111"), (euro.CurrencyMode, euro.CurrencyCode, euro.CompanyId, euro.SaftAccountCode));
+
+        // Reluarea fisierului nu dubleaza: conturile existente sunt avertizari.
+        var again = await Send(new ImportGlAccounts("analitice.xlsx", file, true));
+        Assert.Equal((0, 3), (again.ImportedRows, again.Warnings.Count));
+    }
+
     private Task<GlAccountCheck> Validate(string code) =>
         InTransaction(sp => sp.GetRequiredService<IGlAccountValidator>().ValidateAsync(Database.CompanyId, code, Today, Ct));
 }

@@ -2940,3 +2940,24 @@ tr.clickable.picked { background: var(--info-bg); }
 .loss {
   color: var(--error);
 }
+
+/* Plan de conturi (C1, macheta c1-01): arborele ca tabel indentat. */
+.chart-tree .tree-toggle {
+  display: inline-block;
+  width: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+}
+
+.chart-tree tr.inactive td {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.chart-tree .analytic {
+  color: var(--action-hover);
+}

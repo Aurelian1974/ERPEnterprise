@@ -19,6 +19,7 @@ import { BankReconcilePage } from '../finance/BankReconcilePage';
 import { PenaltiesPage } from '../finance/PenaltiesPage';
 import { FxDifferencesPage } from '../finance/FxDifferencesPage';
 import { FxExposurePage } from '../finance/FxExposurePage';
+import { ChartOfAccountsPage } from '../finance/ChartOfAccountsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
@@ -70,6 +71,7 @@ export const routes = [
       { path: 'finante/valuta/reevaluare', element: <FxRevaluationPage /> },
       { path: 'finante/valuta/diferente', element: <FxDifferencesPage /> },
       { path: 'finante/valuta/pozitie', element: <FxExposurePage /> },
+      { path: 'finante/contabilitate/plan-de-conturi', element: <ChartOfAccountsPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

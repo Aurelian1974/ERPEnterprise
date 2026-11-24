@@ -79,6 +79,7 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'fx-revaluation', label: 'menu.fxRevaluation', path: '/finante/valuta/reevaluare', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
       { id: 'fx-differences', label: 'menu.fxDifferences', path: '/finante/valuta/diferente', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
       { id: 'fx-exposure', label: 'menu.fxExposure', path: '/finante/valuta/pozitie', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
+      { id: 'chart-of-accounts', label: 'menu.chartOfAccounts', path: '/finante/contabilitate/plan-de-conturi', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
     ],
   },
   {
