@@ -28,7 +28,7 @@ public sealed record FxRunCurrencyDto(string CurrencyCode, int Lines, string For
 
 public sealed record FxRunLineDto(long Id, byte ElementKind, long? OpenItemId, string? DocumentNo, int? PartnerId, string? PartnerName, PartnerRole? Role,
     string CurrencyCode, string ForeignAmount, string Rate, string CarryingAmountRon, string RevaluedAmountRon, string DifferenceRon, string GlAccountCode,
-    string? CounterGlAccountCode);
+    string? CounterGlAccountCode, bool IsCorrection = false, int? CorrectedRunId = null);
 
 public sealed record FxRunDto(int Id, string Number, int PeriodYear, int PeriodMonth, DateOnly RevaluationDate, DateOnly RateDate, FxRunStatus Status,
     bool IncludesAdvances, string TotalGainRon, string TotalLossRon, DateTime GeneratedAt, DateTime? ValidatedAt, string? ValidatedByName, DateTime? ReversedAt,

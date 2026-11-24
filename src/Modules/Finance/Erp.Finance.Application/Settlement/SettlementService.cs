@@ -71,7 +71,11 @@ public sealed record AllocationRequest(long DebitOpenItemId, long CreditOpenItem
 public sealed record PlannedAllocation(AllocationRequest Request, DateOnly AllocationDate, FxPlanRow Fx);
 
 /// <summary>O partida blocata pentru alocare (F4 4.1), cu regula de curs incrucisat din profilul partenerului.</summary>
-public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule Rule, decimal MarkupPercent);
+public sealed record FxLockedItem(FxItem Item, int PartnerId, DateOnly DocumentDate, CrossRateRule Rule, decimal MarkupPercent)
+{
+    /// <summary>Rularile de reevaluare validate ale partidei (F4 4.6).</summary>
+    public IReadOnlyList<FxRunShare> Runs { get; init; } = [];
+}
 
 /// <summary>O diferenta de curs scrisa (sau inversata, IsReversal), pentru DiferentaCursInregistrata (F4 5.1).</summary>
 public sealed record FxDifferenceMade(long Id, DateOnly DifferenceDate, byte Source, long? AllocationId, int? PartnerId, PartnerRole? Role, long? OpenItemId,
@@ -477,13 +481,13 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
             dates.Add(date);
             if (debit.Item.CurrencyCode == credit.Item.CurrencyCode)
             {
-                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount));
+                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount) { AllocationDate = date });
                 continue;
             }
 
             if (a.CrossRate is { } chosen)
             {
-                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, chosen, CrossRateRule.Manual));
+                requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, chosen, CrossRateRule.Manual) { AllocationDate = date });
                 continue;
             }
 
@@ -497,10 +501,11 @@ public sealed class SettlementService(ISettlementStore store, IFinanceSettings s
                 ? await PerUnitAsync(payment.Item.CurrencyCode, invoice.DocumentDate, ct).ConfigureAwait(false)
                 : paymentPerUnit;
             var rate = FxCalculator.CrossRate(rule, invoicePerUnit, paymentPerUnit, invoice.MarkupPercent, invoice.Item.ExchangeRate, paymentOnInvoiceDate);
-            requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, rate, rule));
+            requests.Add(new FxRequest(a.DebitOpenItemId, a.CreditOpenItemId, a.Amount, rate, rule) { AllocationDate = date });
         }
 
-        var plan = FxCalculator.Plan(locked.ToDictionary(i => i.Key, i => i.Value.Item), requests);
+        var plan = FxCalculator.Plan(locked.ToDictionary(i => i.Key, i => i.Value.Item), requests,
+            locked.Where(i => i.Value.Runs.Count > 0).ToDictionary(i => i.Key, i => i.Value.Runs));
         return allocations.Select((a, i) => new PlannedAllocation(a, dates[i], plan[i])).ToList();
     }
 

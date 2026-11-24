@@ -27,7 +27,7 @@ BEGIN
     ORDER BY l.CurrencyCode;
 
     SELECT TOP (1000) l.Id, l.ElementKind, l.OpenItemId, o.DocumentNo, l.PartnerId, p.Name AS PartnerName, l.Role, l.CurrencyCode, l.ForeignAmount, l.Rate,
-        l.CarryingAmountRon, l.RevaluedAmountRon, l.DifferenceRon, l.GlAccountCode, l.CounterGlAccountCode
+        l.CarryingAmountRon, l.RevaluedAmountRon, l.DifferenceRon, l.GlAccountCode, l.CounterGlAccountCode, l.IsCorrection, l.CorrectedRunId
     FROM fin.FxRevaluationLine AS l
     JOIN fin.FxRevaluationRun AS r ON r.Id = l.RunId
     LEFT JOIN fin.OpenItem AS o ON o.Id = l.OpenItemId

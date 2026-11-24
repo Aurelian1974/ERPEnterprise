@@ -14,7 +14,7 @@ BEGIN
     -- active cu data dupa sfarsitul lunii (F4-A7: o rulare generata pe 5 ale lunii urmatoare foloseste resturile de la sfarsitul lunii).
     -- Valoarea reevaluata = rest × curs / multiplicator, rotunjita; diferenta = reevaluata − contabila (pozitiv = castig). O ciorna existenta a
     -- lunii se regenereaza (liniile si cursurile se refac). Refuzuri: luna are deja o rulare validata (51604), exista o rulare validata pentru o
-    -- luna ulterioara (51606). Intoarce Id-ul rularii.
+    -- luna ulterioara (51606). Corectiile in asteptare ale lunilor anterioare (F4 4.6) devin linii cu IsCorrection = 1. Intoarce Id-ul rularii.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -61,6 +61,17 @@ BEGIN
     JOIN @Rates AS r ON r.CurrencyCode = x.CurrencyCode
     CROSS APPLY (SELECT ROUND(x.ForeignAsOf * r.Rate / r.Multiplier, 2) AS Revalued) AS v
     WHERE x.ForeignAsOf <> 0;
+
+    -- Corectiile in asteptare ale lunilor anterioare (F4 4.6 pasul 4): anuleaza reevaluarea de prisos a partilor stinse retroactiv.
+    INSERT INTO fin.FxRevaluationLine (RunId, ElementKind, OpenItemId, PartnerId, Role, CurrencyCode, ForeignAmount, Rate, CarryingAmountRon, RevaluedAmountRon,
+        DifferenceRon, GlAccountCode, CounterGlAccountCode, IsCorrection, CorrectionId, CorrectedRunId, CreatedBy)
+    SELECT @RunId, 1, c.OpenItemId, o.PartnerId, o.Role, o.CurrencyCode, c.ForeignAmount, 0, 0, c.DifferenceRon, c.DifferenceRon,
+        CASE WHEN c.DifferenceRon >= 0 THEN N'765' ELSE N'665' END, ISNULL(o.GlAccountCode, CASE WHEN o.Role = 1 THEN N'4111' ELSE N'401' END), 1, c.Id, c.RunId,
+        @UserId
+    FROM fin.FxRevaluationCorrection AS c
+    JOIN fin.OpenItem AS o ON o.Id = c.OpenItemId
+    JOIN fin.FxRevaluationRun AS cr ON cr.Id = c.RunId
+    WHERE c.CompanyId = @CompanyId AND c.AppliedInRunId IS NULL AND cr.RevaluationDate < @RevaluationDate;
 
     SELECT @RunId AS RunId;
 END;

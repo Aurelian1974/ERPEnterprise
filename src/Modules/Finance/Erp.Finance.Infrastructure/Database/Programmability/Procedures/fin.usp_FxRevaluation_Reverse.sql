@@ -31,7 +31,7 @@ BEGIN
     DECLARE @Items TABLE (Id bigint PRIMARY KEY);
     INSERT INTO @Items (Id)
     SELECT o.Id FROM fin.OpenItem AS o WITH (UPDLOCK, ROWLOCK)
-    WHERE o.Id IN (SELECT OpenItemId FROM fin.FxRevaluationLine WHERE RunId = @RunId)
+    WHERE o.Id IN (SELECT OpenItemId FROM fin.FxRevaluationLine WHERE RunId = @RunId AND IsCorrection = 0)
     ORDER BY o.Id;
 
     IF EXISTS (SELECT 1 FROM fin.Allocation AS a JOIN @Items AS i ON i.Id IN (a.DebitOpenItemId, a.CreditOpenItemId)
@@ -42,7 +42,10 @@ BEGIN
     SET OpenAmountRon = o.OpenAmountRon - l.AppliedDifferenceRon, CarryingRate = ISNULL(l.PreviousCarryingRate, o.ExchangeRate),
         LastRevaluationRunId = l.PreviousRunId, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     FROM fin.OpenItem AS o
-    JOIN fin.FxRevaluationLine AS l ON l.OpenItemId = o.Id AND l.RunId = @RunId;
+    JOIN fin.FxRevaluationLine AS l ON l.OpenItemId = o.Id AND l.RunId = @RunId AND l.IsCorrection = 0;
+
+    -- Corectiile F4 4.6 preluate de rulare revin in asteptare.
+    UPDATE fin.FxRevaluationCorrection SET AppliedInRunId = NULL WHERE AppliedInRunId = @RunId;
 
     DECLARE @FxOut TABLE (Id bigint);
     INSERT INTO fin.FxDifference (CompanyId, DifferenceDate, Source, AllocationId, PartnerId, Role, OpenItemId, CurrencyCode, ForeignAmount, CarryingAmountRon,

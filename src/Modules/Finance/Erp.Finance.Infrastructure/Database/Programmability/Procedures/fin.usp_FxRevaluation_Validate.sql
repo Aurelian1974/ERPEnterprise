@@ -38,8 +38,17 @@ BEGIN
     DECLARE @Items TABLE (Id bigint PRIMARY KEY, Amount decimal(19,2));
     INSERT INTO @Items (Id, Amount)
     SELECT o.Id, o.Amount FROM fin.OpenItem AS o WITH (UPDLOCK, ROWLOCK)
-    WHERE o.Id IN (SELECT OpenItemId FROM fin.FxRevaluationLine WHERE RunId = @RunId)
+    WHERE o.Id IN (SELECT OpenItemId FROM fin.FxRevaluationLine WHERE RunId = @RunId AND IsCorrection = 0)
     ORDER BY o.Id;
+
+    -- O corectie F4 4.6 aparuta dupa generare cere regenerarea.
+    IF EXISTS (SELECT 1 FROM fin.FxRevaluationCorrection AS c JOIN fin.FxRevaluationRun AS cr ON cr.Id = c.RunId
+               WHERE c.CompanyId = @CompanyId AND c.AppliedInRunId IS NULL AND cr.RevaluationDate < @RevaluationDate
+                 AND NOT EXISTS (SELECT 1 FROM fin.FxRevaluationLine AS l WHERE l.RunId = @RunId AND l.CorrectionId = c.Id))
+       OR EXISTS (SELECT 1 FROM fin.FxRevaluationLine AS l
+                  WHERE l.RunId = @RunId AND l.IsCorrection = 1
+                    AND NOT EXISTS (SELECT 1 FROM fin.FxRevaluationCorrection AS c WHERE c.Id = l.CorrectionId AND c.AppliedInRunId IS NULL))
+        THROW 51610, N'Corecțiile de reevaluare s-au schimbat după generare; regenerați rularea.', 1;
 
     -- Alocarile active cu data dupa sfarsitul lunii, pe partea fiecarei partide din linii.
     DECLARE @After TABLE (LineId bigint, OpenItemId bigint, AllocationId bigint, AllocationDate date, Amount decimal(19,2), PRIMARY KEY (LineId, AllocationId));
@@ -47,12 +56,12 @@ BEGIN
     SELECT l.Id, l.OpenItemId, a.Id, a.AllocationDate, CASE WHEN a.DebitOpenItemId = l.OpenItemId THEN a.DebitAmount ELSE a.CreditAmount END
     FROM fin.FxRevaluationLine AS l
     JOIN fin.Allocation AS a ON (a.DebitOpenItemId = l.OpenItemId OR a.CreditOpenItemId = l.OpenItemId) AND a.Status = 1 AND a.AllocationDate > @RevaluationDate
-    WHERE l.RunId = @RunId;
+    WHERE l.RunId = @RunId AND l.IsCorrection = 0;
 
     IF EXISTS (SELECT 1 FROM fin.FxRevaluationLine AS l
                JOIN fin.OpenItem AS o ON o.Id = l.OpenItemId
                OUTER APPLY (SELECT SUM(x.Amount) AS Paid FROM @After AS x WHERE x.LineId = l.Id) AS p
-               WHERE l.RunId = @RunId AND ABS(o.OpenAmount) + ISNULL(p.Paid, 0) <> ABS(l.ForeignAmount))
+               WHERE l.RunId = @RunId AND l.IsCorrection = 0 AND ABS(o.OpenAmount) + ISNULL(p.Paid, 0) <> ABS(l.ForeignAmount))
         THROW 51610, N'Au apărut alocări cu data în luna reevaluată după generare; regenerați rularea.', 1;
 
     -- Partea din diferenta care revine fiecarei alocari ulterioare: proportional cu suma ei, iar daca partida e inchisa, ultima ia restul.
@@ -72,13 +81,13 @@ BEGIN
     FROM fin.FxRevaluationLine AS l
     JOIN fin.OpenItem AS o ON o.Id = l.OpenItemId
     OUTER APPLY (SELECT SUM(Share) AS Share FROM @Corrections AS c WHERE c.LineId = l.Id) AS c
-    WHERE l.RunId = @RunId;
+    WHERE l.RunId = @RunId AND l.IsCorrection = 0;
 
     UPDATE o
     SET OpenAmountRon = o.OpenAmountRon + l.AppliedDifferenceRon, CarryingRate = ROUND(l.Rate / r.Multiplier, 6), LastRevaluationRunId = @RunId,
         ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     FROM fin.OpenItem AS o
-    JOIN fin.FxRevaluationLine AS l ON l.OpenItemId = o.Id AND l.RunId = @RunId
+    JOIN fin.FxRevaluationLine AS l ON l.OpenItemId = o.Id AND l.RunId = @RunId AND l.IsCorrection = 0
     JOIN fin.FxRevaluationRate AS r ON r.RunId = @RunId AND r.CurrencyCode = l.CurrencyCode;
 
     DECLARE @FxOut TABLE (Id bigint);
@@ -89,6 +98,9 @@ BEGIN
         CASE WHEN c.Share < 0 THEN N'765' ELSE N'665' END, @RunId, @UserId
     FROM @Corrections AS c JOIN fin.FxRevaluationLine AS l ON l.Id = c.LineId
     WHERE c.Share <> 0;
+
+    UPDATE c SET AppliedInRunId = @RunId
+    FROM fin.FxRevaluationCorrection AS c JOIN fin.FxRevaluationLine AS l ON l.CorrectionId = c.Id AND l.RunId = @RunId;
 
     UPDATE fin.FxRevaluationRun
     SET Status = 2,

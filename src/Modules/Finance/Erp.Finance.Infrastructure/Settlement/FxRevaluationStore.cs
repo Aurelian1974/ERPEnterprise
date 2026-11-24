@@ -91,7 +91,7 @@ public sealed class FxRevaluationStore(IDbSession session) : IFxRevaluationStore
         var lines = (await grid.ReadAsync<LineRow>().ConfigureAwait(false))
             .Select(l => new FxRunLineDto(l.Id, l.ElementKind, l.OpenItemId, l.DocumentNo, l.PartnerId, l.PartnerName, (PartnerRole?)l.Role, l.CurrencyCode.Trim(),
                 Money.Format(l.ForeignAmount), Rate(l.Rate), Money.Format(l.CarryingAmountRon), Money.Format(l.RevaluedAmountRon), Money.Format(l.DifferenceRon),
-                l.GlAccountCode, l.CounterGlAccountCode)).ToList();
+                l.GlAccountCode, l.CounterGlAccountCode, l.IsCorrection, l.CorrectedRunId)).ToList();
         return new FxRunDto(h.Id, h.Number, h.PeriodYear, h.PeriodMonth, DateOnly.FromDateTime(h.RevaluationDate), DateOnly.FromDateTime(h.RateDate),
             (FxRunStatus)h.Status, h.IncludesAdvances, Money.Format(h.TotalGainRon), Money.Format(h.TotalLossRon), h.GeneratedAt, h.ValidatedAt, h.ValidatedByName,
             h.ReversedAt, h.LineCount, rates, currencies, lines, h.RowVersion);
@@ -128,5 +128,5 @@ public sealed class FxRevaluationStore(IDbSession session) : IFxRevaluationStore
 
     private sealed record LineRow(long Id, byte ElementKind, long? OpenItemId, string? DocumentNo, int? PartnerId, string? PartnerName, byte? Role, string CurrencyCode,
         decimal ForeignAmount, decimal Rate, decimal CarryingAmountRon, decimal RevaluedAmountRon, decimal DifferenceRon, string GlAccountCode,
-        string? CounterGlAccountCode);
+        string? CounterGlAccountCode, bool IsCorrection, int? CorrectedRunId);
 }

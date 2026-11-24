@@ -1,6 +1,7 @@
 CREATE OR ALTER PROCEDURE fin.usp_Allocation_CreateBatch
     @CompanyId   int,
     @Allocations fin.AllocationList READONLY,
+    @Corrections fin.FxCorrectionList READONLY,
     @UserId      int
 AS
 BEGIN
@@ -11,6 +12,7 @@ BEGIN
     -- valoarea lui in lei pe ambele partide si scrie fin.FxDifference (F4 3.2). TVA-ul
     -- exigibil (3.7) se calculeaza aici, sub blocare, pe partidele cu TVA la incasare (facturi, facturi de avans, note de debit), in afara
     -- alocarilor de storno: proportional, iar la alocarea care inchide factura, restul, ca suma sa dea exact TVA-ul facturii (P7).
+    -- Corectiile F4 4.6 (alocare cu data intr-o luna deja reevaluata) se scriu in asteptare, pentru rularea urmatoare.
     -- Intoarce: 1) alocarile; 2) partidele inchise; 3) randurile de TVA la incasare; 4) diferentele de curs.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -83,6 +85,10 @@ BEGIN
                 UNION ALL
                 SELECT CreditOpenItemId, -CreditAmount, -AmountRonCredit, AllocationDate FROM @Rows) AS u
           GROUP BY ItemId) AS x ON x.ItemId = o.Id;
+
+    INSERT INTO fin.FxRevaluationCorrection (CompanyId, OpenItemId, RunId, AllocationId, ForeignAmount, DifferenceRon, CreatedBy)
+    SELECT @CompanyId, c.OpenItemId, c.RunId, ins.AllocationId, c.ForeignAmount, c.DifferenceRon, @UserId
+    FROM @Corrections AS c JOIN @Inserted AS ins ON ins.RowNo = c.RowNo;
 
     -- Diferentele de curs realizate (F4 3.2): partida in valuta, suma ei, valoarea ei contabila si valoarea de decontare (cealalta parte).
     DECLARE @FxOut TABLE (Id bigint, AllocationId bigint);

@@ -18,14 +18,31 @@ public sealed record FxItem(long Id, PartnerRole Role, OpenItemKind Kind, string
 /// O alocare de calculat. Cu aceeasi moneda, Amount e in moneda comuna. Cu monede diferite, Amount e in moneda platii (partea de plata;
 /// fara plata, partea de credit), iar CrossRate = unitati din moneda platii pentru o unitate din moneda facturii.
 /// </summary>
-public sealed record FxRequest(long DebitId, long CreditId, decimal Amount, decimal? CrossRate = null, CrossRateRule? CrossRateSource = null);
+public sealed record FxRequest(long DebitId, long CreditId, decimal Amount, decimal? CrossRate = null, CrossRateRule? CrossRateSource = null)
+{
+    /// <summary>Data alocarii; fata de ea se aleg rularile de reevaluare de dinaintea carora se masoara diferenta realizata (F4 4.6).</summary>
+    public DateOnly? AllocationDate { get; init; }
+}
+
+/// <summary>
+/// O rulare validata care a reevaluat partida (F4 4.6): data reevaluarii, diferenta aplicata valorii contabile (cu semnul ei) si restul in valuta
+/// (valoare absoluta) pe care s-a aplicat.
+/// </summary>
+public sealed record FxRunShare(int RunId, DateOnly RevaluationDate, decimal AppliedDifferenceRon, decimal AppliedOn);
+
+/// <summary>Corectia in asteptare a unei alocari cu data intr-o luna reevaluata: partida, rularea, suma stinsa si diferenta de anulat (F4 4.6).</summary>
+public sealed record FxCorrection(long OpenItemId, int RunId, decimal ForeignAmount, decimal DifferenceRon);
 
 /// <summary>
 /// Rezultatul pe alocare: sumele pe fiecare parte (in moneda ei), valorile contabile in lei alocate, cursul incrucisat si diferenta realizata
 /// (pozitiv = castig), cu partida in valuta a carei valoare s-a realizat.
 /// </summary>
 public sealed record FxPlanRow(long DebitId, long CreditId, decimal DebitAmount, decimal CreditAmount, decimal AmountRonDebit, decimal AmountRonCredit,
-    decimal? CrossRate, CrossRateRule? CrossRateSource, decimal DifferenceRon, long? FxOpenItemId);
+    decimal? CrossRate, CrossRateRule? CrossRateSource, decimal DifferenceRon, long? FxOpenItemId)
+{
+    /// <summary>Corectiile in asteptare (F4 4.6), cand alocarea are data intr-o luna deja reevaluata a uneia dintre partide.</summary>
+    public IReadOnlyList<FxCorrection> Corrections { get; init; } = [];
+}
 
 /// <summary>
 /// Diferentele de curs la alocare (02.02, F4 2 regulile 2–4, 3.3, 4.1): fiecare parte a alocarii ia din valoarea contabila in lei a restului
@@ -49,7 +66,8 @@ public static class FxCalculator
     /// <summary>Partea „factura” a unei alocari intre monede diferite: cea care nu e plata (fara plata, debitul).</summary>
     public static bool InvoiceIsDebit(FxItem debit, FxItem credit) => !IsPayment(debit.Kind) || IsPayment(credit.Kind);
 
-    public static IReadOnlyList<FxPlanRow> Plan(IReadOnlyDictionary<long, FxItem> items, IReadOnlyList<FxRequest> requests)
+    public static IReadOnlyList<FxPlanRow> Plan(IReadOnlyDictionary<long, FxItem> items, IReadOnlyList<FxRequest> requests,
+        IReadOnlyDictionary<long, IReadOnlyList<FxRunShare>>? runs = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(requests);
@@ -88,13 +106,44 @@ public static class FxCalculator
             var ronCredit = Carrying(c.Amount, c.Ron, creditAmount);
             open[debit.Id] = (Math.Max(0, d.Amount - debitAmount), Math.Max(0, d.Ron - ronDebit));
             open[credit.Id] = (Math.Max(0, c.Amount - creditAmount), Math.Max(0, c.Ron - ronCredit));
-            var difference = debit.CurrencyCode == "RON" && credit.CurrencyCode == "RON" ? 0 : ronCredit - ronDebit;
+            // F4 4.6: partea din reevaluarile de la data alocarii incolo nu intra in diferenta realizata (se masoara fata de valoarea de dinainte),
+            // ci devine corectie in asteptare, anulata de rularea urmatoare. Pe debit reevaluarea marise valoarea, pe credit o scazuse (semnul ei).
+            var corrections = new List<FxCorrection>();
+            var revaluedDebit = Retro(runs, debit.Id, r.AllocationDate, debitAmount, corrections);
+            var revaluedCredit = Retro(runs, credit.Id, r.AllocationDate, creditAmount, corrections);
+            var difference = debit.CurrencyCode == "RON" && credit.CurrencyCode == "RON" ? 0 : (ronCredit + revaluedCredit) - (ronDebit - revaluedDebit);
             long? fxItem = difference == 0 ? null : InvoiceIsDebit(debit, credit) ? debit.Id : credit.Id;
             result.Add(new FxPlanRow(r.DebitId, r.CreditId, debitAmount, creditAmount, ronDebit, ronCredit, crossRate, crossRate is null ? null : r.CrossRateSource,
-                difference, fxItem));
+                difference, fxItem) { Corrections = corrections });
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Partea din reevaluarile validate ale partidei, cu data reevaluarii la sau dupa data alocarii, care revine sumei stinse: proportional cu
+    /// restul pe care s-a aplicat fiecare (F4 4.6). Scrie corectiile (diferenta de anulat = −partea) si intoarce suma partilor, cu semnul lor.
+    /// </summary>
+    private static decimal Retro(IReadOnlyDictionary<long, IReadOnlyList<FxRunShare>>? runs, long itemId, DateOnly? date, decimal amount,
+        List<FxCorrection> corrections)
+    {
+        if (runs is null || date is null || !runs.TryGetValue(itemId, out var shares))
+        {
+            return 0;
+        }
+
+        var total = 0m;
+        foreach (var run in shares.Where(s => s.RevaluationDate >= date && s.AppliedOn > 0))
+        {
+            var part = Math.Round(run.AppliedDifferenceRon * Math.Min(amount, run.AppliedOn) / run.AppliedOn, 2, MidpointRounding.AwayFromZero);
+            if (part != 0)
+            {
+                corrections.Add(new FxCorrection(itemId, run.RunId, amount, -part));
+                total += part;
+            }
+        }
+
+        return total;
     }
 
     /// <summary>

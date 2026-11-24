@@ -67,16 +67,41 @@ public sealed class SettlementStore(IDbSession session) : ISettlementStore
                 (object?)fx.FxOpenItemId ?? DBNull.Value);
         }
 
-        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_Allocation_CreateBatch",
-            new { CompanyId = companyId, Allocations = table.AsTableValuedParameter("fin.AllocationList"), UserId = userId }, ct)).ConfigureAwait(false);
+        using var corrections = new DataTable();
+        corrections.Columns.Add("RowNo", typeof(int));
+        corrections.Columns.Add("OpenItemId", typeof(long));
+        corrections.Columns.Add("RunId", typeof(int));
+        corrections.Columns.Add("ForeignAmount", typeof(decimal));
+        corrections.Columns.Add("DifferenceRon", typeof(decimal));
+        for (var i = 0; i < allocations.Count; i++)
+        {
+            foreach (var c in allocations[i].Fx.Corrections)
+            {
+                corrections.Rows.Add(i + 1, c.OpenItemId, c.RunId, c.ForeignAmount, c.DifferenceRon);
+            }
+        }
+
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_Allocation_CreateBatch", new
+        {
+            CompanyId = companyId, Allocations = table.AsTableValuedParameter("fin.AllocationList"),
+            Corrections = corrections.AsTableValuedParameter("fin.FxCorrectionList"), UserId = userId,
+        }, ct)).ConfigureAwait(false);
         return await ReadOutcomeAsync(grid).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<FxLockedItem>> LockForAllocationAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct) =>
-        (await session.Connection.QueryAsync<LockedRow>(Command("fin.usp_OpenItem_LockForAllocation",
-            new { CompanyId = companyId, Ids = System.Text.Json.JsonSerializer.Serialize(ids) }, ct)).ConfigureAwait(false))
-        .Select(r => new FxLockedItem(new FxItem(r.Id, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.CurrencyCode.Trim(), r.ExchangeRate, r.OpenAmount, r.OpenAmountRon),
-            r.PartnerId, DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)).ToList();
+    public async Task<IReadOnlyList<FxLockedItem>> LockForAllocationAsync(int companyId, IReadOnlyCollection<long> ids, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_OpenItem_LockForAllocation",
+            new { CompanyId = companyId, Ids = System.Text.Json.JsonSerializer.Serialize(ids) }, ct)).ConfigureAwait(false);
+        var items = (await grid.ReadAsync<LockedRow>().ConfigureAwait(false)).ToList();
+        var runs = (await grid.ReadAsync<(long OpenItemId, int RunId, DateTime RevaluationDate, decimal AppliedDifferenceRon, decimal AppliedOn)>().ConfigureAwait(false))
+            .ToLookup(r => r.OpenItemId, r => new FxRunShare(r.RunId, DateOnly.FromDateTime(r.RevaluationDate), r.AppliedDifferenceRon, r.AppliedOn));
+        return items.Select(r => new FxLockedItem(new FxItem(r.Id, (PartnerRole)r.Role, (OpenItemKind)r.Kind, r.CurrencyCode.Trim(), r.ExchangeRate, r.OpenAmount,
+            r.OpenAmountRon), r.PartnerId, DateOnly.FromDateTime(r.DocumentDate), (CrossRateRule)r.CrossCurrencyRule, r.CrossCurrencyMarkupPercent)
+        {
+            Runs = runs[r.Id].ToList(),
+        }).ToList();
+    }
 
     public async Task<AllocationOutcome> UndoAsync(int companyId, IReadOnlyCollection<long> allocationIds, string? reason, bool allowDocumentSource, DateOnly today,
         int userId, CancellationToken ct)

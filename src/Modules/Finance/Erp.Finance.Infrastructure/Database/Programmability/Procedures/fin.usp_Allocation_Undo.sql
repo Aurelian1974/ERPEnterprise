@@ -60,6 +60,20 @@ BEGIN
     DECLARE @Touched nvarchar(max) = (SELECT Id FROM @Items FOR JSON PATH);
     EXEC fin.usp_OpenItemSchedule_Refresh @Touched;
 
+    -- Corectiile F4 4.6 ale alocarilor se anuleaza: cele in asteptare se sterg, iar cele preluate deja intr-o rulare primesc corectia inversa,
+    -- in asteptare pentru rularea urmatoare.
+    DELETE l FROM fin.FxRevaluationLine AS l
+    JOIN fin.FxRevaluationCorrection AS c ON c.Id = l.CorrectionId
+    WHERE c.AllocationId IN (SELECT Id FROM @Rows) AND c.AppliedInRunId IS NULL;
+    DELETE c FROM fin.FxRevaluationCorrection AS c
+    WHERE c.AllocationId IN (SELECT Id FROM @Rows) AND c.AppliedInRunId IS NULL AND c.ReversalOfId IS NULL
+      AND NOT EXISTS (SELECT 1 FROM fin.FxRevaluationCorrection AS r WHERE r.ReversalOfId = c.Id);
+    INSERT INTO fin.FxRevaluationCorrection (CompanyId, OpenItemId, RunId, AllocationId, ForeignAmount, DifferenceRon, ReversalOfId, CreatedBy)
+    SELECT c.CompanyId, c.OpenItemId, c.RunId, c.AllocationId, -c.ForeignAmount, -c.DifferenceRon, c.Id, @UserId
+    FROM fin.FxRevaluationCorrection AS c
+    WHERE c.AllocationId IN (SELECT Id FROM @Rows) AND c.ReversalOfId IS NULL AND c.AppliedInRunId IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM fin.FxRevaluationCorrection AS r WHERE r.ReversalOfId = c.Id);
+
     DECLARE @FxOut TABLE (Id bigint);
     INSERT INTO fin.FxDifference (CompanyId, DifferenceDate, Source, AllocationId, PartnerId, Role, OpenItemId, CurrencyCode, ForeignAmount, CarryingAmountRon,
         SettlementAmountRon, DifferenceRon, IsIndexed, GlAccountCode, IsReversal, ReversalOfId, RevaluationRunId, CreatedBy)
