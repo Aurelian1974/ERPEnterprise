@@ -25,6 +25,8 @@ Vezi documentul principal: [MODULE_PRINCIPALE.md](../MODULE_PRINCIPALE.md).
 
 Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, câte un pas mic cu commit, push și CI verde.
 
+Planul de implementare a părții contabile, pe etape: [PLAN-CONTABILITATE.md](PLAN-CONTABILITATE.md) (24.11.2026).
+
 Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte module, criterii fără test, verificări externe) e consemnat în [RAMAS-DE-FACUT.md](RAMAS-DE-FACUT.md) (24.11.2026).
 
 | Pas | Ce conține | Stare |
