@@ -71,6 +71,7 @@ BEGIN
     SET TotalDebit = (SELECT ISNULL(SUM(AmountRon), 0) FROM @New WHERE Side = 1), TotalCredit = (SELECT ISNULL(SUM(AmountRon), 0) FROM @New WHERE Side = 2),
         PostingModelVariantId = @VariantId, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @Id;
+    EXEC fin.usp_AltMapping_Apply @EntryId = @Id;
     COMMIT TRANSACTION;
 
     SELECT @NextVersion AS OldVersion, @OldTotal AS OldTotal, TotalDebit AS NewTotal FROM fin.JournalEntry WHERE Id = @Id;

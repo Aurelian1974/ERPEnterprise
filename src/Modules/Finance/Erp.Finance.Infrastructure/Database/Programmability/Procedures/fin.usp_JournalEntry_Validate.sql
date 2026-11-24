@@ -36,6 +36,7 @@ BEGIN
     SET Status = 2, Number = @Number, ValidatedAt = SYSUTCDATETIME(), ValidatedBy = @UserId, ApprovedBy = CASE WHEN @FourEyes = 1 THEN @UserId END,
         ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
     WHERE Id = @Id;
+    EXEC fin.usp_AltMapping_Apply @EntryId = @Id;
     COMMIT TRANSACTION;
 
     EXEC fin.usp_JournalEntry_Header @Id = @Id;

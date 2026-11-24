@@ -45,6 +45,7 @@ BEGIN
     FROM fin.JournalLine WHERE EntryId = @Id;
 
     UPDATE fin.JournalEntry SET Status = 3, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @Id;
+    EXEC fin.usp_AltMapping_Apply @EntryId = @NewId;
     COMMIT TRANSACTION;
 
     EXEC fin.usp_JournalEntry_Header @Id = @NewId;

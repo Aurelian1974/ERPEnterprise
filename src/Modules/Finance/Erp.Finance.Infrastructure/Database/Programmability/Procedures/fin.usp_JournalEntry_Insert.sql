@@ -93,6 +93,7 @@ BEGIN
     EXEC fin.usp_JournalSequence_Next @CompanyId = @CompanyId, @JournalId = @JournalId, @Year = @Year, @Number = @Number OUTPUT;
     UPDATE fin.JournalEntry SET Status = 2, Number = @Number, ValidatedAt = SYSUTCDATETIME(), ValidatedBy = @UserId WHERE Id = @Id;
     UPDATE fin.PostingQueue SET Status = 2, ResolvedEntryId = @Id, ModifiedAt = SYSUTCDATETIME() WHERE EventId = @SourceEventId AND Status = 1;
+    EXEC fin.usp_AltMapping_Apply @EntryId = @Id;
     IF @Outer = 0 COMMIT TRANSACTION;
 
     SELECT 0 AS ErrorCode, CAST(NULL AS nvarchar(400)) AS ErrorMessage;

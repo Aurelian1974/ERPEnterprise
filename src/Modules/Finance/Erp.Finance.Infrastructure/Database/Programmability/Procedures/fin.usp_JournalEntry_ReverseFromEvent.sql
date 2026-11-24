@@ -66,6 +66,7 @@ BEGIN
 
     UPDATE fin.JournalEntry SET Status = 3, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @Original;
     UPDATE fin.PostingQueue SET Status = 2, ResolvedEntryId = @NewId, ModifiedAt = SYSUTCDATETIME() WHERE EventId = @SourceEventId AND Status = 1;
+    EXEC fin.usp_AltMapping_Apply @EntryId = @NewId;
     IF @Outer = 0 COMMIT TRANSACTION;
 
     SELECT 0 AS ErrorCode, CAST(NULL AS nvarchar(400)) AS ErrorMessage;

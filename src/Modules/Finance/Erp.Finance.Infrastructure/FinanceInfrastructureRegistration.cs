@@ -72,6 +72,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Accounts.IChartOfAccountsStore, Accounts.ChartOfAccountsStore>();
         services.AddScoped<Application.Accounts.ChartOfAccountsQueries>();
         services.AddScoped<Application.Accounts.IAltMappingStore, Accounts.AltMappingStore>();
+        services.AddScoped<Application.Accounts.IAltMappingResultStore, Accounts.AltMappingResultStore>();
         services.AddScoped<Application.Periods.IAccountingPeriodStore, Periods.AccountingPeriodStore>();
         services.AddScoped<Application.Periods.AccountingPeriodGuard>();
         services.AddScoped<Application.Accounting.IJournalEntryStore, Accounting.JournalEntryStore>();
@@ -205,6 +206,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
         [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
         [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),
+        [51815] = (ErpErrorKind.Conflict, "FIN_MAPPING_INCOMPLETE"),
         [51841] = (ErpErrorKind.NotFound, "FIN_ENTRY_NOT_FOUND"),
         [51842] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
         [51843] = (ErpErrorKind.Validation, "FIN_ENTRY_UNBALANCED"),
@@ -217,6 +219,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51850] = (ErpErrorKind.Conflict, "FIN_ENTRY_NOT_DRAFT"),
         [51852] = (ErpErrorKind.Forbidden, "FIN_ENTRY_AUTOMATIC_REVERSE_FORBIDDEN"),
         [51853] = (ErpErrorKind.Forbidden, "FIN_ENTRY_FOUR_EYES"),
+        [51854] = (ErpErrorKind.Conflict, "FIN_REPOST_PERIOD_CLOSED"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
         [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),

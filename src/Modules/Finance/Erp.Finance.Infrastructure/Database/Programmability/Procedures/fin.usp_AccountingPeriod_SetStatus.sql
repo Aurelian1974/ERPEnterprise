@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE fin.usp_AccountingPeriod_SetStatus
 AS
 BEGIN
     -- Schimba starea unei luni (C3 3.2, 4.1, 4.2): inchiderea (operativa sau completa) cere luna anterioara cel putin la fel de inchisa (51904);
+    -- inchiderea completa cere maparea completa in planurile care o cer (51815, C1 4.3);
     -- redeschiderea cere lunile urmatoare cel mult la fel de deschise (51905) si motiv (51907); o luna blocata nu se schimba (51906).
     -- Concurenta optimista pe RowVersion (51902), cu blocare pe rand. Intoarce starea veche si noua, pentru evenimente.
     SET NOCOUNT ON;
@@ -27,6 +28,10 @@ BEGIN
 
     IF @Status > @Current AND EXISTS (SELECT 1 FROM fin.AccountingPeriod WHERE CompanyId = @CompanyId AND EndDate < @Start AND Status < @Status)
         THROW 51904, N'O lună anterioară e mai deschisă; închideți lunile în ordine.', 1;
+    IF @Status = 3 AND @Current < 3 AND EXISTS (
+        SELECT 1 FROM fin.JournalLineAltAccount AS m JOIN fin.ChartOfAccounts AS c ON c.Id = m.ChartId AND c.RequireCompleteMapping = 1 AND c.IsActive = 1
+        WHERE m.CompanyId = @CompanyId AND m.PeriodYear = YEAR(@Start) AND m.PeriodMonth = MONTH(@Start) AND m.TargetAccountId IS NULL)
+        THROW 51815, N'Un plan alternativ cu mapare completă are linii nemapate în această lună (C1-A11); completați regulile și recalculați.', 1;
     IF @Status < @Current
     BEGIN
         IF NULLIF(LTRIM(@Reason), N'') IS NULL

@@ -405,6 +405,19 @@ public static class FinanceApiRegistration
             .WithName("SimulateMapping").Produces<SimulationDto>().Problems();
         finance.MapGet("/charts/{id:int}/check", (int id, ISender sender, CancellationToken ct) => sender.Send(new CheckMapping(id), ct))
             .WithName("CheckMapping").Produces<MappingCheckDto>().Problems();
+        // Rezultatul maparii (C1 3.6, 4.4, 4.5): recalcularea, inghetarea lunilor si nemapatele.
+        finance.MapGet("/charts/{id:int}/recalculation", (int id, DateOnly from, DateOnly to, ISender sender, CancellationToken ct) =>
+                sender.Send(new PreviewAltRecalculation(id, from, to), ct))
+            .WithName("PreviewAltRecalculation").Produces<IReadOnlyList<AltMonthDto>>().Problems();
+        finance.MapPost("/charts/{id:int}/recalculation", (int id, RecalculateAltMapping body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("RecalculateAltMapping").Produces<AltRecalculationDto>().Problems();
+        finance.MapPost("/charts/{id:int}/freeze", (int id, SetAltPeriodFrozen body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("SetAltPeriodFrozen").Produces<bool>().Problems();
+        finance.MapGet("/charts/{id:int}/unmapped", (int id, DateOnly from, DateOnly to, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetUnmappedAccounts(id, from, to), ct))
+            .WithName("GetUnmappedAccounts").Produces<IReadOnlyList<UnmappedAccountDto>>().Problems();
         finance.MapGet("/gl-account-roles", (ISender sender, CancellationToken ct) => sender.Send(new GetGlAccountRoles(), ct))
             .WithName("GetGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
         finance.MapPut("/gl-account-roles", (SaveGlAccountRoles body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
