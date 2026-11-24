@@ -21,3 +21,20 @@ WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR target.D
     UPDATE SET Name = source.Name, Direction = source.Direction, SortOrder = source.SortOrder, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = 1
 WHEN NOT MATCHED BY TARGET THEN
     INSERT (Code, Name, Direction, SortOrder, IsSystem, CreatedBy) VALUES (source.Code, source.Name, source.Direction, source.SortOrder, 1, 1);
+
+-- Categoria de cash-flow a tipurilor de operatiuni livrate (F5 4.5), doar unde nu a fost aleasa de client.
+UPDATE t SET CashFlowCategoryId = c.Id, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = 1
+FROM fin.TreasuryOperationType AS t
+JOIN (VALUES
+    (N'INC-CLIENT', N'INC-CLIENTI'), (N'INC-AVANS-CLIENT', N'INC-CLIENTI'),
+    (N'INC-DIVERSE', N'INC-ALTE'), (N'INC-VANZARI-POS', N'INC-ALTE'), (N'BANK-DOBANDA-INC', N'INC-ALTE'), (N'BANK-DECONTARE-CARD', N'INC-ALTE'),
+    (N'BANK-RESTITUIRE', N'INC-ALTE'),
+    (N'PLATA-FURNIZOR', N'PLATI-FURNIZORI'), (N'PLATA-AVANS-FURNIZOR', N'PLATI-FURNIZORI'),
+    (N'PLATA-SALARII', N'SALARII'), (N'BANK-PLATA-SALARII', N'SALARII'),
+    (N'BANK-PLATA-BUGET', N'TAXE'),
+    (N'BANK-COMISION', N'CREDITE'), (N'BANK-DOBANDA-PLATA', N'CREDITE'),
+    (N'INC-RIDICARE-BANCA', N'TRANSFERURI'), (N'PLATA-DEPUNERE-BANCA', N'TRANSFERURI'), (N'BANK-TRANSFER-INTERN', N'TRANSFERURI'),
+    (N'BANK-SCHIMB-VALUTAR', N'TRANSFERURI'), (N'BANK-DEPUNERE-NUMERAR', N'TRANSFERURI'), (N'BANK-RIDICARE-NUMERAR', N'TRANSFERURI')
+) AS m (TypeCode, CategoryCode) ON t.CodeKey = UPPER(m.TypeCode)
+JOIN fin.CashFlowCategory AS c ON c.CodeKey = UPPER(m.CategoryCode)
+WHERE t.IsSystem = 1 AND t.CashFlowCategoryId IS NULL;

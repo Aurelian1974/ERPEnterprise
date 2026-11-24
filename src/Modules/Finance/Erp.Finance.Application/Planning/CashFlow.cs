@@ -221,20 +221,7 @@ internal sealed class GetCashFlowForecastHandler(CashFlowForecaster forecaster, 
     public async Task<CashFlowForecastDto> Handle(GetCashFlowForecast request, CancellationToken cancellationToken)
     {
         var start = BusinessDay.Today(time);
-        var from = request.From is { } f && f > start ? f : start;
-        var to = request.To ?? from.AddDays(90);
-        if (to < from || !Enum.IsDefined(request.Granularity) || request.ExtraDays is < 0 or > 365)
-        {
-            throw new ErpException(ErpErrorKind.Validation, CoreErrorCodes.Validation, "Intervalul, granularitatea sau zilele suplimentare nu sunt valide.");
-        }
-
-        var periods = CashFlowPeriods.Periods(from, to, request.Granularity);
-        if (periods.Count > CashFlowPeriods.MaxPeriods(request.Granularity))
-        {
-            throw new ErpException(ErpErrorKind.Validation, "FIN_CASHFLOW_HORIZON_TOO_LONG",
-                "Orizontul depășește limita granularității: 92 de zile, 104 săptămâni sau 36 de luni.");
-        }
-
+        var (from, to, periods) = CashFlowHorizon.Resolve(start, request.From, request.To, request.Granularity, request.ExtraDays);
         var currency = string.IsNullOrWhiteSpace(request.CurrencyCode) ? null : request.CurrencyCode.Trim().ToUpperInvariant();
         var result = await forecaster.ComputeAsync(context.CompanyId, start, to, request.TreasuryAccountId, currency, request.Prudent, request.ExtraDays,
             cancellationToken).ConfigureAwait(false);
@@ -249,6 +236,30 @@ internal sealed class GetCashFlowForecastHandler(CashFlowForecaster forecaster, 
             baseScenario,
             result.PrudentEntries is { } prudent ? CashFlowReport.Scenario(opening, from, periods, request.Granularity, prudent, categories) : null,
             empty);
+    }
+}
+
+/// <summary>Orizontul prognozei (F5 4.4): de la azi (sau mai tarziu), implicit 90 de zile, in limita granularitatii (51711).</summary>
+public static class CashFlowHorizon
+{
+    public static (DateOnly From, DateOnly To, IReadOnlyList<(DateOnly Start, DateOnly End)> Periods) Resolve(DateOnly start, DateOnly? from, DateOnly? to,
+        Granularity granularity, int extraDays = 0)
+    {
+        var first = from is { } f && f > start ? f : start;
+        var last = to ?? first.AddDays(90);
+        if (last < first || !Enum.IsDefined(granularity) || extraDays is < 0 or > 365)
+        {
+            throw new ErpException(ErpErrorKind.Validation, CoreErrorCodes.Validation, "Intervalul, granularitatea sau zilele suplimentare nu sunt valide.");
+        }
+
+        var periods = CashFlowPeriods.Periods(first, last, granularity);
+        if (periods.Count > CashFlowPeriods.MaxPeriods(granularity))
+        {
+            throw new ErpException(ErpErrorKind.Validation, "FIN_CASHFLOW_HORIZON_TOO_LONG",
+                "Orizontul depășește limita granularității: 92 de zile, 104 săptămâni sau 36 de luni.");
+        }
+
+        return (first, last, periods);
     }
 }
 

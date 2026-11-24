@@ -3252,6 +3252,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/cash-flow/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashFlowSnapshots"];
+        put?: never;
+        post: operations["TakeCashFlowSnapshot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-flow/snapshots/{id}/vs-actual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashFlowForecastVsActual"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/cash-flow/alert-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCashFlowAlertRules"];
+        put: operations["SaveCashFlowAlertRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/fx/revaluations": {
         parameters: {
             query?: never;
@@ -9537,6 +9585,102 @@ export interface components {
             reason: string;
             /** Format: byte */
             rowVersion: string;
+        };
+        CashFlowAlertRuleDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            treasuryAccountCode: null | string;
+            minBalanceRon: string;
+            /** Format: int16 */
+            horizonDays: number;
+            /** Format: int32 */
+            notifyRoleId: null | number;
+            notifyRoleName: null | string;
+            isActive: boolean;
+            /** Format: date */
+            lastAlertedOn: null | string;
+        };
+        CashFlowAlertRuleInput: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            minBalanceRon: string;
+            /** Format: int16 */
+            horizonDays: number;
+            /** Format: int32 */
+            notifyRoleId: null | number;
+            isActive: boolean;
+        };
+        CashFlowSnapshotItemDto: {
+            /** Format: int32 */
+            id: number;
+            name: string;
+            /** Format: date-time */
+            takenAt: string;
+            takenByName: null | string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            horizonFrom: string;
+            /** Format: date */
+            horizonTo: string;
+            granularity: components["schemas"]["Granularity"];
+            /** Format: int32 */
+            treasuryAccountId: null | number;
+            treasuryAccountCode: null | string;
+            currencyCode: null | string;
+            isAutomatic: boolean;
+            openingBalanceRon: string;
+        };
+        CashFlowVsActualDto: {
+            /** Format: int32 */
+            snapshotId: number;
+            name: string;
+            /** Format: date-time */
+            takenAt: string;
+            granularity: components["schemas"]["Granularity"];
+            periods: components["schemas"]["VsActualPeriodDto"][];
+            rows: components["schemas"]["VsActualRowDto"][];
+            netForecastRon: string[];
+            netActualRon: string[];
+        };
+        SaveCashFlowAlertRules: {
+            rules: components["schemas"]["CashFlowAlertRuleInput"][];
+        };
+        TakeCashFlowSnapshot: {
+            name?: null | string;
+            /** Format: date */
+            from?: null | string;
+            /** Format: date */
+            to?: null | string;
+            granularity?: components["schemas"]["Granularity"];
+            /** Format: int32 */
+            treasuryAccountId?: null | number;
+            currencyCode?: null | string;
+            /** @default false */
+            isAutomatic: boolean;
+        };
+        VsActualPeriodDto: {
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            hasActuals: boolean;
+        };
+        VsActualRowDto: {
+            /** Format: int32 */
+            categoryId: null | number;
+            code: string;
+            name: string;
+            forecastRon: string[];
+            actualRon: string[];
+            deviationRon: string[];
+            totalForecastRon: string;
+            totalActualRon: string;
+            totalDeviationRon: string;
         };
     };
     responses: never;
@@ -22438,6 +22582,296 @@ export interface operations {
                 };
                 content: {
                     "application/json": number;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashFlowSnapshots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowSnapshotItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    TakeCashFlowSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TakeCashFlowSnapshot"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashFlowForecastVsActual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowVsActualDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCashFlowAlertRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowAlertRuleDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveCashFlowAlertRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCashFlowAlertRules"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowAlertRuleDto"][];
                 };
             };
             /** @description Bad Request */

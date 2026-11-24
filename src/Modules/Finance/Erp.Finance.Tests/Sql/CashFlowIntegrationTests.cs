@@ -23,7 +23,7 @@ public sealed class CashFlowIntegrationTests : BankTestBase, IClassFixture<Finan
 
     public CashFlowIntegrationTests(FinanceDatabase database) : base(database)
     {
-        Permissions.UnionWith([FinancePermissions.CashFlowView, FinancePermissions.CashFlowPlan, FinancePermissions.BankView, FinancePermissions.BankStatementImport,
+        Permissions.UnionWith([FinancePermissions.CashFlowView, FinancePermissions.CashFlowPlan, FinancePermissions.CashFlowSnapshot, FinancePermissions.BankView, FinancePermissions.BankStatementImport,
             FinancePermissions.PaymentOrderCreate, FinancePermissions.PaymentOrderValidate]);
     }
 
@@ -94,6 +94,35 @@ public sealed class CashFlowIntegrationTests : BankTestBase, IClassFixture<Finan
             new("X", "Incert", 61, null, true)]));
         Assert.Equal(["T", "I", "X"], saved.Select(b => b.Code));
         await Run(new SavePaymentDelayBuckets(defaults));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.02-F5-A12")]
+    public async Task An_alert_is_sent_once_a_day_and_a_snapshot_is_compared_with_actuals_by_week()
+    {
+        var today = BusinessDay.Today(TimeProvider.System);
+        var (account, iban) = await NewBank("RON", Company);
+        await Import(account, StatementFiles.Camt053(iban, "RON", 1_000m, [new TestEntry(today.AddDays(-1), 0.01m, Unique("SOLD"))], "1"), companyId: Company);
+        var rent = (await Run(new GetCashFlowCategories())).Single(c => c.Code == "CHIRII-UTILITATI");
+        await Run(new SaveCashFlowPlanItem(null, rent.Id, "Chirie depozit", "RON", "5000", account, today.AddDays(3), Recurrence.Once, null, null));
+
+        var rules = await Run(new SaveCashFlowAlertRules([new CashFlowAlertRuleInput(null, account, "0", 14, null, true)]));
+        var rule = Assert.Single(rules);
+        Assert.Equal(1, await Run(new CheckCashFlowAlerts()));
+        Assert.Equal(0, await Run(new CheckCashFlowAlerts()));
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM core.Outbox WHERE EventType LIKE '%AlertaCashFlow' AND Payload LIKE '%CHIRII-UTILITATI%'"));
+        Assert.Equal(today, (await Run(new GetCashFlowAlertRules())).Single(r => r.Id == rule.Id).LastAlertedOn);
+
+        var id = await Run(new TakeCashFlowSnapshot("Test", today, today.AddDays(27), Granularity.Week, account));
+        Assert.Contains(await Run(new GetCashFlowSnapshots()), s => s.Id == id && !s.IsAutomatic);
+        Assert.Equal(1, await Query<int>("SELECT COUNT(*) FROM fin.CashFlowSnapshotLine WHERE SnapshotId = @Id AND SourceKind = 1", new { Id = id }));
+        var comparison = await Run(new GetCashFlowForecastVsActual(id));
+        var row = comparison.Rows.Single(r => r.Code == "CHIRII-UTILITATI");
+        var week = comparison.Periods.Select((p, i) => (p, i)).Single(x => x.p.Start <= today.AddDays(3) && x.p.End >= today.AddDays(3)).i;
+        Assert.Equal(Money(-5_000m), row.ForecastRon[week]);
+        Assert.True(comparison.Periods[0].HasActuals);
+        Assert.Null(row.ActualRon[^1]);
+        await Run(new SaveCashFlowAlertRules([]));
     }
 
     private static string Money(decimal value) => Erp.Finance.Domain.Money.Format(value);

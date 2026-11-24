@@ -334,6 +334,17 @@ public static class FinanceApiRegistration
             .WithName("SavePaymentDelayBuckets").Produces<IReadOnlyList<DelayBucketDto>>().Problems();
         finance.MapPost("/cash-flow/payment-behavior/recalculate", (ISender sender, CancellationToken ct) => sender.Send(new RecalculatePaymentBehavior(), ct))
             .WithName("RecalculatePaymentBehavior").Produces<int>().Problems();
+        finance.MapGet("/cash-flow/snapshots", (ISender sender, CancellationToken ct) => sender.Send(new GetCashFlowSnapshots(), ct))
+            .WithName("GetCashFlowSnapshots").Produces<IReadOnlyList<CashFlowSnapshotItemDto>>().Problems();
+        finance.MapPost("/cash-flow/snapshots", (TakeCashFlowSnapshot body, ISender sender, CancellationToken ct) => sender.Send(body with { IsAutomatic = false }, ct))
+            .WithName("TakeCashFlowSnapshot").Produces<int>().Problems();
+        finance.MapGet("/cash-flow/snapshots/{id:int}/vs-actual", (int id, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetCashFlowForecastVsActual(id), ct))
+            .WithName("GetCashFlowForecastVsActual").Produces<CashFlowVsActualDto>().Problems();
+        finance.MapGet("/cash-flow/alert-rules", (ISender sender, CancellationToken ct) => sender.Send(new GetCashFlowAlertRules(), ct))
+            .WithName("GetCashFlowAlertRules").Produces<IReadOnlyList<CashFlowAlertRuleDto>>().Problems();
+        finance.MapPut("/cash-flow/alert-rules", (SaveCashFlowAlertRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveCashFlowAlertRules").Produces<IReadOnlyList<CashFlowAlertRuleDto>>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

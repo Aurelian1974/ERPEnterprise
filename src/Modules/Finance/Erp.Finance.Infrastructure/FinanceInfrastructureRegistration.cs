@@ -31,6 +31,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<CashDraftFactory>();
         services.AddTransient<CashAdvanceOverdue>();
         services.AddTransient<PaymentBehaviorRecalculation>();
+        services.AddTransient<CashFlowJobs>();
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -65,6 +66,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Planning.IPaymentProposalStore, PaymentProposalStore>();
         services.AddScoped<Application.Planning.ICashFlowStore, CashFlowStore>();
         services.AddScoped<Application.Planning.CashFlowForecaster>();
+        services.AddScoped<Application.Planning.ICashFlowSnapshotStore, CashFlowSnapshotStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;

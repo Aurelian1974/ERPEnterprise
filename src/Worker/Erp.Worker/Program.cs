@@ -118,6 +118,13 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation>(Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.PaymentBehaviorRecalculation.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, F5 3.6, 3.7: instantaneul automat al prognozei lunea la 06:40 si alertele de cash-flow zilnic la 07:10, ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.CashFlowJobs>(Erp.Finance.Infrastructure.Settlement.CashFlowJobs.SnapshotJobId,
+            job => job.SnapshotsAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.CashFlowJobs.SnapshotSchedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.CashFlowJobs>(Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertJobId,
+            job => job.AlertsAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertSchedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions
             {
