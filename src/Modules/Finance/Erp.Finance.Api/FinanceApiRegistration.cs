@@ -564,6 +564,22 @@ public static class FinanceApiRegistration
         finance.MapGet("/report-definitions/{id:int}/run", (int id, DateOnly from, DateOnly to, DateOnly? previousFrom, DateOnly? previousTo, ISender sender,
                 CancellationToken ct) => sender.Send(new RunReport(id, from, to, previousFrom, previousTo), ct))
             .WithName("RunReport").Produces<ReportResultDto>().Problems();
+        // Situatiile financiare (C5 3.6, 4.2; macheta c5-04).
+        finance.MapGet("/financial-statements/{year:int}", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetFinancialStatements(year, kind ?? 1), ct))
+            .WithName("GetFinancialStatements").Produces<FinancialStatementDto>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/calculate", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new CalculateFinancialStatements(year, kind ?? 1), ct))
+            .WithName("CalculateFinancialStatements").Produces<int>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/generate", (int year, GenerateFinancialStatements body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("GenerateFinancialStatements").Produces<byte[]>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/submit", (int year, SubmitFinancialStatements body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("SubmitFinancialStatements").Produces<byte[]>().Problems();
+        finance.MapGet("/financial-statements/{year:int}/file", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new DownloadFinancialStatements(year, kind ?? 1), ct))
+            .WithName("DownloadFinancialStatements").Produces<DownloadedFile>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();

@@ -31,7 +31,7 @@ BEGIN
     FROM fin.JournalLine AS l
     JOIN fin.JournalEntry AS e ON e.Id = l.EntryId
     JOIN fin.GlAccount AS a ON a.Id = l.AccountId AND a.ChartId = @Statutory
-    WHERE e.CompanyId = @CompanyId AND e.Status >= 2 AND e.AccountingDate BETWEEN @YearStart AND @To AND (@IncludeClosing = 1 OR e.SourceKind <> 4)
+    WHERE e.CompanyId = @CompanyId AND e.Status >= 2 AND e.AccountingDate BETWEEN @YearStart AND @To AND (@IncludeClosing = 1 OR e.SourceKind <> 4 OR e.SourceDocumentType = 'Finance.ProfitTax')
       AND (a.Code = @AccountCode OR a.Code LIKE @AccountCode + N'.%' OR (CHARINDEX(N'.', @AccountCode) = 0 AND a.Code LIKE @AccountCode + N'[0-9]%'))
       AND (@PartnerId IS NULL OR l.PartnerId = @PartnerId) AND (@CostCenterId IS NULL OR l.CostCenterId = @CostCenterId)
       AND (@ProjectId IS NULL OR l.ProjectId = @ProjectId);

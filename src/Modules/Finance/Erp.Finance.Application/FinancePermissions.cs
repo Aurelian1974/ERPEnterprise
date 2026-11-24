@@ -76,6 +76,10 @@ public static class FinancePermissions
     public const string ReportTrialBalance = "Fin.Report.TrialBalance";
 
     public const string ReportDefine = "Fin.Report.Define";
+
+    public const string ReportStatements = "Fin.Report.Statements";
+
+    public const string ReportStatementsSubmit = "Fin.Report.StatementsSubmit";
     public const string TaxView = "Fin.Tax.View";
     public const string TaxPrepare = "Fin.Tax.Prepare";
     public const string TaxGenerate = "Fin.Tax.Generate";

@@ -106,6 +106,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Reporting.BalanceService>();
         services.AddScoped<Application.Reporting.IReportDefinitionStore, Reporting.ReportDefinitionStore>();
         services.AddScoped<Application.Reporting.ReportEngine>();
+        services.AddScoped<Application.Reporting.IFinancialStatementStore, Reporting.FinancialStatementStore>();
         services.AddScoped<Contracts.Reporting.IBalanceQuery>(sp => sp.GetRequiredService<Application.Reporting.BalanceService>());
         services.AddTransient<Accounting.RecurringEntryGeneration>();
         services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
@@ -252,6 +253,10 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51971] = (ErpErrorKind.NotFound, "FIN_REPORT_NOT_FOUND"),
         [51972] = (ErpErrorKind.Conflict, "FIN_REPORT_CONCURRENCY_CONFLICT"),
         [51975] = (ErpErrorKind.Forbidden, "FIN_REPORT_DEFINITION_READ_ONLY"),
+        [51976] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_YEAR_NOT_CLOSED"),
+        [51977] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_UNBALANCED"),
+        [51978] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_ALREADY_SUBMITTED"),
+        [51981] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_NOT_GENERATED"),
         [51941] = (ErpErrorKind.NotFound, "FIN_TAX_RETURN_NOT_FOUND"),
         [51942] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_CONCURRENCY_CONFLICT"),
         [51943] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_PERIOD_OPEN"),

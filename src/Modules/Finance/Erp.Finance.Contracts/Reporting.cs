@@ -13,3 +13,6 @@ public interface IBalanceQuery
 {
     Task<IReadOnlyList<BalanceRow>> GetBalanceAsync(BalanceRequest request, CancellationToken ct);
 }
+
+/// <summary>Depunerea situatiilor financiare (C5 5.1). Consumatori: C3 (propunerea de blocare a anului), Raportare.</summary>
+public sealed record SituatiiFinanciareDepuse(int Year, byte Kind, string RegistrationNumber) : Erp.Core.Contracts.IntegrationEvent;
