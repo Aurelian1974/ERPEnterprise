@@ -6,7 +6,7 @@ AS
 BEGIN
     -- Datele din care se gasesc conturile unei note (C2 3.4), intr-un singur apel: rolurile in vigoare (ale firmei inaintea celor ale
     -- instalarii), contul conturilor de trezorerie ale firmei, contul corespondent al tipurilor de operatiuni si de cheltuieli, tipul
-    -- partenerilor notei (JSON [id]) si modul de moneda al conturilor planului romanesc.
+    -- partenerilor notei (JSON [id]), modul de moneda al conturilor planului romanesc si cotele TVA (registrul de TVA, C4 3.1).
     SET NOCOUNT ON;
 
     SELECT r.Role, r.PartnerKind, r.CurrencyCode, r.CompanyId, a.Code
@@ -27,4 +27,6 @@ BEGIN
     SELECT a.Code, a.CurrencyMode
     FROM fin.GlAccount AS a JOIN fin.ChartOfAccounts AS c ON c.Id = a.ChartId AND c.Kind = 1
     WHERE a.CurrencyMode <> 0;
+
+    SELECT Code, [Percent], Category, ValidFrom, ValidTo FROM core.VatRate;
 END;

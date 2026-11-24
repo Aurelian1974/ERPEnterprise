@@ -74,6 +74,7 @@ public static class FinancePermissions
     public const string MappingUnfreeze = "Fin.Mapping.Unfreeze";
 
     public const string ReportTrialBalance = "Fin.Report.TrialBalance";
+    public const string TaxView = "Fin.Tax.View";
     public const string PeriodView = "Fin.Period.View";
     public const string PeriodSoftClose = "Fin.Period.SoftClose";
     public const string PeriodClose = "Fin.Period.Close";

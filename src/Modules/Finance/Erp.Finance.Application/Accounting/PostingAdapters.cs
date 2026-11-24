@@ -46,7 +46,7 @@ public static class PostingAdapters
     {
         ArgumentNullException.ThrowIfNull(e);
         var payload = new AccountingPayload(e.SourceDocumentType, $"{e.SourceDocumentType} {e.SourceDocumentId}", e.ExigibilityDate, e.ExigibilityDate, "RON", 1m,
-            [e.Side == 1 ? "Customer" : "Supplier"], [new AccountingComponent("Vat", e.VatAmountRon, e.VatAmountRon)])
+            [e.Side == 1 ? "Customer" : "Supplier"], [new AccountingComponent("Vat", e.VatAmountRon, e.VatAmountRon), new AccountingComponent("Base", e.BaseAmountRon, e.BaseAmountRon)])
         {
             DocumentId = e.SourceDocumentId, IsReversal = e.IsReversal,
         };

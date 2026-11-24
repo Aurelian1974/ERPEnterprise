@@ -45,7 +45,10 @@ public sealed class PostingStore(IDbSession session) : IPostingStore
             .ToDictionary(x => x.Code, x => x.Account, StringComparer.OrdinalIgnoreCase);
         var partners = (await grid.ReadAsync<(int Id, byte Kind)>().ConfigureAwait(false)).ToDictionary(x => x.Id, x => x.Kind);
         var currency = (await grid.ReadAsync<(string Code, byte Mode)>().ConfigureAwait(false)).ToDictionary(x => x.Code.ToUpperInvariant(), x => x.Mode);
-        return new ResolutionData(roles, treasury, operations, expenses, partners, currency);
+        var rates = (await grid.ReadAsync<(string Code, decimal Percent, string Category, DateTime ValidFrom, DateTime? ValidTo)>().ConfigureAwait(false))
+            .Select(r => new Domain.Declarations.VatRateInfo(r.Code, r.Percent, r.Category.Trim(), DateOnly.FromDateTime(r.ValidFrom),
+                r.ValidTo is { } to ? DateOnly.FromDateTime(to) : null)).ToList();
+        return new ResolutionData(roles, treasury, operations, expenses, partners, currency) { VatRates = rates };
     }
 
     public async Task<PostingInsertResult> InsertAsync(PostingRequest request, int journalId, int? variantId, IReadOnlyList<PostingLine> lines, CancellationToken ct)
@@ -133,6 +136,27 @@ public sealed class PostingStore(IDbSession session) : IPostingStore
             AccountingDate = Day(request.Payload.AccountingDate), Reason = (byte)reason, Details = details is { Length: > 2000 } ? details[..2000] : details,
             Payload = JsonSerializer.Serialize(request.Payload, Json),
         }, ct)).ConfigureAwait(false);
+
+    public Task WriteVatAsync(int companyId, long entryId, AccountingPayload payload, byte direction, bool vatOnCollection,
+        IReadOnlyList<Domain.Declarations.VatRow> rows, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_VatEntry_Write", new
+        {
+            CompanyId = companyId, EntryId = entryId, SourceDocumentType = payload.DocumentType, SourceDocumentId = payload.DocumentId,
+            DocumentNumber = payload.DocumentNumber, DocumentDate = Day(payload.DocumentDate), Direction = direction, payload.PartnerId,
+            ExigibilityDate = Day(payload.AccountingDate), IsVatOnCollection = vatOnCollection,
+            Rows = JsonSerializer.Serialize(rows.Select(r => new
+            {
+                operationTypeCode = r.OperationTypeCode, vatRateCode = r.VatRateCode, vatRatePercent = r.VatRatePercent, baseRon = r.BaseRon, vatRon = r.VatRon,
+            })),
+        }, ct));
+
+    public Task WriteExigibleVatAsync(int companyId, long entryId, string documentType, long documentId, DateOnly date, decimal baseRon, decimal vatRon,
+        CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_VatEntry_WriteExigible", new
+        {
+            CompanyId = companyId, EntryId = entryId, SourceDocumentType = documentType, SourceDocumentId = documentId, ExigibilityDate = Day(date),
+            BaseRon = baseRon, VatRon = vatRon,
+        }, ct));
 
     public Task<string?> SettingAsync(int companyId, string code, CancellationToken ct) =>
         session.Connection.QuerySingleOrDefaultAsync<string?>(Command("fin.usp_CompanySetting_Get", new { CompanyId = companyId, Code = code }, ct));

@@ -4,6 +4,7 @@ using Erp.Finance.Application.Accounting;
 using Erp.Finance.Application.Reporting;
 using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Application.Declarations;
 using Erp.Finance.Application.Fx;
 using Erp.Finance.Application.Periods;
 using Erp.Finance.Application.Planning;
@@ -508,6 +509,10 @@ public static class FinanceApiRegistration
         finance.MapPost("/fiscal-years/{year:int}/unlock", (int year, UnlockFiscalYear body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { Year = year }, ct))
             .WithName("UnlockFiscalYear").Produces<bool>().Problems();
+        // Registrul si jurnalele de TVA (C4 3.1; macheta c4-03).
+        finance.MapGet("/vat-journal", (int year, int month, byte direction, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetVatJournal(year, month, direction), ct))
+            .WithName("GetVatJournal").Produces<VatJournalDto>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();

@@ -37,6 +37,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.26 | Soldurile lunare materializate (`AccountPeriodBalance`) la închidere și ștergerea lor la redeschidere; nota de închidere rămasă fără solduri la reînchidere (de stornat) | C3 nota C3.2; C5 3.1 | Balanța citește din linii |
 | 1.27 | Nucleul refuză atribuirea rolului „Deblocare an” unui utilizator cu alte roluri; șablonul „Repartizarea profitului” cu hotărârea AGA atașată; impozitul pe profit contat înainte de închiderea lui decembrie (cu C4) | C3 3.6, 8; nota C3.3 | Repartizarea se face cu o notă manuală |
 | 1.28 | Din machetele c3-02…c3-05: pașii proprii ai clientului și confirmarea lor, linkurile din pași spre ecranul care rezolvă, raportul de închidere PDF, ecranul importului balanței de deschidere din Excel, pașii anului cu datele lor | C3 nota C3.5 | API-urile există |
+| 1.29 | Registrul de TVA pentru deconturile de cheltuieli (furnizorul pe linie), cota de deducere limitată, statusul e-Factura pe rând | C4 nota C4.1 | Facturile de vânzare și de furnizor se înregistrează |
 
 ## 2. Depinde de alte module sau de Nucleu
 

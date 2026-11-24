@@ -4068,6 +4068,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/vat-journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetVatJournal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/gl-opening-balances": {
         parameters: {
             query?: never;
@@ -11823,6 +11839,46 @@ export interface components {
             turnoverCredit: string;
             closingDebit: string;
             closingCredit: string;
+        };
+        VatJournalDto: {
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            month: number;
+            /** Format: uint8 */
+            direction: number;
+            rows: components["schemas"]["VatJournalRowDto"][];
+            totals: components["schemas"]["VatJournalTotalDto"][];
+        };
+        VatJournalRowDto: {
+            /** Format: int64 */
+            id: number;
+            documentNumber: string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            exigibilityDate: null | string;
+            partnerName: null | string;
+            partnerFiscalCode: null | string;
+            partnerCountryCode: null | string;
+            operationTypeCode: string;
+            vatRateCode: string;
+            /** Format: double */
+            vatRatePercent: number;
+            baseRon: string;
+            vatRon: string;
+            isVatOnCollection: boolean;
+            isReversal: boolean;
+            /** Format: int64 */
+            entryId: number;
+        };
+        VatJournalTotalDto: {
+            operationTypeCode: string;
+            name: string;
+            baseRon: string;
+            vatRon: string;
+            /** Format: int32 */
+            rows: number;
         };
     };
     responses: never;
@@ -28575,6 +28631,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetVatJournal: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                direction: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VatJournalDto"];
                 };
             };
             /** @description Bad Request */

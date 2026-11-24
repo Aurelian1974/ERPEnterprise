@@ -21974,6 +21974,95 @@
         }
       }
     },
+    "/api/finance/vat-journal": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetVatJournal",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatJournalDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/gl-opening-balances": {
       "get": {
         "tags": [
@@ -53481,6 +53570,154 @@
           },
           "closingCredit": {
             "type": "string"
+          }
+        }
+      },
+      "VatJournalDto": {
+        "required": [
+          "year",
+          "month",
+          "direction",
+          "rows",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "month": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "direction": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VatJournalRowDto"
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VatJournalTotalDto"
+            }
+          }
+        }
+      },
+      "VatJournalRowDto": {
+        "required": [
+          "id",
+          "documentNumber",
+          "documentDate",
+          "exigibilityDate",
+          "partnerName",
+          "partnerFiscalCode",
+          "partnerCountryCode",
+          "operationTypeCode",
+          "vatRateCode",
+          "vatRatePercent",
+          "baseRon",
+          "vatRon",
+          "isVatOnCollection",
+          "isReversal",
+          "entryId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentNumber": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "exigibilityDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerCountryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationTypeCode": {
+            "type": "string"
+          },
+          "vatRateCode": {
+            "type": "string"
+          },
+          "vatRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "baseRon": {
+            "type": "string"
+          },
+          "vatRon": {
+            "type": "string"
+          },
+          "isVatOnCollection": {
+            "type": "boolean"
+          },
+          "isReversal": {
+            "type": "boolean"
+          },
+          "entryId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "VatJournalTotalDto": {
+        "required": [
+          "operationTypeCode",
+          "name",
+          "baseRon",
+          "vatRon",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "operationTypeCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseRon": {
+            "type": "string"
+          },
+          "vatRon": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

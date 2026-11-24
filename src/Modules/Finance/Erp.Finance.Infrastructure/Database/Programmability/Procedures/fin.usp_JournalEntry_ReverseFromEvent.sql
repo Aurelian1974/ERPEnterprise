@@ -65,6 +65,15 @@ BEGIN
     FROM fin.JournalLine WHERE EntryId = @Original;
 
     UPDATE fin.JournalEntry SET Status = 3, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId WHERE Id = @Original;
+    -- Registrul de TVA: randurile documentului original, cu semn schimbat, in perioada stornarii (C4 3.1).
+    INSERT INTO fin.VatEntry (CompanyId, EntryId, SourceDocumentType, SourceDocumentId, DocumentNumber, DocumentDate, Direction, PartnerId, PartnerFiscalCode,
+        PartnerCountryCode, PartnerName, OperationTypeCode, VatRateCode, VatRatePercent, BaseRon, VatRon, ExigibilityDate, PeriodYear, PeriodMonth, IsVatOnCollection,
+        DeductionPercent, IsReversal)
+    SELECT CompanyId, @NewId, SourceDocumentType, ISNULL(@SourceDocumentId, SourceDocumentId), ISNULL(@SourceDocumentNumber, DocumentNumber), @AccountingDate, Direction,
+        PartnerId, PartnerFiscalCode, PartnerCountryCode, PartnerName, OperationTypeCode, VatRateCode, VatRatePercent, -BaseRon, -VatRon,
+        CASE WHEN IsVatOnCollection = 1 THEN NULL ELSE @AccountingDate END, CASE WHEN IsVatOnCollection = 1 THEN NULL ELSE YEAR(@AccountingDate) END,
+        CASE WHEN IsVatOnCollection = 1 THEN NULL ELSE MONTH(@AccountingDate) END, IsVatOnCollection, DeductionPercent, 1
+    FROM fin.VatEntry WHERE EntryId = @Original AND ParentVatEntryId IS NULL;
     UPDATE fin.PostingQueue SET Status = 2, ResolvedEntryId = @NewId, ModifiedAt = SYSUTCDATETIME() WHERE EventId = @SourceEventId AND Status = 1;
     EXEC fin.usp_AltMapping_Apply @EntryId = @NewId;
     IF @Outer = 0 COMMIT TRANSACTION;

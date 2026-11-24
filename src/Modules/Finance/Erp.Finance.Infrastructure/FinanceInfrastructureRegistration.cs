@@ -40,6 +40,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Periods.IFiscalYearCloseStore, Periods.FiscalYearCloseStore>();
         services.AddScoped<Application.Periods.FiscalYearClosing>();
         services.AddScoped<Application.Periods.IOpeningBalanceStore, Periods.OpeningBalanceStore>();
+        services.AddScoped<Application.Declarations.IVatRegisterStore, Declarations.VatRegisterStore>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,

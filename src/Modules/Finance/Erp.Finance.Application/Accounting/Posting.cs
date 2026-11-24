@@ -13,6 +13,9 @@ public sealed record ResolutionData(IReadOnlyList<RoleRow> Roles, IReadOnlyDicti
     IReadOnlyDictionary<string, string> OperationTypeAccounts, IReadOnlyDictionary<string, string> ExpenseTypeAccounts,
     IReadOnlyDictionary<int, byte> PartnerKinds, IReadOnlyDictionary<string, byte> CurrencyModes)
 {
+    /// <summary>Cotele TVA ale Nucleului, pentru registrul de TVA (C4 3.1).</summary>
+    public IReadOnlyList<Domain.Declarations.VatRateInfo> VatRates { get; init; } = [];
+
     /// <summary>
     /// Contextul motorului: rolul cel mai specific castiga (al firmei inaintea celui al instalarii, apoi tipul partenerului, apoi moneda);
     /// randurile vin deja in aceasta ordine din procedura.
@@ -88,6 +91,14 @@ public interface IPostingStore
         IReadOnlyList<PostingLine> lines, string reason, int userId, CancellationToken ct);
 
     Task<string?> SettingAsync(int companyId, string code, CancellationToken ct);
+
+    /// <summary>Randurile registrului de TVA ale unui document, odata cu nota (C4 3.1).</summary>
+    Task WriteVatAsync(int companyId, long entryId, AccountingPayload payload, byte direction, bool vatOnCollection,
+        IReadOnlyList<Domain.Declarations.VatRow> rows, CancellationToken ct);
+
+    /// <summary>Partea exigibila a unei facturi cu TVA la incasare (C4 3.1, C4-A3).</summary>
+    Task WriteExigibleVatAsync(int companyId, long entryId, string documentType, long documentId, DateOnly date, decimal baseRon, decimal vatRon,
+        CancellationToken ct);
 }
 
 /// <summary>
@@ -124,14 +135,54 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
             }
         }
 
-        var (model, result) = await BuildAsync(request.CompanyId, request.EventType, request.Payload, ct).ConfigureAwait(false);
+        var (model, result, data) = await BuildAsync(request.CompanyId, request.EventType, request.Payload, ct).ConfigureAwait(false);
         if (!result.Succeeded || model is null)
         {
             return await QueueAsync(request, result.Failure ?? PostingFailureReason.ModelMissing, result.Details, ct).ConfigureAwait(false);
         }
 
         var written = await store.InsertAsync(request, model.JournalId, result.VariantId, result.Lines, ct).ConfigureAwait(false);
+        if (written.ErrorCode == 0)
+        {
+            await RegisterVatAsync(request, written.Header!.Id, data, ct).ConfigureAwait(false);
+        }
+
         return await Written(request, written, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Registrul de TVA odata cu nota (C4 3.1, decizia 2): facturile de vanzare si de furnizor scriu randurile pe cota si tip de operatiune; TVA
+    /// la incasare devenita exigibila scrie partea exigibila a facturii. Stornarea la sursa le copiaza cu semn schimbat (in SQL).
+    /// </summary>
+    private async Task RegisterVatAsync(PostingRequest request, long entryId, ResolutionData data, CancellationToken ct)
+    {
+        var p = request.Payload;
+        if (request.EventType == "TvaLaIncasareExigibil")
+        {
+            await store.WriteExigibleVatAsync(request.CompanyId, entryId, p.DocumentType, p.DocumentId, p.AccountingDate,
+                p.Components.Where(c => c.Component == "Base").Sum(c => c.AmountRon), p.Components.Where(c => c.Component == "Vat").Sum(c => c.AmountRon), ct)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        byte direction = request.EventType switch
+        {
+            "FacturaEmisa" => Domain.Declarations.VatRegister.Sales,
+            "FacturaFurnizorValidata" => Domain.Declarations.VatRegister.Purchases,
+            _ => 0,
+        };
+        if (direction == 0)
+        {
+            return;
+        }
+
+        var kind = p.PartnerId is { } partner && data.PartnerKinds.TryGetValue(partner, out var k) ? k : (byte?)null;
+        var rows = Domain.Declarations.VatRegister.Build(direction, p.Flags, kind, p.Components, p.AccountingDate, data.VatRates);
+        if (rows.Count > 0)
+        {
+            await store.WriteVatAsync(request.CompanyId, entryId, p, direction, p.Flags.Contains("VatOnCollection", StringComparer.OrdinalIgnoreCase), rows, ct)
+                .ConfigureAwait(false);
+        }
     }
 
     /// <summary>Reincercarea unui rand din coada (C2 4.4), din contractul pastrat.</summary>
@@ -169,7 +220,7 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
         _ => PostingFailureReason.Unexpected,
     };
 
-    private async Task<(PostingModelDef? Model, PostingResult Result)> BuildAsync(int companyId, string eventType, AccountingPayload payload, CancellationToken ct)
+    private async Task<(PostingModelDef? Model, PostingResult Result, ResolutionData Data)> BuildAsync(int companyId, string eventType, AccountingPayload payload, CancellationToken ct)
     {
         var model = await store.LoadModelAsync(eventType, payload.AccountingDate, ct).ConfigureAwait(false);
         var partners = payload.Components.Select(c => c.PartnerId).Append(payload.PartnerId).OfType<int>().Distinct().ToList();
@@ -186,7 +237,7 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
             };
         }
 
-        return (model, result);
+        return (model, result, data);
     }
 
     private async Task<PostingOutcome> QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct)
