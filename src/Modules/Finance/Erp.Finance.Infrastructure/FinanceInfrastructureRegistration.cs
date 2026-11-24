@@ -80,6 +80,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Accounting.PostingService>();
         services.AddTransient<Accounting.PostingQueueRetry>();
         services.AddScoped<Application.Accounting.IRecurringEntryStore, Accounting.RecurringEntryStore>();
+        services.AddScoped<Application.Accounting.IPostingModelStore, Accounting.PostingModelStore>();
         services.AddTransient<Accounting.RecurringEntryGeneration>();
         services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
         // Perioadele contabile (C3a) inlocuiesc IPeriodLock-ul implicit al Nucleului (fara perioade inchise).
@@ -220,6 +221,7 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51852] = (ErpErrorKind.Forbidden, "FIN_ENTRY_AUTOMATIC_REVERSE_FORBIDDEN"),
         [51853] = (ErpErrorKind.Forbidden, "FIN_ENTRY_FOUR_EYES"),
         [51854] = (ErpErrorKind.Conflict, "FIN_REPOST_PERIOD_CLOSED"),
+        [51855] = (ErpErrorKind.NotFound, "FIN_POSTING_MODEL_MISSING"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
         [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),

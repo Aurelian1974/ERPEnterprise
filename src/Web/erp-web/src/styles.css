@@ -2993,3 +2993,5 @@ tr.clickable.picked { background: var(--info-bg); }
 .entry-formula:empty { display: none; }
 .kpi-value.ok { color: var(--ok); }
 .kpi-value.bad { color: var(--error); }
+.row-bad td { background: var(--error-bg); }
+.error-text { color: var(--error); font-weight: 600; }

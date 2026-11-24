@@ -26,6 +26,8 @@ import { MappingCheckPage } from '../finance/MappingCheckPage';
 import { JournalEntriesPage } from '../finance/JournalEntriesPage';
 import { ManualEntryPage } from '../finance/ManualEntryPage';
 import { PostingQueuePage } from '../finance/PostingQueuePage';
+import { PostingModelsPage } from '../finance/PostingModelsPage';
+import { DefaultAccountsPage } from '../finance/DefaultAccountsPage';
 import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
@@ -82,6 +84,8 @@ export const routes = [
       { path: 'finante/contabilitate/note/noua', element: <ManualEntryPage /> },
       { path: 'finante/contabilitate/note/:id', element: <ManualEntryPage /> },
       { path: 'finante/contabilitate/de-contat', element: <PostingQueuePage /> },
+      { path: 'finante/contabilitate/modele-contare', element: <PostingModelsPage /> },
+      { path: 'finante/contabilitate/conturi-implicite', element: <DefaultAccountsPage /> },
       { path: 'finante/contabilitate/plan-de-conturi', element: <ChartOfAccountsPage /> },
       { path: 'finante/contabilitate/planuri-alternative', element: <AltChartsPage /> },
       { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },

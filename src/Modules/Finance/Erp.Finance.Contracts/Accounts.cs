@@ -30,12 +30,15 @@ public static class GlAccountRoles
     public const string ProfitAppropriation = "ProfitAppropriation";
     public const string RoundingGain = "RoundingGain";
     public const string RoundingLoss = "RoundingLoss";
+    public const string SalesRevenue = "SalesRevenue";
+    public const string PurchaseExpense = "PurchaseExpense";
+    public const string CostOfGoodsSold = "CostOfGoodsSold";
 
     public static IReadOnlyList<string> All { get; } =
     [
         CustomerReceivable, CustomerAdvance, SupplierPayable, SupplierAdvance, SupplierInvoicesToReceive, VatCollected, VatDeductible, VatPending,
         VatPayable, VatReceivable, FxGain, FxLoss, IndexGain, IndexLoss, CashInTransit, ProfitOrLoss, RetainedEarnings, ProfitAppropriation,
-        RoundingGain, RoundingLoss,
+        RoundingGain, RoundingLoss, SalesRevenue, PurchaseExpense, CostOfGoodsSold,
     ];
 }
 

@@ -469,6 +469,16 @@ public static class FinanceApiRegistration
             .WithName("PreviewRepost").Produces<IReadOnlyList<RepostChangeDto>>().Problems();
         finance.MapPost("/repost", (RepostEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("RepostEntries").Produces<int>().Problems();
+        // Modelele de contare (C2 3.2, 4.2; macheta c2-03).
+        finance.MapGet("/posting-models", (ISender sender, CancellationToken ct) => sender.Send(new GetPostingModels(), ct))
+            .WithName("GetPostingModels").Produces<IReadOnlyList<PostingModelItemDto>>().Problems();
+        finance.MapGet("/posting-models/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPostingModel(id), ct))
+            .WithName("GetPostingModel").Produces<PostingModelDto>().Problems();
+        finance.MapPut("/posting-variants/{id:int}/lines", (int id, SavePostingVariantLines body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { VariantId = id }, ct))
+            .WithName("SavePostingVariantLines").Produces<byte[]>().Problems();
+        finance.MapGet("/journal-entries/{id:long}/simulation", (long id, ISender sender, CancellationToken ct) => sender.Send(new SimulatePosting(id), ct))
+            .WithName("SimulatePosting").Produces<PostingSimulationDto>().Problems();
         // Notele recurente (C2 3.8).
         finance.MapGet("/recurring-entries", (ISender sender, CancellationToken ct) => sender.Send(new GetRecurringTemplates(), ct))
             .WithName("GetRecurringTemplates").Produces<IReadOnlyList<RecurringTemplateDto>>().Problems();

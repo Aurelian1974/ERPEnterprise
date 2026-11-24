@@ -3876,6 +3876,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/posting-models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPostingModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/posting-models/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPostingModel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/posting-variants/{id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SavePostingVariantLines"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/journal-entries/{id}/simulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SimulatePosting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/recurring-entries": {
         parameters: {
             query?: never;
@@ -11188,6 +11252,121 @@ export interface components {
             credit: string;
             /** Format: int32 */
             lineCount: number;
+        };
+        AccountKeyDto: {
+            code: string;
+            name: string;
+            chain: string;
+        };
+        PostingModelDto: {
+            /** Format: int32 */
+            id: number;
+            eventType: string;
+            name: string;
+            journalCode: string;
+            journalName: string;
+            isSystem: boolean;
+            isActive: boolean;
+            variants: components["schemas"]["PostingVariantDto"][];
+            accountKeys: components["schemas"]["AccountKeyDto"][];
+        };
+        PostingModelItemDto: {
+            /** Format: int32 */
+            id: number;
+            eventType: string;
+            name: string;
+            journalCode: string;
+            isSystem: boolean;
+            isActive: boolean;
+            /** Format: int32 */
+            variantCount: number;
+        };
+        PostingModelLineDto: {
+            /** Format: int32 */
+            lineNumber: number;
+            component: string;
+            filterVatCategory: null | string;
+            filterOperationTypeCode: null | string;
+            /** Format: uint8 */
+            side: number;
+            /** Format: int16 */
+            sign: number;
+            accountKey: string;
+            defaultAccountCode: null | string;
+            /** Format: uint8 */
+            copyDimensions: number;
+            /** Format: uint8 */
+            groupBy: number;
+            descriptionTemplate: null | string;
+        };
+        PostingModelLineInput: {
+            component: string;
+            filterVatCategory: null | string;
+            filterOperationTypeCode: null | string;
+            /** Format: uint8 */
+            side: number;
+            /** Format: int16 */
+            sign: number;
+            accountKey: string;
+            defaultAccountCode: null | string;
+            /**
+             * Format: uint8
+             * @default 63
+             */
+            copyDimensions: number;
+            /**
+             * Format: uint8
+             * @default 1
+             */
+            groupBy: number;
+            descriptionTemplate?: null | string;
+        };
+        PostingSimulationDto: {
+            eventType: string;
+            /** Format: int32 */
+            variantId: null | number;
+            lines: components["schemas"]["SimulatedLineDto"][];
+            failure: null | components["schemas"]["PostingFailureReason"];
+            details: null | string;
+        };
+        PostingVariantDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            priority: number;
+            name: string;
+            requiredFlags: null | string;
+            forbiddenFlags: null | string;
+            /** Format: uint8 */
+            partnerKind: null | number;
+            documentType: null | string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: null | string;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+            lines: components["schemas"]["PostingModelLineDto"][];
+        };
+        ResolvedFrom: number;
+        SavePostingVariantLines: {
+            /** Format: int32 */
+            variantId: number;
+            lines: components["schemas"]["PostingModelLineInput"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SimulatedLineDto: {
+            accountCode: string;
+            /** Format: uint8 */
+            side: number;
+            amountRon: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            resolvedFrom: components["schemas"]["ResolvedFrom"];
         };
     };
     responses: never;
@@ -27159,6 +27338,240 @@ export interface operations {
                 };
                 content: {
                     "application/json": number;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPostingModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingModelItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPostingModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingModelDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SavePostingVariantLines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePostingVariantLines"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SimulatePosting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingSimulationDto"];
                 };
             };
             /** @description Bad Request */
