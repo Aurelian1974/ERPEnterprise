@@ -28,6 +28,8 @@ import { ManualEntryPage } from '../finance/ManualEntryPage';
 import { PostingQueuePage } from '../finance/PostingQueuePage';
 import { PostingModelsPage } from '../finance/PostingModelsPage';
 import { DefaultAccountsPage } from '../finance/DefaultAccountsPage';
+import { TrialBalancePage } from '../finance/TrialBalancePage';
+import { AccountLedgerPage } from '../finance/AccountLedgerPage';
 import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
@@ -91,6 +93,8 @@ export const routes = [
       { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },
       { path: 'finante/contabilitate/verificare-mapare', element: <MappingCheckPage /> },
       { path: 'finante/contabilitate/perioade', element: <AccountingPeriodsPage /> },
+      { path: 'finante/rapoarte/balanta', element: <TrialBalancePage /> },
+      { path: 'finante/rapoarte/fisa-contului', element: <AccountLedgerPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

@@ -2995,3 +2995,11 @@ tr.clickable.picked { background: var(--info-bg); }
 .kpi-value.bad { color: var(--error); }
 .row-bad td { background: var(--error-bg); }
 .error-text { color: var(--error); font-weight: 600; }
+
+/* Balanta de verificare (C5a.2): tabelul lat se deruleaza orizontal, verificarile egalitatilor sub el. */
+.table-scroll { overflow-x: auto; }
+.balance-table td, .balance-table th { white-space: nowrap; }
+.check-ok { color: var(--ok); }
+.check-bad { color: var(--error); font-weight: 600; }
+.filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filter-row .cell-input { width: auto; min-width: 140px; }

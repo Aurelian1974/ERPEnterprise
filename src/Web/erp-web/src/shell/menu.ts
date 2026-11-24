@@ -87,6 +87,8 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'alt-charts', label: 'menu.altCharts', path: '/finante/contabilitate/planuri-alternative', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
       { id: 'mapping-rules', label: 'menu.mappingRules', path: '/finante/contabilitate/reguli-mapare', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
       { id: 'mapping-check', label: 'menu.mappingCheck', path: '/finante/contabilitate/verificare-mapare', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
+      { id: 'trial-balance', label: 'menu.trialBalance', path: '/finante/rapoarte/balanta', icon: '', module: 'Finance', permission: 'Fin.Report.TrialBalance' },
+      { id: 'account-ledger', label: 'menu.accountLedger', path: '/finante/rapoarte/fisa-contului', icon: '', module: 'Finance', permission: 'Fin.Report.TrialBalance' },
       { id: 'periods', label: 'menu.periods', path: '/finante/contabilitate/perioade', icon: '', module: 'Finance', permission: 'Fin.Period.View' },
     ],
   },
