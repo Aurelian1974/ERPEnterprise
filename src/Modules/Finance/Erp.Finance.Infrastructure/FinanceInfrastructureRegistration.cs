@@ -74,6 +74,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Accounts.IAltMappingStore, Accounts.AltMappingStore>();
         services.AddScoped<Application.Periods.IAccountingPeriodStore, Periods.AccountingPeriodStore>();
         services.AddScoped<Application.Periods.AccountingPeriodGuard>();
+        services.AddScoped<Application.Accounting.IJournalEntryStore, Accounting.JournalEntryStore>();
         services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
         // Perioadele contabile (C3a) inlocuiesc IPeriodLock-ul implicit al Nucleului (fara perioade inchise).
         services.Replace(ServiceDescriptor.Scoped<IPeriodLock>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>()));
@@ -199,6 +200,18 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
         [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
         [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),
+        [51841] = (ErpErrorKind.NotFound, "FIN_ENTRY_NOT_FOUND"),
+        [51842] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51843] = (ErpErrorKind.Validation, "FIN_ENTRY_UNBALANCED"),
+        [51844] = (ErpErrorKind.Validation, "FIN_ENTRY_ACCOUNT_INVALID"),
+        [51845] = (ErpErrorKind.Validation, "FIN_ENTRY_DIMENSION_MISSING"),
+        [51846] = (ErpErrorKind.Validation, "FIN_ENTRY_PARTY_MISSING"),
+        [51847] = (ErpErrorKind.Validation, "FIN_ENTRY_CURRENCY_NOT_ALLOWED"),
+        [51848] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSED"),
+        [51849] = (ErpErrorKind.Conflict, "FIN_ENTRY_ALREADY_POSTED"),
+        [51850] = (ErpErrorKind.Conflict, "FIN_ENTRY_NOT_DRAFT"),
+        [51852] = (ErpErrorKind.Forbidden, "FIN_ENTRY_AUTOMATIC_REVERSE_FORBIDDEN"),
+        [51853] = (ErpErrorKind.Forbidden, "FIN_ENTRY_FOUR_EYES"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
         [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),

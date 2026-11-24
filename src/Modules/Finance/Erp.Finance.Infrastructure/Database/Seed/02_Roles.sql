@@ -108,7 +108,14 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'DIRECTOR_FINANCIAR',  N'Fin.Period.View'),
         (N'AUDITOR',             N'Fin.Period.View'),
         (N'DEBLOCARE_AN',        N'Fin.Period.View'),
-        (N'DEBLOCARE_AN',        N'Fin.FiscalYear.Unlock')
+        (N'DEBLOCARE_AN',        N'Fin.FiscalYear.Unlock'),
+        (N'CONTABIL',            N'Fin.JournalEntry.View'),
+        (N'CONTABIL',            N'Fin.ManualEntry.Create'),
+        (N'CONTABIL',            N'Fin.ManualEntry.Validate'),
+        (N'CONTABIL',            N'Fin.Posting.Retry'),
+        (N'AUDITOR',             N'Fin.JournalEntry.View'),
+        (N'AUDITOR',             N'Fin.PostingModel.View'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.JournalEntry.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

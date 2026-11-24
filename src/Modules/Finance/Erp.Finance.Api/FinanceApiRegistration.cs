@@ -1,5 +1,6 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
+using Erp.Finance.Application.Accounting;
 using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
@@ -7,6 +8,7 @@ using Erp.Finance.Application.Periods;
 using Erp.Finance.Application.Planning;
 using Erp.Finance.Domain.Planning;
 using Erp.Finance.Application.Settlement;
+using Erp.Finance.Contracts.Accounting;
 using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
 using MediatR;
@@ -420,6 +422,27 @@ public static class FinanceApiRegistration
             .WithName("ClosePeriod").Produces<FinanceSaved>().Problems();
         finance.MapPost("/periods/{id:int}/reopen", (int id, ReopenPeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
             .WithName("ReopenPeriod").Produces<FinanceSaved>().Problems();
+        // Notele contabile (C2 3.5, 3.8, 4.3, 4.5; machetele c2-01, c2-02).
+        finance.MapGet("/journals", (ISender sender, CancellationToken ct) => sender.Send(new GetJournals(), ct))
+            .WithName("GetJournals").Produces<IReadOnlyList<JournalDto>>().Problems();
+        finance.MapGet("/journal-entries", (DateOnly from, DateOnly to, int? journalId, EntrySourceKind? sourceKind, byte? status, string? accountCode,
+                string? search, int? skip, int? take, ISender sender, CancellationToken ct) =>
+                sender.Send(new SearchJournalEntries(from, to, journalId, sourceKind, status, accountCode, search, skip ?? 0, take ?? 100), ct))
+            .WithName("SearchJournalEntries").Produces<JournalEntryPageDto>().Problems();
+        finance.MapGet("/journal-entries/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new GetJournalEntry(id), ct))
+            .WithName("GetJournalEntry").Produces<JournalEntryDto>().Problems();
+        finance.MapPost("/journal-entries", (SaveManualEntry body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapPut("/journal-entries/{id:long}", (long id, SaveManualEntry body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapPost("/journal-entries/{id:long}/validate", (long id, ValidateManualEntry body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ValidateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapDelete("/journal-entries/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new DeleteManualEntry(id), ct))
+            .WithName("DeleteManualEntry").Produces<bool>().Problems();
+        finance.MapPost("/journal-entries/{id:long}/reverse", (long id, ReverseJournalEntry body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ReverseJournalEntry").Produces<EntrySaved>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

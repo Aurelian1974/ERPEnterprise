@@ -78,6 +78,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C1.3 | Planurile alternative (plan, firme, conturi, import din Excel), regulile de mapare (sursă cont / interval / listă, condiții pe linie sau pe sold, vigoare, ținte cu procente), renumerotarea priorităților, simulatorul și verificarea (suprapuneri, reguli care nu se aplică niciodată, conturi fără sursă); testele C1-A5, A6, A9 | Implementat (maparea notelor și recalcularea cu C1b) |
 | C1.4 | Ecranele Planuri alternative, Reguli de mapare (cu simulatorul) și Verificarea mapării (machetele c1-02…c1-04) | Implementat (nemapatele, lunile înghețate și recalcularea cu C1b) |
 | C3a | Perioadele contabile: anul financiar cu lunile lui (manual și prin job, cu 60 de zile înainte), închiderea operativă, închiderea și redeschiderea în ordine, cu motiv și istoric, blocarea documentelor modulelor în lunile închise (`IPeriodLock`), ecranul Perioade contabile (c3-01); testele C3-A1, A4 | Implementat (lista de verificări și notele de închidere cu C3.1–C3.2) |
+| C2.1 | Jurnalele, notele contabile cu liniile lor, nota manuală (ciornă, validare cu verificările pe set, numerotare fără goluri pe jurnal și an, patru ochi opțional) și stornarea în roșu sau în negru; testele C2-A7, A8 | Implementat (modelele de contare cu C2.2, ecranele cu C2.5) |
 
 ## Machete de ecran (`ecrane/`)
 

@@ -3668,6 +3668,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetJournals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchJournalEntries"];
+        put?: never;
+        post: operations["CreateManualEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/journal-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetJournalEntry"];
+        put: operations["UpdateManualEntry"];
+        post?: never;
+        delete: operations["DeleteManualEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/journal-entries/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateManualEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/journal-entries/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReverseJournalEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/fx/revaluations": {
         parameters: {
             query?: never;
@@ -10572,6 +10652,170 @@ export interface components {
         };
         SoftClosePeriod: {
             /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        EntrySaved: {
+            /** Format: int64 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        EntrySourceKind: number;
+        JournalDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: null | number;
+            code: string;
+            name: string;
+            isSystem: boolean;
+            isActive: boolean;
+        };
+        JournalEntryDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            journalId: number;
+            journalCode: string;
+            /** Format: int32 */
+            number: null | number;
+            displayNumber: null | string;
+            /** Format: date */
+            entryDate: string;
+            /** Format: date */
+            accountingDate: string;
+            sourceKind: components["schemas"]["EntrySourceKind"];
+            sourceModule: null | string;
+            sourceDocumentType: null | string;
+            /** Format: int64 */
+            sourceDocumentId: null | number;
+            sourceDocumentNumber: null | string;
+            /** Format: uint8 */
+            status: number;
+            /** Format: int64 */
+            reversalOfId: null | number;
+            /** Format: int64 */
+            reversedById: null | number;
+            description: null | string;
+            totalDebit: string;
+            totalCredit: string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            validatedByName: null | string;
+            createdByName: null | string;
+            /** Format: byte */
+            rowVersion: string;
+            lines: components["schemas"]["JournalLineDto"][];
+        };
+        JournalEntryItemDto: {
+            /** Format: int64 */
+            id: number;
+            journalCode: string;
+            /** Format: int32 */
+            number: null | number;
+            displayNumber: null | string;
+            /** Format: date */
+            accountingDate: string;
+            sourceKind: components["schemas"]["EntrySourceKind"];
+            sourceDocumentType: null | string;
+            sourceDocumentNumber: null | string;
+            /** Format: uint8 */
+            status: number;
+            description: null | string;
+            totalRon: string;
+            /** Format: int32 */
+            lineCount: number;
+            debitAccounts: null | string;
+            creditAccounts: null | string;
+        };
+        JournalEntryPageDto: {
+            /** Format: int32 */
+            total: number;
+            items: components["schemas"]["JournalEntryItemDto"][];
+        };
+        JournalLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            lineNo: number;
+            /** Format: int32 */
+            accountId: number;
+            accountCode: string;
+            accountName: string;
+            /** Format: uint8 */
+            side: number;
+            amountRon: string;
+            currencyCode: null | string;
+            amountCurrency: null | string;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            /** Format: int32 */
+            employeeId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            costCenterCode: null | string;
+            /** Format: int32 */
+            projectId: null | number;
+            projectCode: null | string;
+            /** Format: int32 */
+            warehouseId: null | number;
+            warehouseCode: null | string;
+            /** Format: int32 */
+            siteId: null | number;
+            siteCode: null | string;
+            description: null | string;
+            /** Format: uint8 */
+            resolvedFrom: null | number;
+        };
+        JournalLineInput: {
+            /** Format: int32 */
+            accountId: number;
+            /** Format: uint8 */
+            side: number;
+            amountRon: string;
+            currencyCode?: null | string;
+            amountCurrency?: null | string;
+            /** Format: int32 */
+            partnerId?: null | number;
+            /** Format: int32 */
+            employeeId?: null | number;
+            /** Format: int32 */
+            costCenterId?: null | number;
+            /** Format: int32 */
+            projectId?: null | number;
+            /** Format: int32 */
+            warehouseId?: null | number;
+            /** Format: int32 */
+            siteId?: null | number;
+            description?: null | string;
+        };
+        ReverseJournalEntry: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date */
+            accountingDate: string;
+            reason: string;
+        };
+        SaveManualEntry: {
+            /** Format: int64 */
+            id: null | number;
+            /** Format: int32 */
+            journalId: number;
+            /** Format: date */
+            accountingDate: string;
+            description: null | string;
+            documentRef: null | string;
+            lines: components["schemas"]["JournalLineInput"][];
+            /** @default false */
+            isReclassification: boolean;
+            /** Format: byte */
+            rowVersion?: null | string;
+        };
+        ValidateManualEntry: {
+            /** Format: int64 */
             id: number;
             /** Format: byte */
             rowVersion: string;
@@ -25516,6 +25760,490 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetJournals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SearchJournalEntries: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                journalId?: number;
+                sourceKind?: components["schemas"]["EntrySourceKind"];
+                status?: number;
+                accountCode?: string;
+                search?: string;
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryPageDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateManualEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveManualEntry"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntrySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateManualEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveManualEntry"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntrySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteManualEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateManualEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateManualEntry"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntrySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseJournalEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseJournalEntry"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntrySaved"];
                 };
             };
             /** @description Bad Request */

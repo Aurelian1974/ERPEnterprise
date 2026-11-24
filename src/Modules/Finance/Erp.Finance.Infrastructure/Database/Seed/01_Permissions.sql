@@ -78,7 +78,19 @@ USING (VALUES
     (N'Fin.Period.ManageChecklist',     N'Pașii proprii ai listei de verificări la închidere'),
     (N'Fin.FiscalYear.Close',           N'Crearea și închiderea anului financiar'),
     (N'Fin.FiscalYear.Lock',            N'Blocarea anului financiar după depunerea situațiilor financiare'),
-    (N'Fin.FiscalYear.Unlock',          N'Deblocarea unui an financiar blocat (doar rolul Deblocare an)')
+    (N'Fin.FiscalYear.Unlock',          N'Deblocarea unui an financiar blocat (doar rolul Deblocare an)'),
+    (N'Fin.JournalEntry.View',          N'Notele contabile, registrul jurnal, sursa fiecărei note'),
+    (N'Fin.ManualEntry.Create',         N'Note contabile manuale și de reclasificare (ciorne)'),
+    (N'Fin.ManualEntry.Validate',       N'Validarea notelor manuale'),
+    (N'Fin.ManualEntry.Approve',        N'Aprobarea notelor manuale (patru ochi)'),
+    (N'Fin.ManualEntry.ControlledAccounts', N'Note manuale pe conturile ținute de module (clienți, furnizori, stocuri, trezorerie, TVA)'),
+    (N'Fin.JournalEntry.Reverse',       N'Stornarea notelor manuale'),
+    (N'Fin.JournalEntry.ReverseAutomatic', N'Stornarea notelor automate (recuperare, auditată)'),
+    (N'Fin.PostingModel.View',          N'Modelele de contare și conturile implicite'),
+    (N'Fin.PostingModel.Manage',        N'Modificarea modelelor de contare și a conturilor implicite'),
+    (N'Fin.Posting.Retry',              N'Reîncercarea contării din coada De contat'),
+    (N'Fin.Posting.Ignore',             N'Ignorarea unui rând din coada De contat, cu motiv'),
+    (N'Fin.Posting.Repost',             N'Recontarea notelor unei perioade deschise')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN
