@@ -8,7 +8,7 @@ BEGIN
     -- Un pas al listei de verificari (C3 3.3), pe set: intoarce problemele gasite (Message, DocumentRef, Amount), niciuna = pas in regula.
     -- PREV_PERIOD luna anterioara inca deschisa; EVENTS_IN_TRANSIT evenimente cu model de contare inca neprocesate de outbox (documente validate
     -- care nu au ajuns la contare); CASH_DAYS zile de casa deschise; POSTING_QUEUE coada „De contat” in luna; DRAFT_ENTRIES ciorne de note;
-    -- ALT_MAPPING linii nemapate in planurile cu mapare completa; ABNORMAL_BALANCES 5311 si 371 creditoare, 401 debitor pe partener.
+    -- RECONCILIATION diferentele de concordanta (fin.usp_Reconciliation_Get); ALT_MAPPING linii nemapate in planurile cu mapare completa; ABNORMAL_BALANCES 5311 si 371 creditoare, 401 debitor pe partener.
     SET NOCOUNT ON;
 
     IF @Code = 'PREV_PERIOD'
@@ -34,6 +34,14 @@ BEGIN
         SELECT CONCAT(N'Ciorna din ', CONVERT(char(10), e.AccountingDate, 104), N': ', ISNULL(e.Description, N'')) AS Message, CAST(e.Id AS nvarchar(100)) AS DocumentRef,
             e.TotalDebit AS Amount
         FROM fin.JournalEntry AS e WHERE e.CompanyId = @CompanyId AND e.Status = 1 AND e.AccountingDate BETWEEN @Start AND @End;
+    ELSE IF @Code = 'RECONCILIATION'
+    BEGIN
+        DECLARE @Differences TABLE (Area tinyint, KeyId int, KeyName nvarchar(200), Ledger decimal(19,2), Subledger decimal(19,2), Difference decimal(19,2));
+        INSERT INTO @Differences EXEC fin.usp_Reconciliation_Get @CompanyId = @CompanyId, @AsOf = @End, @Explain = 0;
+        SELECT CONCAT(CASE Area WHEN 1 THEN N'Clienți' WHEN 2 THEN N'Furnizori' ELSE N'Casa' END, N' · ', ISNULL(KeyName, N'—'), N': contabil ', Ledger,
+                N', evidență ', Subledger) AS Message, CAST(KeyId AS nvarchar(100)) AS DocumentRef, Difference AS Amount
+        FROM @Differences;
+    END
     ELSE IF @Code = 'ALT_MAPPING'
         SELECT CONCAT(N'Planul ', c.Code, N': ', COUNT(*), N' linii nemapate.') AS Message, c.Code AS DocumentRef, SUM(m.AmountRon) AS Amount
         FROM fin.JournalLineAltAccount AS m JOIN fin.ChartOfAccounts AS c ON c.Id = m.ChartId AND c.RequireCompleteMapping = 1 AND c.IsActive = 1

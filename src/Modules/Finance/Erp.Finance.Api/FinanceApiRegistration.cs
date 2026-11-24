@@ -493,6 +493,8 @@ public static class FinanceApiRegistration
         finance.MapGet("/reports/general-ledger", (int year, int month, ISender sender, CancellationToken ct) => sender.Send(new GetGeneralLedger(year, month), ct))
             .WithName("GetGeneralLedger").Produces<IReadOnlyList<GeneralLedgerAccountDto>>().Problems();
         // Lista de verificari la inchiderea lunii (C3 3.3, 4.1; macheta c3-02).
+        finance.MapGet("/reconciliation", (DateOnly asOf, ISender sender, CancellationToken ct) => sender.Send(new GetReconciliation(asOf), ct))
+            .WithName("GetReconciliation").Produces<IReadOnlyList<ReconciliationRowDto>>().Problems();
         finance.MapGet("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodCloseRun(id), ct))
             .WithName("GetPeriodCloseRun").Produces<CloseRunDto>().Problems();
         finance.MapPost("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new RunPeriodClose(id), ct))

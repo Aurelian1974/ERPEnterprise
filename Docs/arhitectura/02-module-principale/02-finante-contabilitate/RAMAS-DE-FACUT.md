@@ -33,6 +33,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.22 | Din machetele c2-01, c2-02, c2-04: registrul jurnal, tab-urile Document sursă / Planuri alternative / Note legate, partenerul pe linia notei manuale, efectul în planurile alternative în editor, setarea contului direct din coada De contat | C2 nota C2.5a | Contul se setează din Plan de conturi și Conturi implicite; reîncercarea automată îl preia |
 | 1.23 | Din machetele c2-03, c2-05: variantele noi și condițiile lor din ecran, versiunile modelului cu data de la care se aplică, istoricul versiunilor, conturile pe grupe de articole și pe gestiuni, exportul Excel | C2 nota C2.5b | Liniile variantei se modifică pe loc; recontarea reface notele |
 | 1.24 | Din machetele c5-01, c5-02: exportul Excel și PDF al balanței și fișei, ecranul cărții mari, deschiderea notei și a documentului sursă din fișă, balanța în valută | C5 nota C5a.2 | Datele sunt în API |
+| 1.25 | Concordanțele rămase: băncile (soldul ultimului extras), avansurile spre decontare `542`, TVA neexigibilă `4428`, stocurile (cu modulul Stocuri, prin `ISubledgerBalanceProvider`); pașii `BANK_STATEMENTS`, `FX_REVALUATION`, pașii proprii ai clientului și închiderea operativă automată | C3 nota C3.1b | Concordanțele clienți, furnizori și casă rulează |
 
 ## 2. Depinde de alte module sau de Nucleu
 

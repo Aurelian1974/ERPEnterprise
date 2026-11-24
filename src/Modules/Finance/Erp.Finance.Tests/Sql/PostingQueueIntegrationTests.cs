@@ -85,7 +85,10 @@ public sealed class PostingQueueIntegrationTests : FinanceTestBase, IClassFixtur
         await Send(new CreateFiscalYear(2026));
         var year = (await Send(new GetAccountingPeriods())).Single(y => y.Year == 2026);
         var january = year.Periods[0];
-        var old = await Post(PostingAdapters.SupplierInvoice(Purchase(partner, 70m, new DateOnly(2026, 1, 10))));
+        // Factura e si in partide (F3), ca concordanta lunii sa nu blocheze inchiderea.
+        var januaryPurchase = Purchase(partner, 70m, new DateOnly(2026, 1, 10));
+        await InTransaction(sp => sp.GetRequiredService<Erp.Finance.Application.Settlement.InvoiceOpenItems>().RegisterAsync(januaryPurchase, Ct));
+        var old = await Post(PostingAdapters.SupplierInvoice(januaryPurchase));
         await Send(new ClosePeriod(january.Id, january.RowVersion));
         await Role("PurchaseExpense", "628");
         Assert.DoesNotContain(await Send(new PreviewRepost(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31))), c => c.EntryId == old.EntryId);

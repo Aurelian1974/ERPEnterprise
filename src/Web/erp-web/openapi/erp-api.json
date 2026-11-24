@@ -21527,6 +21527,80 @@
         }
       }
     },
+    "/api/finance/reconciliation": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetReconciliation",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReconciliationRowDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/periods/{id}/close-run": {
       "get": {
         "tags": [
@@ -52277,6 +52351,74 @@
           },
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "ReconciliationExplanationDto": {
+        "required": [
+          "queueId",
+          "documentNo",
+          "reason",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "queueId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentNo": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "amount": {
+            "type": "string"
+          }
+        }
+      },
+      "ReconciliationRowDto": {
+        "required": [
+          "area",
+          "keyId",
+          "keyName",
+          "ledger",
+          "subledger",
+          "difference",
+          "explanations"
+        ],
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "keyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "keyName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ledger": {
+            "type": "string"
+          },
+          "subledger": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string"
+          },
+          "explanations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationExplanationDto"
+            }
           }
         }
       }

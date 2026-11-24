@@ -9,6 +9,7 @@ USING (VALUES
     ('CASH_DAYS',         N'Toate zilele de casă din lună sunt închise', 40),
     ('POSTING_QUEUE',     N'Coada „De contat” nu are documente datate în lună', 60),
     ('DRAFT_ENTRIES',     N'Nu există ciorne de note manuale sau recurente în lună', 70),
+    ('RECONCILIATION',    N'Concordanțele cu evidența operativă (clienți, furnizori, casă) nu au diferențe', 110),
     ('ALT_MAPPING',       N'Liniile lunii sunt mapate în planurile alternative cu mapare completă', 120),
     ('ABNORMAL_BALANCES', N'Conturi cu sold pe partea greșită', 130)
 ) AS source (Code, Name, SortOrder)

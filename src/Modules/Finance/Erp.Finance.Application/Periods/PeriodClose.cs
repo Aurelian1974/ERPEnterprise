@@ -15,6 +15,13 @@ public sealed record CloseRunDto(long Id, int PeriodId, bool CanClose, DateTime 
 public sealed record CloseStepRecord(string StepCode, CloseCheckSeverity Severity, bool AllowOverride, CloseCheckOutcome Outcome, string Summary,
     IReadOnlyList<CloseCheckIssue> Issues, string? OverrideReason, int? OverriddenBy);
 
+/// <summary>Un document din coada „De contat” care explica o diferenta de concordanta (C3 3.4).</summary>
+public sealed record ReconciliationExplanationDto(long QueueId, string DocumentNo, byte Reason, string Amount);
+
+/// <summary>O diferenta de concordanta (macheta c3-03). Area: 1 clienti, 2 furnizori, 3 casa; KeyId e partenerul sau casa.</summary>
+public sealed record ReconciliationRowDto(byte Area, int KeyId, string? KeyName, string Ledger, string Subledger, string Difference,
+    IReadOnlyList<ReconciliationExplanationDto> Explanations);
+
 /// <summary>Lista de verificari prin fin.usp_PeriodCloseRun_*, fin.usp_AccountingPeriod_Get, fin.usp_PeriodCloseStep_Active (NET-06).</summary>
 public interface IPeriodCloseStore
 {
@@ -27,6 +34,8 @@ public interface IPeriodCloseStore
     Task<CloseRunDto?> LatestAsync(int companyId, int periodId, CancellationToken ct);
 
     Task OverrideAsync(int companyId, long runId, string stepCode, string reason, int userId, CancellationToken ct);
+
+    Task<IReadOnlyList<ReconciliationRowDto>> ReconciliationAsync(int companyId, DateOnly asOf, CancellationToken ct);
 }
 
 /// <summary>
@@ -101,9 +110,17 @@ internal sealed class OverrideCloseStepValidator : AbstractValidator<OverrideClo
     }
 }
 
+/// <summary>Concordantele la o data (C3 3.4, macheta c3-03): diferentele dintre contabilitate si evidenta operativa, cu documentele care le explica.</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.PeriodView)]
+public sealed record GetReconciliation(DateOnly AsOf) : IQuery<IReadOnlyList<ReconciliationRowDto>>;
+
 internal sealed class PeriodCloseHandlers(PeriodCloseService service, IPeriodCloseStore store, ICurrentContext context, IAuditScope audit) :
-    IQueryHandler<GetPeriodCloseRun, CloseRunDto?>, ICommandHandler<RunPeriodClose, CloseRunDto>, ICommandHandler<OverrideCloseStep, bool>
+    IQueryHandler<GetReconciliation, IReadOnlyList<ReconciliationRowDto>>, IQueryHandler<GetPeriodCloseRun, CloseRunDto?>, ICommandHandler<RunPeriodClose, CloseRunDto>, ICommandHandler<OverrideCloseStep, bool>
 {
+    public Task<IReadOnlyList<ReconciliationRowDto>> Handle(GetReconciliation request, CancellationToken cancellationToken) =>
+        store.ReconciliationAsync(context.CompanyId, request.AsOf, cancellationToken);
+
     public Task<CloseRunDto?> Handle(GetPeriodCloseRun request, CancellationToken cancellationToken) =>
         store.LatestAsync(context.CompanyId, request.PeriodId, cancellationToken);
 

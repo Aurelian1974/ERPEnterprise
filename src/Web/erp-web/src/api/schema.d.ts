@@ -3988,6 +3988,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/periods/{id}/close-run": {
         parameters: {
             query?: never;
@@ -11571,6 +11587,25 @@ export interface components {
             runId: number;
             stepCode: string;
             reason: string;
+        };
+        ReconciliationExplanationDto: {
+            /** Format: int64 */
+            queueId: number;
+            documentNo: string;
+            /** Format: uint8 */
+            reason: number;
+            amount: string;
+        };
+        ReconciliationRowDto: {
+            /** Format: uint8 */
+            area: number;
+            /** Format: int32 */
+            keyId: number;
+            keyName: null | string;
+            ledger: string;
+            subledger: string;
+            difference: string;
+            explanations: components["schemas"]["ReconciliationExplanationDto"][];
         };
     };
     responses: never;
@@ -27967,6 +28002,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GeneralLedgerAccountDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetReconciliation: {
+        parameters: {
+            query: {
+                asOf: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationRowDto"][];
                 };
             };
             /** @description Bad Request */

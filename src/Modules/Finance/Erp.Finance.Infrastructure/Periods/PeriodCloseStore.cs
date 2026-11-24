@@ -50,6 +50,20 @@ public sealed class PeriodCloseStore(IDbSession session) : IPeriodCloseStore
             CompanyId = companyId, RunId = runId, StepCode = stepCode, Reason = reason, UserId = userId,
         }, ct));
 
+    public async Task<IReadOnlyList<ReconciliationRowDto>> ReconciliationAsync(int companyId, DateOnly asOf, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_Reconciliation_Get", new
+        {
+            CompanyId = companyId, AsOf = asOf.ToDateTime(TimeOnly.MinValue), Explain = true,
+        }, ct)).ConfigureAwait(false);
+        var rows = (await grid.ReadAsync<(byte Area, int KeyId, string? KeyName, decimal Ledger, decimal Subledger, decimal Difference)>().ConfigureAwait(false)).ToList();
+        var explain = (await grid.ReadAsync<(byte Area, int KeyId, long QueueId, string DocumentNo, byte Reason, decimal Amount)>().ConfigureAwait(false))
+            .ToLookup(e => (e.Area, e.KeyId));
+        return rows.Select(r => new ReconciliationRowDto(r.Area, r.KeyId, r.KeyName, Domain.Money.Format(r.Ledger), Domain.Money.Format(r.Subledger),
+            Domain.Money.Format(r.Difference), explain[(r.Area, r.KeyId)].Select(e => new ReconciliationExplanationDto(e.QueueId, e.DocumentNo, e.Reason,
+                Domain.Money.Format(e.Amount))).ToList())).ToList();
+    }
+
     private CommandDefinition Command(string name, object? parameters, CancellationToken ct) =>
         new(name, parameters, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct);
 
@@ -89,6 +103,7 @@ public sealed class SqlPeriodCloseCheck(IDbSession session, string code, CloseCh
         ("CASH_DAYS", CloseCheckSeverity.Blocking, true, "Toate zilele de casă sunt închise.", "{0} zile de casă deschise."),
         ("POSTING_QUEUE", CloseCheckSeverity.Blocking, false, "Coada „De contat” e goală pentru lună.", "{0} documente așteaptă în coada „De contat”."),
         ("DRAFT_ENTRIES", CloseCheckSeverity.Blocking, true, "Nicio ciornă de notă în lună.", "{0} ciorne de note în lună."),
+        ("RECONCILIATION", CloseCheckSeverity.Blocking, true, "Concordanțele nu au diferențe.", "{0} diferențe de concordanță."),
         ("ALT_MAPPING", CloseCheckSeverity.Blocking, false, "Planurile cu mapare completă nu au linii nemapate.", "{0} planuri alternative au linii nemapate."),
         ("ABNORMAL_BALANCES", CloseCheckSeverity.Warning, false, "Niciun sold pe partea greșită.", "{0} conturi cu sold pe partea greșită."),
     ];
