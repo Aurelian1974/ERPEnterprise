@@ -62,3 +62,10 @@ public interface IAccountable
 {
     AccountingPayload? Accounting { get; }
 }
+
+/// <summary>Un eveniment a intrat in coada „De contat” (C2 5.1), la primul esec. Consumator: notificarea rolului Contabil sef.</summary>
+public sealed record ContareEsuata(Guid SourceEventId, string EventType, byte Reason, string? SourceDocumentType, long? SourceDocumentId,
+    string? SourceDocumentNumber, DateOnly AccountingDate) : IntegrationEvent;
+
+/// <summary>Recontarea unei note automate (C2 4.6, 5.1): versiunea veche din istoric si totalurile. Consumator: Raportare.</summary>
+public sealed record NotaContabilaRecontata(long EntryId, int OldVersion, decimal OldTotalRon, decimal NewTotalRon) : IntegrationEvent;

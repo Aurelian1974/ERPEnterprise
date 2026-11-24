@@ -34,6 +34,26 @@ public sealed record PostingInsertResult(int ErrorCode, string? ErrorMessage, Jo
 public sealed record PostingRequest(Guid EventId, string EventType, int CompanyId, AccountingPayload Payload);
 
 /// <summary>Rezultatul contarii unui eveniment: nota scrisa, sau motivul pentru care evenimentul a intrat in coada.</summary>
+/// <summary>Un rand din coada de reincercat: evenimentul si contractul lui pastrat.</summary>
+public sealed record QueuedEvent(long Id, Guid EventId, string EventType, int CompanyId, AccountingPayload Payload);
+
+/// <summary>Ce randuri din coada se reincearca: unul, ale unei firme pe motiv sau pe interval, ori cele vechi (jobul).</summary>
+public sealed record QueueFilter(int? CompanyId = null, long? Id = null, PostingFailureReason? Reason = null, DateOnly? From = null, DateOnly? To = null,
+    DateTime? OlderThan = null, bool SkipClosedPeriod = false, int Take = 500);
+
+/// <summary>Un rand al cozii „De contat” (macheta c2-04). Status: 1 in asteptare, 2 rezolvat, 3 ignorat.</summary>
+public sealed record PostingQueueItemDto(long Id, Guid EventId, string EventType, string? SourceDocumentType, long? SourceDocumentId,
+    string? SourceDocumentNumber, DateOnly AccountingDate, PostingFailureReason Reason, string? Details, byte Status, int Attempts, DateTime LastAttemptAt,
+    long? ResolvedEntryId, string? IgnoreReason, byte[] RowVersion);
+
+/// <summary>O linie existenta a unei note, pe cod de cont, pentru comparatia de la recontare.</summary>
+public sealed record ExistingLine(string AccountCode, byte Side, decimal AmountRon, int? PartnerId, int? EmployeeId, int? CostCenterId, int? ProjectId,
+    int? WarehouseId, int? SiteId);
+
+/// <summary>O nota automata care se poate reconta: contractul pastrat si liniile de acum.</summary>
+public sealed record RepostCandidate(long Id, string JournalCode, int Number, DateOnly AccountingDate, string EventType, AccountingPayload Payload,
+    byte[] RowVersion, IReadOnlyList<ExistingLine> Lines);
+
 public sealed record PostingOutcome(long? EntryId, PostingFailureReason? Reason, string? Details)
 {
     public bool Posted => EntryId is not null;
@@ -48,7 +68,24 @@ public interface IPostingStore
 
     Task<PostingInsertResult> InsertAsync(PostingRequest request, int journalId, int? variantId, IReadOnlyList<PostingLine> lines, CancellationToken ct);
 
-    Task QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct);
+    /// <summary>Nota de storno a notei documentului original (C2 4.2); ErrorCode -1 daca originalul nu are nota.</summary>
+    Task<PostingInsertResult> ReverseFromEventAsync(PostingRequest request, long originalDocumentId, bool black, CancellationToken ct);
+
+    Task<byte?> PendingReasonAsync(int companyId, string documentType, long documentId, CancellationToken ct);
+
+    /// <summary>Pune evenimentul in coada; true la primul esec.</summary>
+    Task<bool> QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct);
+
+    Task<IReadOnlyList<QueuedEvent>> DueAsync(QueueFilter filter, CancellationToken ct);
+
+    Task<IReadOnlyList<PostingQueueItemDto>> ListQueueAsync(int companyId, byte? status, CancellationToken ct);
+
+    Task IgnoreAsync(int companyId, long id, string reason, byte[] rowVersion, int userId, CancellationToken ct);
+
+    Task<IReadOnlyList<RepostCandidate>> RepostCandidatesAsync(int companyId, DateOnly from, DateOnly to, string? eventType, CancellationToken ct);
+
+    Task<(int OldVersion, decimal OldTotal, decimal NewTotal)> RepostAsync(int companyId, long entryId, byte[] rowVersion, int? variantId,
+        IReadOnlyList<PostingLine> lines, string reason, int userId, CancellationToken ct);
 
     Task<string?> SettingAsync(int companyId, string code, CancellationToken ct);
 }
@@ -60,6 +97,7 @@ public interface IPostingStore
 /// </summary>
 public sealed class PostingService(IPostingStore store, IOutbox outbox)
 {
+    public const string ReversalStyleSetting = "Fin.Posting.ReversalStyle";
     public const string MaxRoundingSetting = "Fin.Posting.MaxRoundingDiff";
     public const string DefaultCostCenterSetting = "Fin.Posting.DefaultCostCenterId";
     public const int SystemUserId = 1;
@@ -67,6 +105,25 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
     public async Task<PostingOutcome> PostAsync(PostingRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var p = request.Payload;
+        if (p.IsReversal && p.ReversedDocumentId is { } original)
+        {
+            // Stornarea la sursa (C2 4.2): nota de storno a notei originale, cu conturile ei, nu o contare cu modelul de azi.
+            var black = string.Equals(await store.SettingAsync(request.CompanyId, ReversalStyleSetting, ct).ConfigureAwait(false), "Black",
+                StringComparison.OrdinalIgnoreCase);
+            var reversed = await store.ReverseFromEventAsync(request, original, black, ct).ConfigureAwait(false);
+            if (reversed.ErrorCode != -1)
+            {
+                return await Written(request, reversed, ct).ConfigureAwait(false);
+            }
+
+            if (await store.PendingReasonAsync(request.CompanyId, p.DocumentType, original, ct).ConfigureAwait(false) is { } pending)
+            {
+                return await QueueAsync(request, (PostingFailureReason)pending, "Documentul stornat așteaptă și el în coadă; se rezolvă împreună.", ct)
+                    .ConfigureAwait(false);
+            }
+        }
+
         var (model, result) = await BuildAsync(request.CompanyId, request.EventType, request.Payload, ct).ConfigureAwait(false);
         if (!result.Succeeded || model is null)
         {
@@ -74,6 +131,18 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
         }
 
         var written = await store.InsertAsync(request, model.JournalId, result.VariantId, result.Lines, ct).ConfigureAwait(false);
+        return await Written(request, written, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Reincercarea unui rand din coada (C2 4.4), din contractul pastrat.</summary>
+    public Task<PostingOutcome> RetryAsync(QueuedEvent queued, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(queued);
+        return PostAsync(new PostingRequest(queued.EventId, queued.EventType, queued.CompanyId, queued.Payload), ct);
+    }
+
+    private async Task<PostingOutcome> Written(PostingRequest request, PostingInsertResult written, CancellationToken ct)
+    {
         switch (written.ErrorCode)
         {
             case 0:
@@ -86,7 +155,7 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
         }
     }
 
-    /// <summary>Simularea (C2 4.2, IPostingPreview): aceeasi functie ca la contarea reala, fara scriere.</summary>
+    /// <summary>Simularea (C2 4.2, IPostingPreview) si recontarea (4.6): aceeasi functie ca la contarea reala, fara scriere.</summary>
     public async Task<PostingResult> PreviewAsync(int companyId, string eventType, AccountingPayload payload, CancellationToken ct) =>
         (await BuildAsync(companyId, eventType, payload, ct).ConfigureAwait(false)).Result;
 
@@ -107,7 +176,7 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
         var data = await store.LoadContextAsync(companyId, payload.AccountingDate, partners, ct).ConfigureAwait(false);
         var maxDiff = Money.ParseOptional(await store.SettingAsync(companyId, MaxRoundingSetting, ct).ConfigureAwait(false)) ?? 0.05m;
         var result = PostingEngine.Build(model, payload, data.ToContext(maxDiff));
-        if (result.Succeeded && int.TryParse(await store.SettingAsync(companyId, DefaultCostCenterSetting, ct).ConfigureAwait(false), out var costCenter))
+        if (result.Succeeded && int.TryParse(await store.SettingAsync(companyId, DefaultCostCenterSetting, ct).ConfigureAwait(false), out var costCenter) && costCenter > 0)
         {
             // Liniile de cheltuieli si venituri fara centru de cost (documentul nu l-a dat) primesc centrul implicit al firmei (C1 3.2).
             result = result with
@@ -122,7 +191,13 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
 
     private async Task<PostingOutcome> QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct)
     {
-        await store.QueueAsync(request, reason, details, ct).ConfigureAwait(false);
+        if (await store.QueueAsync(request, reason, details, ct).ConfigureAwait(false))
+        {
+            var p = request.Payload;
+            await outbox.EnqueueAsync(new ContareEsuata(request.EventId, request.EventType, (byte)reason, p.DocumentType, p.DocumentId == 0 ? null : p.DocumentId,
+                p.DocumentNumber, p.AccountingDate) { CompanyId = request.CompanyId }, ct).ConfigureAwait(false);
+        }
+
         return new PostingOutcome(null, reason, details);
     }
 }

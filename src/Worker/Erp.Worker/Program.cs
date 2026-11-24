@@ -82,6 +82,7 @@ builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.Tva
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.DiferentaCursInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.CompensareValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.DecontCheltuieliValidat, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaRedeschisa, Erp.Finance.Infrastructure.Accounting.RetryQueueOnReopen>();
 builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
     TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
     sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));
@@ -137,6 +138,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         // 02.02, C3 3.1: anii financiari urmatori, cu 60 de zile inainte, zilnic la 00:20 ora Romaniei.
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Periods.FiscalYearCreation>(Erp.Finance.Infrastructure.Periods.FiscalYearCreation.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Periods.FiscalYearCreation.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C2 4.4: coada „De contat” se reincearca la 15 minute (configurarea schimbata intre timp poate rezolva motivul).
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Accounting.PostingQueueRetry>(Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions

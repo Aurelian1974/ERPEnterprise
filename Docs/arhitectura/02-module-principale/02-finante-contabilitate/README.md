@@ -79,7 +79,8 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C1.4 | Ecranele Planuri alternative, Reguli de mapare (cu simulatorul) și Verificarea mapării (machetele c1-02…c1-04) | Implementat (nemapatele, lunile înghețate și recalcularea cu C1b) |
 | C3a | Perioadele contabile: anul financiar cu lunile lui (manual și prin job, cu 60 de zile înainte), închiderea operativă, închiderea și redeschiderea în ordine, cu motiv și istoric, blocarea documentelor modulelor în lunile închise (`IPeriodLock`), ecranul Perioade contabile (c3-01); testele C3-A1, A4 | Implementat (lista de verificări și notele de închidere cu C3.1–C3.2) |
 | C2.1 | Jurnalele, notele contabile cu liniile lor, nota manuală (ciornă, validare cu verificările pe set, numerotare fără goluri pe jurnal și an, patru ochi opțional) și stornarea în roșu sau în negru; testele C2-A7, A8 | Implementat (modelele de contare cu C2.2, ecranele cu C2.5) |
-| C2.2 + C2.3 | Modelele de contare, cheile de cont, motorul de contare, contractul `AccountingPayload`, contarea automată a facturilor, încasărilor, plăților, TVA la încasare, diferențelor de curs, compensărilor și deconturilor, coada „De contat”; testele C2-A1, A2, A3, A4, A6 | Implementat (reevaluarea, efectele și stornările de trezorerie în RAMAS 1.15–1.18) |
+| C2.2 + C2.3 | Modelele de contare, cheile de cont, motorul de contare, contractul `AccountingPayload`, contarea automată a facturilor, încasărilor, plăților, TVA la încasare, diferențelor de curs, compensărilor și deconturilor, coada „De contat”; testele C2-A1, A2, A3, A4 | Implementat (reevaluarea, efectele și stornările de trezorerie în RAMAS 1.15–1.18) |
+| C2.4a | Stornarea la sursă cu conturile notei inițiale, coada „De contat” (listă, reîncercare manuală și automată, ignorare, `ContareEsuata`), recontarea lunilor neînchise cu istoric; testele C2-A5, A6, A9 | Implementat (notele recurente cu C2.4b, ecranul cozii cu C2.5) |
 
 ## Machete de ecran (`ecrane/`)
 

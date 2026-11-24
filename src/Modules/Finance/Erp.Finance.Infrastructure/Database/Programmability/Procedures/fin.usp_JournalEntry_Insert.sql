@@ -11,6 +11,8 @@ CREATE OR ALTER PROCEDURE fin.usp_JournalEntry_Insert
     @VariantId             int = NULL,
     @Description           nvarchar(400) = NULL,
     @Lines                 nvarchar(max),
+    @EventType             varchar(80) = NULL,
+    @Payload               nvarchar(max) = NULL,
     @UserId                int
 AS
 BEGIN
@@ -75,6 +77,9 @@ BEGIN
     SELECT @Id, @CompanyId, YEAR(@AccountingDate), MONTH(@AccountingDate), LineNumber, AccountId, Side, AmountRon, CurrencyCode, AmountCurrency, PartnerId,
         EmployeeId, CostCenterId, ProjectId, WarehouseId, SiteId, VatRateCode, VatCategory, Description, ResolvedFrom, SourceLineRef
     FROM @New;
+
+    IF @Payload IS NOT NULL
+        INSERT INTO fin.JournalEntrySource (EntryId, EventType, Payload) VALUES (@Id, @EventType, @Payload);
 
     EXEC fin.usp_JournalEntry_FirstError @EntryId = @Id, @ErrorCode = @Code OUTPUT, @ErrorMessage = @Message OUTPUT;
     IF @Code <> 0

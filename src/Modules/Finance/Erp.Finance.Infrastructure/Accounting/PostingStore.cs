@@ -56,32 +56,106 @@ public sealed class PostingStore(IDbSession session) : IPostingStore
             request.CompanyId, JournalId = journalId, AccountingDate = Day(p.AccountingDate), DocumentDate = Day(p.DocumentDate), p.SourceModule,
             SourceDocumentType = p.DocumentType, SourceDocumentId = p.DocumentId == 0 ? (long?)null : p.DocumentId, SourceDocumentNumber = p.DocumentNumber,
             SourceEventId = request.EventId, VariantId = variantId, Description = Description(p), UserId = PostingService.SystemUserId,
-            Lines = JsonSerializer.Serialize(lines.Select(l => new
-            {
-                accountCode = l.AccountCode, side = l.Side, amountRon = l.AmountRon, currencyCode = l.CurrencyCode, amountCurrency = l.AmountCurrency,
-                partnerId = l.PartnerId, employeeId = l.EmployeeId, costCenterId = l.CostCenterId, projectId = l.ProjectId, warehouseId = l.WarehouseId,
-                siteId = l.SiteId, vatRateCode = l.VatRateCode, vatCategory = l.VatCategory, description = l.Description, resolvedFrom = (byte)l.ResolvedFrom,
-                sourceLineRef = l.SourceLineRef,
-            })),
+            request.EventType, Payload = JsonSerializer.Serialize(p, Json),
+            Lines = LinesJson(lines),
         }, ct)).ConfigureAwait(false);
+        return await Written(grid).ConfigureAwait(false);
+    }
+
+    public async Task<PostingInsertResult> ReverseFromEventAsync(PostingRequest request, long originalDocumentId, bool black, CancellationToken ct)
+    {
+        var p = request.Payload;
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_JournalEntry_ReverseFromEvent", new
+        {
+            request.CompanyId, OriginalDocumentType = p.DocumentType, OriginalDocumentId = originalDocumentId, SourceEventId = request.EventId,
+            AccountingDate = Day(p.AccountingDate), SourceDocumentId = p.DocumentId == 0 ? (long?)null : p.DocumentId, SourceDocumentNumber = p.DocumentNumber,
+            Black = black, UserId = PostingService.SystemUserId,
+        }, ct)).ConfigureAwait(false);
+        return await Written(grid).ConfigureAwait(false);
+    }
+
+    public Task<byte?> PendingReasonAsync(int companyId, string documentType, long documentId, CancellationToken ct) =>
+        session.Connection.QuerySingleOrDefaultAsync<byte?>(Command("fin.usp_PostingQueue_PendingFor", new
+        {
+            CompanyId = companyId, SourceDocumentType = documentType, SourceDocumentId = documentId,
+        }, ct));
+
+    public async Task<IReadOnlyList<QueuedEvent>> DueAsync(QueueFilter filter, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        var rows = await session.Connection.QueryAsync<(long Id, Guid EventId, string EventType, int CompanyId, string Payload)>(Command(
+            "fin.usp_PostingQueue_Due", new
+            {
+                filter.CompanyId, filter.Id, Reason = (byte?)filter.Reason, From = filter.From is { } f ? Day(f) : (DateTime?)null,
+                To = filter.To is { } t ? Day(t) : (DateTime?)null, filter.OlderThan, filter.SkipClosedPeriod, filter.Take,
+            }, ct)).ConfigureAwait(false);
+        return rows.Select(r => new QueuedEvent(r.Id, r.EventId, r.EventType, r.CompanyId, Payload(r.Payload))).ToList();
+    }
+
+    public async Task<IReadOnlyList<PostingQueueItemDto>> ListQueueAsync(int companyId, byte? status, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<QueueRow>(Command("fin.usp_PostingQueue_List", new { CompanyId = companyId, Status = status }, ct))
+            .ConfigureAwait(false))
+        .Select(q => new PostingQueueItemDto(q.Id, q.EventId, q.EventType, q.SourceDocumentType, q.SourceDocumentId, q.SourceDocumentNumber,
+            DateOnly.FromDateTime(q.AccountingDate), (PostingFailureReason)q.Reason, q.Details, q.Status, q.Attempts, q.LastAttemptAt, q.ResolvedEntryId,
+            q.IgnoreReason, q.RowVersion)).ToList();
+
+    public Task IgnoreAsync(int companyId, long id, string reason, byte[] rowVersion, int userId, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_PostingQueue_Ignore", new
+        {
+            CompanyId = companyId, Id = id, Reason = reason, RowVersion = rowVersion, UserId = userId,
+        }, ct));
+
+    public async Task<IReadOnlyList<RepostCandidate>> RepostCandidatesAsync(int companyId, DateOnly from, DateOnly to, string? eventType, CancellationToken ct)
+    {
+        using var grid = await session.Connection.QueryMultipleAsync(Command("fin.usp_JournalEntry_RepostCandidates", new
+        {
+            CompanyId = companyId, From = Day(from), To = Day(to), EventType = eventType,
+        }, ct)).ConfigureAwait(false);
+        var entries = (await grid.ReadAsync<CandidateRow>().ConfigureAwait(false)).ToList();
+        var lines = (await grid.ReadAsync<CandidateLineRow>().ConfigureAwait(false)).ToLookup(l => l.EntryId);
+        return entries.Select(e => new RepostCandidate(e.Id, e.JournalCode, e.Number, DateOnly.FromDateTime(e.AccountingDate), e.EventType, Payload(e.Payload),
+            e.RowVersion, lines[e.Id].Select(l => new ExistingLine(l.AccountCode, l.Side, l.AmountRon, l.PartnerId, l.EmployeeId, l.CostCenterId, l.ProjectId,
+                l.WarehouseId, l.SiteId)).ToList())).ToList();
+    }
+
+    public async Task<(int OldVersion, decimal OldTotal, decimal NewTotal)> RepostAsync(int companyId, long entryId, byte[] rowVersion, int? variantId,
+        IReadOnlyList<PostingLine> lines, string reason, int userId, CancellationToken ct) =>
+        await session.Connection.QuerySingleAsync<(int, decimal, decimal)>(Command("fin.usp_JournalEntry_Repost", new
+        {
+            CompanyId = companyId, Id = entryId, RowVersion = rowVersion, VariantId = variantId, Lines = LinesJson(lines), Reason = reason, UserId = userId,
+        }, ct)).ConfigureAwait(false);
+
+    public async Task<bool> QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct) =>
+        await session.Connection.QuerySingleAsync<bool>(Command("fin.usp_PostingQueue_Upsert", new
+        {
+            request.EventId, request.EventType, request.CompanyId, SourceDocumentType = request.Payload.DocumentType,
+            SourceDocumentId = request.Payload.DocumentId == 0 ? (long?)null : request.Payload.DocumentId, SourceDocumentNumber = request.Payload.DocumentNumber,
+            AccountingDate = Day(request.Payload.AccountingDate), Reason = (byte)reason, Details = details is { Length: > 2000 } ? details[..2000] : details,
+            Payload = JsonSerializer.Serialize(request.Payload, Json),
+        }, ct)).ConfigureAwait(false);
+
+    public Task<string?> SettingAsync(int companyId, string code, CancellationToken ct) =>
+        session.Connection.QuerySingleOrDefaultAsync<string?>(Command("fin.usp_CompanySetting_Get", new { CompanyId = companyId, Code = code }, ct));
+
+    private static string LinesJson(IReadOnlyList<PostingLine> lines) => JsonSerializer.Serialize(lines.Select(l => new
+    {
+        accountCode = l.AccountCode, side = l.Side, amountRon = l.AmountRon, currencyCode = l.CurrencyCode, amountCurrency = l.AmountCurrency,
+        partnerId = l.PartnerId, employeeId = l.EmployeeId, costCenterId = l.CostCenterId, projectId = l.ProjectId, warehouseId = l.WarehouseId,
+        siteId = l.SiteId, vatRateCode = l.VatRateCode, vatCategory = l.VatCategory, description = l.Description, resolvedFrom = (byte)l.ResolvedFrom,
+        sourceLineRef = l.SourceLineRef,
+    }));
+
+    private static AccountingPayload Payload(string json) =>
+        JsonSerializer.Deserialize<AccountingPayload>(json, Json) ?? throw new InvalidOperationException("Contractul de contare păstrat e gol.");
+
+    private static async Task<PostingInsertResult> Written(SqlMapper.GridReader grid)
+    {
         var status = await grid.ReadSingleAsync<(int ErrorCode, string? ErrorMessage)>().ConfigureAwait(false);
         var header = grid.IsConsumed ? null : (await grid.ReadAsync<HeaderRow>().ConfigureAwait(false)).SingleOrDefault();
         return new PostingInsertResult(status.ErrorCode, status.ErrorMessage, header is null ? null
             : new JournalEntryHeader(header.Id, header.CompanyId, header.JournalCode, header.Number, DateOnly.FromDateTime(header.AccountingDate),
                 (EntrySourceKind)header.SourceKind, header.SourceDocumentType, header.SourceDocumentId, header.TotalDebit, header.RowVersion));
     }
-
-    public Task QueueAsync(PostingRequest request, PostingFailureReason reason, string? details, CancellationToken ct) =>
-        session.Connection.ExecuteAsync(Command("fin.usp_PostingQueue_Upsert", new
-        {
-            request.EventId, request.EventType, request.CompanyId, SourceDocumentType = request.Payload.DocumentType,
-            SourceDocumentId = request.Payload.DocumentId == 0 ? (long?)null : request.Payload.DocumentId, SourceDocumentNumber = request.Payload.DocumentNumber,
-            AccountingDate = Day(request.Payload.AccountingDate), Reason = (byte)reason, Details = details is { Length: > 2000 } ? details[..2000] : details,
-            Payload = JsonSerializer.Serialize(request.Payload, Json),
-        }, ct));
-
-    public Task<string?> SettingAsync(int companyId, string code, CancellationToken ct) =>
-        session.Connection.QuerySingleOrDefaultAsync<string?>(Command("fin.usp_CompanySetting_Get", new { CompanyId = companyId, Code = code }, ct));
 
     private static string Description(AccountingPayload p) => p.DocumentNumber is { Length: > 0 } n ? $"{p.DocumentType} {n}" : p.DocumentType;
 
@@ -92,6 +166,15 @@ public sealed class PostingStore(IDbSession session) : IPostingStore
 
     private CommandDefinition Command(string name, object? parameters, CancellationToken ct) =>
         new(name, parameters, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct);
+
+    private sealed record QueueRow(long Id, Guid EventId, string EventType, string? SourceDocumentType, long? SourceDocumentId, string? SourceDocumentNumber,
+        DateTime AccountingDate, byte Reason, string? Details, byte Status, int Attempts, DateTime LastAttemptAt, long? ResolvedEntryId, string? IgnoreReason,
+        string Payload, byte[] RowVersion);
+
+    private sealed record CandidateRow(long Id, string JournalCode, int Number, DateTime AccountingDate, string EventType, string Payload, byte[] RowVersion);
+
+    private sealed record CandidateLineRow(long EntryId, string AccountCode, byte Side, decimal AmountRon, int? PartnerId, int? EmployeeId, int? CostCenterId,
+        int? ProjectId, int? WarehouseId, int? SiteId);
 
     private sealed record ModelRow(int Id, string EventType, int JournalId);
 

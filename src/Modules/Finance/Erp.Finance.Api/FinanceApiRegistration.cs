@@ -443,6 +443,19 @@ public static class FinanceApiRegistration
         finance.MapPost("/journal-entries/{id:long}/reverse", (long id, ReverseJournalEntry body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { Id = id }, ct))
             .WithName("ReverseJournalEntry").Produces<EntrySaved>().Problems();
+        // Coada „De contat” si recontarea (C2 3.7, 4.4, 4.6; macheta c2-04).
+        finance.MapGet("/posting-queue", (byte? status, ISender sender, CancellationToken ct) => sender.Send(new GetPostingQueue(status), ct))
+            .WithName("GetPostingQueue").Produces<IReadOnlyList<PostingQueueItemDto>>().Problems();
+        finance.MapPost("/posting-queue/retry", (RetryPostingQueue body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RetryPostingQueue").Produces<PostingRetryDto>().Problems();
+        finance.MapPost("/posting-queue/{id:long}/ignore", (long id, IgnorePostingQueueItem body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("IgnorePostingQueueItem").Produces<bool>().Problems();
+        finance.MapGet("/repost/preview", (DateOnly from, DateOnly to, string? eventType, ISender sender, CancellationToken ct) =>
+                sender.Send(new PreviewRepost(from, to, eventType), ct))
+            .WithName("PreviewRepost").Produces<IReadOnlyList<RepostChangeDto>>().Problems();
+        finance.MapPost("/repost", (RepostEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RepostEntries").Produces<int>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
