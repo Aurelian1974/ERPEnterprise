@@ -7,7 +7,7 @@ Plaja de erori a contabilității e `51800–51999`. Ce rămâne nefăcut la sf�
 
 ## 1. Ordinea și de ce diferă de numerotarea documentelor
 
-Documentele sunt numerotate C1…C5, dar dependențele cer o ordine puțin diferită (**propunere, de confirmat**):
+Documentele sunt numerotate C1…C5, dar dependențele cer o ordine puțin diferită (**decisă de Aurelian, 24.11.2026**):
 
 ```
 C1 Plan de conturi ──► C3a Perioade ──► C2 Note și contare ──► C5a Balanță și fișa contului
@@ -99,11 +99,11 @@ C1 Plan de conturi ──► C3a Perioade ──► C2 Note și contare ──�
 | Validatoarele ANAF pentru XML (C4-A6, C5-A6) | Cu fiecare declarație; cer instrumentele oficiale ANAF (de procurat) |
 | Notificările (`ContareEsuata` către Contabilul șef, termenele fiscale) | Cu notificările din Nucleu |
 
-## 4. De lămurit înainte de C1.1
+## 4. Decizii (Aurelian, 24.11.2026)
 
-| # | Întrebare | Propunerea |
+| # | Întrebare | Decizia |
 | --- | --- | --- |
-| 1 | Ordinea din secțiunea 1 (perioadele înaintea notelor, balanța imediat după note) | Da, ca mai sus |
-| 2 | Sursa planului de conturi livrat (OMFP 1802/2014, cu modificările) și a nomenclatorului de conturi SAF-T (ANAF) | Textul oficial de pe legislatie.just.ro și nomenclatorul publicat de ANAF, preluate ca date de seed |
-| 3 | Documentele financiare deja validate înainte de C2 (date de test, fără producție) | Nu se contează retroactiv; doar evenimentele de după C2.3 |
-| 4 | Validatoarele ANAF (DUKIntegrator, Java) în CI | Rulate local la fiecare declarație nouă; în CI doar verificarea XSD |
+| 1 | Ordinea etapelor | Ordinea dependențelor din secțiunea 1 (perioadele înaintea notelor, balanța imediat după note) |
+| 2 | Sursa planului de conturi livrat și a codurilor SAF-T | Surse oficiale: textul OMFP 1802/2014 actualizat (legislatie.just.ro) și nomenclatorul de conturi SAF-T publicat de ANAF, preluate ca seed |
+| 3 | Documentele financiare validate înainte de C2 (doar date de test) | Nu se contează retroactiv; doar evenimentele de după pasul C2.3 |
+| 4 | Validatoarele ANAF (DUKIntegrator, Java) | Rulate local la fiecare declarație nouă; în CI doar verificarea pe XSD |
