@@ -57,6 +57,14 @@ public static class FinancePermissions
     public const string FxReverseRevaluation = "Fin.Fx.ReverseRevaluation";
     public const string FxManualCrossRate = "Fin.Fx.ManualCrossRate";
     public const string FxSettings = "Fin.Fx.Settings";
+    public const string PaymentProposalView = "Fin.PaymentProposal.View";
+    public const string PaymentProposalCreate = "Fin.PaymentProposal.Create";
+    public const string PaymentProposalApprove = "Fin.PaymentProposal.Approve";
+    public const string PaymentProposalGenerateOrders = "Fin.PaymentProposal.GenerateOrders";
+    public const string PaymentApprovalRuleManage = "Fin.PaymentApprovalRule.Manage";
+    public const string CashFlowView = "Fin.CashFlow.View";
+    public const string CashFlowPlan = "Fin.CashFlow.Plan";
+    public const string CashFlowSnapshot = "Fin.CashFlow.Snapshot";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>

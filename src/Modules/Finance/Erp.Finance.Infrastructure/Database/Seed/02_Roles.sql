@@ -11,7 +11,8 @@ USING (VALUES
     (N'CONTABIL_SEF',        N'Contabil șef',        N'Toate permisiunile Finanțelor.'),
     (N'APROBATOR_DECONTURI', N'Aprobator deconturi', N'Aprobarea deconturilor de cheltuieli (șeful direct).'),
     (N'DIRECTOR_FINANCIAR',  N'Director financiar',  N'Consultarea băncilor și aprobarea ordinelor de plată (patru ochi).'),
-    (N'CONTABIL_DECONTARI',  N'Contabil clienți / furnizori', N'Soldurile partenerilor, alocări, litigii, compensări, efecte, ajustări sub prag, confirmări de sold și calculul penalităților.')
+    (N'CONTABIL_DECONTARI',  N'Contabil clienți / furnizori', N'Soldurile partenerilor, alocări, litigii, compensări, efecte, ajustări sub prag, confirmări de sold și calculul penalităților.'),
+    (N'DIRECTOR_GENERAL',    N'Director general',    N'Aprobarea propunerilor de plată de la cel mai înalt nivel și prognoza de cash-flow.')
 ) AS source (Code, Name, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR ISNULL(target.Description, N'') <> source.Description) THEN
@@ -76,7 +77,21 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'CONTABIL_TREZORERIE', N'Fin.Fx.View'),
         (N'CONTABIL_TREZORERIE', N'Fin.Fx.ManualCrossRate'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.Fx.View'),
-        (N'AUDITOR',             N'Fin.Fx.View')
+        (N'AUDITOR',             N'Fin.Fx.View'),
+        (N'CONTABIL_TREZORERIE', N'Fin.PaymentProposal.View'),
+        (N'CONTABIL_TREZORERIE', N'Fin.PaymentProposal.Create'),
+        (N'CONTABIL_TREZORERIE', N'Fin.PaymentProposal.GenerateOrders'),
+        (N'CONTABIL_TREZORERIE', N'Fin.CashFlow.View'),
+        (N'CONTABIL_TREZORERIE', N'Fin.CashFlow.Plan'),
+        (N'CONTABIL_TREZORERIE', N'Fin.CashFlow.Snapshot'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.PaymentProposal.View'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.PaymentProposal.Approve'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.CashFlow.View'),
+        (N'DIRECTOR_GENERAL',    N'Fin.PaymentProposal.View'),
+        (N'DIRECTOR_GENERAL',    N'Fin.PaymentProposal.Approve'),
+        (N'DIRECTOR_GENERAL',    N'Fin.CashFlow.View'),
+        (N'AUDITOR',             N'Fin.PaymentProposal.View'),
+        (N'AUDITOR',             N'Fin.CashFlow.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

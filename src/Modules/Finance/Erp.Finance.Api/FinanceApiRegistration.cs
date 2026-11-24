@@ -2,6 +2,7 @@ using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
+using Erp.Finance.Application.Planning;
 using Erp.Finance.Application.Settlement;
 using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
@@ -282,6 +283,34 @@ public static class FinanceApiRegistration
                 return await sender.Send(new GetOpeningBalanceImport(id), ct);
             })
             .WithName("ConfirmOpeningBalanceImport").Produces<OpeningImportDto>().Problems();
+        // Propunerile de plata (F5 3.1–3.3, 4.1–4.3; machetele f5-01, f5-02, cf-09).
+        finance.MapGet("/payment-proposals", (ProposalStatus? status, bool? pendingForMe, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetPaymentProposals(status, pendingForMe ?? false), ct))
+            .WithName("GetPaymentProposals").Produces<IReadOnlyList<ProposalItemDto>>().Problems();
+        finance.MapGet("/payment-proposals/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPaymentProposal(id), ct))
+            .WithName("GetPaymentProposal").Produces<ProposalDto>().Problems();
+        finance.MapPost("/payment-proposals", (BuildPaymentProposal body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("BuildPaymentProposal").Saves();
+        finance.MapPut("/payment-proposals/{id:int}", (int id, SavePaymentProposal body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SavePaymentProposal").Saves();
+        finance.MapPost("/payment-proposals/{id:int}/delete", (int id, DeletePaymentProposal body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("DeletePaymentProposal").Produces<bool>().Problems();
+        finance.MapPost("/payment-proposals/{id:int}/submit", (int id, SubmitPaymentProposal body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("SubmitPaymentProposal").Saves();
+        finance.MapPost("/payment-proposals/{id:int}/withdraw", (int id, WithdrawPaymentProposal body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("WithdrawPaymentProposal").Saves();
+        finance.MapPost("/payment-proposals/{id:int}/decide", (int id, DecidePaymentProposal body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("DecidePaymentProposal").Saves();
+        finance.MapPost("/payment-proposals/{id:int}/generate", (int id, ISender sender, CancellationToken ct) => sender.Send(new GeneratePaymentOrders(id), ct))
+            .WithName("GeneratePaymentOrders").Produces<GeneratedOrdersDto>().Problems();
+        finance.MapGet("/payment-approval-rules", (ISender sender, CancellationToken ct) => sender.Send(new GetPaymentApprovalRules(), ct))
+            .WithName("GetPaymentApprovalRules").Produces<ApprovalRulesDto>().Problems();
+        finance.MapPut("/payment-approval-rules", (SavePaymentApprovalRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SavePaymentApprovalRules").Produces<ApprovalRulesDto>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

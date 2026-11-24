@@ -61,6 +61,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Fx.IFxRevaluationStore, FxRevaluationStore>();
         services.AddScoped<Application.Fx.IFxTreasuryStore, FxTreasuryStore>();
         services.AddScoped<Application.Fx.IFxReportStore, FxReportStore>();
+        services.AddScoped<Application.Planning.IPaymentProposalStore, PaymentProposalStore>();
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -158,5 +159,13 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51609] = (ErpErrorKind.Conflict, "FIN_FX_RUN_OUT_OF_ORDER"),
         [51610] = (ErpErrorKind.Conflict, "FIN_FX_RUN_STALE"),
         [51611] = (ErpErrorKind.Conflict, "FIN_FX_RUN_SETTLED_AFTER"),
+        [51701] = (ErpErrorKind.NotFound, "FIN_PROPOSAL_NOT_FOUND"),
+        [51702] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51703] = (ErpErrorKind.Conflict, "FIN_PROPOSAL_NOT_IN_APPROVAL"),
+        [51704] = (ErpErrorKind.Forbidden, "FIN_PROPOSAL_SELF_APPROVAL"),
+        [51705] = (ErpErrorKind.Forbidden, "FIN_PROPOSAL_SAME_APPROVER_TWICE"),
+        [51706] = (ErpErrorKind.Forbidden, "FIN_PROPOSAL_APPROVER_NOT_ALLOWED"),
+        [51707] = (ErpErrorKind.Conflict, "FIN_PROPOSAL_INVOICE_ALREADY_PROPOSED"),
+        [51708] = (ErpErrorKind.Validation, "FIN_PROPOSAL_AMOUNT_EXCEEDS_OPEN"),
     };
 }

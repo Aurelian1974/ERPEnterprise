@@ -55,7 +55,15 @@ USING (VALUES
     (N'Fin.Fx.Revalue',                 N'Generarea și validarea reevaluărilor valutare'),
     (N'Fin.Fx.ReverseRevaluation',      N'Stornarea unei reevaluări valutare validate'),
     (N'Fin.Fx.ManualCrossRate',         N'Curs încrucișat ales de operator la plată sau alocare'),
-    (N'Fin.Fx.Settings',                N'Setările multivalută')
+    (N'Fin.Fx.Settings',                N'Setările multivalută'),
+    (N'Fin.PaymentProposal.View',       N'Propunerile de plată ale firmei'),
+    (N'Fin.PaymentProposal.Create',     N'Construirea, modificarea și trimiterea la aprobare a propunerilor de plată'),
+    (N'Fin.PaymentProposal.Approve',    N'Decizia de aprobare a propunerilor de plată (nivelul vine din regulă)'),
+    (N'Fin.PaymentProposal.GenerateOrders', N'Generarea ordinelor de plată din propunerea aprobată'),
+    (N'Fin.PaymentApprovalRule.Manage', N'Regulile de aprobare a plăților'),
+    (N'Fin.CashFlow.View',              N'Prognoza de cash-flow, instantaneele, comparațiile'),
+    (N'Fin.CashFlow.Plan',              N'Sume planificate, alerte, categorii de cash-flow'),
+    (N'Fin.CashFlow.Snapshot',          N'Salvarea instantaneelor de prognoză')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN
