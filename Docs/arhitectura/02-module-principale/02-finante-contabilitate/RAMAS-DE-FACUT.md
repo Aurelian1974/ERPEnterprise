@@ -44,6 +44,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.33 | D406: secțiunea `Payments` (încasările și plățile F1, F2), articolele pe liniile facturilor, generarea în job Hangfire cu progres, împărțirea fișierelor mari pe segmente, descărcarea fișierului în flux | C4 nota C4.5 | Registrul, nomenclatoarele și facturile se scriu în flux |
 | 1.34 | Impozitul pe profit: XML-ul D100 și D101, ecranul setărilor regimului și cotei (sau preluarea lor din Nucleu, cu dată de vigoare), regulile de limită livrate și versionate (ajutoare sociale 5% din salarii, sponsorizarea 0,75% / 20%), pierderea fiscală preluată din D101 anterioare, detalierea rândurilor până la note, condițiile de microîntreprindere | C4 nota C4.6 | Fișa, nota și D100 se calculează; limitele în afara protocolului sunt rânduri manuale |
 | 1.35 | Din machetele c4-01…c4-05: calendarul pe firmele grupului și exportul Excel, încărcarea recipisei PDF din ecran, facturile care explică diferențele P300, detalierea rândurilor D300 și a fișei de impozit până la note, lista conturilor nedeductibile cu tratamentul lor, avertismentul documentelor care așteaptă redeschiderea lunii | C4 nota C4.7 | API-urile există |
+| 1.36 | Rapoartele definite: coloanele configurabile (`ReportColumn`: luni, dimensiuni, firme), detalierea unei celule până la conturile care au contribuit și fișa contului, exportul | C5 nota C5.1 | Rularea are perioada curentă și pe cea de comparație |
 
 ## 2. Depinde de alte module sau de Nucleu
 

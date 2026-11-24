@@ -552,6 +552,18 @@ public static class FinanceApiRegistration
         finance.MapPost("/profit-tax/{year:int}/{quarter:int}/post", (int year, byte quarter, ISender sender, CancellationToken ct) =>
                 sender.Send(new PostProfitTax(year, quarter), ct))
             .WithName("PostProfitTax").Produces<long?>().Problems();
+        // Rapoartele definite (C5 3.5; macheta c5-03).
+        finance.MapGet("/report-definitions", (ISender sender, CancellationToken ct) => sender.Send(new GetReportDefinitions(), ct))
+            .WithName("GetReportDefinitions").Produces<IReadOnlyList<ReportDefinitionItemDto>>().Problems();
+        finance.MapGet("/report-definitions/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetReportDefinition(id), ct))
+            .WithName("GetReportDefinition").Produces<ReportDefinitionDto>().Problems();
+        finance.MapPost("/report-definitions", (SaveReportDefinition body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateReportDefinition").Produces<int>().Problems();
+        finance.MapPut("/report-definitions/{id:int}", (int id, SaveReportDefinition body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateReportDefinition").Produces<int>().Problems();
+        finance.MapGet("/report-definitions/{id:int}/run", (int id, DateOnly from, DateOnly to, DateOnly? previousFrom, DateOnly? previousTo, ISender sender,
+                CancellationToken ct) => sender.Send(new RunReport(id, from, to, previousFrom, previousTo), ct))
+            .WithName("RunReport").Produces<ReportResultDto>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();
