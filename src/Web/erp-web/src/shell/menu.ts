@@ -79,6 +79,8 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'fx-revaluation', label: 'menu.fxRevaluation', path: '/finante/valuta/reevaluare', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
       { id: 'fx-differences', label: 'menu.fxDifferences', path: '/finante/valuta/diferente', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
       { id: 'fx-exposure', label: 'menu.fxExposure', path: '/finante/valuta/pozitie', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
+      { id: 'journal-entries', label: 'menu.journalEntries', path: '/finante/contabilitate/note', icon: '', module: 'Finance', permission: 'Fin.JournalEntry.View' },
+      { id: 'posting-queue', label: 'menu.postingQueue', path: '/finante/contabilitate/de-contat', icon: '', module: 'Finance', permission: 'Fin.JournalEntry.View' },
       { id: 'chart-of-accounts', label: 'menu.chartOfAccounts', path: '/finante/contabilitate/plan-de-conturi', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
       { id: 'alt-charts', label: 'menu.altCharts', path: '/finante/contabilitate/planuri-alternative', icon: '', module: 'Finance', permission: 'Fin.Account.View' },
       { id: 'mapping-rules', label: 'menu.mappingRules', path: '/finante/contabilitate/reguli-mapare', icon: '', module: 'Finance', permission: 'Fin.Account.View' },

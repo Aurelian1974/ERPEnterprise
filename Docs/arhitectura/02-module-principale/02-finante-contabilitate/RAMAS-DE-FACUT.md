@@ -30,6 +30,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.19 | Notele recurente cu sume calculate dintr-un sold (de exemplu 1/12 din soldul `471`) | C2 3.8; nota C2.4b | Șabloanele au doar sume fixe |
 | 1.20 | Asistentul „Împarte contul” (analitice noi sub un cont cu rulaj, nota de reclasificare; C1-A4) | C1 3.4; nota C1b | Analiticele se creează doar sub conturi fără rulaj |
 | 1.21 | Recalcularea mapării ca job de fundal, vederea indexată a balanței alternative și testul de performanță C1-A10 | C1 4.4, 7; nota C1b | Recalcularea rulează sincron |
+| 1.22 | Din machetele c2-01, c2-02, c2-04: registrul jurnal, tab-urile Document sursă / Planuri alternative / Note legate, partenerul pe linia notei manuale, efectul în planurile alternative în editor, setarea contului direct din coada De contat | C2 nota C2.5a | Contul se setează din Plan de conturi și Conturi implicite; reîncercarea automată îl preia |
 
 ## 2. Depinde de alte module sau de Nucleu
 

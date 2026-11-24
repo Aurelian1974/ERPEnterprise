@@ -23,6 +23,9 @@ import { ChartOfAccountsPage } from '../finance/ChartOfAccountsPage';
 import { AltChartsPage } from '../finance/AltChartsPage';
 import { MappingRulesPage } from '../finance/MappingRulesPage';
 import { MappingCheckPage } from '../finance/MappingCheckPage';
+import { JournalEntriesPage } from '../finance/JournalEntriesPage';
+import { ManualEntryPage } from '../finance/ManualEntryPage';
+import { PostingQueuePage } from '../finance/PostingQueuePage';
 import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
@@ -75,6 +78,10 @@ export const routes = [
       { path: 'finante/valuta/reevaluare', element: <FxRevaluationPage /> },
       { path: 'finante/valuta/diferente', element: <FxDifferencesPage /> },
       { path: 'finante/valuta/pozitie', element: <FxExposurePage /> },
+      { path: 'finante/contabilitate/note', element: <JournalEntriesPage /> },
+      { path: 'finante/contabilitate/note/noua', element: <ManualEntryPage /> },
+      { path: 'finante/contabilitate/note/:id', element: <ManualEntryPage /> },
+      { path: 'finante/contabilitate/de-contat', element: <PostingQueuePage /> },
       { path: 'finante/contabilitate/plan-de-conturi', element: <ChartOfAccountsPage /> },
       { path: 'finante/contabilitate/planuri-alternative', element: <AltChartsPage /> },
       { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },

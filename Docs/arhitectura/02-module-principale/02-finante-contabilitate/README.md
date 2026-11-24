@@ -83,6 +83,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C2.4a | Stornarea la sursă cu conturile notei inițiale, coada „De contat” (listă, reîncercare manuală și automată, ignorare, `ContareEsuata`), recontarea lunilor neînchise cu istoric; testele C2-A5, A6, A9 | Implementat (ecranul cozii cu C2.5) |
 | C2.4b | Notele recurente: șabloane cu periodicitate și sume fixe, generate zilnic ca ciorne | Implementat (sumele din sold după balanță) |
 | C1b | Maparea notelor în planurile alternative la validare, recalcularea care sare lunile înghețate, nemapatele, închiderea lunii refuzată când planul cere mapare completă; testele C1-A7, A8, A11 | Implementat („Împarte contul” și C1-A10 în RAMAS 1.20–1.21) |
+| C2.5a | Ecranele Note contabile, Notă manuală și De contat (c2-01, c2-02, c2-04) | Implementat (Modele de contare și Conturi implicite cu C2.5b) |
 
 ## Machete de ecran (`ecrane/`)
 
