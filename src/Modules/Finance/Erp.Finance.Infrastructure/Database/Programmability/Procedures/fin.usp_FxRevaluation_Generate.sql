@@ -62,6 +62,21 @@ BEGIN
     CROSS APPLY (SELECT ROUND(x.ForeignAsOf * r.Rate / r.Multiplier, 2) AS Revalued) AS v
     WHERE x.ForeignAsOf <> 0;
 
+    -- Conturile de trezorerie in valuta (F4 3.4, 3.6): soldul la sfarsitul lunii, valoarea lui contabila in lei si diferenta pana la cursul rularii.
+    DECLARE @Treasury TABLE (TreasuryAccountId int PRIMARY KEY, Code nvarchar(30), Kind tinyint, CurrencyCode char(3), GlAccountCode nvarchar(20),
+                             Balance decimal(19,2), CarryingAmountRon decimal(19,2), MissingRates int);
+    INSERT INTO @Treasury EXEC fin.usp_TreasuryFx_Values @CompanyId = @CompanyId, @AsOf = @RevaluationDate;
+    IF EXISTS (SELECT 1 FROM @Treasury WHERE MissingRates > 0 AND (Balance <> 0 OR CarryingAmountRon <> 0))
+        THROW 51605, N'Lipsește cursul BNR pentru o mișcare a unui cont de trezorerie în valută.', 1;
+    INSERT INTO fin.FxRevaluationLine (RunId, ElementKind, TreasuryAccountId, CurrencyCode, ForeignAmount, Rate, CarryingAmountRon, RevaluedAmountRon,
+        DifferenceRon, GlAccountCode, CounterGlAccountCode, CreatedBy)
+    SELECT @RunId, 2, t.TreasuryAccountId, t.CurrencyCode, t.Balance, r.Rate, t.CarryingAmountRon, v.Revalued, v.Revalued - t.CarryingAmountRon,
+        CASE WHEN v.Revalued - t.CarryingAmountRon >= 0 THEN N'765' ELSE N'665' END, t.GlAccountCode, @UserId
+    FROM @Treasury AS t
+    JOIN @Rates AS r ON r.CurrencyCode = t.CurrencyCode
+    CROSS APPLY (SELECT ROUND(t.Balance * r.Rate / r.Multiplier, 2) AS Revalued) AS v
+    WHERE t.Balance <> 0 OR t.CarryingAmountRon <> 0;
+
     -- Corectiile in asteptare ale lunilor anterioare (F4 4.6 pasul 4): anuleaza reevaluarea de prisos a partilor stinse retroactiv.
     INSERT INTO fin.FxRevaluationLine (RunId, ElementKind, OpenItemId, PartnerId, Role, CurrencyCode, ForeignAmount, Rate, CarryingAmountRon, RevaluedAmountRon,
         DifferenceRon, GlAccountCode, CounterGlAccountCode, IsCorrection, CorrectionId, CorrectedRunId, CreatedBy)

@@ -287,6 +287,9 @@ public static class FinanceApiRegistration
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();
         finance.MapGet("/fx/revaluations/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluation(id), ct))
             .WithName("GetFxRevaluation").Produces<FxRunDto>().Problems();
+        finance.MapGet("/fx/treasury-values", (DateOnly? asOf, int? treasuryAccountId, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetTreasuryFxValues(asOf, treasuryAccountId), ct))
+            .WithName("GetTreasuryFxValues").Produces<IReadOnlyList<TreasuryRonValueDto>>().Problems();
         finance.MapPost("/fx/revaluations", (GenerateFxRevaluation body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("GenerateFxRevaluation").Produces<int>().Problems();
         finance.MapPost("/fx/revaluations/{id:int}/validate", (int id, ValidateFxRevaluation body, ISender sender, CancellationToken ct) =>

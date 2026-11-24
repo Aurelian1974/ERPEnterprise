@@ -107,7 +107,9 @@ BEGIN
     SET PairedBankStatementLineId = (SELECT TOP (1) ol.Id
         FROM fin.BankStatementLinePart AS op
         JOIN fin.BankStatementLine AS ol ON ol.Id = op.BankStatementLineId AND ol.MatchStatus IN (3, 4) AND ol.TreasuryAccountId = p.CounterTreasuryAccountId
-        WHERE op.TreasuryOperationTypeId = p.TreasuryOperationTypeId AND op.CounterTreasuryAccountId = @AccountId AND op.Amount = -p.Amount
+        -- La schimbul valutar sumele sunt in monede diferite: se cere doar sensul opus (F4 3.5).
+        WHERE op.TreasuryOperationTypeId = p.TreasuryOperationTypeId AND op.CounterTreasuryAccountId = @AccountId
+          AND (op.Amount = -p.Amount OR (t.Code = N'BANK-SCHIMB-VALUTAR' AND SIGN(op.Amount) = -SIGN(p.Amount)))
           AND op.PairedBankStatementLineId IS NULL AND ABS(DATEDIFF(day, ol.BookingDate, @Booking)) <= 3
           AND NOT EXISTS (SELECT 1 FROM fin.BankStatementLinePart AS q WHERE q.PairedBankStatementLineId = ol.Id)
         ORDER BY ABS(DATEDIFF(day, ol.BookingDate, @Booking)), ol.Id)

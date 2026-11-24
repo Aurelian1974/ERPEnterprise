@@ -26,11 +26,12 @@ BEGIN
     GROUP BY l.CurrencyCode
     ORDER BY l.CurrencyCode;
 
-    SELECT TOP (1000) l.Id, l.ElementKind, l.OpenItemId, o.DocumentNo, l.PartnerId, p.Name AS PartnerName, l.Role, l.CurrencyCode, l.ForeignAmount, l.Rate,
+    SELECT TOP (1000) l.Id, l.ElementKind, l.OpenItemId, COALESCE(o.DocumentNo, ta.Code) AS DocumentNo, l.PartnerId, p.Name AS PartnerName, l.Role, l.CurrencyCode, l.ForeignAmount, l.Rate,
         l.CarryingAmountRon, l.RevaluedAmountRon, l.DifferenceRon, l.GlAccountCode, l.CounterGlAccountCode, l.IsCorrection, l.CorrectedRunId
     FROM fin.FxRevaluationLine AS l
     JOIN fin.FxRevaluationRun AS r ON r.Id = l.RunId
     LEFT JOIN fin.OpenItem AS o ON o.Id = l.OpenItemId
+    LEFT JOIN fin.TreasuryAccount AS ta ON ta.Id = l.TreasuryAccountId
     LEFT JOIN core.Partner AS p ON p.Id = l.PartnerId
     WHERE l.RunId = @RunId AND r.CompanyId = @CompanyId
     ORDER BY ABS(l.DifferenceRon) DESC, l.Id;

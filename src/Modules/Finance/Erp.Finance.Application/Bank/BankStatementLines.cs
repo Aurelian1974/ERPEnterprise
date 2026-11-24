@@ -206,7 +206,7 @@ internal sealed class ValidateBankStatementLinesHandler(BankLineValidation valid
 /// seturi, IncasareInregistrata / PlataInregistrata (partile pe OP nu republica plata), OrdinPlataConfirmat si OrdinPlataRespins.
 /// </summary>
 public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLock periods, IExchangeRateProvider rates, IPrecisionService precision,
-    IFinanceSettings settings, IOutbox outbox, ICurrentContext context, Settlement.TreasurySettlement settlement)
+    IFinanceSettings settings, IOutbox outbox, ICurrentContext context, Settlement.TreasurySettlement settlement, Fx.IFxTreasuryStore fx)
 {
     /// <summary>
     /// Valideaza fiecare linie care poate trece si raporteaza motivul pentru celelalte (F2 4.4 pasul 4); procedura primeste doar liniile bune,
@@ -297,6 +297,10 @@ public sealed class BankLineValidation(IBankStatementLineStore store, IPeriodLoc
         var tolerance = await settings.CardFeeTolerancePercentAsync(context.CompanyId, cancellationToken).ConfigureAwait(false);
         var (saved, confirmed, rejected) = await store.ValidateAsync(context.CompanyId, versions, tolerance, context.UserId, cancellationToken)
             .ConfigureAwait(false);
+        // Schimbul valutar intre conturi proprii: diferenta perechii, cand ambele linii sunt validate (F4 4.3).
+        var exchange = await fx.RecordExchangeAsync(context.CompanyId, versions.Select(v => v.Id).ToList(), context.UserId, cancellationToken).ConfigureAwait(false);
+        await Settlement.SettlementEvents.PublishAsync(outbox, new Settlement.AllocationOutcome([], [], [], exchange), false, cancellationToken).ConfigureAwait(false);
+
         foreach (var c in confirmed)
         {
             await outbox.EnqueueAsync(new Contracts.Bank.OrdinPlataConfirmat(c.PaymentOrderId, c.BankStatementLineId, c.BookingDate, c.Amount)
@@ -376,7 +380,8 @@ internal sealed class UnvalidateBankStatementLineValidator : AbstractValidator<U
 }
 
 internal sealed class UnvalidateBankStatementLineHandler(IBankStatementLineStore store, IPeriodLock periods, IOutbox outbox, ICurrentContext context,
-    IAuditScope audit, Settlement.ISettlementService settlement) : ICommandHandler<UnvalidateBankStatementLine, BankLineSaved>
+    IAuditScope audit, Settlement.ISettlementService settlement, Fx.IFxTreasuryStore fx, TimeProvider time)
+    : ICommandHandler<UnvalidateBankStatementLine, BankLineSaved>
 {
     public async Task<BankLineSaved> Handle(UnvalidateBankStatementLine request, CancellationToken cancellationToken)
     {
@@ -391,6 +396,8 @@ internal sealed class UnvalidateBankStatementLineHandler(IBankStatementLineStore
         }, cancellationToken).ConfigureAwait(false);
         // Facturile stinse de linie redevin deschise (F3 4.2 pasul 6).
         await settlement.ReversePaymentAsync(context.CompanyId, BankLineRules.DocumentType, line.Id, null, line.BookingDate, cancellationToken).ConfigureAwait(false);
+        var exchange = await fx.ReverseExchangeAsync(context.CompanyId, line.Id, BusinessDay.Today(time), context.UserId, cancellationToken).ConfigureAwait(false);
+        await Settlement.SettlementEvents.PublishAsync(outbox, new Settlement.AllocationOutcome([], [], [], exchange), true, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.BankStatementLine", request.Id, new { Reason = request.Reason.Trim(), line.BookingDate, line.Amount });
         return new BankLineSaved(request.Id, version);
     }
