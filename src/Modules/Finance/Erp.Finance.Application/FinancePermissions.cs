@@ -78,6 +78,8 @@ public static class FinancePermissions
     public const string TaxPrepare = "Fin.Tax.Prepare";
     public const string TaxGenerate = "Fin.Tax.Generate";
     public const string TaxSubmit = "Fin.Tax.Submit";
+
+    public const string ProfitTaxManage = "Fin.ProfitTax.Manage";
     public const string PeriodView = "Fin.Period.View";
     public const string PeriodSoftClose = "Fin.Period.SoftClose";
     public const string PeriodClose = "Fin.Period.Close";

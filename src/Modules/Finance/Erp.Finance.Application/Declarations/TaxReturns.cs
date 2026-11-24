@@ -52,6 +52,8 @@ public interface ITaxReturnStore
 
     Task<TaxReturnDto?> GetAsync(int companyId, int id, CancellationToken ct);
 
+    Task<int?> FindAsync(int companyId, string formCode, DateOnly periodFrom, CancellationToken ct);
+
     Task<TaxReturnState> TransitionAsync(int companyId, int id, byte[] rowVersion, string action, int? hash, string? registrationNumber, int userId,
         CancellationToken ct);
 
@@ -86,16 +88,24 @@ public interface ITaxReturnFileGenerator
 /// lunile inchise si cu datele neschimbate de la calcul (decizia 3), depunerea cu numarul de inregistrare si recipisa (decizia 1), obligatia de
 /// plata in prognoza F5, marcajul „De verificat” la redeschidere (C4-A11).
 /// </summary>
-public sealed class TaxReturnService(ITaxReturnStore store, ISaftStore saft, IEnumerable<ITaxReturnFileGenerator> generators,
+public sealed class TaxReturnService(ITaxReturnStore store, ISaftStore saft, IProfitTaxStore profitTax, IEnumerable<ITaxReturnFileGenerator> generators,
     IEnumerable<IStreamingTaxFileGenerator> streaming, IOutbox outbox)
 {
-    public static readonly string[] SupportedForms = ["D300", "D394", "D390", "D406"];
+    public static readonly string[] SupportedForms = ["D300", "D394", "D390", "D406", "D100", "D101"];
 
     public async Task<TaxReturnCalculation> ComputeAsync(int companyId, string formCode, DateOnly from, DateOnly to, CancellationToken ct)
     {
         if (!SupportedForms.Contains(formCode))
         {
             throw new ErpException(ErpErrorKind.Conflict, "FIN_TAX_FORM_VERSION_MISSING", $"Formularul {formCode} nu se calculează încă.");
+        }
+
+        if (formCode is "D100" or "D101")
+        {
+            var sheet = await profitTax.GetAsync(companyId, null, null, to, ct).ConfigureAwait(false)
+                ?? throw new ErpException(ErpErrorKind.Conflict, "FIN_PROFIT_TAX_MISSING", "Calculați întâi fișa impozitului pe profit a perioadei.");
+            var lines = sheet.Lines.Select((l, i) => new TaxLine(l.RowCode, "VALUE", l.Label, i + 1, Money.ParseOptional(l.Amount) ?? 0)).ToList();
+            return new TaxReturnCalculation(new TaxComputation(lines, Money.ParseOptional(sheet.TaxDue) ?? 0, 0), sheet.Hash, null);
         }
 
         if (formCode == "D406")
@@ -187,6 +197,11 @@ public sealed class TaxReturnService(ITaxReturnStore store, ISaftStore saft, IEn
 [RequiresPermission(FinancePermissions.TaxView)]
 public sealed record GetTaxReturn(int Id) : IQuery<TaxReturnDto>;
 
+/// <summary>Declaratia unui formular pentru perioada care incepe la data data (null daca nu s-a calculat).</summary>
+[Module(FinanceModule.Code)]
+[RequiresPermission(FinancePermissions.TaxView)]
+public sealed record FindTaxReturn(string FormCode, DateOnly PeriodFrom) : IQuery<int?>;
+
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.TaxView)]
 public sealed record GetTaxCalendar(DateOnly From, DateOnly To) : IQuery<IReadOnlyList<TaxCalendarItemDto>>;
@@ -262,7 +277,7 @@ internal sealed class ExplainTaxDifferenceValidator : AbstractValidator<ExplainT
 }
 
 internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStore store, IAccountingPeriodStore periods, ICurrentContext context, IAuditScope audit) :
-    IQueryHandler<GetTaxReturn, TaxReturnDto>, IQueryHandler<GetTaxCalendar, IReadOnlyList<TaxCalendarItemDto>>, IQueryHandler<DownloadTaxReturnFile, Settlement.DownloadedFile>,
+    IQueryHandler<GetTaxReturn, TaxReturnDto>, IQueryHandler<FindTaxReturn, int?>, IQueryHandler<GetTaxCalendar, IReadOnlyList<TaxCalendarItemDto>>, IQueryHandler<DownloadTaxReturnFile, Settlement.DownloadedFile>,
     ICommandHandler<GenerateTaxCalendar, int>, ICommandHandler<CalculateTaxReturn, int>, ICommandHandler<VerifyTaxReturn, byte[]>,
     ICommandHandler<GenerateTaxReturn, byte[]>, ICommandHandler<SubmitTaxReturn, byte[]>,
     ICommandHandler<ImportPrecompletedVat, IReadOnlyList<TaxComparisonDto>>, ICommandHandler<ExplainTaxDifference, bool>
@@ -288,6 +303,9 @@ internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStor
 
     public async Task<TaxReturnDto> Handle(GetTaxReturn request, CancellationToken cancellationToken) =>
         await store.GetAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false) ?? throw NotFound();
+
+    public Task<int?> Handle(FindTaxReturn request, CancellationToken cancellationToken) =>
+        store.FindAsync(context.CompanyId, request.FormCode, request.PeriodFrom, cancellationToken);
 
     public Task<IReadOnlyList<TaxCalendarItemDto>> Handle(GetTaxCalendar request, CancellationToken cancellationToken) =>
         store.CalendarAsync(context.CompanyId, request.From, request.To, cancellationToken);

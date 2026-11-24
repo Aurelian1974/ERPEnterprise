@@ -707,3 +707,10 @@ FROM (VALUES ('CustomerReceivable', N'4111'), ('CustomerAdvance', N'419'), ('Sup
 JOIN fin.GlAccount AS a ON a.ChartId = @Chart AND a.Code = v.Code
 WHERE NOT EXISTS (SELECT 1 FROM fin.GlAccountRoleAssignment AS r WHERE r.CompanyId IS NULL AND r.Role = v.Role AND r.PartnerKind IS NULL
                   AND r.CurrencyCode IS NULL);
+
+-- Tratamentul fiscal livrat al conturilor (C4 3.6): 2 nedeductibile (amenzi, donatii), 3 deductibile limitat (protocol, 2%), 4 venituri
+-- neimpozabile (dividende de la persoane juridice romane). Se aplica doar conturilor ramase pe tratamentul implicit.
+UPDATE a SET TaxTreatment = v.Treatment, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = 1
+FROM fin.GlAccount AS a
+JOIN (VALUES (N'6581', 2), (N'6582', 2), (N'6231', 3), (N'7611', 4), (N'7613', 4)) AS v (Code, Treatment) ON a.Code = v.Code
+WHERE a.ChartId = @Chart AND a.TaxTreatment = 1;

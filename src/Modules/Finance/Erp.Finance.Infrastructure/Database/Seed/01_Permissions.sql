@@ -81,6 +81,7 @@ USING (VALUES
     (N'Fin.Tax.Prepare',                N'Calculul și verificarea declarațiilor, rândurile manuale, explicațiile P300'),
     (N'Fin.Tax.Generate',               N'Generarea fișierelor declarațiilor'),
     (N'Fin.Tax.Submit',                 N'Înregistrarea recipisei și rectificativele'),
+    (N'Fin.ProfitTax.Manage',           N'Fișa de calcul a impozitului pe profit și contarea impozitului'),
     (N'Fin.FiscalYear.Close',           N'Crearea și închiderea anului financiar'),
     (N'Fin.FiscalYear.Lock',            N'Blocarea anului financiar după depunerea situațiilor financiare'),
     (N'Fin.FiscalYear.Unlock',          N'Deblocarea unui an financiar blocat (doar rolul Deblocare an)'),

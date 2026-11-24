@@ -47,6 +47,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D394XmlGenerator>();
         services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D390XmlGenerator>();
         services.AddScoped<Application.Declarations.ISaftStore, Declarations.SaftStore>();
+        services.AddScoped<Application.Declarations.IProfitTaxStore, Declarations.ProfitTaxStore>();
         services.AddScoped<Application.Declarations.IStreamingTaxFileGenerator, Declarations.SaftFileGenerator>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {

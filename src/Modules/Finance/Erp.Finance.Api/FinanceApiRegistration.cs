@@ -520,6 +520,8 @@ public static class FinanceApiRegistration
             .WithName("GenerateTaxCalendar").Produces<int>().Problems();
         finance.MapPost("/tax-returns", (CalculateTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("CalculateTaxReturn").Produces<int>().Problems();
+        finance.MapGet("/tax-returns", (string formCode, DateOnly periodFrom, ISender sender, CancellationToken ct) => sender.Send(new FindTaxReturn(formCode, periodFrom), ct))
+            .WithName("FindTaxReturn").Produces<int?>().Problems();
         finance.MapGet("/tax-returns/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetTaxReturn(id), ct))
             .WithName("GetTaxReturn").Produces<TaxReturnDto>().Problems();
         finance.MapPost("/tax-returns/{id:int}/verify", (int id, VerifyTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
@@ -537,6 +539,19 @@ public static class FinanceApiRegistration
             .WithName("DownloadTaxReturnFile").Produces<DownloadedFile>().Problems();
         finance.MapGet("/saft-checks", (DateOnly from, DateOnly to, ISender sender, CancellationToken ct) => sender.Send(new GetSaftChecks(from, to), ct))
             .WithName("GetSaftChecks").Produces<IReadOnlyList<SaftIssueDto>>().Problems();
+        // Impozitul pe profit (C4 3.6, 4.4; macheta c4-05).
+        finance.MapGet("/profit-tax/{year:int}/{quarter:int}", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetProfitTax(year, quarter), ct))
+            .WithName("GetProfitTax").Produces<ProfitTaxDto>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/calculate", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new CalculateProfitTax(year, quarter), ct))
+            .WithName("CalculateProfitTax").Produces<int>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/manual-row", (int year, byte quarter, SetProfitTaxManualRow body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year, Quarter = quarter }, ct))
+            .WithName("SetProfitTaxManualRow").Produces<int>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/post", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new PostProfitTax(year, quarter), ct))
+            .WithName("PostProfitTax").Produces<long?>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();

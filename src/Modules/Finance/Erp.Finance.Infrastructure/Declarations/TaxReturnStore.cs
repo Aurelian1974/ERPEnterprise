@@ -69,6 +69,9 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
             Money.Format(h.AmountRefundable), h.PrecompletedAt, h.RowVersion, lines, files, comparison, partners);
     }
 
+    public Task<int?> FindAsync(int companyId, string formCode, DateOnly periodFrom, CancellationToken ct) =>
+        session.Connection.QuerySingleOrDefaultAsync<int?>(Command("fin.usp_TaxReturn_Find", new { CompanyId = companyId, FormCode = formCode, PeriodFrom = D(periodFrom) }, ct));
+
     public async Task<TaxReturnState> TransitionAsync(int companyId, int id, byte[] rowVersion, string action, int? hash, string? registrationNumber, int userId,
         CancellationToken ct)
     {
