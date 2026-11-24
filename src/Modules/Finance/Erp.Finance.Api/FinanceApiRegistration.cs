@@ -1,6 +1,7 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
 using Erp.Finance.Application.Accounting;
+using Erp.Finance.Application.Reporting;
 using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
@@ -479,6 +480,18 @@ public static class FinanceApiRegistration
             .WithName("SavePostingVariantLines").Produces<byte[]>().Problems();
         finance.MapGet("/journal-entries/{id:long}/simulation", (long id, ISender sender, CancellationToken ct) => sender.Send(new SimulatePosting(id), ct))
             .WithName("SimulatePosting").Produces<PostingSimulationDto>().Problems();
+        // Balanta, fisa contului si cartea mare (C5 3.2, 3.3; machetele c5-01, c5-02).
+        finance.MapGet("/reports/trial-balance", (DateOnly from, DateOnly to, byte? level, int? chartId, bool? includeClosingEntries, string? accountFilter,
+                bool? byPartner, bool? byCostCenter, bool? byProject, ISender sender, CancellationToken ct) =>
+                sender.Send(new RunTrialBalance(from, to, level ?? 3, chartId, includeClosingEntries ?? true, accountFilter, byPartner ?? false, byCostCenter ?? false,
+                    byProject ?? false), ct))
+            .WithName("RunTrialBalance").Produces<TrialBalanceDto>().Problems();
+        finance.MapGet("/reports/account-ledger", (string accountCode, DateOnly from, DateOnly to, int? partnerId, int? costCenterId, int? projectId,
+                bool? includeClosingEntries, int? skip, int? take, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetAccountLedger(accountCode, from, to, partnerId, costCenterId, projectId, includeClosingEntries ?? true, skip ?? 0, take ?? 500), ct))
+            .WithName("GetAccountLedger").Produces<AccountLedgerDto>().Problems();
+        finance.MapGet("/reports/general-ledger", (int year, int month, ISender sender, CancellationToken ct) => sender.Send(new GetGeneralLedger(year, month), ct))
+            .WithName("GetGeneralLedger").Produces<IReadOnlyList<GeneralLedgerAccountDto>>().Problems();
         // Notele recurente (C2 3.8).
         finance.MapGet("/recurring-entries", (ISender sender, CancellationToken ct) => sender.Send(new GetRecurringTemplates(), ct))
             .WithName("GetRecurringTemplates").Produces<IReadOnlyList<RecurringTemplateDto>>().Problems();

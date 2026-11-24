@@ -85,6 +85,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C1b | Maparea notelor în planurile alternative la validare, recalcularea care sare lunile înghețate, nemapatele, închiderea lunii refuzată când planul cere mapare completă; testele C1-A7, A8, A11 | Implementat („Împarte contul” și C1-A10 în RAMAS 1.20–1.21) |
 | C2.5a | Ecranele Note contabile, Notă manuală și De contat (c2-01, c2-02, c2-04) | Implementat |
 | C2.5b | Ecranele Modele de contare (cu simularea pe o notă reală și modificarea liniilor) și Conturi implicite (c2-03, c2-05); testul C2-A10 | Implementat (variante noi, versiuni, conturi pe grupe și gestiuni în RAMAS 1.23) |
+| C5a.1 | Balanța de verificare cu 10 coloane (niveluri, plan românesc sau alternativ, grupare pe partener și dimensiuni, verificările egalităților), fișa contului cu sold curent, cartea mare pe lună; testele C5-A1, A4 | Implementat (ecranele cu C5a.2) |
 
 ## Machete de ecran (`ecrane/`)
 

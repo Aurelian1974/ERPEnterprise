@@ -115,7 +115,11 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'CONTABIL',            N'Fin.Posting.Retry'),
         (N'AUDITOR',             N'Fin.JournalEntry.View'),
         (N'AUDITOR',             N'Fin.PostingModel.View'),
-        (N'DIRECTOR_FINANCIAR',  N'Fin.JournalEntry.View')
+        (N'DIRECTOR_FINANCIAR',  N'Fin.JournalEntry.View'),
+        (N'CONTABIL',            N'Fin.Report.TrialBalance'),
+        (N'AUDITOR',             N'Fin.Report.TrialBalance'),
+        (N'CONTROLLER_GRUP',     N'Fin.Report.TrialBalance'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Report.TrialBalance')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

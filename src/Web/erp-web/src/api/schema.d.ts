@@ -3940,6 +3940,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/reports/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RunTrialBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/reports/account-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAccountLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/reports/general-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetGeneralLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/recurring-entries": {
         parameters: {
             query?: never;
@@ -11367,6 +11415,92 @@ export interface components {
             /** Format: int32 */
             costCenterId: null | number;
             resolvedFrom: components["schemas"]["ResolvedFrom"];
+        };
+        AccountLedgerDto: {
+            accountCode: string;
+            accountName: null | string;
+            /** Format: uint8 */
+            accountType: null | number;
+            opening: string;
+            periodDebit: string;
+            periodCredit: string;
+            closing: string;
+            /** Format: int32 */
+            lineCount: number;
+            lines: components["schemas"]["LedgerLineDto"][];
+        };
+        BalanceCheckDto: {
+            name: string;
+            passed: boolean;
+            difference: string;
+        };
+        GeneralLedgerAccountDto: {
+            accountCode: string;
+            accountName: string;
+            openingDebit: string;
+            openingCredit: string;
+            moves: components["schemas"]["GeneralLedgerMoveDto"][];
+            periodDebit: string;
+            periodCredit: string;
+            closingDebit: string;
+            closingCredit: string;
+        };
+        GeneralLedgerMoveDto: {
+            counterAccount: string;
+            debit: string;
+            credit: string;
+        };
+        LedgerLineDto: {
+            /** Format: int64 */
+            lineId: number;
+            /** Format: int64 */
+            entryId: number;
+            displayNumber: null | string;
+            /** Format: date */
+            accountingDate: string;
+            accountCode: string;
+            /** Format: uint8 */
+            sourceKind: number;
+            sourceDocumentType: null | string;
+            sourceDocumentNumber: null | string;
+            description: null | string;
+            partnerName: null | string;
+            costCenterCode: null | string;
+            projectCode: null | string;
+            debit: string;
+            credit: string;
+            balance: string;
+        };
+        TrialBalanceDto: {
+            /** Format: date */
+            yearStart: string;
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            rows: components["schemas"]["TrialBalanceRowDto"][];
+            total: components["schemas"]["TrialBalanceRowDto"];
+            checks: components["schemas"]["BalanceCheckDto"][];
+        };
+        TrialBalanceRowDto: {
+            accountCode: string;
+            accountName: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            openingDebit: string;
+            openingCredit: string;
+            priorDebit: string;
+            priorCredit: string;
+            periodDebit: string;
+            periodCredit: string;
+            totalDebit: string;
+            totalCredit: string;
+            closingDebit: string;
+            closingCredit: string;
         };
     };
     responses: never;
@@ -27572,6 +27706,197 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostingSimulationDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RunTrialBalance: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                level?: number;
+                chartId?: number;
+                includeClosingEntries?: boolean;
+                accountFilter?: string;
+                byPartner?: boolean;
+                byCostCenter?: boolean;
+                byProject?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalanceDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAccountLedger: {
+        parameters: {
+            query: {
+                accountCode: string;
+                from: string;
+                to: string;
+                partnerId?: number;
+                costCenterId?: number;
+                projectId?: number;
+                includeClosingEntries?: boolean;
+                skip?: number;
+                take?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLedgerDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetGeneralLedger: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneralLedgerAccountDto"][];
                 };
             };
             /** @description Bad Request */

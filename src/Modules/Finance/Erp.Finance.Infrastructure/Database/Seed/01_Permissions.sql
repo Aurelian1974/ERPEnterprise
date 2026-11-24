@@ -76,6 +76,7 @@ USING (VALUES
     (N'Fin.Period.CloseOverride',       N'Trecerea peste un pas blocant al închiderii, cu motiv'),
     (N'Fin.Period.Reopen',              N'Redeschiderea unei luni'),
     (N'Fin.Period.ManageChecklist',     N'Pașii proprii ai listei de verificări la închidere'),
+    (N'Fin.Report.TrialBalance',        N'Balanța de verificare, fișa contului și cartea mare'),
     (N'Fin.FiscalYear.Close',           N'Crearea și închiderea anului financiar'),
     (N'Fin.FiscalYear.Lock',            N'Blocarea anului financiar după depunerea situațiilor financiare'),
     (N'Fin.FiscalYear.Unlock',          N'Deblocarea unui an financiar blocat (doar rolul Deblocare an)'),
