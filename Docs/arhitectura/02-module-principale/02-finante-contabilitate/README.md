@@ -96,6 +96,8 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C4.1 | Registrul de TVA scris odată cu nota (facturi, TVA la încasare devenită exigibilă, stornări), tipurile de operațiuni fiscale, jurnalele de vânzări și de cumpărări; testele C4-A1, A3 | Implementat (deconturi și deducere limitată în RAMAS 1.29) |
 | C4.2 | Cadrul declarațiilor: calendarul fiscal cu termenele pe ziua lucrătoare, ciorna D300 calculată din registru, verificarea, generarea doar pe lunile închise și cu datele neschimbate, depunerea cu obligația de plată în prognoză, marcajul „De verificat” la redeschidere; testele C4-A5, A10, A11 | Implementat (XML-ul în C4.3; evenimentele obligației în RAMAS 1.30) |
 | C4.3 | D300 cu fișierul XML pe rândurile formularului; preluarea P300 (RO e-TVA), diferențele peste prag (5.000 lei și 20%) marcate și explicate înainte de verificare; testele C4-A2 (adaptat), A7 | Implementat (SPV, DUKIntegrator și PDF prin Integrări; regularizări în RAMAS 1.31) |
+| C4.4 | D394 (operațiunile din țară pe secțiuni, partener și cotă) și D390 (operațiunile intracomunitare pe cod, partener și țară), din același registru, cu problemele partenerilor semnalate și fișierul XML; testul C4-A4 | Implementat (verificările ANAF/VIES și secțiunile speciale D394 în RAMAS 2.12, 1.32) |
+| C4.5 | D406 SAF-T lunar sau trimestrial: verificările pe categorii (conturi fără cont SAF-T, parteneri, note), fișierul scris în flux cu antetul, nomenclatoarele, registrul pe jurnale și facturile emise și primite | Implementat (plăți, active, stocuri, segmente și job în fundal în RAMAS 1.33, 2.13; C4-A9 în RAMAS 3) |
 
 ## Machete de ecran (`ecrane/`)
 

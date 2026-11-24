@@ -44,6 +44,10 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Declarations.ITaxReturnStore, Declarations.TaxReturnStore>();
         services.AddScoped<Application.Declarations.TaxReturnService>();
         services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D300XmlGenerator>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D394XmlGenerator>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D390XmlGenerator>();
+        services.AddScoped<Application.Declarations.ISaftStore, Declarations.SaftStore>();
+        services.AddScoped<Application.Declarations.IStreamingTaxFileGenerator, Declarations.SaftFileGenerator>();
         foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
         {
             services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
@@ -249,6 +253,8 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51946] = (ErpErrorKind.Validation, "FIN_TAX_RETURN_REASON_REQUIRED"),
         [51947] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_ALREADY_SUBMITTED"),
         [51948] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_NOT_GENERATED"),
+        [51951] = (ErpErrorKind.Validation, "FIN_SAFT_ACCOUNT_CODE_MISSING"),
+        [51952] = (ErpErrorKind.Validation, "FIN_SAFT_PARTNER_INVALID"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
         [51903] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSE_BLOCKED"),

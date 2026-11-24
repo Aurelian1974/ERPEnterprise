@@ -22839,6 +22839,89 @@
         }
       }
     },
+    "/api/finance/saft-checks": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetSaftChecks",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SaftIssueDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/gl-opening-balances": {
       "get": {
         "tags": [
@@ -54658,7 +54741,8 @@
           "rowVersion",
           "lines",
           "files",
-          "comparison"
+          "comparison",
+          "partnerLines"
         ],
         "type": "object",
         "properties": {
@@ -54758,6 +54842,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TaxComparisonDto"
+            }
+          },
+          "partnerLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerLineDto"
             }
           }
         }
@@ -54948,6 +55038,95 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "PartnerLineDto": {
+        "required": [
+          "section",
+          "partnerId",
+          "partnerFiscalCode",
+          "partnerCountryCode",
+          "partnerName",
+          "vatRatePercent",
+          "documents",
+          "baseRon",
+          "vatRon",
+          "issue"
+        ],
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerFiscalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerCountryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vatRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "documents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baseRon": {
+            "type": "string"
+          },
+          "vatRon": {
+            "type": "string"
+          },
+          "issue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaftIssueDto": {
+        "required": [
+          "category",
+          "code",
+          "message",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
           }
         }
       }

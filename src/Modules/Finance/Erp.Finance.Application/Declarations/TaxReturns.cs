@@ -15,13 +15,20 @@ public sealed record TaxComparisonDto(string RowCode, string ColumnCode, string 
 
 public sealed record PrecompletedValue(string RowCode, string ColumnCode, string Value);
 
+/// <summary>O linie pe partener a D394 / D390 (macheta c4-02).</summary>
+public sealed record PartnerLineDto(string Section, int? PartnerId, string? PartnerFiscalCode, string? PartnerCountryCode, string? PartnerName, decimal VatRatePercent,
+    int Documents, string BaseRon, string VatRon, string? Issue);
+
+/// <summary>Calculul unei declaratii: randurile, amprenta datelor si, la declaratiile informative, liniile pe partener.</summary>
+public sealed record TaxReturnCalculation(TaxComputation Computation, int Hash, IReadOnlyList<PartnerLine>? PartnerLines);
+
 public sealed record TaxReturnFileDto(int Id, byte Kind, string FileName, long Size, DateTime CreatedAt);
 
 /// <summary>O declaratie (machetele c4-01, c4-02). Status: 1 ciorna, 2 verificata, 3 generata, 4 depusa, 5 inlocuita.</summary>
 public sealed record TaxReturnDto(int Id, string FormCode, string FormName, DateOnly PeriodFrom, DateOnly PeriodTo, byte Kind, byte Status, bool NeedsReview,
     DateOnly? DueDate, DateTime? CalculatedAt, DateTime? GeneratedAt, DateTime? SubmittedAt, string? RegistrationNumber, string AmountDue, string AmountRefundable,
     DateTime? PrecompletedAt, byte[] RowVersion, IReadOnlyList<TaxReturnLineDto> Lines, IReadOnlyList<TaxReturnFileDto> Files,
-    IReadOnlyList<TaxComparisonDto> Comparison);
+    IReadOnlyList<TaxComparisonDto> Comparison, IReadOnlyList<PartnerLineDto> PartnerLines);
 
 /// <summary>Un termen al calendarului fiscal (macheta c4-01), cu declaratia perioadei si starea ei.</summary>
 public sealed record TaxCalendarItemDto(string FormCode, string FormName, DateOnly PeriodFrom, DateOnly PeriodTo, DateOnly DueDate, int? ReturnId, byte? Status,
@@ -35,6 +42,10 @@ public sealed record TaxFile(string FileName, byte[] Content);
 public interface ITaxReturnStore
 {
     Task<(IReadOnlyList<VatSummaryRow> Rows, int Hash)> VatSummaryAsync(int companyId, DateOnly from, DateOnly to, CancellationToken ct);
+
+    Task<IReadOnlyList<PartnerVatRow>> VatByPartnerAsync(int companyId, DateOnly from, DateOnly to, CancellationToken ct);
+
+    Task SavePartnerLinesAsync(int companyId, int id, IReadOnlyList<PartnerLine> lines, CancellationToken ct);
 
     Task<int> SaveAsync(int companyId, string formCode, DateOnly from, DateOnly to, DateOnly? dueDate, TaxComputation computation, int hash, int userId,
         CancellationToken ct);
@@ -75,19 +86,33 @@ public interface ITaxReturnFileGenerator
 /// lunile inchise si cu datele neschimbate de la calcul (decizia 3), depunerea cu numarul de inregistrare si recipisa (decizia 1), obligatia de
 /// plata in prognoza F5, marcajul „De verificat” la redeschidere (C4-A11).
 /// </summary>
-public sealed class TaxReturnService(ITaxReturnStore store, IEnumerable<ITaxReturnFileGenerator> generators, IOutbox outbox)
+public sealed class TaxReturnService(ITaxReturnStore store, ISaftStore saft, IEnumerable<ITaxReturnFileGenerator> generators,
+    IEnumerable<IStreamingTaxFileGenerator> streaming, IOutbox outbox)
 {
-    public static readonly string[] SupportedForms = ["D300"];
+    public static readonly string[] SupportedForms = ["D300", "D394", "D390", "D406"];
 
-    public async Task<(TaxComputation Computation, int Hash)> ComputeAsync(int companyId, string formCode, DateOnly from, DateOnly to, CancellationToken ct)
+    public async Task<TaxReturnCalculation> ComputeAsync(int companyId, string formCode, DateOnly from, DateOnly to, CancellationToken ct)
     {
-        if (formCode != "D300")
+        if (!SupportedForms.Contains(formCode))
         {
             throw new ErpException(ErpErrorKind.Conflict, "FIN_TAX_FORM_VERSION_MISSING", $"Formularul {formCode} nu se calculează încă.");
         }
 
+        if (formCode == "D406")
+        {
+            var summary = await saft.SummaryAsync(companyId, from, to, ct).ConfigureAwait(false);
+            return new TaxReturnCalculation(SaftComputation.Lines(summary), summary.Hash, null);
+        }
+
         var (rows, hash) = await store.VatSummaryAsync(companyId, from, to, ct).ConfigureAwait(false);
-        return (D300.Compute(rows), hash);
+        if (formCode == "D300")
+        {
+            return new TaxReturnCalculation(D300.Compute(rows), hash, null);
+        }
+
+        var byPartner = await store.VatByPartnerAsync(companyId, from, to, ct).ConfigureAwait(false);
+        var informative = formCode == "D394" ? InformativeReturns.ComputeD394(byPartner) : InformativeReturns.ComputeD390(byPartner);
+        return new TaxReturnCalculation(informative.Summary, hash, informative.Lines);
     }
 
     /// <summary>Compara randurile calculate ale declaratiei cu valorile P300 (RO e-TVA, decizia 5).</summary>
@@ -96,6 +121,21 @@ public sealed class TaxReturnService(ITaxReturnStore store, IEnumerable<ITaxRetu
         var declared = PrecompletedVatComparison.Declared(lines.Select(l => new TaxLine(l.RowCode, l.ColumnCode, l.Label, 0,
             Money.ParseOptional(l.ManualValue ?? l.CalculatedValue) ?? 0)));
         return PrecompletedVatComparison.Compare(declared, precompleted);
+    }
+
+    /// <summary>Scrie si salveaza fisierul final al declaratiei: in flux pentru D406, altfel din generatorul formularului (JSON in lipsa lui).</summary>
+    public async Task<string> WriteFileAsync(int companyId, TaxReturnDto taxReturn, int userId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(taxReturn);
+        if (streaming.FirstOrDefault(g => g.FormCode == taxReturn.FormCode) is { } writer)
+        {
+            await writer.GenerateAsync(companyId, taxReturn, userId, ct).ConfigureAwait(false);
+            return taxReturn.FormCode;
+        }
+
+        var file = await GenerateAsync(companyId, taxReturn, ct).ConfigureAwait(false);
+        await store.SaveFileAsync(companyId, taxReturn.Id, 1, file.FileName, file.Content, userId, ct).ConfigureAwait(false);
+        return file.FileName;
     }
 
     public async Task<TaxFile> GenerateAsync(int companyId, TaxReturnDto taxReturn, CancellationToken ct)
@@ -124,8 +164,8 @@ public sealed class TaxReturnService(ITaxReturnStore store, IEnumerable<ITaxRetu
 
         foreach (var r in marked.Where(m => SupportedForms.Contains(m.FormCode)))
         {
-            var (_, hash) = await ComputeAsync(companyId, r.FormCode, r.From, r.To, ct).ConfigureAwait(false);
-            if (hash == r.Hash)
+            var calculation = await ComputeAsync(companyId, r.FormCode, r.From, r.To, ct).ConfigureAwait(false);
+            if (calculation.Hash == r.Hash)
             {
                 await store.ClearReviewAsync(companyId, r.Id, ct).ConfigureAwait(false);
             }
@@ -271,12 +311,18 @@ internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStor
 
     public async Task<int> Handle(CalculateTaxReturn request, CancellationToken cancellationToken)
     {
-        var (computation, hash) = await service.ComputeAsync(context.CompanyId, request.FormCode, request.PeriodFrom, request.PeriodTo, cancellationToken)
+        var calculation = await service.ComputeAsync(context.CompanyId, request.FormCode, request.PeriodFrom, request.PeriodTo, cancellationToken)
             .ConfigureAwait(false);
+        var (computation, hash) = (calculation.Computation, calculation.Hash);
         var due = (await store.CalendarAsync(context.CompanyId, request.PeriodTo, request.PeriodTo.AddYears(1), cancellationToken).ConfigureAwait(false))
             .FirstOrDefault(c => c.FormCode == request.FormCode && c.PeriodFrom == request.PeriodFrom)?.DueDate;
         var id = await store.SaveAsync(context.CompanyId, request.FormCode, request.PeriodFrom, request.PeriodTo, due, computation, hash, context.UserId,
             cancellationToken).ConfigureAwait(false);
+        if (calculation.PartnerLines is { } partnerLines)
+        {
+            await store.SavePartnerLinesAsync(context.CompanyId, id, partnerLines, cancellationToken).ConfigureAwait(false);
+        }
+
         var saved = await store.GetAsync(context.CompanyId, id, cancellationToken).ConfigureAwait(false);
         if (saved is { PrecompletedAt: not null })
         {
@@ -296,12 +342,11 @@ internal sealed class TaxReturnHandlers(TaxReturnService service, ITaxReturnStor
     public async Task<byte[]> Handle(GenerateTaxReturn request, CancellationToken cancellationToken)
     {
         var current = await store.GetAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false) ?? throw NotFound();
-        var (_, hash) = await service.ComputeAsync(context.CompanyId, current.FormCode, current.PeriodFrom, current.PeriodTo, cancellationToken).ConfigureAwait(false);
+        var hash = (await service.ComputeAsync(context.CompanyId, current.FormCode, current.PeriodFrom, current.PeriodTo, cancellationToken).ConfigureAwait(false)).Hash;
         var state = await store.TransitionAsync(context.CompanyId, request.Id, request.RowVersion, "Generate", hash, null, context.UserId, cancellationToken)
             .ConfigureAwait(false);
-        var file = await service.GenerateAsync(context.CompanyId, current, cancellationToken).ConfigureAwait(false);
-        await store.SaveFileAsync(context.CompanyId, request.Id, 1, file.FileName, file.Content, context.UserId, cancellationToken).ConfigureAwait(false);
-        audit.Describe("Fin.TaxReturn", request.Id, new { file.FileName });
+        var fileName = await service.WriteFileAsync(context.CompanyId, current, context.UserId, cancellationToken).ConfigureAwait(false);
+        audit.Describe("Fin.TaxReturn", request.Id, new { FileName = fileName });
         return state.RowVersion;
     }
 

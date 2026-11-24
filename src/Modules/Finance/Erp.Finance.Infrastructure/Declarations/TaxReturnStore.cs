@@ -20,6 +20,21 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
         return (rows, hash.Hash);
     }
 
+    public async Task<IReadOnlyList<PartnerVatRow>> VatByPartnerAsync(int companyId, DateOnly from, DateOnly to, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<PartnerVatRow>(Command("fin.usp_VatRegister_ByPartner", new { CompanyId = companyId, From = D(from), To = D(to) }, ct))
+            .ConfigureAwait(false)).ToList();
+
+    public Task SavePartnerLinesAsync(int companyId, int id, IReadOnlyList<PartnerLine> lines, CancellationToken ct) =>
+        session.Connection.ExecuteAsync(Command("fin.usp_TaxReturn_SavePartnerLines", new
+        {
+            CompanyId = companyId, Id = id,
+            Lines = JsonSerializer.Serialize(lines.Select(l => new
+            {
+                section = l.Section, partnerId = l.PartnerId, partnerFiscalCode = l.PartnerFiscalCode, partnerCountryCode = l.PartnerCountryCode,
+                partnerName = l.PartnerName, vatRatePercent = l.VatRatePercent, documents = l.Documents, baseRon = l.BaseRon, vatRon = l.VatRon, issue = l.Issue,
+            })),
+        }, ct));
+
     public Task<int> SaveAsync(int companyId, string formCode, DateOnly from, DateOnly to, DateOnly? dueDate, TaxComputation computation, int hash, int userId,
         CancellationToken ct) =>
         session.Connection.QuerySingleAsync<int>(Command("fin.usp_TaxReturn_Save", new
@@ -47,9 +62,11 @@ public sealed class TaxReturnStore(IDbSession session) : ITaxReturnStore
         var files = (await grid.ReadAsync<TaxReturnFileDto>().ConfigureAwait(false)).ToList();
         var comparison = (await grid.ReadAsync<ComparisonRow>().ConfigureAwait(false)).Select(c => new TaxComparisonDto(c.RowCode, c.ColumnCode,
             Money.Format(c.DeclaredValue), Money.Format(c.PrecompletedValue), Money.Format(c.DeclaredValue - c.PrecompletedValue), c.IsOverThreshold, c.Explanation)).ToList();
+        var partners = (await grid.ReadAsync<PartnerLine>().ConfigureAwait(false)).Select(l => new PartnerLineDto(l.Section, l.PartnerId, l.PartnerFiscalCode,
+            l.PartnerCountryCode, l.PartnerName, l.VatRatePercent, l.Documents, Money.Format(l.BaseRon), Money.Format(l.VatRon), l.Issue)).ToList();
         return new TaxReturnDto(h.Id, h.FormCode, h.FormName, DateOnly.FromDateTime(h.PeriodFrom), DateOnly.FromDateTime(h.PeriodTo), h.Kind, h.Status, h.NeedsReview,
             h.DueDate is { } due ? DateOnly.FromDateTime(due) : null, h.CalculatedAt, h.GeneratedAt, h.SubmittedAt, h.RegistrationNumber, Money.Format(h.AmountDue),
-            Money.Format(h.AmountRefundable), h.PrecompletedAt, h.RowVersion, lines, files, comparison);
+            Money.Format(h.AmountRefundable), h.PrecompletedAt, h.RowVersion, lines, files, comparison, partners);
     }
 
     public async Task<TaxReturnState> TransitionAsync(int companyId, int id, byte[] rowVersion, string action, int? hash, string? registrationNumber, int userId,

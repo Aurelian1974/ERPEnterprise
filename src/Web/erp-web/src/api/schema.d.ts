@@ -4228,6 +4228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/saft-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSaftChecks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/gl-opening-balances": {
         parameters: {
             query?: never;
@@ -12098,6 +12114,7 @@ export interface components {
             lines: components["schemas"]["TaxReturnLineDto"][];
             files: components["schemas"]["TaxReturnFileDto"][];
             comparison: components["schemas"]["TaxComparisonDto"][];
+            partnerLines: components["schemas"]["PartnerLineDto"][];
         };
         TaxReturnFileDto: {
             /** Format: int32 */
@@ -12150,6 +12167,28 @@ export interface components {
             difference: string;
             isOverThreshold: boolean;
             explanation: null | string;
+        };
+        PartnerLineDto: {
+            section: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerFiscalCode: null | string;
+            partnerCountryCode: null | string;
+            partnerName: null | string;
+            /** Format: double */
+            vatRatePercent: number;
+            /** Format: int32 */
+            documents: number;
+            baseRon: string;
+            vatRon: string;
+            issue: null | string;
+        };
+        SaftIssueDto: {
+            /** Format: uint8 */
+            category: number;
+            code: string;
+            message: string;
+            reference: string;
         };
     };
     responses: never;
@@ -29567,6 +29606,65 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DownloadedFile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetSaftChecks: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaftIssueDto"][];
                 };
             };
             /** @description Bad Request */

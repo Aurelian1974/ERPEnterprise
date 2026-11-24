@@ -40,6 +40,8 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.29 | Registrul de TVA pentru deconturile de cheltuieli (furnizorul pe linie), cota de deducere limitată, statusul e-Factura pe rând | C4 nota C4.1 | Facturile de vânzare și de furnizor se înregistrează |
 | 1.30 | Evenimentele `ObligatieFiscalaCreata` (F2 propunere de OP) și `DeclaratieDeVerificat` (notificarea Contabilului șef), `DeclaratieGenerata`; închiderea obligației la plată (`PlataInregistrata`); rândurile manuale cu motiv (51945, 51946); declarațiile rectificative (Kind 2, starea Înlocuită) | C4 nota C4.2 | Obligația și suma planificată se scriu la depunere |
 | 1.31 | Tabelul versionat `TaxFormRowMapping` în locul mapării din cod (`D300Layout`); D300: rândurile de regularizări, prorata, soldul de rambursat reportat din decontul anterior, opțiunea de rambursare; comparația D300 cu nota de regularizare a TVA ca pas blocant al închiderii (C3 3.5) | C4 nota C4.3 | Totalurile D300 = nota de regularizare (testul C4-A2) |
+| 1.32 | D394: completitudinea seriilor și plajelor de facturi emise, secțiunile pentru persoane fizice, bonuri fiscale, regimuri speciale și facturi anulate; D390: corecțiile pentru perioade anterioare | C4 nota C4.4 | Secțiunile L, V, A, C și codurile L, S, A, P se calculează |
+| 1.33 | D406: secțiunea `Payments` (încasările și plățile F1, F2), articolele pe liniile facturilor, generarea în job Hangfire cu progres, împărțirea fișierelor mari pe segmente, descărcarea fișierului în flux | C4 nota C4.5 | Registrul, nomenclatoarele și facturile se scriu în flux |
 
 ## 2. Depinde de alte module sau de Nucleu
 
@@ -57,6 +59,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 2.10 | Conectarea directă la API-urile băncilor (PSD2 / corporate) | Integrare 02.xx, ulterior | F2 |
 | 2.11 | Partea contabilă a modulului: C1 Planuri de conturi, C2 Modele de contare și note, C3 Închideri, C4 Declarații, C5 Rapoarte | Fazele C1–C5 | [C1](C1-PLANURI-DE-CONTURI.md)…[C5](C5-RAPOARTE.md) |
 | 2.12 | Declarațiile prin Integrări: XML-ul validat cu DUKIntegrator (51953 la lipsă), PDF-ul cu XML-ul atașat, descărcarea P300 din SPV (`P300Descarcat`) și facturile din e-Factura care explică diferențele; criteriul C4-A6 | Modulul Integrări (02.14) | C4 nota C4.3 |
+| 2.13 | D406 active (anual) și D406 stocuri (la cerere), prin `ISaftAssetsSource` și `ISaftStockSource` | Mijloace fixe, Stocuri | C4 nota C4.5 |
 
 ## 3. Criterii de acceptare fără test
 
@@ -71,6 +74,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 3.7 | F2-A21 | Validarea automată a încasării potrivite exact pe factură | Integrare, cu punctul 1.7 |
 | 3.8 | F1-A14 | Raportul Z din POS, idempotent | Integrare, cu punctul 2.3 |
 | 3.9 | F5-A2 | Factura într-o singură propunere activă, verificat și cu salvări simultane (acum secvențial, prin indexul unic) | Concurență |
+| 3.10 | C4-A9 | D406 pentru o lună cu 2 milioane de linii în sub 15 minute și cel mult 1 GB memorie (scrierea e deja în flux și paginată) | Performanță |
 
 ## 4. Verificări externe
 
@@ -78,7 +82,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | --- | --- | --- |
 | 4.1 | Data și forma în vigoare a Legii 70/2015 (plafoanele de numerar) — de verificat pe legislatie.just.ro | F1, cerințe legale |
 | 4.2 | Fișiere reale de extras (MT940, CAMT.053) de la bănci; testele folosesc fișiere construite după specificațiile publice | F2, TBD |
-| 4.3 | Numerele de rând și spațiul de nume ale XML-ului D300 (`D300Layout`, `D300XmlGenerator`) față de XSD-ul ANAF în vigoare; pragurile RO e-TVA din 2026 (5.000 lei și 20%) | C4 nota C4.3 |
+| 4.3 | Numerele de rând și spațiul de nume ale XML-ului D300 (`D300Layout`, `D300XmlGenerator`), structura XML D394 și D390 (`InformativeXmlGenerator`) față de XSD-ul ANAF în vigoare; pragurile RO e-TVA din 2026 (5.000 lei și 20%) | C4 nota C4.3 |
 
 ## 5. Corecturi de documentație făcute la inventar
 

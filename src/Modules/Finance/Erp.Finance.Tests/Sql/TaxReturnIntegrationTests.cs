@@ -4,6 +4,7 @@ using Erp.Finance.Application;
 using Erp.Finance.Application.Accounting;
 using Erp.Finance.Application.Declarations;
 using Erp.Finance.Application.Periods;
+using Erp.Finance.Contracts.Accounting;
 using Erp.Finance.Contracts.Settlement;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
@@ -133,6 +134,100 @@ public sealed class TaxReturnIntegrationTests : FinanceTestBase, IClassFixture<F
         Assert.Equal(("declaratie300", "3", "L"), (xml.Name.LocalName, (string?)xml.Attribute("luna"), (string?)xml.Attribute("tip_decont")));
         Assert.Equal(("10000", "2100", "950", "1150"), ((string?)xml.Attribute("R9_1"), (string?)xml.Attribute("R9_2"), (string?)xml.Attribute("R24_2"),
             (string?)xml.Attribute("R40_2")));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.02-C4-A4")]
+    public async Task An_intra_community_services_purchase_is_collected_and_deducted_in_d300_and_reported_with_code_p_in_d390()
+    {
+        var local = await Setup();
+        var german = await Scalar("""
+            INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, IsCustomer, IsSupplier, VatPayer, Address, City, CountryCode, IsActive, CreatedBy)
+            VALUES (@Code, N'Beratung GmbH', 2, @Fiscal, 0, 1, 1, N'Hauptstraße 1', N'Berlin', 'DE', 1, 1);
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """, new { Code = Unique("DE-"), Fiscal = Unique("DE") });
+        var day = new DateOnly(2026, 4, 14);
+        var id = Interlocked.Increment(ref sequence);
+        var invoice = Purchase(german, 2000m, 0m, day) with
+        {
+            Accounting = new AccountingPayload("Purchasing.SupplierInvoice", $"FF-{id}", day, day, "RON", 1m, ["ReverseCharge", "Services"],
+                [new AccountingComponent("Total", 2000m, 2000m), new AccountingComponent("Net", 2000m, 2000m), new AccountingComponent("Vat", 420m, 420m)])
+            {
+                SourceModule = "Purchasing", DocumentId = id, PartnerId = german,
+            },
+        };
+        Assert.True((await Post(PostingAdapters.SupplierInvoice(invoice))).Posted);
+        Assert.True((await Post(PostingAdapters.SalesInvoice(Sale(local, 1210m, 210m, day)))).Posted);
+        var from = new DateOnly(2026, 4, 1);
+        var to = new DateOnly(2026, 4, 30);
+
+        // D300: TVA-ul serviciului e si colectat (rândul 7), si deductibil (rândul 21); de plata ramane doar TVA-ul vanzarii.
+        var d300 = await Send(new GetTaxReturn(await Send(new CalculateTaxReturn("D300", from, to))));
+        var totals = d300.Lines.Where(l => l.RowCode == "TOTAL").ToDictionary(l => l.ColumnCode, l => l.CalculatedValue);
+        Assert.Equal(("630.00", "420.00", "210.00"), (totals["COLLECTED"], totals["DEDUCTIBLE"], totals["DUE"]));
+        Assert.Contains(d300.Lines, l => l is { RowCode: "A-IC-S", ColumnCode: "VAT", CalculatedValue: "420.00" });
+
+        // D390: codul P pe partenerul german; D394: doar vanzarea din tara.
+        var d390 = await Send(new GetTaxReturn(await Send(new CalculateTaxReturn("D390", from, to))));
+        var p = d390.PartnerLines.Single();
+        Assert.Equal(("P", "DE", "2000.00", (string?)null), (p.Section, p.PartnerCountryCode, p.BaseRon, p.Issue));
+        var d394 = await Send(new GetTaxReturn(await Send(new CalculateTaxReturn("D394", from, to))));
+        Assert.Equal(["L"], d394.PartnerLines.Select(l => l.Section));
+        Assert.Equal("1000.00", d394.Lines.Single(l => l is { RowCode: "L", ColumnCode: "BASE" }).CalculatedValue);
+
+        // Generarea D390 dupa inchiderea lunii: un element pe partener.
+        var version = await Send(new VerifyTaxReturn(d390.Id, d390.RowVersion));
+        await SetMonth(4, 3);
+        await Send(new GenerateTaxReturn(d390.Id, version));
+        var file = await Send(new DownloadTaxReturnFile((await Send(new GetTaxReturn(d390.Id))).Files.Single().Id));
+        var xml = System.Xml.Linq.XDocument.Load(new MemoryStream(file.Content)).Root!;
+        var op = xml.Elements().Single();
+        Assert.Equal(("declaratie390", "P", "2000"), (xml.Name.LocalName, (string?)op.Attribute("tip"), (string?)op.Attribute("baza")));
+    }
+
+    [Fact]
+    public async Task The_saft_file_is_refused_with_accounts_missing_their_saft_code_and_otherwise_lists_the_ledger_and_invoices()
+    {
+        var partner = await Setup();
+        var day = new DateOnly(2026, 5, 20);
+        Assert.True((await Post(PostingAdapters.SalesInvoice(Sale(partner, 2420m, 420m, day)))).Posted);
+        Assert.True((await Post(PostingAdapters.SupplierInvoice(Purchase(partner, 1190m, 190m, day)))).Posted);
+        var from = new DateOnly(2026, 5, 1);
+        var to = new DateOnly(2026, 5, 31);
+        var id = await Send(new CalculateTaxReturn("D406", from, to));
+        var draft = await Send(new GetTaxReturn(id));
+        var summary = draft.Lines.ToDictionary(l => l.RowCode, l => l.CalculatedValue);
+        Assert.Equal(("2", "2"), (summary["ENTRIES"].Split('.')[0], summary["INVOICES"].Split('.')[0]));
+        Assert.Empty(await Send(new GetSaftChecks(from, to)));
+        var version = await Send(new VerifyTaxReturn(id, draft.RowVersion));
+        await SetMonth(5, 3);
+
+        // 51951: un cont cu rulaj fara cont SAF-T (nici el, nici conturile parinte) opreste fisierul.
+        await Single<int>("UPDATE fin.GlAccount SET SaftAccountCode = NULL WHERE Code IN ('7', '70', '707'); SELECT @@ROWCOUNT;", new { });
+        try
+        {
+            Assert.Contains(await Send(new GetSaftChecks(from, to)), i => i is { Category: 1, Reference: "707" });
+            var missing = await Assert.ThrowsAnyAsync<ErpException>(() => Send(new GenerateTaxReturn(id, version)));
+            Assert.Equal("FIN_SAFT_ACCOUNT_CODE_MISSING", missing.Code);
+        }
+        finally
+        {
+            await Single<int>("UPDATE fin.GlAccount SET SaftAccountCode = Code WHERE Code IN ('7', '70', '707'); SELECT @@ROWCOUNT;", new { });
+        }
+
+        await Send(new GenerateTaxReturn(id, version));
+        var file = await Send(new DownloadTaxReturnFile((await Send(new GetTaxReturn(id))).Files.Single().Id));
+        var root = System.Xml.Linq.XDocument.Load(new MemoryStream(file.Content)).Root!;
+        System.Xml.Linq.XNamespace ns = "mfp:anaf:dgti:d406:declaratie:v1";
+        var ledger = root.Element(ns + "GeneralLedgerEntries")!;
+        Assert.Equal(2, ledger.Descendants(ns + "Transaction").Count());
+        Assert.Equal((string?)ledger.Element(ns + "TotalDebit"), (string?)ledger.Element(ns + "TotalCredit"));
+        var debit = ledger.Descendants(ns + "DebitAmount").Sum(a => decimal.Parse((string)a.Element(ns + "Amount")!, System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(decimal.Parse((string)ledger.Element(ns + "TotalDebit")!, System.Globalization.CultureInfo.InvariantCulture), debit);
+        var sales = root.Element(ns + "SourceDocuments")!.Element(ns + "SalesInvoices")!.Elements(ns + "Invoice").Single();
+        Assert.Equal("420.00", (string?)sales.Descendants(ns + "TaxAmount").Single().Element(ns + "Amount"));
+        var account = root.Descendants(ns + "Account").Single(a => (string?)a.Element(ns + "AccountID") == "4111");
+        Assert.Equal("2420.00", (string?)account.Element(ns + "ClosingDebitBalance"));
     }
 
     private async Task<int> Setup()

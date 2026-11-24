@@ -18,4 +18,6 @@ BEGIN
     SELECT RowCode, ColumnCode, DeclaredValue, PrecompletedValue, IsOverThreshold, Explanation
     FROM fin.TaxReturnComparison WHERE ReturnId = @Id ORDER BY LEN(RowCode), RowCode, ColumnCode;
 
+    SELECT Section, PartnerId, PartnerFiscalCode, PartnerCountryCode, PartnerName, VatRatePercent, Documents, BaseRon, VatRon, Issue
+    FROM fin.TaxReturnPartnerLine WHERE ReturnId = @Id ORDER BY Section, PartnerFiscalCode, VatRatePercent;
 END;

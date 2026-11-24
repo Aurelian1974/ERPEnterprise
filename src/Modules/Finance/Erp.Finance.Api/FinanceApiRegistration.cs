@@ -535,6 +535,8 @@ public static class FinanceApiRegistration
             .WithName("ExplainTaxDifference").Produces<bool>().Problems();
         finance.MapGet("/tax-return-files/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DownloadTaxReturnFile(id), ct))
             .WithName("DownloadTaxReturnFile").Produces<DownloadedFile>().Problems();
+        finance.MapGet("/saft-checks", (DateOnly from, DateOnly to, ISender sender, CancellationToken ct) => sender.Send(new GetSaftChecks(from, to), ct))
+            .WithName("GetSaftChecks").Produces<IReadOnlyList<SaftIssueDto>>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();
