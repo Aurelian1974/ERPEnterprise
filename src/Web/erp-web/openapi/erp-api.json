@@ -15093,12 +15093,12 @@
         "tags": [
           "Finance"
         ],
-        "operationId": "UploadOpeningBalances",
+        "operationId": "ImportOpeningBalances",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UploadOpeningBalances"
+                "$ref": "#/components/schemas/ImportOpeningBalances"
               }
             }
           },
@@ -15110,7 +15110,66 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningImportDto"
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetOpeningBalances",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningBalanceImportDto"
                 }
               }
             }
@@ -15305,7 +15364,7 @@
         "tags": [
           "Finance"
         ],
-        "operationId": "CancelOpeningBalanceImport",
+        "operationId": "CancelOpeningBalances",
         "parameters": [
           {
             "name": "id",
@@ -15323,7 +15382,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningImportDto"
+                  "type": "boolean"
                 }
               }
             }
@@ -21920,6 +21979,77 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/opening-balances/{id}/validate": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ValidateOpeningBalances",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -52996,6 +53126,220 @@
               "type": "integer",
               "format": "int64"
             }
+          }
+        }
+      },
+      "ImportOpeningBalances": {
+        "required": [
+          "startDate",
+          "fileName",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpeningBalanceRowInput"
+            }
+          }
+        }
+      },
+      "OpeningBalanceImportDto": {
+        "required": [
+          "id",
+          "startDate",
+          "status",
+          "fileName",
+          "openingEntryId",
+          "turnoverEntryId",
+          "validatedAt",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openingEntryId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "turnoverEntryId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpeningBalanceRowDto"
+            }
+          }
+        }
+      },
+      "OpeningBalanceRowDto": {
+        "required": [
+          "rowNumber",
+          "accountCode",
+          "accountName",
+          "partnerId",
+          "partnerName",
+          "currencyCode",
+          "openingDebit",
+          "openingCredit",
+          "turnoverDebit",
+          "turnoverCredit",
+          "closingDebit",
+          "closingCredit"
+        ],
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currencyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openingDebit": {
+            "type": "string"
+          },
+          "openingCredit": {
+            "type": "string"
+          },
+          "turnoverDebit": {
+            "type": "string"
+          },
+          "turnoverCredit": {
+            "type": "string"
+          },
+          "closingDebit": {
+            "type": "string"
+          },
+          "closingCredit": {
+            "type": "string"
+          }
+        }
+      },
+      "OpeningBalanceRowInput": {
+        "required": [
+          "rowNumber",
+          "accountCode",
+          "partnerId",
+          "currencyCode",
+          "amountCurrency",
+          "openingDebit",
+          "openingCredit",
+          "turnoverDebit",
+          "turnoverCredit",
+          "closingDebit",
+          "closingCredit"
+        ],
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "currencyCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountCurrency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openingDebit": {
+            "type": "string"
+          },
+          "openingCredit": {
+            "type": "string"
+          },
+          "turnoverDebit": {
+            "type": "string"
+          },
+          "turnoverCredit": {
+            "type": "string"
+          },
+          "closingDebit": {
+            "type": "string"
+          },
+          "closingCredit": {
+            "type": "string"
           }
         }
       }

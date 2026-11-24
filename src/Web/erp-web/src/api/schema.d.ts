@@ -2955,9 +2955,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["GetOpeningBalances"];
         put?: never;
-        post: operations["UploadOpeningBalances"];
+        post: operations["ImportOpeningBalances"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3005,7 +3005,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["CancelOpeningBalanceImport"];
+        post: operations["CancelOpeningBalances"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4062,6 +4062,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["UnlockFiscalYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/opening-balances/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateOpeningBalances"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11722,6 +11738,59 @@ export interface components {
             existingReserve: string;
             proposedReserve: string;
             entryIds: number[];
+        };
+        ImportOpeningBalances: {
+            /** Format: date */
+            startDate: string;
+            fileName: null | string;
+            rows: components["schemas"]["OpeningBalanceRowInput"][];
+        };
+        OpeningBalanceImportDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: uint8 */
+            status: number;
+            fileName: null | string;
+            /** Format: int64 */
+            openingEntryId: null | number;
+            /** Format: int64 */
+            turnoverEntryId: null | number;
+            /** Format: date-time */
+            validatedAt: null | string;
+            rows: components["schemas"]["OpeningBalanceRowDto"][];
+        };
+        OpeningBalanceRowDto: {
+            /** Format: int32 */
+            rowNumber: number;
+            accountCode: string;
+            accountName: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            currencyCode: null | string;
+            openingDebit: string;
+            openingCredit: string;
+            turnoverDebit: string;
+            turnoverCredit: string;
+            closingDebit: string;
+            closingCredit: string;
+        };
+        OpeningBalanceRowInput: {
+            /** Format: int32 */
+            rowNumber: number;
+            accountCode: string;
+            /** Format: int32 */
+            partnerId: null | number;
+            currencyCode: null | string;
+            amountCurrency: null | string;
+            openingDebit: string;
+            openingCredit: string;
+            turnoverDebit: string;
+            turnoverCredit: string;
+            closingDebit: string;
+            closingCredit: string;
         };
     };
     responses: never;
@@ -23180,7 +23249,63 @@ export interface operations {
             };
         };
     };
-    UploadOpeningBalances: {
+    GetOpeningBalances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningBalanceImportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ImportOpeningBalances: {
         parameters: {
             query?: never;
             header?: never;
@@ -23189,7 +23314,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UploadOpeningBalances"];
+                "application/json": components["schemas"]["ImportOpeningBalances"];
             };
         };
         responses: {
@@ -23199,7 +23324,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpeningImportDto"];
+                    "application/json": number;
                 };
             };
             /** @description Bad Request */
@@ -23356,7 +23481,7 @@ export interface operations {
             };
         };
     };
-    CancelOpeningBalanceImport: {
+    CancelOpeningBalances: {
         parameters: {
             query?: never;
             header?: never;
@@ -23373,7 +23498,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpeningImportDto"];
+                    "application/json": boolean;
                 };
             };
             /** @description Bad Request */
@@ -28466,6 +28591,64 @@ export interface operations {
                 "application/json": components["schemas"]["UnlockFiscalYear"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateOpeningBalances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

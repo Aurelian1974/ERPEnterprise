@@ -27,7 +27,7 @@ BEGIN
     DECLARE @Lines TABLE (LineId bigint PRIMARY KEY, EntryId bigint, AccountingDate date, LineNumber int, IsOpening bit, AccountCode nvarchar(20), Debit decimal(19,2),
         Credit decimal(19,2));
     INSERT INTO @Lines
-    SELECT l.Id, e.Id, e.AccountingDate, l.LineNumber, CASE WHEN e.SourceKind = 5 OR e.AccountingDate < @From THEN 1 ELSE 0 END, a.Code, l.DebitRon, l.CreditRon
+    SELECT l.Id, e.Id, e.AccountingDate, l.LineNumber, CASE WHEN (e.SourceKind = 5 AND e.AccountingDate = @YearStart) OR e.AccountingDate < @From THEN 1 ELSE 0 END, a.Code, l.DebitRon, l.CreditRon
     FROM fin.JournalLine AS l
     JOIN fin.JournalEntry AS e ON e.Id = l.EntryId
     JOIN fin.GlAccount AS a ON a.Id = l.AccountId AND a.ChartId = @Statutory
