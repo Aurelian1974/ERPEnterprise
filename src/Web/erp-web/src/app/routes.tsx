@@ -17,6 +17,9 @@ import { ExpenseReportsPage } from '../finance/ExpenseReportsPage';
 import { BankStatementsPage } from '../finance/BankStatementsPage';
 import { BankReconcilePage } from '../finance/BankReconcilePage';
 import { PenaltiesPage } from '../finance/PenaltiesPage';
+import { FxDifferencesPage } from '../finance/FxDifferencesPage';
+import { FxExposurePage } from '../finance/FxExposurePage';
+import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
 import { PartnerBalancesPage } from '../finance/PartnerBalancesPage';
@@ -64,6 +67,9 @@ export const routes = [
       { path: 'finante/decontari/efecte', element: <CommercialPapersPage /> },
       { path: 'finante/decontari/confirmari', element: <BalanceConfirmationsPage /> },
       { path: 'finante/decontari/penalitati', element: <PenaltiesPage /> },
+      { path: 'finante/valuta/reevaluare', element: <FxRevaluationPage /> },
+      { path: 'finante/valuta/diferente', element: <FxDifferencesPage /> },
+      { path: 'finante/valuta/pozitie', element: <FxExposurePage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
@@ -76,6 +82,7 @@ export const routes = [
       { path: 'admin/config/finante-trezorerie', element: <ConfigPage /> },
       { path: 'admin/config/finante-rate-referinta', element: <ConfigPage /> },
       { path: 'admin/config/finante-solduri-initiale', element: <ConfigPage /> },
+      { path: 'admin/config/finante-valuta', element: <ConfigPage /> },
       { path: 'admin/config', element: <ConfigPage /> },
       { path: 'cont/2fa', element: <TwoFactorPage /> },
       { path: '*', element: <NotFoundPage /> },

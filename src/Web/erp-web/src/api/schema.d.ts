@@ -3028,6 +3028,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/fx/revaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFxRevaluations"];
+        put?: never;
+        post: operations["GenerateFxRevaluation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/revaluations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFxRevaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/differences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFxDifferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/exposure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFxExposure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetFxSettings"];
+        put: operations["SaveFxSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/treasury-values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTreasuryFxValues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/revaluations/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateFxRevaluation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/revaluations/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReverseFxRevaluation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/fx/revaluations/{id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeleteFxRevaluationDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/commercial-papers": {
         parameters: {
             query?: never;
@@ -7824,6 +7968,7 @@ export interface components {
             /** Format: int64 */
             creditOpenItemId: number;
             amount: string;
+            crossRate?: null | string;
         };
         AllocationsCreatedDto: {
             allocationIds: number[];
@@ -8600,6 +8745,233 @@ export interface components {
         UploadOpeningBalances: {
             fileName: string;
             fileBase64: string;
+        };
+        CrossRateRule: number;
+        DeleteFxRevaluationDraft: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        FxAccountTotalDto: {
+            glAccountCode: string;
+            differenceRon: string;
+        };
+        FxDifferenceDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date */
+            differenceDate: string;
+            /** Format: uint8 */
+            source: number;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            role: null | components["schemas"]["PartnerRole"];
+            /** Format: int64 */
+            openItemId: null | number;
+            documentNo: null | string;
+            /** Format: int64 */
+            allocationId: null | number;
+            counterDocumentNo: null | string;
+            accountCode: null | string;
+            counterAccountCode: null | string;
+            currencyCode: string;
+            foreignAmount: string;
+            carryingAmountRon: string;
+            settlementAmountRon: string;
+            differenceRon: string;
+            glAccountCode: string;
+            isIndexed: boolean;
+            isReversal: boolean;
+            isCorrection: boolean;
+        };
+        FxDifferencesDto: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            gainRon: string;
+            lossRon: string;
+            netRon: string;
+            correctionsRon: string;
+            accounts: components["schemas"]["FxAccountTotalDto"][];
+            items: components["schemas"]["FxDifferenceDto"][];
+        };
+        FxExposureCurrencyDto: {
+            currencyCode: string;
+            treasury: string;
+            receivables: string;
+            papers: string;
+            payables: string;
+            net: string;
+            rate: null | string;
+            netRon: null | string;
+            impactOnePercentRon: null | string;
+            items: components["schemas"]["FxExposureItemDto"][];
+        };
+        FxExposureDto: {
+            /** Format: date */
+            asOf: string;
+            includesAdvances: boolean;
+            totalRon: null | string;
+            totalImpactRon: null | string;
+            currencies: components["schemas"]["FxExposureCurrencyDto"][];
+        };
+        FxExposureItemDto: {
+            /** Format: uint8 */
+            category: number;
+            name: string;
+            description: null | string;
+            /** Format: date */
+            dueDate: null | string;
+            amount: string;
+            valueRon: null | string;
+        };
+        FxRunCurrencyDto: {
+            currencyCode: string;
+            /** Format: int32 */
+            lines: number;
+            foreignAmount: string;
+            carryingAmountRon: string;
+            revaluedAmountRon: string;
+            gainRon: string;
+            lossRon: string;
+        };
+        FxRunDto: {
+            /** Format: int32 */
+            id: number;
+            number: string;
+            /** Format: int32 */
+            periodYear: number;
+            /** Format: int32 */
+            periodMonth: number;
+            /** Format: date */
+            revaluationDate: string;
+            /** Format: date */
+            rateDate: string;
+            status: components["schemas"]["FxRunStatus"];
+            includesAdvances: boolean;
+            totalGainRon: string;
+            totalLossRon: string;
+            /** Format: date-time */
+            generatedAt: string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            validatedByName: null | string;
+            /** Format: date-time */
+            reversedAt: null | string;
+            /** Format: int32 */
+            lineCount: number;
+            rates: components["schemas"]["FxRunRateDto"][];
+            currencies: components["schemas"]["FxRunCurrencyDto"][];
+            lines: components["schemas"]["FxRunLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        FxRunItemDto: {
+            /** Format: int32 */
+            id: number;
+            number: string;
+            /** Format: int32 */
+            periodYear: number;
+            /** Format: int32 */
+            periodMonth: number;
+            /** Format: date */
+            revaluationDate: string;
+            /** Format: date */
+            rateDate: string;
+            status: components["schemas"]["FxRunStatus"];
+            totalGainRon: string;
+            totalLossRon: string;
+            netRon: string;
+            /** Format: int32 */
+            lineCount: number;
+            isStale: boolean;
+            /** Format: date-time */
+            generatedAt: string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            /** Format: date-time */
+            reversedAt: null | string;
+        };
+        FxRunLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: uint8 */
+            elementKind: number;
+            /** Format: int64 */
+            openItemId: null | number;
+            documentNo: null | string;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            role: null | components["schemas"]["PartnerRole"];
+            currencyCode: string;
+            foreignAmount: string;
+            rate: string;
+            carryingAmountRon: string;
+            revaluedAmountRon: string;
+            differenceRon: string;
+            glAccountCode: string;
+            counterGlAccountCode: null | string;
+            /** @default false */
+            isCorrection: boolean;
+            /** Format: int32 */
+            correctedRunId?: null | number;
+        };
+        FxRunRateDto: {
+            currencyCode: string;
+            rate: string;
+            /** Format: int32 */
+            multiplier: number;
+            /** Format: date */
+            rateDate: string;
+            source: string;
+        };
+        FxRunStatus: number;
+        FxSettingsDto: {
+            crossCurrencyRule: components["schemas"]["CrossRateRule"];
+            crossCurrencyMarkupPercent: string;
+            revalueAdvances: boolean;
+            blockAllocationsInRevaluedMonth: boolean;
+        };
+        GenerateFxRevaluation: {
+            /** Format: int32 */
+            year: number;
+            /** Format: int32 */
+            month: number;
+        };
+        ReverseFxRevaluation: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveFxSettings: {
+            crossCurrencyRule: components["schemas"]["CrossRateRule"];
+            crossCurrencyMarkupPercent: string;
+            revalueAdvances: boolean;
+            blockAllocationsInRevaluedMonth: boolean;
+        };
+        TreasuryRonValueDto: {
+            /** Format: int32 */
+            treasuryAccountId: number;
+            code: string;
+            currencyCode: string;
+            /** Format: date */
+            asOf: string;
+            balance: string;
+            carryingAmountRon: string;
+            rate: null | string;
+            currentValueRon: null | string;
+            unrealizedRon: null | string;
+        };
+        ValidateFxRevaluation: {
+            /** Format: int32 */
+            id: number;
+            /** Format: byte */
+            rowVersion: string;
         };
     };
     responses: never;
@@ -20310,6 +20682,665 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpeningImportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFxRevaluations: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxRunItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GenerateFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateFxRevaluation"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxRunDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFxDifferences: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                source?: number;
+                currencyCode?: string;
+                partnerId?: number;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxDifferencesDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFxExposure: {
+        parameters: {
+            query?: {
+                asOf?: string;
+                includeAdvances?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxExposureDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFxSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxSettingsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveFxSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveFxSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FxSettingsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTreasuryFxValues: {
+        parameters: {
+            query?: {
+                asOf?: string;
+                treasuryAccountId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TreasuryRonValueDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateFxRevaluation"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseFxRevaluation"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteFxRevaluationDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteFxRevaluationDraft"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Bad Request */

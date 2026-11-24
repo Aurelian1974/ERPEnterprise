@@ -31,7 +31,7 @@ export const CONFIG_PERMISSIONS = [
   'Core.NumberSeries.Manage', 'Core.Precision.Manage', 'Core.Nomenclature.Manage', 'Core.ExchangeRate.ManageManual', 'Core.Dimension.Manage',
   'Core.Company.Manage', 'Core.Property.Manage', 'Core.Role.Manage', 'Core.Audit.View', 'Core.Settings.Manage', 'Core.Import.Run',
   'Core.License.Manage', 'Core.Partner.Manage', 'Core.Item.Manage', 'Fin.Treasury.Configure', 'Fin.CashLimit.Manage', 'Fin.BankFormat.Manage',
-  'Fin.OpeningBalance.Import',
+  'Fin.OpeningBalance.Import', 'Fin.Fx.Settings',
 ] as const;
 
 export const homeItem: MenuItem = { id: 'home', label: 'menu.home', path: '/', icon: '⌂' };
@@ -76,6 +76,9 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'commercial-papers', label: 'menu.commercialPapers', path: '/finante/decontari/efecte', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'balance-confirmations', label: 'menu.balanceConfirmations', path: '/finante/decontari/confirmari', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
       { id: 'penalties', label: 'menu.penalties', path: '/finante/decontari/penalitati', icon: '', module: 'Finance', permission: 'Fin.PartnerBalance.View' },
+      { id: 'fx-revaluation', label: 'menu.fxRevaluation', path: '/finante/valuta/reevaluare', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
+      { id: 'fx-differences', label: 'menu.fxDifferences', path: '/finante/valuta/diferente', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
+      { id: 'fx-exposure', label: 'menu.fxExposure', path: '/finante/valuta/pozitie', icon: '', module: 'Finance', permission: 'Fin.Fx.View' },
     ],
   },
   {

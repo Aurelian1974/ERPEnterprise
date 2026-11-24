@@ -15442,6 +15442,856 @@
         }
       }
     },
+    "/api/finance/fx/revaluations": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFxRevaluations",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FxRunItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GenerateFxRevaluation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateFxRevaluation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/revaluations/{id}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFxRevaluation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxRunDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/differences": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFxDifferences",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "currencyCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "partnerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxDifferencesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/exposure": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFxExposure",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "includeAdvances",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxExposureDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/settings": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetFxSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SaveFxSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFxSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/treasury-values": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetTreasuryFxValues",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "treasuryAccountId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TreasuryRonValueDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/revaluations/{id}/validate": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ValidateFxRevaluation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateFxRevaluation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/revaluations/{id}/reverse": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "ReverseFxRevaluation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseFxRevaluation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fx/revaluations/{id}/delete": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "DeleteFxRevaluationDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteFxRevaluationDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/commercial-papers": {
       "get": {
         "tags": [
@@ -35393,6 +36243,12 @@
           },
           "amount": {
             "type": "string"
+          },
+          "crossRate": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -38244,6 +39100,870 @@
           },
           "fileBase64": {
             "type": "string"
+          }
+        }
+      },
+      "CrossRateRule": {
+        "type": "integer"
+      },
+      "DeleteFxRevaluationDraft": {
+        "required": [
+          "id",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "FxAccountTotalDto": {
+        "required": [
+          "glAccountCode",
+          "differenceRon"
+        ],
+        "type": "object",
+        "properties": {
+          "glAccountCode": {
+            "type": "string"
+          },
+          "differenceRon": {
+            "type": "string"
+          }
+        }
+      },
+      "FxDifferenceDto": {
+        "required": [
+          "id",
+          "differenceDate",
+          "source",
+          "partnerId",
+          "partnerName",
+          "role",
+          "openItemId",
+          "documentNo",
+          "allocationId",
+          "counterDocumentNo",
+          "accountCode",
+          "counterAccountCode",
+          "currencyCode",
+          "foreignAmount",
+          "carryingAmountRon",
+          "settlementAmountRon",
+          "differenceRon",
+          "glAccountCode",
+          "isIndexed",
+          "isReversal",
+          "isCorrection"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "differenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerRole"
+              }
+            ]
+          },
+          "openItemId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "documentNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allocationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "counterDocumentNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counterAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "foreignAmount": {
+            "type": "string"
+          },
+          "carryingAmountRon": {
+            "type": "string"
+          },
+          "settlementAmountRon": {
+            "type": "string"
+          },
+          "differenceRon": {
+            "type": "string"
+          },
+          "glAccountCode": {
+            "type": "string"
+          },
+          "isIndexed": {
+            "type": "boolean"
+          },
+          "isReversal": {
+            "type": "boolean"
+          },
+          "isCorrection": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FxDifferencesDto": {
+        "required": [
+          "from",
+          "to",
+          "gainRon",
+          "lossRon",
+          "netRon",
+          "correctionsRon",
+          "accounts",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "gainRon": {
+            "type": "string"
+          },
+          "lossRon": {
+            "type": "string"
+          },
+          "netRon": {
+            "type": "string"
+          },
+          "correctionsRon": {
+            "type": "string"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxAccountTotalDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxDifferenceDto"
+            }
+          }
+        }
+      },
+      "FxExposureCurrencyDto": {
+        "required": [
+          "currencyCode",
+          "treasury",
+          "receivables",
+          "papers",
+          "payables",
+          "net",
+          "rate",
+          "netRon",
+          "impactOnePercentRon",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string"
+          },
+          "treasury": {
+            "type": "string"
+          },
+          "receivables": {
+            "type": "string"
+          },
+          "papers": {
+            "type": "string"
+          },
+          "payables": {
+            "type": "string"
+          },
+          "net": {
+            "type": "string"
+          },
+          "rate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "netRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "impactOnePercentRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxExposureItemDto"
+            }
+          }
+        }
+      },
+      "FxExposureDto": {
+        "required": [
+          "asOf",
+          "includesAdvances",
+          "totalRon",
+          "totalImpactRon",
+          "currencies"
+        ],
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "includesAdvances": {
+            "type": "boolean"
+          },
+          "totalRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "totalImpactRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxExposureCurrencyDto"
+            }
+          }
+        }
+      },
+      "FxExposureItemDto": {
+        "required": [
+          "category",
+          "name",
+          "description",
+          "dueDate",
+          "amount",
+          "valueRon"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "valueRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "FxRunCurrencyDto": {
+        "required": [
+          "currencyCode",
+          "lines",
+          "foreignAmount",
+          "carryingAmountRon",
+          "revaluedAmountRon",
+          "gainRon",
+          "lossRon"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "foreignAmount": {
+            "type": "string"
+          },
+          "carryingAmountRon": {
+            "type": "string"
+          },
+          "revaluedAmountRon": {
+            "type": "string"
+          },
+          "gainRon": {
+            "type": "string"
+          },
+          "lossRon": {
+            "type": "string"
+          }
+        }
+      },
+      "FxRunDto": {
+        "required": [
+          "id",
+          "number",
+          "periodYear",
+          "periodMonth",
+          "revaluationDate",
+          "rateDate",
+          "status",
+          "includesAdvances",
+          "totalGainRon",
+          "totalLossRon",
+          "generatedAt",
+          "validatedAt",
+          "validatedByName",
+          "reversedAt",
+          "lineCount",
+          "rates",
+          "currencies",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": "string"
+          },
+          "periodYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "periodMonth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "revaluationDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "rateDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FxRunStatus"
+          },
+          "includesAdvances": {
+            "type": "boolean"
+          },
+          "totalGainRon": {
+            "type": "string"
+          },
+          "totalLossRon": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "validatedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reversedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxRunRateDto"
+            }
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxRunCurrencyDto"
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FxRunLineDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "FxRunItemDto": {
+        "required": [
+          "id",
+          "number",
+          "periodYear",
+          "periodMonth",
+          "revaluationDate",
+          "rateDate",
+          "status",
+          "totalGainRon",
+          "totalLossRon",
+          "netRon",
+          "lineCount",
+          "isStale",
+          "generatedAt",
+          "validatedAt",
+          "reversedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": "string"
+          },
+          "periodYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "periodMonth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "revaluationDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "rateDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FxRunStatus"
+          },
+          "totalGainRon": {
+            "type": "string"
+          },
+          "totalLossRon": {
+            "type": "string"
+          },
+          "netRon": {
+            "type": "string"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isStale": {
+            "type": "boolean"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reversedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "FxRunLineDto": {
+        "required": [
+          "id",
+          "elementKind",
+          "openItemId",
+          "documentNo",
+          "partnerId",
+          "partnerName",
+          "role",
+          "currencyCode",
+          "foreignAmount",
+          "rate",
+          "carryingAmountRon",
+          "revaluedAmountRon",
+          "differenceRon",
+          "glAccountCode",
+          "counterGlAccountCode"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "elementKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "openItemId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "documentNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerRole"
+              }
+            ]
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "foreignAmount": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "string"
+          },
+          "carryingAmountRon": {
+            "type": "string"
+          },
+          "revaluedAmountRon": {
+            "type": "string"
+          },
+          "differenceRon": {
+            "type": "string"
+          },
+          "glAccountCode": {
+            "type": "string"
+          },
+          "counterGlAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isCorrection": {
+            "type": "boolean",
+            "default": false
+          },
+          "correctedRunId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "FxRunRateDto": {
+        "required": [
+          "currencyCode",
+          "rate",
+          "multiplier",
+          "rateDate",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "string"
+          },
+          "multiplier": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rateDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "FxRunStatus": {
+        "type": "integer"
+      },
+      "FxSettingsDto": {
+        "required": [
+          "crossCurrencyRule",
+          "crossCurrencyMarkupPercent",
+          "revalueAdvances",
+          "blockAllocationsInRevaluedMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "crossCurrencyRule": {
+            "$ref": "#/components/schemas/CrossRateRule"
+          },
+          "crossCurrencyMarkupPercent": {
+            "type": "string"
+          },
+          "revalueAdvances": {
+            "type": "boolean"
+          },
+          "blockAllocationsInRevaluedMonth": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GenerateFxRevaluation": {
+        "required": [
+          "year",
+          "month"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "month": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReverseFxRevaluation": {
+        "required": [
+          "id",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "SaveFxSettings": {
+        "required": [
+          "crossCurrencyRule",
+          "crossCurrencyMarkupPercent",
+          "revalueAdvances",
+          "blockAllocationsInRevaluedMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "crossCurrencyRule": {
+            "$ref": "#/components/schemas/CrossRateRule"
+          },
+          "crossCurrencyMarkupPercent": {
+            "type": "string"
+          },
+          "revalueAdvances": {
+            "type": "boolean"
+          },
+          "blockAllocationsInRevaluedMonth": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TreasuryRonValueDto": {
+        "required": [
+          "treasuryAccountId",
+          "code",
+          "currencyCode",
+          "asOf",
+          "balance",
+          "carryingAmountRon",
+          "rate",
+          "currentValueRon",
+          "unrealizedRon"
+        ],
+        "type": "object",
+        "properties": {
+          "treasuryAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "balance": {
+            "type": "string"
+          },
+          "carryingAmountRon": {
+            "type": "string"
+          },
+          "rate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currentValueRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unrealizedRon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ValidateFxRevaluation": {
+        "required": [
+          "id",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
           }
         }
       }

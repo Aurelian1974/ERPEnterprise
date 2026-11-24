@@ -64,7 +64,8 @@ Ordinea de implementare (decizia lui Aurelian, 22.11.2026): F1, F2, F3, F4, F5, 
 | F4.2b | Plățile cu data într-o lună deja reevaluată (4.6): diferența realizată față de valoarea de dinaintea reevaluării, corecțiile în așteptare (`fin.FxRevaluationCorrection`, migrarea `2026.11.049`) preluate ca linii de corecție în rularea următoare, anulate la desfacerea alocării; testul F4-A14 | Implementat |
 | F4.3a | Conturile de trezorerie în valută: valoarea lor contabilă în lei la o dată, reevaluarea lunară a soldului, schimbul valutar între conturi proprii cu diferența față de cursul BNR (scrisă la validarea perechii, inversată la desfacere); testele F4-A6, A10 | Implementat |
 | F4.3b | Facturile în lei indexate la o valută: suma de referință din evenimentul facturii, stingerea ei la cursul zilei plății cu diferența pe `768` / `668`, reevaluarea lunară a facturilor indexate deschise; testul F4-A5 | Implementat (ecranele F4 cu F4.4) |
-| F4.4a | Setările multivalută (regula de curs a firmei, marja, avansurile, blocarea alocărilor în lunile reevaluate), lista diferențelor de curs și poziția valutară (API) | Implementat (ecranele cu F4.4b) |
+| F4.4a | Setările multivalută (regula de curs a firmei, marja, avansurile, blocarea alocărilor în lunile reevaluate), lista diferențelor de curs și poziția valutară (API) | Implementat |
+| F4.4b | Ecranele Valută: Reevaluare valutară (f4-01), Diferențe de curs (f4-02), Poziția valutară (f4-03) și Configurare › Finanțe › Valută (cf-08) | Implementat (exportul Excel din machete, cu Raportarea) |
 
 ## Machete de ecran (`ecrane/`)
 

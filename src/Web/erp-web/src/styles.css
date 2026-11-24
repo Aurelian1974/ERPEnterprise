@@ -2931,3 +2931,12 @@ tr.clickable.picked { background: var(--info-bg); }
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Multivaluta (f4-01..f4-03): castigurile si pierderile din diferentele de curs. */
+.gain {
+  color: var(--ok);
+}
+
+.loss {
+  color: var(--error);
+}
