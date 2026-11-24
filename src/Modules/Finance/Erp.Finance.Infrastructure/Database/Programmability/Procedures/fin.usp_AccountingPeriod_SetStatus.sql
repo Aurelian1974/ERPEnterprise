@@ -28,6 +28,12 @@ BEGIN
 
     IF @Status > @Current AND EXISTS (SELECT 1 FROM fin.AccountingPeriod WHERE CompanyId = @CompanyId AND EndDate < @Start AND Status < @Status)
         THROW 51904, N'O lună anterioară e mai deschisă; închideți lunile în ordine.', 1;
+    -- Pasii fara trecere, re-verificati in tranzactia inchiderii, cu luna blocata (C3 4.1 pasul 5): nimic nu intra intre lista si inchidere.
+    IF @Status = 3 AND @Current < 3 AND EXISTS (SELECT 1 FROM fin.PostingQueue WHERE CompanyId = @CompanyId AND Status = 1 AND AccountingDate BETWEEN @Start AND @End)
+        THROW 51903, N'Coada „De contat” are documente datate în lună; luna nu se închide până nu sunt contate.', 1;
+    IF @Status = 3 AND @Current < 3 AND EXISTS (SELECT 1 FROM core.Outbox AS o JOIN fin.PostingModel AS m ON m.IsActive = 1 AND o.EventType LIKE N'%.' + m.EventType
+                                                WHERE o.CompanyId = @CompanyId AND o.ProcessedAt IS NULL)
+        THROW 51908, N'Există documente validate încă necontate (evenimente în tranzit); reîncercați după ce sunt tratate.', 1;
     IF @Status = 3 AND @Current < 3 AND EXISTS (
         SELECT 1 FROM fin.JournalLineAltAccount AS m JOIN fin.ChartOfAccounts AS c ON c.Id = m.ChartId AND c.RequireCompleteMapping = 1 AND c.IsActive = 1
         WHERE m.CompanyId = @CompanyId AND m.PeriodYear = YEAR(@Start) AND m.PeriodMonth = MONTH(@Start) AND m.TargetAccountId IS NULL)

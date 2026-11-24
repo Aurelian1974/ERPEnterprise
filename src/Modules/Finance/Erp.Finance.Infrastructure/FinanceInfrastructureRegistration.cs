@@ -34,6 +34,14 @@ public static class FinanceInfrastructureRegistration
         services.AddTransient<PaymentBehaviorRecalculation>();
         services.AddTransient<CashFlowJobs>();
         services.AddTransient<Periods.FiscalYearCreation>();
+        services.AddScoped<Application.Periods.IPeriodCloseStore, Periods.PeriodCloseStore>();
+        services.AddScoped<Application.Periods.PeriodCloseService>();
+        foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
+        {
+            services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
+                allowOverride, ok, fail));
+        }
+
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -228,10 +236,13 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51973] = (ErpErrorKind.Validation, "FIN_BALANCE_CROSSES_YEARS"),
         [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
         [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
+        [51903] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSE_BLOCKED"),
         [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),
         [51905] = (ErpErrorKind.Conflict, "FIN_PERIOD_REOPEN_ORDER"),
         [51906] = (ErpErrorKind.Conflict, "FIN_PERIOD_LOCKED"),
         [51907] = (ErpErrorKind.Validation, "FIN_PERIOD_REASON_REQUIRED"),
+        [51908] = (ErpErrorKind.Conflict, "FIN_PERIOD_EVENTS_IN_TRANSIT"),
+        [51909] = (ErpErrorKind.Forbidden, "FIN_PERIOD_OVERRIDE_FORBIDDEN"),
         [51911] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_NOT_CLOSABLE"),
         [51912] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_LOCKED"),
     };

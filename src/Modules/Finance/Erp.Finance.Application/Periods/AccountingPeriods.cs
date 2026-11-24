@@ -103,7 +103,11 @@ internal sealed class CreateFiscalYearHandler(IAccountingPeriodStore store, ICur
 [Audited("Fin.Period.SoftClose")]
 public sealed record SoftClosePeriod(int Id, byte[] RowVersion) : ICommand<FinanceSaved>;
 
-/// <summary>Inchide o luna (C3 4.1). Lista de verificari si notele de inchidere se adauga la inchidere cu C3.1–C3.2.</summary>
+/// <summary>
+/// Inchide o luna (C3 4.1 pasul 5): ruleaza lista de verificari (o rulare noua, cu trecerile peste pasi ale celei anterioare) si refuza inchiderea
+/// cu codul primului pas blocant esuat; coada „De contat” si evenimentele in tranzit se re-verifica in tranzactia inchiderii. Notele de
+/// inchidere vin cu C3.2.
+/// </summary>
 [Module(FinanceModule.Code)]
 [RequiresPermission(FinancePermissions.PeriodClose)]
 [Audited("Fin.Period.Close")]
@@ -120,14 +124,22 @@ internal sealed class ReopenPeriodValidator : AbstractValidator<ReopenPeriod>
     public ReopenPeriodValidator() => RuleFor(x => x.Reason).NotEmpty().WithMessage("Scrieți motivul redeschiderii.").MaximumLength(500);
 }
 
-internal sealed class PeriodStatusHandlers(IAccountingPeriodStore store, IOutbox outbox, ICurrentContext context, IAuditScope audit) :
+internal sealed class PeriodStatusHandlers(IAccountingPeriodStore store, PeriodCloseService checklist, IOutbox outbox, ICurrentContext context, IAuditScope audit) :
     ICommandHandler<SoftClosePeriod, FinanceSaved>, ICommandHandler<ClosePeriod, FinanceSaved>, ICommandHandler<ReopenPeriod, FinanceSaved>
 {
     public Task<FinanceSaved> Handle(SoftClosePeriod request, CancellationToken cancellationToken) =>
         Change(request.Id, PeriodState.SoftClosed, null, request.RowVersion, cancellationToken);
 
-    public Task<FinanceSaved> Handle(ClosePeriod request, CancellationToken cancellationToken) =>
-        Change(request.Id, PeriodState.Closed, null, request.RowVersion, cancellationToken);
+    public async Task<FinanceSaved> Handle(ClosePeriod request, CancellationToken cancellationToken)
+    {
+        var run = await checklist.RunAsync(context.CompanyId, request.Id, context.UserId, cancellationToken).ConfigureAwait(false);
+        if (!run.CanClose)
+        {
+            throw PeriodCloseService.Refusal(run);
+        }
+
+        return await Change(request.Id, PeriodState.Closed, null, request.RowVersion, cancellationToken).ConfigureAwait(false);
+    }
 
     public Task<FinanceSaved> Handle(ReopenPeriod request, CancellationToken cancellationToken) =>
         Change(request.Id, request.ToSoftClosed ? PeriodState.SoftClosed : PeriodState.Open, request.Reason.Trim(), request.RowVersion, cancellationToken);

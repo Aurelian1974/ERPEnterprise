@@ -492,6 +492,14 @@ public static class FinanceApiRegistration
             .WithName("GetAccountLedger").Produces<AccountLedgerDto>().Problems();
         finance.MapGet("/reports/general-ledger", (int year, int month, ISender sender, CancellationToken ct) => sender.Send(new GetGeneralLedger(year, month), ct))
             .WithName("GetGeneralLedger").Produces<IReadOnlyList<GeneralLedgerAccountDto>>().Problems();
+        // Lista de verificari la inchiderea lunii (C3 3.3, 4.1; macheta c3-02).
+        finance.MapGet("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodCloseRun(id), ct))
+            .WithName("GetPeriodCloseRun").Produces<CloseRunDto>().Problems();
+        finance.MapPost("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new RunPeriodClose(id), ct))
+            .WithName("RunPeriodClose").Produces<CloseRunDto>().Problems();
+        finance.MapPost("/period-close-runs/{id:long}/override", (long id, OverrideCloseStep body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { RunId = id }, ct))
+            .WithName("OverrideCloseStep").Produces<bool>().Problems();
         // Notele recurente (C2 3.8).
         finance.MapGet("/recurring-entries", (ISender sender, CancellationToken ct) => sender.Send(new GetRecurringTemplates(), ct))
             .WithName("GetRecurringTemplates").Produces<IReadOnlyList<RecurringTemplateDto>>().Problems();

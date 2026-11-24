@@ -87,6 +87,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C2.5b | Ecranele Modele de contare (cu simularea pe o notă reală și modificarea liniilor) și Conturi implicite (c2-03, c2-05); testul C2-A10 | Implementat (variante noi, versiuni, conturi pe grupe și gestiuni în RAMAS 1.23) |
 | C5a.1 | Balanța de verificare cu 10 coloane (niveluri, plan românesc sau alternativ, grupare pe partener și dimensiuni, verificările egalităților), fișa contului cu sold curent, cartea mare pe lună; testele C5-A1, A4 | Implementat |
 | C5a.2 | Ecranele Balanță de verificare și Fișa contului (c5-01, c5-02) | Implementat (export, cartea mare în ecran în RAMAS 1.24) |
+| C3.1a | Lista de verificări la închiderea lunii (luna anterioară, evenimente în tranzit, zile de casă, coada „De contat”, ciorne de note, maparea completă, solduri anormale), rulările și trecerea peste pași cu motiv; închiderea condiționată de listă; testele C3-A2, A3 | Implementat (concordanțele cu C3.1b) |
 
 ## Machete de ecran (`ecrane/`)
 

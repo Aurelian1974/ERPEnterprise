@@ -40,3 +40,38 @@ public sealed record PerioadaContabilaInchisa(int Year, int PeriodNo, DateOnly S
 /// <summary>Redeschiderea unei luni (C3 5.1). Consumatori: C2 (reincearca coada), C4 (declaratii de verificat), Raportare.</summary>
 public sealed record PerioadaContabilaRedeschisa(int Year, int PeriodNo, DateOnly StartDate, DateOnly EndDate, PeriodState NewState, string Reason)
     : IntegrationEvent;
+
+/// <summary>Cat de grav e un pas al listei de inchidere (C3 6): blocant sau avertisment.</summary>
+public enum CloseCheckSeverity : byte
+{
+    Blocking = 1,
+    Warning = 2,
+}
+
+/// <summary>Rezultatul unui pas (C3 6): in regula, esuat sau nu se aplica.</summary>
+public enum CloseCheckOutcome : byte
+{
+    Ok = 1,
+    Failed = 2,
+    NotApplicable = 3,
+}
+
+/// <summary>O problema gasita de un pas: mesajul, documentul si suma, daca sunt.</summary>
+public sealed record CloseCheckIssue(string Message, string? DocumentRef, decimal? Amount);
+
+public sealed record CloseCheckResult(CloseCheckOutcome Outcome, string Summary, IReadOnlyList<CloseCheckIssue> Issues);
+
+/// <summary>
+/// Un pas al listei de verificari la inchiderea lunii (C3 3.3, 6), implementat de modulul care stie regula (F1 casa, C2 coada, C1 maparea...).
+/// C3 le descopera prin IEnumerable (NET-05) si nu cunoaste regulile, doar rezultatul.
+/// </summary>
+public interface IPeriodCloseCheck
+{
+    string Code { get; }
+
+    CloseCheckSeverity Severity { get; }
+
+    bool AllowOverride { get; }
+
+    Task<CloseCheckResult> RunAsync(int companyId, DateOnly periodStart, DateOnly periodEnd, CancellationToken ct);
+}
