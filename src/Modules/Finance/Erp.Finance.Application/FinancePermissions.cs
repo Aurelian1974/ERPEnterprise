@@ -65,6 +65,13 @@ public static class FinancePermissions
     public const string CashFlowView = "Fin.CashFlow.View";
     public const string CashFlowPlan = "Fin.CashFlow.Plan";
     public const string CashFlowSnapshot = "Fin.CashFlow.Snapshot";
+
+    public const string AccountView = "Fin.Account.View";
+    public const string AccountManage = "Fin.Account.Manage";
+    public const string ChartManage = "Fin.Chart.Manage";
+    public const string MappingManage = "Fin.Mapping.Manage";
+    public const string MappingFreeze = "Fin.Mapping.Freeze";
+    public const string MappingUnfreeze = "Fin.Mapping.Unfreeze";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>

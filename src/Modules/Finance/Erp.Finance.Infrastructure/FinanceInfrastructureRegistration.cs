@@ -67,6 +67,10 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Planning.ICashFlowStore, CashFlowStore>();
         services.AddScoped<Application.Planning.CashFlowForecaster>();
         services.AddScoped<Application.Planning.ICashFlowSnapshotStore, CashFlowSnapshotStore>();
+        services.AddScoped<Application.Accounts.IChartOfAccountsStore, Accounts.ChartOfAccountsStore>();
+        services.AddScoped<Application.Accounts.ChartOfAccountsQueries>();
+        services.AddScoped<Contracts.Accounts.IChartOfAccountsQueries>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
+        services.AddScoped<Contracts.Accounts.IGlAccountValidator>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
         services.AddScoped<IPartnerBalanceQueries, PartnerBalanceQueries>();
         return services;
@@ -174,5 +178,15 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51708] = (ErpErrorKind.Validation, "FIN_PROPOSAL_AMOUNT_EXCEEDS_OPEN"),
         [51711] = (ErpErrorKind.Validation, "FIN_CASHFLOW_HORIZON_TOO_LONG"),
         [51712] = (ErpErrorKind.NotFound, "FIN_CASHFLOW_PLAN_ITEM_NOT_FOUND"),
+        [51801] = (ErpErrorKind.NotFound, "FIN_ACCOUNT_NOT_FOUND"),
+        [51802] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51803] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_CODE_DUPLICATE"),
+        [51804] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_MOVEMENTS"),
+        [51805] = (ErpErrorKind.Validation, "FIN_ACCOUNT_PARENT_INVALID"),
+        [51806] = (ErpErrorKind.Validation, "FIN_ACCOUNT_NOT_POSTABLE"),
+        [51807] = (ErpErrorKind.Forbidden, "FIN_ACCOUNT_SYSTEM_READONLY"),
+        [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
+        [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
+        [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),
     };
 }

@@ -1,4 +1,6 @@
 using Erp.Core.Contracts;
+using Erp.Finance.Application.Accounts;
+using Erp.Finance.Contracts.Accounts;
 using Erp.Finance.Contracts.Treasury;
 using Erp.Finance.Domain;
 using Erp.Finance.Domain.Treasury;
@@ -139,7 +141,8 @@ internal sealed class GetTreasuryAccountHandler(ITreasuryAccountStore store, ICu
             ?? throw ErpException.NotFound(FinanceErrorCodes.TreasuryAccountNotFound, "Contul de trezorerie nu există în firma curentă.");
 }
 
-internal sealed class SaveTreasuryAccountHandler(ITreasuryAccountStore store, ICurrentContext context, IAuditScope audit)
+internal sealed class SaveTreasuryAccountHandler(ITreasuryAccountStore store, IGlAccountValidator accounts, ICurrentContext context, TimeProvider time,
+    IAuditScope audit)
     : ICommandHandler<SaveTreasuryAccount, FinanceSaved>
 {
     public async Task<FinanceSaved> Handle(SaveTreasuryAccount request, CancellationToken cancellationToken)
@@ -147,6 +150,8 @@ internal sealed class SaveTreasuryAccountHandler(ITreasuryAccountStore store, IC
         var cash = TreasuryAccountRules.IsCash(request.Kind);
         var gl = string.IsNullOrWhiteSpace(request.GlAccountCode) ? TreasuryAccountRules.DefaultGlAccount(request.Kind, request.CurrencyCode)
             : request.GlAccountCode.Trim();
+        // Contul contabil e o frunza activa a planului romanesc, permisa firmei (C1 4.1 pasul 3).
+        await accounts.EnsurePostableAsync(context.CompanyId, gl, BusinessDay.Today(time), cancellationToken).ConfigureAwait(false);
         // Campurile de casa (casieri, gestionar, serii, plafon, inchiderea zilei) nu au sens pe banca, card, tranzit sau depozit.
         var record = new TreasuryAccountRecord(request.Id, context.CompanyId, request.Kind, request.Code.Trim(), request.Name.Trim(), request.BranchId,
             request.CurrencyCode, TreasuryAccountRules.RequiresBankAccount(request.Kind) ? request.CompanyBankAccountId : null, gl,

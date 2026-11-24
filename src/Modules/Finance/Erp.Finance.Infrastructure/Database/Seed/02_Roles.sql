@@ -12,7 +12,9 @@ USING (VALUES
     (N'APROBATOR_DECONTURI', N'Aprobator deconturi', N'Aprobarea deconturilor de cheltuieli (șeful direct).'),
     (N'DIRECTOR_FINANCIAR',  N'Director financiar',  N'Consultarea băncilor și aprobarea ordinelor de plată (patru ochi).'),
     (N'CONTABIL_DECONTARI',  N'Contabil clienți / furnizori', N'Soldurile partenerilor, alocări, litigii, compensări, efecte, ajustări sub prag, confirmări de sold și calculul penalităților.'),
-    (N'DIRECTOR_GENERAL',    N'Director general',    N'Aprobarea propunerilor de plată de la cel mai înalt nivel și prognoza de cash-flow.')
+    (N'DIRECTOR_GENERAL',    N'Director general',    N'Aprobarea propunerilor de plată de la cel mai înalt nivel și prognoza de cash-flow.'),
+    (N'CONTABIL',            N'Contabil',            N'Notele contabile și consultarea planului de conturi.'),
+    (N'CONTROLLER_GRUP',     N'Controller de grup',  N'Planurile de conturi alternative, regulile de mapare și raportarea de grup.')
 ) AS source (Code, Name, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR ISNULL(target.Description, N'') <> source.Description) THEN
@@ -91,7 +93,15 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'DIRECTOR_GENERAL',    N'Fin.PaymentProposal.Approve'),
         (N'DIRECTOR_GENERAL',    N'Fin.CashFlow.View'),
         (N'AUDITOR',             N'Fin.PaymentProposal.View'),
-        (N'AUDITOR',             N'Fin.CashFlow.View')
+        (N'AUDITOR',             N'Fin.CashFlow.View'),
+        (N'CONTABIL',            N'Fin.Account.View'),
+        (N'CONTROLLER_GRUP',     N'Fin.Account.View'),
+        (N'CONTROLLER_GRUP',     N'Fin.Chart.Manage'),
+        (N'CONTROLLER_GRUP',     N'Fin.Mapping.Manage'),
+        (N'CONTROLLER_GRUP',     N'Fin.Mapping.Freeze'),
+        (N'CONTROLLER_GRUP',     N'Fin.Mapping.Unfreeze'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Account.View'),
+        (N'AUDITOR',             N'Fin.Account.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

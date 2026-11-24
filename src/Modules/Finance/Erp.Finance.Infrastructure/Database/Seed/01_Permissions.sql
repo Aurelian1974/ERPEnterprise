@@ -63,7 +63,13 @@ USING (VALUES
     (N'Fin.PaymentApprovalRule.Manage', N'Regulile de aprobare a plăților'),
     (N'Fin.CashFlow.View',              N'Prognoza de cash-flow, instantaneele, comparațiile'),
     (N'Fin.CashFlow.Plan',              N'Sume planificate, alerte, categorii de cash-flow'),
-    (N'Fin.CashFlow.Snapshot',          N'Salvarea instantaneelor de prognoză')
+    (N'Fin.CashFlow.Snapshot',          N'Salvarea instantaneelor de prognoză'),
+    (N'Fin.Account.View',               N'Planul de conturi, planurile alternative și regulile de mapare'),
+    (N'Fin.Account.Manage',             N'Conturi analitice, dimensiunile și rolurile conturilor, împărțirea unui cont'),
+    (N'Fin.Chart.Manage',               N'Planurile de conturi alternative și conturile lor'),
+    (N'Fin.Mapping.Manage',             N'Regulile de mapare pe planurile alternative și recalcularea'),
+    (N'Fin.Mapping.Freeze',             N'Înghețarea unei luni pe un plan alternativ'),
+    (N'Fin.Mapping.Unfreeze',           N'Dezghețarea unei luni pe un plan alternativ')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

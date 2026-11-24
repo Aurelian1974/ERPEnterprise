@@ -30,7 +30,7 @@ public sealed class TreasurySettingsIntegrationTests : FinanceTestBase, IClassFi
         Assert.Equal("FIN_INVALID_REFERENCE", flipped.Code);
 
         var renamed = await Send(new SaveOperationType(shipped.Id, shipped.Code, "Plată furnizor în numerar", shipped.Direction, shipped.RequiresPartner,
-            shipped.RequiresEmployee, shipped.RequiresCounterAccount, shipped.SettlementKind, "4011", shipped.CashLimitCategory, true, false, true,
+            shipped.RequiresEmployee, shipped.RequiresCounterAccount, shipped.SettlementKind, "401", shipped.CashLimitCategory, true, false, true,
             shipped.RowVersion));
         Assert.True(renamed.Id == shipped.Id);
 

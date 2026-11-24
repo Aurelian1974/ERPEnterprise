@@ -1,5 +1,6 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
+using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
 using Erp.Finance.Application.Planning;
@@ -345,6 +346,28 @@ public static class FinanceApiRegistration
             .WithName("GetCashFlowAlertRules").Produces<IReadOnlyList<CashFlowAlertRuleDto>>().Problems();
         finance.MapPut("/cash-flow/alert-rules", (SaveCashFlowAlertRules body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SaveCashFlowAlertRules").Produces<IReadOnlyList<CashFlowAlertRuleDto>>().Problems();
+        // Planul de conturi (C1 3.1–3.3; macheta c1-01).
+        finance.MapGet("/charts", (ISender sender, CancellationToken ct) => sender.Send(new GetCharts(), ct))
+            .WithName("GetCharts").Produces<IReadOnlyList<ChartDto>>().Problems();
+        finance.MapGet("/gl-accounts", (int? chartId, bool? includeInactive, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetGlAccounts(chartId, includeInactive ?? false), ct))
+            .WithName("GetGlAccounts").Produces<IReadOnlyList<GlAccountItemDto>>().Problems();
+        finance.MapGet("/gl-accounts/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetGlAccount(id), ct))
+            .WithName("GetGlAccount").Produces<GlAccountDetailDto>().Problems();
+        finance.MapPost("/gl-accounts", (SaveGlAccount body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/gl-accounts/{id:int}", (int id, SaveGlAccount body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/gl-accounts/{id:int}/active", (int id, SetGlAccountActive body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("SetGlAccountActive").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/gl-accounts/{id:int}/dimension-rules", (int id, SaveGlAccountDimensionRules body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { AccountId = id }, ct))
+            .WithName("SaveGlAccountDimensionRules").Produces<bool>().Problems();
+        finance.MapGet("/gl-account-roles", (ISender sender, CancellationToken ct) => sender.Send(new GetGlAccountRoles(), ct))
+            .WithName("GetGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
+        finance.MapPut("/gl-account-roles", (SaveGlAccountRoles body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

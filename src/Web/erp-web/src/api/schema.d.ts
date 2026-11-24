@@ -3300,6 +3300,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/finance/charts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCharts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/gl-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetGlAccounts"];
+        put?: never;
+        post: operations["CreateGlAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/gl-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetGlAccount"];
+        put: operations["UpdateGlAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/gl-accounts/{id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SetGlAccountActive"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/gl-accounts/{id}/dimension-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SaveGlAccountDimensionRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/finance/gl-account-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetGlAccountRoles"];
+        put: operations["SaveGlAccountRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/finance/fx/revaluations": {
         parameters: {
             query?: never;
@@ -9681,6 +9777,208 @@ export interface components {
             totalForecastRon: string;
             totalActualRon: string;
             totalDeviationRon: string;
+        };
+        AccountDimensionDto: {
+            dimensionType: string;
+            dimensionName: string;
+            /** Format: uint8 */
+            mode: number;
+            fromCode: string;
+            isInherited: boolean;
+        };
+        AccountNameHistoryDto: {
+            name: string;
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validTo: string;
+            changedByName: null | string;
+        };
+        AccountRoleDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: null | number;
+            role: string;
+            /** Format: uint8 */
+            partnerKind: null | number;
+            currencyCode: null | string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        ChartDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: uint8 */
+            kind: number;
+            /** Format: uint8 */
+            purpose: null | number;
+            languageCode: string;
+            requireCompleteMapping: boolean;
+            isActive: boolean;
+            /** Format: int32 */
+            accountCount: number;
+        };
+        DimensionRuleInput: {
+            dimensionType: string;
+            /** Format: uint8 */
+            mode: number;
+        };
+        GlAccountDetailDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            chartId: number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            parentId: null | number;
+            parentCode: null | string;
+            /** Format: uint8 */
+            level: number;
+            /** Format: uint8 */
+            accountType: null | number;
+            isPostable: boolean;
+            /** Format: int32 */
+            companyId: null | number;
+            isOffBalance: boolean;
+            isManagement: boolean;
+            statutoryReporting: boolean;
+            /** Format: uint8 */
+            currencyMode: number;
+            currencyCode: null | string;
+            /** Format: uint8 */
+            partyRequirement: number;
+            manualPosting: boolean;
+            saftAccountCode: null | string;
+            /** Format: uint8 */
+            taxTreatment: number;
+            /** Format: uint8 */
+            closingTarget: number;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            isSystem: boolean;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
+            dimensions: components["schemas"]["AccountDimensionDto"][];
+            roles: components["schemas"]["AccountRoleDto"][];
+            nameHistory: components["schemas"]["AccountNameHistoryDto"][];
+        };
+        GlAccountItemDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            parentId: null | number;
+            /** Format: uint8 */
+            level: number;
+            /** Format: uint8 */
+            accountType: null | number;
+            isPostable: boolean;
+            /** Format: int32 */
+            companyId: null | number;
+            isOffBalance: boolean;
+            isManagement: boolean;
+            statutoryReporting: boolean;
+            /** Format: uint8 */
+            currencyMode: number;
+            currencyCode: null | string;
+            /** Format: uint8 */
+            partyRequirement: number;
+            manualPosting: boolean;
+            saftAccountCode: null | string;
+            /** Format: uint8 */
+            taxTreatment: number;
+            /** Format: uint8 */
+            closingTarget: number;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+            isSystem: boolean;
+            isActive: boolean;
+        };
+        RoleAssignmentDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            companyId: null | number;
+            role: string;
+            /** Format: int32 */
+            accountId: number;
+            accountCode: string;
+            accountName: string;
+            /** Format: uint8 */
+            partnerKind: null | number;
+            currencyCode: null | string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        RoleAssignmentInput: {
+            role: string;
+            /** Format: int32 */
+            accountId: number;
+            /** Format: uint8 */
+            partnerKind: null | number;
+            currencyCode: null | string;
+            /** Format: date */
+            validFrom: null | string;
+            /** Format: date */
+            validTo: null | string;
+        };
+        SaveGlAccount: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: int32 */
+            parentId: null | number;
+            code: string;
+            name: string;
+            onlyThisCompany: boolean;
+            /** Format: uint8 */
+            currencyMode: number;
+            currencyCode: null | string;
+            /** Format: uint8 */
+            partyRequirement: number;
+            /** @default true */
+            statutoryReporting: boolean;
+            /** @default true */
+            manualPosting: boolean;
+            /**
+             * Format: uint8
+             * @default 1
+             */
+            taxTreatment: number;
+            /** Format: date */
+            validFrom?: null | string;
+            /** Format: date */
+            validTo?: null | string;
+            /** Format: byte */
+            rowVersion?: null | string;
+        };
+        SaveGlAccountDimensionRules: {
+            /** Format: int32 */
+            accountId: number;
+            rules: components["schemas"]["DimensionRuleInput"][];
+        };
+        SaveGlAccountRoles: {
+            roles: components["schemas"]["RoleAssignmentInput"][];
+        };
+        SetGlAccountActive: {
+            /** Format: int32 */
+            id: number;
+            isActive: boolean;
+            /** Format: byte */
+            rowVersion: string;
         };
     };
     responses: never;
@@ -22872,6 +23170,541 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashFlowAlertRuleDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCharts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetGlAccounts: {
+        parameters: {
+            query?: {
+                chartId?: number;
+                includeInactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlAccountItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateGlAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveGlAccount"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetGlAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlAccountDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateGlAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveGlAccount"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetGlAccountActive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGlAccountActive"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveGlAccountDimensionRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveGlAccountDimensionRules"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetGlAccountRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveGlAccountRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveGlAccountRoles"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentDto"][];
                 };
             };
             /** @description Bad Request */

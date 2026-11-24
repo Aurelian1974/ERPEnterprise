@@ -1,4 +1,6 @@
 using Erp.Core.Contracts;
+using Erp.Finance.Application.Accounts;
+using Erp.Finance.Contracts.Accounts;
 using Erp.Finance.Domain;
 using Erp.Finance.Domain.Treasury;
 using FluentValidation;
@@ -132,7 +134,8 @@ internal sealed class SaveCashLimitRuleValidator : AbstractValidator<SaveCashLim
     }
 }
 
-internal sealed class TreasurySettingsHandlers(ITreasurySettingsStore store, ICurrentContext context, IAuditScope audit) :
+internal sealed class TreasurySettingsHandlers(ITreasurySettingsStore store, IGlAccountValidator accounts, ICurrentContext context, TimeProvider time,
+    IAuditScope audit) :
     IQueryHandler<GetOperationTypes, IReadOnlyList<OperationTypeDto>>,
     ICommandHandler<SaveOperationType, FinanceSaved>,
     IQueryHandler<GetExpenseTypes, IReadOnlyList<ExpenseTypeDto>>,
@@ -151,6 +154,7 @@ internal sealed class TreasurySettingsHandlers(ITreasurySettingsStore store, ICu
             CounterGlAccountCode = string.IsNullOrWhiteSpace(request.CounterGlAccountCode) ? null : request.CounterGlAccountCode.Trim(),
             CashLimitCategory = string.IsNullOrWhiteSpace(request.CashLimitCategory) ? null : request.CashLimitCategory,
         };
+        await accounts.EnsurePostableAsync(context.CompanyId, clean.CounterGlAccountCode, BusinessDay.Today(time), cancellationToken).ConfigureAwait(false);
         var saved = await store.SaveOperationTypeAsync(clean, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.TreasuryOperationType", saved.Id, clean with { RowVersion = null });
         return saved;
@@ -166,6 +170,7 @@ internal sealed class TreasurySettingsHandlers(ITreasurySettingsStore store, ICu
             Code = request.Code.Trim(), Name = request.Name.Trim(),
             CounterGlAccountCode = string.IsNullOrWhiteSpace(request.CounterGlAccountCode) ? null : request.CounterGlAccountCode.Trim(),
         };
+        await accounts.EnsurePostableAsync(context.CompanyId, clean.CounterGlAccountCode, BusinessDay.Today(time), cancellationToken).ConfigureAwait(false);
         var saved = await store.SaveExpenseTypeAsync(clean, clean.IsPerDiem ? Money.ParseOptional(clean.DailyAmount) : null,
             clean.IsPerDiem ? Money.ParseOptional(clean.NonTaxableDailyLimit) : null, context.UserId, cancellationToken).ConfigureAwait(false);
         audit.Describe("Fin.ExpenseType", saved.Id, clean with { RowVersion = null });
