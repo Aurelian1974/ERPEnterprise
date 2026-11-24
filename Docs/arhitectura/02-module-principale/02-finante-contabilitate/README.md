@@ -92,6 +92,7 @@ Ce a rămas de făcut (ecrane, funcționalități amânate, dependențe de alte 
 | C3.2 | Notele de închidere la închiderea lunii (regularizarea TVA, clasele 6 și 7 în 121), cu simularea și rescrierea la reînchidere; testele C3-A5, A6, A7 | Implementat (comparația cu D300 cu C4; soldurile materializate în RAMAS 1.26) |
 | C3.3 | Închiderea anului: rezerva legală propusă și contată, soldurile reportate și preluarea rezultatului în anul următor (rescrise la reînchidere), blocarea și deblocarea anului; testele C3-A9, A10 | Implementat (rolul „Deblocare an” exclusiv în Nucleu, șablonul de repartizare în RAMAS 1.27) |
 | C3.4 | Soldurile inițiale la punerea în funcțiune (oricare lună de start): importul verificat, validarea cu notele de deschidere și rulajele cumulate, lunile anterioare închise ca importate, concordanța cu evidența preluată, anularea; testul C3-A11 | Implementat (citirea din Excel cu ecranul C3.5) |
+| C3.5 | Ecranele Închiderea lunii, Concordanțe, Note de închidere, Închiderea anului (c3-02…c3-05) | Implementat (import Excel al balanței de deschidere și raportul PDF în RAMAS 1.28) |
 
 ## Machete de ecran (`ecrane/`)
 

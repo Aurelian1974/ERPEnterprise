@@ -509,13 +509,13 @@ public static class FinanceApiRegistration
                 sender.Send(body with { Year = year }, ct))
             .WithName("UnlockFiscalYear").Produces<bool>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
-        finance.MapGet("/opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
+        finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();
-        finance.MapPost("/opening-balances", (ImportOpeningBalances body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+        finance.MapPost("/gl-opening-balances", (ImportOpeningBalances body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("ImportOpeningBalances").Produces<int>().Problems();
-        finance.MapPost("/opening-balances/{id:int}/validate", (int id, ISender sender, CancellationToken ct) => sender.Send(new ValidateOpeningBalances(id), ct))
+        finance.MapPost("/gl-opening-balances/{id:int}/validate", (int id, ISender sender, CancellationToken ct) => sender.Send(new ValidateOpeningBalances(id), ct))
             .WithName("ValidateOpeningBalances").Produces<bool>().Problems();
-        finance.MapPost("/opening-balances/{id:int}/cancel", (int id, ISender sender, CancellationToken ct) => sender.Send(new CancelOpeningBalances(id), ct))
+        finance.MapPost("/gl-opening-balances/{id:int}/cancel", (int id, ISender sender, CancellationToken ct) => sender.Send(new CancelOpeningBalances(id), ct))
             .WithName("CancelOpeningBalances").Produces<bool>().Problems();
         finance.MapGet("/periods/{id:int}/closing-entries", (int id, ISender sender, CancellationToken ct) => sender.Send(new PreviewClosingEntries(id), ct))
             .WithName("PreviewClosingEntries").Produces<ClosingPreviewDto>().Problems();

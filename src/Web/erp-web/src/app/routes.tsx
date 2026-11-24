@@ -30,6 +30,9 @@ import { PostingModelsPage } from '../finance/PostingModelsPage';
 import { DefaultAccountsPage } from '../finance/DefaultAccountsPage';
 import { TrialBalancePage } from '../finance/TrialBalancePage';
 import { AccountLedgerPage } from '../finance/AccountLedgerPage';
+import { MonthClosePage } from '../finance/MonthClosePage';
+import { ClosingEntriesPage, ReconciliationPage } from '../finance/ClosingReportsPages';
+import { YearClosePage } from '../finance/YearClosePage';
 import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
@@ -93,6 +96,10 @@ export const routes = [
       { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },
       { path: 'finante/contabilitate/verificare-mapare', element: <MappingCheckPage /> },
       { path: 'finante/contabilitate/perioade', element: <AccountingPeriodsPage /> },
+      { path: 'finante/inchideri/luna', element: <MonthClosePage /> },
+      { path: 'finante/inchideri/concordante', element: <ReconciliationPage /> },
+      { path: 'finante/inchideri/note', element: <ClosingEntriesPage /> },
+      { path: 'finante/inchideri/anul', element: <YearClosePage /> },
       { path: 'finante/rapoarte/balanta', element: <TrialBalancePage /> },
       { path: 'finante/rapoarte/fisa-contului', element: <AccountLedgerPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },

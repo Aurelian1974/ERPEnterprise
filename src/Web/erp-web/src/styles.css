@@ -3003,3 +3003,5 @@ tr.clickable.picked { background: var(--info-bg); }
 .check-bad { color: var(--error); font-weight: 600; }
 .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .filter-row .cell-input { width: auto; min-width: 140px; }
+.year-steps { display: grid; gap: 12px; padding-left: 0; list-style: none; }
+.year-steps li { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
