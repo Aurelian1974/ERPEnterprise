@@ -69,6 +69,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Planning.ICashFlowSnapshotStore, CashFlowSnapshotStore>();
         services.AddScoped<Application.Accounts.IChartOfAccountsStore, Accounts.ChartOfAccountsStore>();
         services.AddScoped<Application.Accounts.ChartOfAccountsQueries>();
+        services.AddScoped<Application.Accounts.IAltMappingStore, Accounts.AltMappingStore>();
         services.AddScoped<Contracts.Accounts.IChartOfAccountsQueries>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<Contracts.Accounts.IGlAccountValidator>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
@@ -185,6 +186,9 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51805] = (ErpErrorKind.Validation, "FIN_ACCOUNT_PARENT_INVALID"),
         [51806] = (ErpErrorKind.Validation, "FIN_ACCOUNT_NOT_POSTABLE"),
         [51807] = (ErpErrorKind.Forbidden, "FIN_ACCOUNT_SYSTEM_READONLY"),
+        [51808] = (ErpErrorKind.Validation, "FIN_MAPPING_PERCENT_INVALID"),
+        [51809] = (ErpErrorKind.Conflict, "FIN_MAPPING_PRIORITY_DUPLICATE"),
+        [51810] = (ErpErrorKind.Conflict, "FIN_MAPPING_TARGET_IN_USE"),
         [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
         [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
         [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),

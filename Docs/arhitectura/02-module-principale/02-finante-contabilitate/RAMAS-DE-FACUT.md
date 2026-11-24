@@ -22,6 +22,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.11 | Setarea `Fin.Advance.SettlementWorkingDays` (termenul de decontare a avansului) din ecran; acum valoarea e fixă, 3 zile lucrătoare | Nota F1.5 | — |
 | 1.12 | Setarea configurabilă a separării sarcinilor la aprobarea decontului; acum e mereu activă (51019) | F1 3.4 regula 5 | — |
 | 1.13 | PDF-ul și tipărirea registrului de casă | README F1.4 | QuestPDF e deja folosit la confirmări și compensări |
+| 1.14 | Importul regulilor de mapare din Excel (`ImportMappingRulesFromExcel`) | C1 6; nota C1.3 | Regulile se scriu din ecran; conturile planului alternativ se importă deja |
 
 ## 2. Depinde de alte module sau de Nucleu
 

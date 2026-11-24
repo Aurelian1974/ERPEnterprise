@@ -368,6 +368,40 @@ public static class FinanceApiRegistration
         finance.MapPut("/gl-accounts/{id:int}/dimension-rules", (int id, SaveGlAccountDimensionRules body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { AccountId = id }, ct))
             .WithName("SaveGlAccountDimensionRules").Produces<bool>().Problems();
+        // Planurile alternative si regulile de mapare (C1 3.5, 4.2, 4.5; machetele c1-02…c1-04).
+        finance.MapGet("/charts/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetAltChart(id), ct))
+            .WithName("GetAltChart").Produces<AltChartDto>().Problems();
+        finance.MapPost("/charts", (SaveAltChart body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateAltChart").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}", (int id, SaveAltChart body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateAltChart").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/charts/{id:int}/accounts", (int id, SaveAltGlAccount body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ChartId = id }, ct))
+            .WithName("CreateAltGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/accounts/{accountId:int}", (int id, int accountId, SaveAltGlAccount body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = accountId, ChartId = id }, ct))
+            .WithName("UpdateAltGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/charts/{id:int}/accounts/import", (int id, ImportAltGlAccounts body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("ImportAltGlAccounts").Produces<GlAccountImportDto>().Problems();
+        finance.MapGet("/charts/{id:int}/rules", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetMappingRules(id), ct))
+            .WithName("GetMappingRules").Produces<IReadOnlyList<MappingRuleDto>>().Problems();
+        finance.MapPost("/charts/{id:int}/rules", (int id, SaveMappingRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ChartId = id }, ct))
+            .WithName("CreateMappingRule").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/rules/{ruleId:int}", (int id, int ruleId, SaveMappingRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = ruleId, ChartId = id }, ct))
+            .WithName("UpdateMappingRule").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/rules/order", (int id, ReorderMappingRules body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("ReorderMappingRules").Produces<bool>().Problems();
+        finance.MapGet("/charts/{id:int}/simulate", (int id, string accountCode, byte? side, int? partnerId, int? costCenterId, int? projectId,
+                int? warehouseId, int? siteId, int? itemGroupId, string? currencyCode, DateOnly? onDate, ISender sender, CancellationToken ct) =>
+                sender.Send(new SimulateMapping(id, accountCode, side ?? 0, partnerId, costCenterId, projectId, warehouseId, siteId, itemGroupId, currencyCode,
+                    onDate), ct))
+            .WithName("SimulateMapping").Produces<SimulationDto>().Problems();
+        finance.MapGet("/charts/{id:int}/check", (int id, ISender sender, CancellationToken ct) => sender.Send(new CheckMapping(id), ct))
+            .WithName("CheckMapping").Produces<MappingCheckDto>().Problems();
         finance.MapGet("/gl-account-roles", (ISender sender, CancellationToken ct) => sender.Send(new GetGlAccountRoles(), ct))
             .WithName("GetGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
         finance.MapPut("/gl-account-roles", (SaveGlAccountRoles body, ISender sender, CancellationToken ct) => sender.Send(body, ct))

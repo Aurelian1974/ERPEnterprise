@@ -6,7 +6,7 @@ using FluentValidation;
 namespace Erp.Finance.Application.Accounts;
 
 public sealed record ChartDto(int Id, string Code, string Name, byte Kind, byte? Purpose, string LanguageCode, bool RequireCompleteMapping, bool IsActive,
-    int AccountCount);
+    int AccountCount, int RuleCount, int CompanyCount);
 
 /// <summary>Un cont din arborele planului (macheta c1-01). AccountType: 1 activ, 2 pasiv, 3 bifunctional.</summary>
 public sealed record GlAccountItemDto(int Id, string Code, string Name, int? ParentId, byte Level, byte? AccountType, bool IsPostable, int? CompanyId,
