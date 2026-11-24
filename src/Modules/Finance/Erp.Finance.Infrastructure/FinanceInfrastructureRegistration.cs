@@ -75,6 +75,8 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Periods.IAccountingPeriodStore, Periods.AccountingPeriodStore>();
         services.AddScoped<Application.Periods.AccountingPeriodGuard>();
         services.AddScoped<Application.Accounting.IJournalEntryStore, Accounting.JournalEntryStore>();
+        services.AddScoped<Application.Accounting.IPostingStore, Accounting.PostingStore>();
+        services.AddScoped<Application.Accounting.PostingService>();
         services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
         // Perioadele contabile (C3a) inlocuiesc IPeriodLock-ul implicit al Nucleului (fara perioade inchise).
         services.Replace(ServiceDescriptor.Scoped<IPeriodLock>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>()));

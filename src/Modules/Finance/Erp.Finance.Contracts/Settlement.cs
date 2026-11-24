@@ -1,4 +1,5 @@
 using Erp.Core.Contracts;
+using Erp.Finance.Contracts.Accounting;
 
 namespace Erp.Finance.Contracts.Settlement;
 
@@ -31,9 +32,12 @@ public sealed record InvoiceDueDate(DateOnly DueDate, decimal Amount);
 public sealed record FacturaEmisa(long InvoiceId, int PartnerId, string Number, DateOnly DocumentDate, DateOnly AccountingDate, string CurrencyCode,
     decimal ExchangeRate, decimal TotalAmount, decimal TotalAmountRon, decimal VatAmount, decimal VatAmountRon, bool IsVatOnCollection, bool IsReversal,
     long? ReversedInvoiceId, bool IsAdvanceInvoice, IReadOnlyList<InvoiceDueDate> DueDates, int? CostCenterId, int? ProjectId, EInvoiceStatus EInvoiceStatus,
-    string? EInvoiceIndexNo) : IntegrationEvent
+    string? EInvoiceIndexNo) : IntegrationEvent, IAccountable
 {
     public const string DocumentType = "Sales.Invoice";
+
+    /// <summary>Blocul de contare (C2 3.1), trimis de modulul emitent; lipsa: contarea pe totaluri (Net = Total − TVA, fara articole).</summary>
+    public AccountingPayload? Accounting { get; init; }
 
     /// <summary>Factura in lei decontata la cursul unei valute (F4 4.2): valuta de referinta si suma in ea; ambele lipsa pentru o factura obisnuita.</summary>
     public string? IndexCurrencyCode { get; init; }
@@ -45,9 +49,12 @@ public sealed record FacturaEmisa(long InvoiceId, int PartnerId, string Number, 
 public sealed record FacturaFurnizorValidata(long InvoiceId, int PartnerId, string Number, DateOnly DocumentDate, DateOnly AccountingDate, string CurrencyCode,
     decimal ExchangeRate, decimal TotalAmount, decimal TotalAmountRon, decimal VatAmount, decimal VatAmountRon, bool IsVatOnCollection, bool IsReversal,
     long? ReversedInvoiceId, bool IsAdvanceInvoice, IReadOnlyList<InvoiceDueDate> DueDates, int? CostCenterId, int? ProjectId, EInvoiceStatus EInvoiceStatus,
-    string? EInvoiceIndexNo) : IntegrationEvent
+    string? EInvoiceIndexNo) : IntegrationEvent, IAccountable
 {
     public const string DocumentType = "Purchasing.SupplierInvoice";
+
+    /// <summary>Blocul de contare (C2 3.1), trimis de modulul emitent; lipsa: contarea pe totaluri (Net = Total − TVA, fara articole).</summary>
+    public AccountingPayload? Accounting { get; init; }
 
     /// <summary>Factura in lei decontata la cursul unei valute (F4 4.2), ca la FacturaEmisa.</summary>
     public string? IndexCurrencyCode { get; init; }

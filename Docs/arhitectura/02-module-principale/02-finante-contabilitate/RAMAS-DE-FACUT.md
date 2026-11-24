@@ -23,6 +23,10 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.12 | Setarea configurabilă a separării sarcinilor la aprobarea decontului; acum e mereu activă (51019) | F1 3.4 regula 5 | — |
 | 1.13 | PDF-ul și tipărirea registrului de casă | README F1.4 | QuestPDF e deja folosit la confirmări și compensări |
 | 1.14 | Importul regulilor de mapare din Excel (`ImportMappingRulesFromExcel`) | C1 6; nota C1.3 | Regulile se scriu din ecran; conturile planului alternativ se importă deja |
+| 1.15 | Contarea reevaluării valutare (`ReevaluareValutaraValidata` / `Stornata`): evenimentul are doar totaluri fără partener, iar 4111 / 401 cer partenerul; adaptorul trebuie să citească liniile din `fin.FxRevaluationLine` | C2 nota C2.2 | Reevaluarea rămâne în F4, fără notă |
+| 1.16 | Contarea efectelor comerciale (`EfectComercialModificat`) și a stornărilor de trezorerie (`DocumentTrezorerieStornat`, cu conturile notei inițiale) | C2 nota C2.2 | — |
+| 1.17 | Diferențele de curs fără partener (schimb valutar, transferuri; sursele 2 și 3) | C2 nota C2.2 | — |
+| 1.18 | Liniile de decont plătite pe o factură de furnizor (401 / 542) | C2 nota C2.2 | Restul decontului se contează |
 
 ## 2. Depinde de alte module sau de Nucleu
 

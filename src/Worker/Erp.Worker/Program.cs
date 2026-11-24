@@ -73,6 +73,15 @@ builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.EmailCerut, Erp.C
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
+// Contarea automata (02.02, C2 4.1): evenimentele cu model de contare devin note validate sau intra in coada „De contat”.
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.IncasareInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.PlataInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.TvaLaIncasareExigibil, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.DiferentaCursInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.CompensareValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.DecontCheltuieliValidat, Erp.Finance.Infrastructure.Events.PostEvents>();
 builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
     TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
     sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));
