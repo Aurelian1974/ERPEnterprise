@@ -68,7 +68,8 @@ public sealed class CashFlowIntegrationTests : BankTestBase, IClassFixture<Finan
         var expectedSalaries = CashFlowRules.Occurrences(today.AddDays(-40), Recurrence.Monthly, 10, null, today, today.AddDays(40)).Count * -5_000m;
 
         var forecast = await Run(new GetCashFlowForecast(today, today.AddDays(40), Granularity.Day, Prudent: true));
-        Assert.Equal(Money(statementBalance - 10_000m), forecast.OpeningBalanceRon);
+        // Firma testului poate avea si conturile altor teste: soldul scriptic se verifica pe contul acestui test.
+        Assert.Equal(Money(statementBalance - 10_000m), forecast.Accounts.Single(a => a.TreasuryAccountId == account).BalanceRon);
         Assert.Equal(Money(-5_000m), Row(forecast.Base, "PLATI-FURNIZORI").TotalRon);
         var customers = Row(forecast.Base, "INC-CLIENTI");
         Assert.Equal(Money(10_000m), customers.TotalRon);
@@ -76,7 +77,7 @@ public sealed class CashFlowIntegrationTests : BankTestBase, IClassFixture<Finan
         Assert.Equal(Money(4_000m), customers.AmountsRon[30]);
         Assert.Equal(Money(expectedSalaries), Row(forecast.Base, "SALARII").TotalRon);
         Assert.DoesNotContain(salaries.Name, forecast.EmptyCategories);
-        Assert.Equal(Money(statementBalance - 10_000m - 5_000m + 10_000m + expectedSalaries), forecast.Base.Periods[^1].ClosingRon);
+        Assert.Equal(Money(Amount(forecast.OpeningBalanceRon) + forecast.Base.Rows.Sum(r => Amount(r.TotalRon))), forecast.Base.Periods[^1].ClosingRon);
         Assert.Equal(Money(6_000m), Row(forecast.Prudent!, "INC-CLIENTI").TotalRon);
 
         var tooLong = await Assert.ThrowsAsync<ErpException>(() => Run(new GetCashFlowForecast(today, today.AddDays(100), Granularity.Day)));
@@ -124,6 +125,8 @@ public sealed class CashFlowIntegrationTests : BankTestBase, IClassFixture<Finan
         Assert.Null(row.ActualRon[^1]);
         await Run(new SaveCashFlowAlertRules([]));
     }
+
+    private static decimal Amount(string value) => decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 
     private static string Money(decimal value) => Erp.Finance.Domain.Money.Format(value);
 
