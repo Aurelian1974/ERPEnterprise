@@ -69,7 +69,16 @@ USING (VALUES
     (N'Fin.Chart.Manage',               N'Planurile de conturi alternative și conturile lor'),
     (N'Fin.Mapping.Manage',             N'Regulile de mapare pe planurile alternative și recalcularea'),
     (N'Fin.Mapping.Freeze',             N'Înghețarea unei luni pe un plan alternativ'),
-    (N'Fin.Mapping.Unfreeze',           N'Dezghețarea unei luni pe un plan alternativ')
+    (N'Fin.Mapping.Unfreeze',           N'Dezghețarea unei luni pe un plan alternativ'),
+    (N'Fin.Period.View',                N'Perioadele contabile, lista de verificări, concordanțele, notele de închidere'),
+    (N'Fin.Period.SoftClose',           N'Închiderea operativă a unei luni'),
+    (N'Fin.Period.Close',               N'Rularea listei de verificări și închiderea lunii'),
+    (N'Fin.Period.CloseOverride',       N'Trecerea peste un pas blocant al închiderii, cu motiv'),
+    (N'Fin.Period.Reopen',              N'Redeschiderea unei luni'),
+    (N'Fin.Period.ManageChecklist',     N'Pașii proprii ai listei de verificări la închidere'),
+    (N'Fin.FiscalYear.Close',           N'Crearea și închiderea anului financiar'),
+    (N'Fin.FiscalYear.Lock',            N'Blocarea anului financiar după depunerea situațiilor financiare'),
+    (N'Fin.FiscalYear.Unlock',          N'Deblocarea unui an financiar blocat (doar rolul Deblocare an)')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

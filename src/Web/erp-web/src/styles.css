@@ -2961,3 +2961,29 @@ tr.clickable.picked { background: var(--info-bg); }
 .chart-tree .analytic {
   color: var(--action-hover);
 }
+
+/* Perioade contabile (C3, macheta c3-01): cele 12 luni ale anului ca grilă de celule cu starea lor. */
+.period-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.period-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  font: inherit;
+  cursor: pointer;
+}
+
+.period-cell.picked {
+  border-color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}

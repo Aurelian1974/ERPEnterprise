@@ -14,7 +14,8 @@ USING (VALUES
     (N'CONTABIL_DECONTARI',  N'Contabil clienți / furnizori', N'Soldurile partenerilor, alocări, litigii, compensări, efecte, ajustări sub prag, confirmări de sold și calculul penalităților.'),
     (N'DIRECTOR_GENERAL',    N'Director general',    N'Aprobarea propunerilor de plată de la cel mai înalt nivel și prognoza de cash-flow.'),
     (N'CONTABIL',            N'Contabil',            N'Notele contabile și consultarea planului de conturi.'),
-    (N'CONTROLLER_GRUP',     N'Controller de grup',  N'Planurile de conturi alternative, regulile de mapare și raportarea de grup.')
+    (N'CONTROLLER_GRUP',     N'Controller de grup',  N'Planurile de conturi alternative, regulile de mapare și raportarea de grup.'),
+    (N'DEBLOCARE_AN',        N'Deblocare an',        N'Doar deblocarea unui an financiar blocat; se atribuie unui utilizator dedicat, fără alt rol.')
 ) AS source (Code, Name, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR ISNULL(target.Description, N'') <> source.Description) THEN
@@ -24,9 +25,9 @@ WHEN NOT MATCHED BY TARGET THEN
     VALUES (source.Code, source.Name, source.Description, 1, 1);
 
 WITH RoleMap (RoleCode, PermissionCode) AS (
-    SELECT N'ADMIN', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Fin' AND p.Code <> N'Fin.PaymentOrder.FreeIban'
+    SELECT N'ADMIN', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Fin' AND p.Code NOT IN (N'Fin.PaymentOrder.FreeIban', N'Fin.FiscalYear.Unlock')
     UNION ALL
-    SELECT N'CONTABIL_SEF', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Fin' AND p.Code <> N'Fin.PaymentOrder.FreeIban'
+    SELECT N'CONTABIL_SEF', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Fin' AND p.Code NOT IN (N'Fin.PaymentOrder.FreeIban', N'Fin.FiscalYear.Unlock')
     UNION ALL
     SELECT RoleCode, PermissionCode FROM (VALUES
         (N'CASIER',              N'Fin.Cash.View'),
@@ -101,7 +102,13 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'CONTROLLER_GRUP',     N'Fin.Mapping.Freeze'),
         (N'CONTROLLER_GRUP',     N'Fin.Mapping.Unfreeze'),
         (N'DIRECTOR_FINANCIAR',  N'Fin.Account.View'),
-        (N'AUDITOR',             N'Fin.Account.View')
+        (N'AUDITOR',             N'Fin.Account.View'),
+        (N'CONTABIL',            N'Fin.Period.View'),
+        (N'CONTABIL',            N'Fin.Period.SoftClose'),
+        (N'DIRECTOR_FINANCIAR',  N'Fin.Period.View'),
+        (N'AUDITOR',             N'Fin.Period.View'),
+        (N'DEBLOCARE_AN',        N'Fin.Period.View'),
+        (N'DEBLOCARE_AN',        N'Fin.FiscalYear.Unlock')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

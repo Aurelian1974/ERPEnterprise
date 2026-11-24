@@ -23,6 +23,7 @@ import { ChartOfAccountsPage } from '../finance/ChartOfAccountsPage';
 import { AltChartsPage } from '../finance/AltChartsPage';
 import { MappingRulesPage } from '../finance/MappingRulesPage';
 import { MappingCheckPage } from '../finance/MappingCheckPage';
+import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
@@ -78,6 +79,7 @@ export const routes = [
       { path: 'finante/contabilitate/planuri-alternative', element: <AltChartsPage /> },
       { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },
       { path: 'finante/contabilitate/verificare-mapare', element: <MappingCheckPage /> },
+      { path: 'finante/contabilitate/perioade', element: <AccountingPeriodsPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },

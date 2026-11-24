@@ -125,6 +125,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.CashFlowJobs>(Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertJobId,
             job => job.AlertsAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertSchedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C3 3.1: anii financiari urmatori, cu 60 de zile inainte, zilnic la 00:20 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Periods.FiscalYearCreation>(Erp.Finance.Infrastructure.Periods.FiscalYearCreation.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Periods.FiscalYearCreation.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions
             {

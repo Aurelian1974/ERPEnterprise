@@ -10,6 +10,7 @@ using Erp.Finance.Infrastructure.Bank.Formats;
 using Erp.Finance.Infrastructure.Settlement;
 using Erp.Finance.Infrastructure.Treasury;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Erp.Finance.Infrastructure;
 
@@ -32,6 +33,7 @@ public static class FinanceInfrastructureRegistration
         services.AddTransient<CashAdvanceOverdue>();
         services.AddTransient<PaymentBehaviorRecalculation>();
         services.AddTransient<CashFlowJobs>();
+        services.AddTransient<Periods.FiscalYearCreation>();
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -70,6 +72,11 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Accounts.IChartOfAccountsStore, Accounts.ChartOfAccountsStore>();
         services.AddScoped<Application.Accounts.ChartOfAccountsQueries>();
         services.AddScoped<Application.Accounts.IAltMappingStore, Accounts.AltMappingStore>();
+        services.AddScoped<Application.Periods.IAccountingPeriodStore, Periods.AccountingPeriodStore>();
+        services.AddScoped<Application.Periods.AccountingPeriodGuard>();
+        services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
+        // Perioadele contabile (C3a) inlocuiesc IPeriodLock-ul implicit al Nucleului (fara perioade inchise).
+        services.Replace(ServiceDescriptor.Scoped<IPeriodLock>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>()));
         services.AddScoped<Contracts.Accounts.IChartOfAccountsQueries>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<Contracts.Accounts.IGlAccountValidator>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
@@ -192,5 +199,13 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
         [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
         [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),
+        [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
+        [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
+        [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),
+        [51905] = (ErpErrorKind.Conflict, "FIN_PERIOD_REOPEN_ORDER"),
+        [51906] = (ErpErrorKind.Conflict, "FIN_PERIOD_LOCKED"),
+        [51907] = (ErpErrorKind.Validation, "FIN_PERIOD_REASON_REQUIRED"),
+        [51911] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_NOT_CLOSABLE"),
+        [51912] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_LOCKED"),
     };
 }

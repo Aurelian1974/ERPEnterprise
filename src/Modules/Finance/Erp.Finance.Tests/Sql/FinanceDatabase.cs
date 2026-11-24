@@ -209,6 +209,12 @@ public abstract class FinanceTestBase(FinanceDatabase database)
         return await connection.QuerySingleAsync<T>(sql, parameters);
     }
 
+    protected async Task<IReadOnlyList<T>> QueryList<T>(string sql, object? parameters = null)
+    {
+        await using var connection = new SqlConnection(Database.ConnectionString);
+        return (await connection.QueryAsync<T>(sql, parameters)).ToList();
+    }
+
     /// <summary>Zilele din perioade contabile inchise (CORE_PERIOD_CLOSED), pentru testele pe pipeline.</summary>
     protected HashSet<DateOnly> ClosedDays { get; } = [];
 

@@ -3,6 +3,7 @@ using Erp.Finance.Application;
 using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
 using Erp.Finance.Application.Fx;
+using Erp.Finance.Application.Periods;
 using Erp.Finance.Application.Planning;
 using Erp.Finance.Domain.Planning;
 using Erp.Finance.Application.Settlement;
@@ -406,6 +407,19 @@ public static class FinanceApiRegistration
             .WithName("GetGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
         finance.MapPut("/gl-account-roles", (SaveGlAccountRoles body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SaveGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
+        // Perioadele contabile (C3 3.1, 3.2; macheta c3-01).
+        finance.MapGet("/periods", (ISender sender, CancellationToken ct) => sender.Send(new GetAccountingPeriods(), ct))
+            .WithName("GetAccountingPeriods").Produces<IReadOnlyList<FiscalYearDto>>().Problems();
+        finance.MapGet("/periods/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodHistory(id), ct))
+            .WithName("GetPeriodHistory").Produces<IReadOnlyList<PeriodHistoryDto>>().Problems();
+        finance.MapPost("/fiscal-years", (CreateFiscalYear body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreateFiscalYear").Produces<int>().Problems();
+        finance.MapPost("/periods/{id:int}/soft-close", (int id, SoftClosePeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SoftClosePeriod").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/periods/{id:int}/close", (int id, ClosePeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ClosePeriod").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/periods/{id:int}/reopen", (int id, ReopenPeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ReopenPeriod").Produces<FinanceSaved>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

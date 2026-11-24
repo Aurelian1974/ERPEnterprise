@@ -72,6 +72,16 @@ public static class FinancePermissions
     public const string MappingManage = "Fin.Mapping.Manage";
     public const string MappingFreeze = "Fin.Mapping.Freeze";
     public const string MappingUnfreeze = "Fin.Mapping.Unfreeze";
+
+    public const string PeriodView = "Fin.Period.View";
+    public const string PeriodSoftClose = "Fin.Period.SoftClose";
+    public const string PeriodClose = "Fin.Period.Close";
+    public const string PeriodCloseOverride = "Fin.Period.CloseOverride";
+    public const string PeriodReopen = "Fin.Period.Reopen";
+    public const string PeriodManageChecklist = "Fin.Period.ManageChecklist";
+    public const string FiscalYearClose = "Fin.FiscalYear.Close";
+    public const string FiscalYearLock = "Fin.FiscalYear.Lock";
+    public const string FiscalYearUnlock = "Fin.FiscalYear.Unlock";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>
