@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { DefinedReportsPage, FinancialStatementsPage, GroupBalancePage } from '../finance/ReportsPages';
 import { ProfitTaxPage, SaftPage, TaxCalendarPage, VatJournalPage, VatReturnPage } from '../finance/DeclarationsPages';
 import { HomePage } from '../home/HomePage';
 import { AppShell } from '../shell/AppShell';
@@ -103,6 +104,9 @@ export const routes = [
       { path: 'finante/inchideri/anul', element: <YearClosePage /> },
       { path: 'finante/rapoarte/balanta', element: <TrialBalancePage /> },
       { path: 'finante/rapoarte/fisa-contului', element: <AccountLedgerPage /> },
+      { path: 'finante/rapoarte/situatii-financiare', element: <FinancialStatementsPage /> },
+      { path: 'finante/rapoarte/balanta-de-grup', element: <GroupBalancePage /> },
+      { path: 'finante/rapoarte/rapoarte-definite', element: <DefinedReportsPage /> },
       { path: 'finante/declaratii/calendar', element: <TaxCalendarPage /> },
       { path: 'finante/declaratii/decont-tva', element: <VatReturnPage /> },
       { path: 'finante/declaratii/jurnale-tva', element: <VatJournalPage /> },
