@@ -46,6 +46,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.35 | Din machetele c4-01…c4-05: calendarul pe firmele grupului și exportul Excel, încărcarea recipisei PDF din ecran, facturile care explică diferențele P300, detalierea rândurilor D300 și a fișei de impozit până la note, lista conturilor nedeductibile cu tratamentul lor, avertismentul documentelor care așteaptă redeschiderea lunii | C4 nota C4.7 | API-urile există |
 | 1.36 | Rapoartele definite: coloanele configurabile (`ReportColumn`: luni, dimensiuni, firme), detalierea unei celule până la conturile care au contribuit și fișa contului, exportul | C5 nota C5.1 | Rularea are perioada curentă și pe cea de comparație |
 | 1.37 | Situațiile financiare: toate rândurile modelelor MF, corelațiile oficiale, F30 și F40, formularele pe categoria entității și confirmarea categoriei, rândurile manuale cu motiv, XML-ul prin Integrări (C5-A6), consumatorul C3 al `SituatiiFinanciareDepuse` (propunerea de blocare a anului) | C5 nota C5.2 | F10, F20, echilibrul și depunerea funcționează |
+| 1.38 | Balanța de grup: exportul în formatul companiei-mamă (Excel sau raport definit pe coloane de firme), documentele care explică diferențele intra-grup, anul financiar diferit de cel calendaristic la firmele grupului | C5 nota C5.4 | Rularea, eliminările și diferențele se calculează |
 
 ## 2. Depinde de alte module sau de Nucleu
 

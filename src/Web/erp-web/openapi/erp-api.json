@@ -24355,6 +24355,311 @@
         }
       }
     },
+    "/api/finance/group-balance": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "RunGroupBalance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunGroupBalance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/group-balance/{runId}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetGroupBalance",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBalanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/intercompany-differences": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "GetIntercompanyDifferences",
+        "parameters": [
+          {
+            "name": "chartId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IntercompanyDifferenceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/intercompany-pairs": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "SaveIntercompanyPair",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveIntercompanyPair"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/finance/gl-opening-balances": {
       "get": {
         "tags": [
@@ -57236,6 +57541,203 @@
             "items": {
               "$ref": "#/components/schemas/InventoryLineDto"
             }
+          }
+        }
+      },
+      "GroupBalanceDto": {
+        "required": [
+          "runId",
+          "chartId",
+          "chartCode",
+          "year",
+          "month",
+          "isFinal",
+          "runAt",
+          "companies",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chartId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chartCode": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "month": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isFinal": {
+            "type": "boolean"
+          },
+          "runAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupCompanyDto"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupBalanceRowDto"
+            }
+          }
+        }
+      },
+      "GroupBalanceRowDto": {
+        "required": [
+          "accountCode",
+          "accountName",
+          "byCompany",
+          "eliminations",
+          "consolidated"
+        ],
+        "type": "object",
+        "properties": {
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "byCompany": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "eliminations": {
+            "type": "string"
+          },
+          "consolidated": {
+            "type": "string"
+          }
+        }
+      },
+      "GroupCompanyDto": {
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "IntercompanyDifferenceDto": {
+        "required": [
+          "pairName",
+          "firstCompanyId",
+          "firstCompanyCode",
+          "secondCompanyId",
+          "secondCompanyCode",
+          "firstAmount",
+          "secondAmount",
+          "difference"
+        ],
+        "type": "object",
+        "properties": {
+          "pairName": {
+            "type": "string"
+          },
+          "firstCompanyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstCompanyCode": {
+            "type": "string"
+          },
+          "secondCompanyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secondCompanyCode": {
+            "type": "string"
+          },
+          "firstAmount": {
+            "type": "string"
+          },
+          "secondAmount": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string"
+          }
+        }
+      },
+      "RunGroupBalance": {
+        "required": [
+          "chartId",
+          "year",
+          "month",
+          "final"
+        ],
+        "type": "object",
+        "properties": {
+          "chartId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "month": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "final": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SaveIntercompanyPair": {
+        "required": [
+          "chartId",
+          "name",
+          "firstAccountId",
+          "secondAccountId"
+        ],
+        "type": "object",
+        "properties": {
+          "chartId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "firstAccountId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secondAccountId": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

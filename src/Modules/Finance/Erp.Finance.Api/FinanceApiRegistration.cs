@@ -587,6 +587,16 @@ public static class FinanceApiRegistration
             .WithName("GenerateInventoryRegister").Produces<int>().Problems();
         finance.MapGet("/inventory-register/{year:int}/pdf", (int year, ISender sender, CancellationToken ct) => sender.Send(new DownloadInventoryRegister(year), ct))
             .WithName("DownloadInventoryRegister").Produces<DownloadedFile>().Problems();
+        // Balanta de grup (C5 3.7, 4.3; macheta c5-05).
+        finance.MapPost("/group-balance", (RunGroupBalance body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RunGroupBalance").Produces<int>().Problems();
+        finance.MapGet("/group-balance/{runId:int}", (int runId, ISender sender, CancellationToken ct) => sender.Send(new GetGroupBalance(runId), ct))
+            .WithName("GetGroupBalance").Produces<GroupBalanceDto>().Problems();
+        finance.MapGet("/intercompany-differences", (int chartId, int year, int month, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetIntercompanyDifferences(chartId, year, month), ct))
+            .WithName("GetIntercompanyDifferences").Produces<IReadOnlyList<IntercompanyDifferenceDto>>().Problems();
+        finance.MapPost("/intercompany-pairs", (SaveIntercompanyPair body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveIntercompanyPair").Produces<int>().Problems();
         // Soldurile initiale la punerea in functiune (C3 3.7).
         finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
             .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();
