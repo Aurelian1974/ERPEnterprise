@@ -74,6 +74,7 @@ builder.Services.AddOutboxDispatcher(connectionString);
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.EmailCerut, Erp.Core.Infrastructure.Data.SendEmail>();
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.FirmaModificata, Erp.Inventory.Infrastructure.Events.InitializeCompanyStock>();
+builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.ArticolModificat, Erp.Inventory.Infrastructure.Events.EnsureItemStockSettings>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 // Contarea automata (02.02, C2 4.1): evenimentele cu model de contare devin note validate sau intra in coada „De contat”.

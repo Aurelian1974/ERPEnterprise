@@ -77,3 +77,20 @@ public sealed record WarehouseDto(int Id, int CompanyId, string Code, string Nam
 /// </summary>
 public sealed record GestiuneModificata(int WarehouseId, string Code, string Name, WarehouseKind Kind, ValuationBasis ValuationBasis, int? LocationId,
     bool IsBlocked, bool IsActive) : IntegrationEvent;
+
+/// <summary>Finalizarea unei predari de gestiune (S1 5.1). Consumatori: HR (raspunderea materiala), Raportare.</summary>
+public sealed record GestionarSchimbat(int WarehouseId, int? FromEmployeeId, int ToEmployeeId, DateOnly HandoverDate, int? InventoryCountId)
+    : IntegrationEvent;
+
+/// <summary>Politica efectiva pentru o varianta intr-o gestiune, cu precedenta din S1 3.4 si 3.6 deja aplicata.</summary>
+public sealed record ItemStockPolicyDto(int ItemId, int? ItemVariantId, int WarehouseId, ValuationMethod Method, TrackingMode Tracking,
+    NegativeStockPolicy NegativeStock, bool IsBlockedForIssue, bool IsBlockedForReceipt, decimal? MinQty, decimal? MaxQty, decimal? ReorderQty,
+    ReplenishmentMethod Replenishment);
+
+/// <summary>Politica de stoc efectiva (S1 6), citita de S2 la validarea documentelor, pe toate liniile o data.</summary>
+public interface IStockPolicyProvider
+{
+    Task<ItemStockPolicyDto> GetAsync(int warehouseId, int itemVariantId, CancellationToken ct);
+
+    Task<IReadOnlyDictionary<int, ItemStockPolicyDto>> GetManyAsync(int warehouseId, IReadOnlyCollection<int> itemVariantIds, CancellationToken ct);
+}

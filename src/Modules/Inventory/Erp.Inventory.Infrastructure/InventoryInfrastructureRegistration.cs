@@ -15,13 +15,16 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<IWarehouseStore, WarehouseStore>();
         services.AddScoped<IStockSettingsStore, StockSettingsStore>();
         services.AddScoped<IStockCompanySetup, StockCompanySetup>();
+        services.AddScoped<IWarehouseKeeperStore, WarehouseKeeperStore>();
+        services.AddScoped<Application.Items.IItemStockSettingsStore, Items.ItemStockSettingsStore>();
+        services.AddScoped<Contracts.IStockPolicyProvider, Items.StockPolicyProvider>();
         return services;
     }
 }
 
 /// <summary>
 /// Codurile THROW ale Stocurilor (02.05, S1 7): plaja 54000–54999, impartita pe parti (S1 54000–54099, S2 54100–54299, S3 54300–54449,
-/// S4 54450–54549, S5 54550–54649, S6 54650–54799, S7 54800–54899). 54018 e adaugat la implementare (referinta invalida).
+/// S4 54450–54549, S5 54550–54649, S6 54650–54799, S7 54800–54899). 54018–54021 sunt adaugate la implementare.
 /// </summary>
 public sealed class InventorySqlErrors : ISqlErrorMap
 {
@@ -45,5 +48,8 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54016] = (ErpErrorKind.Conflict, "INV_STOCK_LEVEL_CHANGE_WITH_STOCK"),
         [54017] = (ErpErrorKind.Validation, "INV_DEPOT_LOCATION_INVALID"),
         [54018] = (ErpErrorKind.Validation, "INV_INVALID_REFERENCE"),
+        [54019] = (ErpErrorKind.Conflict, "INV_HANDOVER_IN_PROGRESS"),
+        [54020] = (ErpErrorKind.Conflict, "INV_HANDOVER_NOT_OPEN"),
+        [54021] = (ErpErrorKind.Conflict, "INV_ITEM_WAREHOUSE_SETTINGS_EXISTS"),
     };
 }

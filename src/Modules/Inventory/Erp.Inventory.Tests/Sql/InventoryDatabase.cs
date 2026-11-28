@@ -155,6 +155,45 @@ public abstract class InventoryTestBase(InventoryDatabase database)
         await connection.ExecuteAsync(sql, parameters);
     }
 
+    /// <summary>Un model (stocabil sau nu) cu variantele date, ca in Nucleu (core.Item, core.ItemVariant).</summary>
+    protected async Task<(int ItemId, int[] VariantIds)> NewItem(string code, bool stockable, params string[] variants)
+    {
+        await using var connection = new SqlConnection(Database.ConnectionString);
+        var itemId = await connection.ExecuteScalarAsync<int>("""
+            INSERT INTO core.Item (Code, Name, ItemType, UomSetId, BaseUomId, DefaultVatRateId, IsStockable, CreatedBy)
+            SELECT TOP (1) @Code, N'Articol ' + @Code, CASE WHEN @Stockable = 1 THEN 1 ELSE 6 END, l.UomSetId, l.UomId,
+                (SELECT TOP (1) Id FROM core.VatRate ORDER BY Id), @Stockable, 1
+            FROM core.UomSetLine AS l WHERE l.IsBase = 1 ORDER BY l.UomSetId;
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """, new { Code = code, Stockable = stockable });
+        var ids = new List<int>();
+        foreach (var variant in variants)
+        {
+            ids.Add(await connection.ExecuteScalarAsync<int>("""
+                INSERT INTO core.ItemVariant (ItemId, Code, Name, CreatedBy) VALUES (@ItemId, @Code, @Code, 1);
+                SELECT CAST(SCOPE_IDENTITY() AS int);
+                """, new { ItemId = itemId, Code = code + "-" + variant }));
+        }
+
+        return (itemId, ids.ToArray());
+    }
+
+    /// <summary>Un angajat al firmei (gestionar).</summary>
+    protected Task<int> NewEmployee(string firstName, string lastName, int? companyId = null) =>
+        Query<int>("""
+            INSERT INTO core.Employee (CompanyId, EmployeeNo, FirstName, LastName, IsActive, CreatedBy)
+            VALUES (@CompanyId, @No, @FirstName, @LastName, 1, 1);
+            SELECT CAST(SCOPE_IDENTITY() AS int);
+            """, new { CompanyId = companyId ?? Database.CompanyId, No = Unique("E"), FirstName = firstName, LastName = lastName });
+
+    /// <summary>Un serviciu al modulului rezolvat ca in cererea curenta (firma si utilizatorul testului).</summary>
+    protected async Task<T> WithService<TService, T>(Func<TService, Task<T>> work, int? companyId = null) where TService : notnull
+    {
+        await using var provider = Services(null, companyId);
+        await using var scope = provider.CreateAsyncScope();
+        return await work(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
     protected static string Unique(string prefix) => prefix + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
 
     private ServiceProvider Services(int? userId, int? companyId)

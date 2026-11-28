@@ -1,4 +1,5 @@
 using Erp.Inventory.Application;
+using Erp.Inventory.Application.Items;
 using Erp.Inventory.Application.Settings;
 using Erp.Inventory.Application.Warehouses;
 using MediatR;
@@ -15,6 +16,8 @@ public static class InventoryApiRegistration
     {
         var inventory = endpoints.MapGroup("/api/inventory").WithTags("Inventory");
         MapWarehouses(inventory);
+        MapKeepers(inventory);
+        MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
     }
@@ -45,6 +48,49 @@ public static class InventoryApiRegistration
         inventory.MapPost("/warehouses/{id:int}/reactivate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new ReactivateWarehouse(id, body.RowVersion), ct))
             .WithName("ReactivateWarehouse").Saves();
+    }
+
+    // Stocuri › Gestiune › Gestionari si predarea-primirea (02.05, S1 3.2 si 4.2; macheta s1-02).
+    private static void MapKeepers(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/warehouses/{id:int}/keepers", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetWarehouseKeepers(id), ct))
+            .WithName("GetWarehouseKeepers").Produces<WarehouseKeepersDto>()
+            .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/warehouses/{id:int}/keepers", (int id, SaveWarehouseKeeper body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, WarehouseId = id }, ct))
+            .WithName("CreateWarehouseKeeper").Saves();
+        inventory.MapPut("/warehouses/{id:int}/keepers/{keeperId:int}", (int id, int keeperId, SaveWarehouseKeeper body, ISender sender,
+                CancellationToken ct) => sender.Send(body with { Id = keeperId, WarehouseId = id }, ct))
+            .WithName("UpdateWarehouseKeeper").Saves();
+        inventory.MapPost("/warehouses/{id:int}/handovers", (int id, StartHandover body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { WarehouseId = id }, ct))
+            .WithName("StartHandover").Saves();
+        inventory.MapPost("/handovers/{id:int}/complete", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CompleteHandover(id, body.RowVersion), ct))
+            .WithName("CompleteHandover").Saves();
+        inventory.MapPost("/handovers/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelHandover(id, body.RowVersion), ct))
+            .WithName("CancelHandover").Saves();
+    }
+
+    // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).
+    private static void MapItemSettings(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/items/{itemId:int}/stock-settings", (int itemId, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetItemStockSettings(itemId), ct))
+            .WithName("GetItemStockSettings").Produces<ItemStockTabDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapPut("/items/{itemId:int}/stock-settings", (int itemId, SaveItemStockSettings body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ItemId = itemId }, ct))
+            .WithName("SaveItemStockSettings").Saves();
+        inventory.MapPost("/items/{itemId:int}/warehouse-settings", (int itemId, SaveItemWarehouseSettings body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ItemId = itemId }, ct))
+            .WithName("CreateItemWarehouseSettings").Saves();
+        inventory.MapPut("/items/{itemId:int}/warehouse-settings/{id:int}", (int itemId, int id, SaveItemWarehouseSettings body, ISender sender,
+                CancellationToken ct) => sender.Send(body with { Id = id, ItemId = itemId }, ct))
+            .WithName("UpdateItemWarehouseSettings").Saves();
+        inventory.MapPost("/item-warehouse-settings/{id:int}/delete", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new DeleteItemWarehouseSettings(id, body.RowVersion), ct))
+            .WithName("DeleteItemWarehouseSettings").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     // Configurare › Stocuri › Generale (02.05, S1 3.3; ecranul in S7).

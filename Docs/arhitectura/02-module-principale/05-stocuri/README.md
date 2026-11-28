@@ -23,6 +23,7 @@ Planul pașilor: [PLAN-STOCURI.md](PLAN-STOCURI.md). Detaliile fiecărui pas sun
 | Pas | Conținut | Stare |
 | --- | --- | --- |
 | S1.1 | Modulul `Erp.Inventory`, gestiunile (cod unic pe firmă, tipuri, locație, preț cu amănuntul, blocare, dezactivare, dimensiunea „gestiune”), tranzitul și setările de stoc ale firmei create automat, permisiunile și rolurile; testele S1-A1–A5, A12, A13 | Implementat (stocul la dezactivare cu S2) |
+| S1.2 | Gestionarii (titular, înlocuitori, perioade), predarea-primirea cu blocarea gestiunii, setările de stoc ale articolului pe firmă și pe gestiune, politica efectivă `IStockPolicyProvider`; testele S1-A6, A7, A8, A15 (partea 1) | Implementat (inventarul de predare cu S6) |
 
 ## Machete de ecran (`ecrane/`)
 
