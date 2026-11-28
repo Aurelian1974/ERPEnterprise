@@ -19,7 +19,7 @@ BEGIN
 
     SELECT l.Id, l.LineNumber, l.ItemVariantId, v.Code AS VariantCode, l.ItemNameSnapshot, l.UomId, l.Qty, l.UomFactor, l.QtyBase, l.UnitCost, l.FromDepotId,
         l.FromWarehouseId, l.ToDepotId, l.ToWarehouseId, l.CostCenterId, l.ProjectId, l.ReceivedQtyBase, l.DifferenceQtyBase, l.DifferenceResolution,
-        l.ReversedLineId, l.UnitCostPosted, l.CostAmountPosted
+        l.ReversedLineId, l.UnitCostPosted, l.CostAmountPosted, l.ShipmentLineId
     FROM inv.StockDocumentLine AS l
     JOIN inv.StockDocument AS d ON d.Id = l.DocumentId
     JOIN core.ItemVariant AS v ON v.Id = l.ItemVariantId

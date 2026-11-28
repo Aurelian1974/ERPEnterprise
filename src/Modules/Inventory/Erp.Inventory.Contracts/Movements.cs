@@ -15,3 +15,12 @@ public sealed record MiscareStocValidata(string SourceModule, string DocumentTyp
 
 /// <summary>O miscare a lasat stocul pe minus (politica permisiva sau fapt din afara ERP, S1 3.6). Consumatori: notificarile gestionarului.</summary>
 public sealed record StocNegativFortat(int WarehouseId, int ItemVariantId, long MovementId, string SourceModule, long SourceDocumentId) : IntegrationEvent;
+
+/// <summary>Validarea unei note de predare in doua etape (S2 5.1). Consumatori: WMS, TMS, notificarea gestionarului care primeste.</summary>
+public sealed record TransferExpediat(int TransitShipmentId, int NpDocumentId, int FromWarehouseId, int ToWarehouseId,
+    IReadOnlyList<StockMovementEventLine> Lines) : IntegrationEvent;
+
+/// <summary>Validarea unei note de primire (S2 5.1): cantitatile primite si diferentele, cu rezolvarea lor. Consumatori: WMS, Raportare.</summary>
+public sealed record TransferPrimit(int TransitShipmentId, int NrDocumentId, byte ShipmentStatus, IReadOnlyList<TransferReceivedLine> Lines) : IntegrationEvent;
+
+public sealed record TransferReceivedLine(int ItemVariantId, decimal SentQtyBase, decimal ReceivedQtyBase, decimal DifferenceQtyBase, byte? Resolution);

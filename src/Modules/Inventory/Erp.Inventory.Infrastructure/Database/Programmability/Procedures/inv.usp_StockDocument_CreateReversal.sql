@@ -18,6 +18,8 @@ BEGIN
         THROW 54001, N'Documentul nu există în firma curentă.', 1;
     IF @Version <> @RowVersion
         THROW 54117, N'Documentul a fost modificat de alt utilizator; reîncărcați datele.', 1;
+    IF EXISTS (SELECT 1 FROM inv.StockDocument WHERE Id = @Id AND DocumentType = 'NR')
+        THROW 54114, N'Nota de primire nu se stornează; faceți o notă de predare inversă.', 1;
     IF @Status <> 2 OR @IsReversal = 1
         THROW 54114, N'Se stornează doar un document validat, nestornat, care nu e el însuși o stornare.', 1;
     IF EXISTS (SELECT 1 FROM inv.TransitShipment WHERE NpDocumentId = @Id AND Status <> 1)

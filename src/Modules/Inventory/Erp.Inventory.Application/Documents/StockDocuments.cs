@@ -12,7 +12,8 @@ public sealed record StockDocumentLineInput(int ItemVariantId, int? UomId, strin
 
 public sealed record StockDocumentLineDto(long Id, int LineNo, int ItemVariantId, string VariantCode, string ItemName, int? UomId, string Qty, string UomFactor,
     string QtyBase, string? UnitCost, int? FromDepotId, int? FromWarehouseId, int? ToDepotId, int? ToWarehouseId, int? CostCenterId, int? ProjectId,
-    string? ReceivedQtyBase, string? DifferenceQtyBase, byte? DifferenceResolution, long? ReversedLineId, string? UnitCostPosted, string? CostAmountPosted);
+    string? ReceivedQtyBase, string? DifferenceQtyBase, byte? DifferenceResolution, long? ReversedLineId, string? UnitCostPosted, string? CostAmountPosted,
+    long? ShipmentLineId);
 
 /// <summary>Documentul de stoc cu liniile lui (machetele s2-01…s2-04). Status: 1 Ciorna, 2 Validat, 3 Stornat, 4 Anulat.</summary>
 public sealed record StockDocumentDto(int Id, string DocumentType, string? Number, DateOnly DocumentDate, DateOnly AccountingDate, int? FromDepotId,
@@ -68,7 +69,36 @@ public interface IStockDocumentStore
     Task<InventorySaved> ApproveAsync(int companyId, int id, bool approve, string? note, byte[] rowVersion, int userId, CancellationToken ct);
 
     Task<IReadOnlyList<MovementReasonDto>> ReasonsAsync(int companyId, CancellationToken ct);
+
+    Task<TransferPlan> PlanTransferAsync(int companyId, int documentId, CancellationToken ct);
+
+    Task<int?> MarkShippedAsync(int companyId, int documentId, byte transferMode, int userId, CancellationToken ct);
+
+    Task<int> CreateReceiptAsync(int companyId, int shipmentId, DateOnly documentDate, int userId, CancellationToken ct);
+
+    Task<InventorySaved> SaveReceiptAsync(int companyId, int id, string? notes, IReadOnlyList<ReceiptLineRecord> lines, byte[] rowVersion, int userId,
+        CancellationToken ct);
+
+    Task<byte> RefreshShipmentAsync(int companyId, int shipmentId, int userId, CancellationToken ct);
+
+    Task<IReadOnlyList<TransitShipmentDto>> ShipmentsAsync(int companyId, int? toWarehouseId, bool openOnly, CancellationToken ct);
 }
+
+/// <summary>Etapele unei note de predare (S2 3.4) si gestiunea de tranzit a firmei.</summary>
+public sealed record TransferPlan(byte TransferMode, int TransitWarehouseId);
+
+public sealed record ReceiptLineRecord(long LineId, decimal ReceivedQtyBase, byte? Resolution);
+
+/// <summary>O expeditie in tranzit (S2 3.4). Status: 1 Trimis, 2 Primit partial, 3 Primit, 4 Primit cu diferente, 5 Inchis.</summary>
+public sealed record TransitShipmentDto(int Id, int NpDocumentId, string? NpNumber, int FromWarehouseId, string FromWarehouseCode, int ToWarehouseId,
+    string ToWarehouseCode, DateOnly ShippedDate, byte Status, int AgeDays)
+{
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<int> WarehouseDimensions { get; init; } = [];
+}
+
+/// <summary>Cantitatea primita pe o linie a notei de primire si rezolvarea diferentei (1 tranzit, 2 retur, 3 lipsa imputabila, 4 neimputabila, 5 plus).</summary>
+public sealed record ReceiptLineInput(long LineId, string ReceivedQtyBase, byte? Resolution);
 
 /// <summary>Documentele de stoc ale firmei curente, pe gestiunile permise (S1 3.7).</summary>
 [Module(InventoryModule.Code)]
@@ -108,6 +138,23 @@ public sealed record ValidateStockDocument(int Id, byte[] RowVersion) : ICommand
 [Audited("Inv.StockDocument.Reverse")]
 public sealed record ReverseStockDocument(int Id, DateOnly? DocumentDate, byte[] RowVersion) : ICommand<InventorySaved>;
 
+/// <summary>Expeditiile in tranzit spre gestiunile permise (S2 3.4, „De primit”).</summary>
+[Module(InventoryModule.Code)]
+[RequiresPermission(InventoryPermissions.DocumentView)]
+public sealed record GetTransitShipments(int? ToWarehouseId = null, bool OpenOnly = true) : IQuery<IReadOnlyList<TransitShipmentDto>>;
+
+/// <summary>Creeaza nota de primire a unei expeditii, cu cantitatile ramase in tranzit (S2 4.3).</summary>
+[Module(InventoryModule.Code)]
+[RequiresPermission(InventoryPermissions.DocumentView)]
+[Audited("Inv.StockDocument.CreateReceipt")]
+public sealed record CreateReceiptFromShipment(int ShipmentId, DateOnly DocumentDate) : ICommand<InventorySaved>;
+
+/// <summary>Salveaza cantitatile primite si rezolvarea diferentelor pe nota de primire (S2 3.4).</summary>
+[Module(InventoryModule.Code)]
+[RequiresPermission(InventoryPermissions.DocumentView)]
+[Audited("Inv.StockDocument.SaveReceipt")]
+public sealed record SaveReceipt(int Id, string? Notes, IReadOnlyList<ReceiptLineInput> Lines, byte[] RowVersion) : ICommand<InventorySaved>;
+
 /// <summary>Anuleaza o ciorna.</summary>
 [Module(InventoryModule.Code)]
 [RequiresPermission(InventoryPermissions.DocumentView)]
@@ -124,7 +171,8 @@ internal sealed class SaveStockDocumentValidator : AbstractValidator<SaveStockDo
 {
     public SaveStockDocumentValidator()
     {
-        RuleFor(x => x.DocumentType).Must(StockDocumentTypes.IsSimple).WithMessage("Tipul documentului nu e cunoscut.");
+        RuleFor(x => x.DocumentType).Must(t => StockDocumentTypes.IsSimple(t) || t == StockDocumentTypes.TransferNote)
+            .WithMessage("Tipul documentului nu e cunoscut.");
         RuleFor(x => x.Lines).NotEmpty().WithMessage("Documentul are cel puțin o linie.");
         RuleForEach(x => x.Lines).Must(l => Quantity.TryParse(l.Qty, out var q) && q > 0).WithMessage("Cantitatea este pozitivă, cu cel mult șase zecimale.");
         RuleForEach(x => x.Lines).Must(l => Quantity.TryParse(l.UomFactor, out var f) && f > 0).WithMessage("Factorul UM este pozitiv.");
@@ -191,8 +239,9 @@ internal sealed class SaveStockDocumentHandler(IStockDocumentStore store, IWareh
     public async Task<InventorySaved> Handle(SaveStockDocument request, CancellationToken cancellationToken)
     {
         var kind = DocumentAccess.Kind(request.DocumentType);
-        var from = kind.Direction < 0 ? request.FromWarehouseId : null;
-        var to = kind.Direction > 0 ? request.ToWarehouseId : null;
+        var transfer = request.DocumentType == StockDocumentTypes.TransferNote;
+        var from = kind.Direction < 0 || transfer ? request.FromWarehouseId : null;
+        var to = kind.Direction > 0 || transfer ? request.ToWarehouseId : null;
         var dimensions = new List<int>();
         int? costCenter = request.CostCenterId;
         foreach (var id in new[] { from, to }.OfType<int>())
@@ -222,13 +271,23 @@ internal sealed class SaveStockDocumentHandler(IStockDocumentStore store, IWareh
 }
 
 internal sealed class ValidateStockDocumentHandler(IStockDocumentStore store, StockLedger ledger, INumberSeriesService numbers, ICurrentContext context, TimeProvider time,
-    IAuditScope audit) : ICommandHandler<ValidateStockDocument, InventorySaved>, ICommandHandler<ReverseStockDocument, InventorySaved>,
+    TransferService transfers, IAuditScope audit) : ICommandHandler<ValidateStockDocument, InventorySaved>, ICommandHandler<ReverseStockDocument, InventorySaved>,
     ICommandHandler<CancelStockDocument, InventorySaved>, ICommandHandler<ApproveStockDocument, InventorySaved>
 {
     public async Task<InventorySaved> Handle(ValidateStockDocument request, CancellationToken cancellationToken)
     {
         var document = await Load(request.Id, cancellationToken).ConfigureAwait(false);
         var kind = DocumentAccess.Kind(document.DocumentType);
+        if (document.DocumentType == StockDocumentTypes.TransferNote)
+        {
+            return await transfers.ValidateTransferAsync(document, kind, request.RowVersion, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (document.DocumentType == StockDocumentTypes.ReceiptNote)
+        {
+            return await transfers.ValidateReceiptAsync(document, kind, request.RowVersion, cancellationToken).ConfigureAwait(false);
+        }
+
         DocumentAccess.Require(context, kind.ValidatePermission, document.WarehouseDimensions);
         await store.BeginValidationAsync(context.CompanyId, request.Id, request.RowVersion, cancellationToken).ConfigureAwait(false);
         var number = await numbers.NextAsync(context.CompanyId, kind.NumberSeriesType, document.DocumentDate, cancellationToken).ConfigureAwait(false);

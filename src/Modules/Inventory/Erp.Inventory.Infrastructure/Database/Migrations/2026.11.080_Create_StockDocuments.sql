@@ -71,6 +71,7 @@ CREATE TABLE inv.StockDocumentLine (
     DifferenceQtyBase    decimal(19,6)     NULL,
     DifferenceResolution tinyint           NULL,      -- 1 ramane in tranzit, 2 retur, 3 lipsa imputabila, 4 lipsa neimputabila, 5 plus
     ReversedLineId       bigint            NULL CONSTRAINT FK_StockDocumentLine_ReversedLine REFERENCES inv.StockDocumentLine (Id),
+    ShipmentLineId       bigint            NULL CONSTRAINT FK_StockDocumentLine_ShipmentLine REFERENCES inv.StockDocumentLine (Id),   -- NR: linia NP primita
     UnitCostPosted       decimal(19,6)     NULL,
     CostAmountPosted     decimal(19,2)     NULL,
     CONSTRAINT CK_StockDocumentLine_Qty CHECK (Qty <> 0 AND QtyBase <> 0 AND UomFactor > 0),
@@ -79,6 +80,7 @@ CREATE TABLE inv.StockDocumentLine (
 );
 CREATE INDEX IX_StockDocumentLine_DocumentId ON inv.StockDocumentLine (DocumentId);
 CREATE INDEX IX_StockDocumentLine_ItemVariantId ON inv.StockDocumentLine (ItemVariantId);
+CREATE INDEX IX_StockDocumentLine_ShipmentLineId ON inv.StockDocumentLine (ShipmentLineId) WHERE ShipmentLineId IS NOT NULL;
 GO
 
 CREATE TABLE inv.TransitShipment (
@@ -105,6 +107,14 @@ CREATE INDEX IX_TransitShipment_ToWarehouse_Status ON inv.TransitShipment (ToWar
 GO
 
 ALTER TABLE inv.StockDocument ADD CONSTRAINT FK_StockDocument_TransitShipment FOREIGN KEY (TransitShipmentId) REFERENCES inv.TransitShipment (Id);
+GO
+
+-- Cantitatile primite pe liniile unei note de primire si rezolvarea diferentelor (S2 3.4), ca TVP.
+CREATE TYPE inv.tt_ReceiptLine AS TABLE (
+    LineId          bigint         NOT NULL PRIMARY KEY,
+    ReceivedQtyBase decimal(19,6)  NOT NULL,
+    Resolution      tinyint        NULL
+);
 GO
 
 -- Liniile unui document salvat (ciorna), ca TVP (SP-07).

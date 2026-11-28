@@ -120,6 +120,13 @@ public static class InventoryApiRegistration
         inventory.MapPost("/documents/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new CancelStockDocument(id, body.RowVersion), ct))
             .WithName("CancelStockDocument").Saves();
+        inventory.MapGet("/transit-shipments", ([AsParameters] GetTransitShipments query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetTransitShipments").Produces<IReadOnlyList<TransitShipmentDto>>();
+        inventory.MapPost("/transit-shipments/{id:int}/receipt", (int id, CreateReceiptFromShipment body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ShipmentId = id }, ct))
+            .WithName("CreateReceiptFromShipment").Saves();
+        inventory.MapPut("/documents/{id:int}/receipt", (int id, SaveReceipt body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SaveReceipt").Saves();
         inventory.MapPost("/documents/{id:int}/approve", (int id, ApproveStockDocument body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { Id = id }, ct))
             .WithName("ApproveStockDocument").Saves();

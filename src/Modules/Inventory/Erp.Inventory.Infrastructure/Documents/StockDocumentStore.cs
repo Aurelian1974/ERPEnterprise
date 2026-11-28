@@ -38,7 +38,8 @@ public sealed class StockDocumentStore(IDbSession session) : IStockDocumentStore
         var lines = (await grid.ReadAsync<LineRow>().ConfigureAwait(false)).Select(l => new StockDocumentLineDto(l.Id, l.LineNumber, l.ItemVariantId, l.VariantCode,
             l.ItemNameSnapshot, l.UomId, Quantity.Format(l.Qty), Quantity.Format(l.UomFactor), Quantity.Format(l.QtyBase), Quantity.Format(l.UnitCost),
             l.FromDepotId, l.FromWarehouseId, l.ToDepotId, l.ToWarehouseId, l.CostCenterId, l.ProjectId, Quantity.Format(l.ReceivedQtyBase),
-            Quantity.Format(l.DifferenceQtyBase), l.DifferenceResolution, l.ReversedLineId, Quantity.Format(l.UnitCostPosted), Money(l.CostAmountPosted)))
+            Quantity.Format(l.DifferenceQtyBase), l.DifferenceResolution, l.ReversedLineId, Quantity.Format(l.UnitCostPosted), Money(l.CostAmountPosted),
+            l.ShipmentLineId))
             .ToList();
         return new StockDocumentDto(d.Id, d.DocumentType, d.Number, DateOnly.FromDateTime(d.DocumentDate), DateOnly.FromDateTime(d.AccountingDate), d.FromDepotId,
             d.FromWarehouseId, d.FromWarehouseCode, d.ToDepotId, d.ToWarehouseId, d.ToWarehouseCode, d.ReasonId, d.ReasonCode, d.ReasonName,
@@ -110,6 +111,54 @@ public sealed class StockDocumentStore(IDbSession session) : IStockDocumentStore
             r.ApproverRoleCode, r.NoPosting, r.CostSource, r.IsSystem, r.IsActive))
         .ToList();
 
+    public Task<TransferPlan> PlanTransferAsync(int companyId, int documentId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<TransferPlan>(Command("inv.usp_Transfer_Plan", new { CompanyId = companyId, DocumentId = documentId }, ct));
+
+    public Task<int?> MarkShippedAsync(int companyId, int documentId, byte transferMode, int userId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<int?>(Command("inv.usp_Transfer_MarkShipped",
+            new { CompanyId = companyId, DocumentId = documentId, TransferMode = transferMode, UserId = userId }, ct));
+
+    public Task<int> CreateReceiptAsync(int companyId, int shipmentId, DateOnly documentDate, int userId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<int>(Command("inv.usp_TransitShipment_CreateReceipt", new
+        {
+            CompanyId = companyId, ShipmentId = shipmentId, DocumentDate = documentDate.ToDateTime(TimeOnly.MinValue), UserId = userId,
+        }, ct));
+
+    public Task<InventorySaved> SaveReceiptAsync(int companyId, int id, string? notes, IReadOnlyList<ReceiptLineRecord> lines, byte[] rowVersion, int userId,
+        CancellationToken ct)
+    {
+        var table = new DataTable();
+        table.Columns.Add("LineId", typeof(long));
+        table.Columns.Add("ReceivedQtyBase", typeof(decimal));
+        table.Columns.Add("Resolution", typeof(byte));
+        foreach (var l in lines)
+        {
+            table.Rows.Add(l.LineId, l.ReceivedQtyBase, (object?)l.Resolution ?? DBNull.Value);
+        }
+
+        return session.Connection.QuerySingleAsync<InventorySaved>(Command("inv.usp_StockDocument_SaveReceipt", new
+        {
+            CompanyId = companyId, Id = id, Notes = notes, Lines = table.AsTableValuedParameter("inv.tt_ReceiptLine"), RowVersion = rowVersion, UserId = userId,
+        }, ct));
+    }
+
+    public Task<byte> RefreshShipmentAsync(int companyId, int shipmentId, int userId, CancellationToken ct) =>
+        session.Connection.QuerySingleAsync<byte>(Command("inv.usp_TransitShipment_Refresh",
+            new { CompanyId = companyId, ShipmentId = shipmentId, UserId = userId }, ct));
+
+    public async Task<IReadOnlyList<TransitShipmentDto>> ShipmentsAsync(int companyId, int? toWarehouseId, bool openOnly, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<ShipmentRow>(Command("inv.usp_TransitShipment_List",
+            new { CompanyId = companyId, ToWarehouseId = toWarehouseId, OpenOnly = openOnly }, ct)).ConfigureAwait(false))
+        .Select(r => new TransitShipmentDto(r.Id, r.NpDocumentId, r.NpNumber, r.FromWarehouseId, r.FromWarehouseCode, r.ToWarehouseId, r.ToWarehouseCode,
+            DateOnly.FromDateTime(r.ShippedDate), r.Status, r.AgeDays)
+        {
+            WarehouseDimensions = [r.FromWarehouseDimensionId, r.ToWarehouseDimensionId],
+        })
+        .ToList();
+
+    private sealed record ShipmentRow(int Id, int NpDocumentId, string? NpNumber, int FromWarehouseId, string FromWarehouseCode, int FromWarehouseDimensionId,
+        int ToWarehouseId, string ToWarehouseCode, int ToWarehouseDimensionId, DateTime ShippedDate, byte Status, int AgeDays);
+
     private static string? Money(decimal? value) => value?.ToString("0.00", CultureInfo.InvariantCulture);
 
     private static IReadOnlyList<int> Dimensions(int? from, int? to) => new[] { from, to }.OfType<int>().ToList();
@@ -131,7 +180,7 @@ public sealed class StockDocumentStore(IDbSession session) : IStockDocumentStore
     private sealed record LineRow(long Id, int LineNumber, int ItemVariantId, string VariantCode, string ItemNameSnapshot, int? UomId, decimal Qty, decimal UomFactor,
         decimal QtyBase, decimal? UnitCost, int? FromDepotId, int? FromWarehouseId, int? ToDepotId, int? ToWarehouseId, int? CostCenterId, int? ProjectId,
         decimal? ReceivedQtyBase, decimal? DifferenceQtyBase, byte? DifferenceResolution, long? ReversedLineId, decimal? UnitCostPosted,
-        decimal? CostAmountPosted);
+        decimal? CostAmountPosted, long? ShipmentLineId);
 
     private sealed record ReasonRow(int Id, string Code, string Name, short Direction, byte VatTreatment, bool IsDeductible, bool RequiresAttachment,
         decimal? ApprovalThreshold, string? ApproverRoleCode, bool NoPosting, byte CostSource, bool IsSystem, bool IsActive);
