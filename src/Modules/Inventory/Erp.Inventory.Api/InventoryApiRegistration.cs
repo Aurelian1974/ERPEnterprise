@@ -1,5 +1,7 @@
 using Erp.Inventory.Application;
 using Erp.Inventory.Application.Documents;
+using Erp.Inventory.Application.Movements;
+using Erp.Inventory.Contracts;
 using Erp.Inventory.Application.Items;
 using Erp.Inventory.Application.Settings;
 using Erp.Inventory.Application.Warehouses;
@@ -120,6 +122,8 @@ public static class InventoryApiRegistration
         inventory.MapPost("/documents/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new CancelStockDocument(id, body.RowVersion), ct))
             .WithName("CancelStockDocument").Saves();
+        inventory.MapGet("/movements", ([AsParameters] GetStockMovements query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetStockMovements").Produces<IReadOnlyList<StockMovementDto>>();
         inventory.MapGet("/transit-shipments", ([AsParameters] GetTransitShipments query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("GetTransitShipments").Produces<IReadOnlyList<TransitShipmentDto>>();
         inventory.MapPost("/transit-shipments/{id:int}/receipt", (int id, CreateReceiptFromShipment body, ISender sender, CancellationToken ct) =>

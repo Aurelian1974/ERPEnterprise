@@ -24,3 +24,20 @@ public sealed record TransferExpediat(int TransitShipmentId, int NpDocumentId, i
 public sealed record TransferPrimit(int TransitShipmentId, int NrDocumentId, byte ShipmentStatus, IReadOnlyList<TransferReceivedLine> Lines) : IntegrationEvent;
 
 public sealed record TransferReceivedLine(int ItemVariantId, decimal SentQtyBase, decimal ReceivedQtyBase, decimal DifferenceQtyBase, byte? Resolution);
+
+/// <summary>Un bon POS sincronizat: linia cu cantitatea vanduta (pozitiva) sau returnata (negativa), in UM de baza.</summary>
+public sealed record PosReceiptLine(long ExternalLineId, int ItemVariantId, decimal QtyBase);
+
+/// <summary>Un bon fiscal deja emis la casa (fapt petrecut), cu data si ora reale.</summary>
+public sealed record PosReceipt(long ExternalId, string Number, DateOnly SaleDate, int WarehouseId, int? DepotId, IReadOnlyList<PosReceiptLine> Lines);
+
+/// <summary>
+/// Bonurile unei case sincronizate dupa lucrul offline (S2 4.7, 5.2). Definit in contractele Stocurilor, ca POS (deasupra Stocurilor in
+/// dependente) sa-l publice; Stocurile il consuma idempotent, fara verificarea politicii de stoc negativ.
+/// </summary>
+public sealed record BonuriPOSSincronizate(int CashRegisterId, IReadOnlyList<PosReceipt> Receipts) : IntegrationEvent;
+
+/// <summary>O miscare din registru, cu soldul cheii dupa ea (S2 10; macheta s2-05).</summary>
+public sealed record StockMovementDto(long Id, long PostingSeq, DateOnly MovementDate, int WarehouseId, string WarehouseCode, int? DepotId, int ItemVariantId,
+    string VariantCode, string MovementTypeCode, string QtyBase, string UnitCost, string CostAmount, string? BalanceQty, string SourceModule,
+    string SourceDocumentType, long SourceDocumentId, string? SourceDocumentNumber, string? ReasonCode, bool IsForcedNegative, long? ReversalOfId);

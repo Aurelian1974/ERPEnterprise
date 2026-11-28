@@ -23,6 +23,7 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Application.Movements.StockLedger>();
         services.AddScoped<Application.Documents.IStockDocumentStore, Documents.StockDocumentStore>();
         services.AddScoped<Application.Documents.TransferService>();
+        services.AddScoped<Application.Movements.IStockMovementQueries, Movements.StockMovementQueries>();
         // Portul de stoc al Nucleului (02.05, S2 6): Stocurile inlocuiesc implementarea goala.
         services.Replace(ServiceDescriptor.Scoped<IStockLedger>(sp => sp.GetRequiredService<Application.Movements.StockLedger>()));
         services.AddScoped<Application.Items.IItemStockSettingsStore, Items.ItemStockSettingsStore>();

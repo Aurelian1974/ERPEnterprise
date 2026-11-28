@@ -123,3 +123,26 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
     private sealed record Row(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
         decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed);
 }
+
+/// <summary>Registrul de miscari pentru ecran (inv.usp_StockMovement_Search); cantitatile si valorile ca text.</summary>
+public sealed class StockMovementQueries(IDbSession session) : IStockMovementQueries
+{
+    public async Task<IReadOnlyList<(Erp.Inventory.Contracts.StockMovementDto Movement, int WarehouseDimension)>> SearchAsync(int companyId, int? warehouseId,
+        int? itemVariantId, DateOnly? from, DateOnly? to, long? afterSeq, int top, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<Row>(new CommandDefinition("inv.usp_StockMovement_Search", new
+        {
+            CompanyId = companyId, WarehouseId = warehouseId, ItemVariantId = itemVariantId, DateFrom = from?.ToDateTime(TimeOnly.MinValue),
+            DateTo = to?.ToDateTime(TimeOnly.MinValue), AfterSeq = afterSeq, Top = top,
+        }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false))
+        .Select(r => (new Erp.Inventory.Contracts.StockMovementDto(r.Id, r.PostingSeq, DateOnly.FromDateTime(r.MovementDate), r.WarehouseId, r.WarehouseCode,
+            r.DepotId, r.ItemVariantId, r.VariantCode, r.MovementTypeCode, Erp.Inventory.Domain.Quantity.Format(r.QtyBase),
+            Erp.Inventory.Domain.Quantity.Format(r.UnitCost), r.CostAmount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+            Erp.Inventory.Domain.Quantity.Format(r.BalanceQty), r.SourceModule, r.SourceDocumentType, r.SourceDocumentId, r.SourceDocumentNumber, r.ReasonCode,
+            r.IsForcedNegative, r.ReversalOfId), r.WarehouseDimensionId))
+        .ToList();
+
+    private sealed record Row(long Id, long PostingSeq, DateTime MovementDate, int WarehouseId, string WarehouseCode, int WarehouseDimensionId, int? DepotId,
+        int ItemVariantId, string VariantCode, string MovementTypeCode, decimal QtyBase, decimal UnitCost, decimal CostAmount, decimal? BalanceQty,
+        string SourceModule, string SourceDocumentType, long SourceDocumentId, string? SourceDocumentNumber, string? ReasonCode, bool IsForcedNegative,
+        long? ReversalOfId);
+}
