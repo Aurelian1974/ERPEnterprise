@@ -21,7 +21,7 @@ public sealed record RetailDischargeDto(int? Id, string? Number, int WarehouseId
     string OpeningMarkup, string MarkupIn, string OpeningVat, string VatIn, string SalesVat, string SalesNet, decimal K, string Markup, string Cost);
 
 /// <summary>Datele brute ale descarcarii (inv.usp_RetailDischarge_Compute).</summary>
-public sealed record RetailDischargeData(RetailDischargeInput Input, bool AlreadyDischarged);
+public sealed record RetailDischargeData(RetailDischargeInput Input, bool AlreadyDischarged, int? CostCenterId = null);
 
 /// <summary>Accesul la date pentru MP si DA (inv.usp_RetailPriceChange_*, inv.usp_RetailDischarge_*, inv.usp_RetailDischargeMethod_Set).</summary>
 public interface IRetailValuationStore
@@ -159,12 +159,13 @@ internal sealed class RetailValuationHandler(IRetailValuationStore store, INumbe
         var saved = await store.ValidatePriceChangeAsync(context.CompanyId, request.Id, request.RowVersion, number.Formatted, context.UserId, cancellationToken)
             .ConfigureAwait(false);
         var validated = await store.GetPriceChangeAsync(context.CompanyId, request.Id, cancellationToken).ConfigureAwait(false) ?? throw NotFound();
-        await outbox.EnqueueAsync(new ModificarePretAmanuntValidata(validated.WarehouseId, validated.Id, number.Formatted, validated.DocumentDate,
+        var change = new ModificarePretAmanuntValidata(validated.WarehouseId, validated.Id, number.Formatted, validated.DocumentDate,
             validated.Lines.Select(l => new RetailPriceChangeEventLine(l.ItemVariantId, Quantity.ParseOptional(l.Qty) ?? 0, Quantity.ParseOptional(l.OldPrice),
                 Quantity.ParseOptional(l.NewPrice) ?? 0, LandedCostService.Parse(l.DiffAmount), LandedCostService.Parse(l.DiffVatAmount))).ToList())
         {
             CompanyId = context.CompanyId,
-        }, cancellationToken).ConfigureAwait(false);
+        };
+        await outbox.EnqueueAsync(change with { Accounting = StockAccounting.PriceChange(change) }, cancellationToken).ConfigureAwait(false);
         audit.Describe("Inv.RetailPriceChange", request.Id, new { Number = number.Formatted, validated.DiffAmount });
         return saved;
     }
@@ -198,8 +199,9 @@ internal sealed class RetailValuationHandler(IRetailValuationStore store, INumbe
         var number = await numbers.NextAsync(context.CompanyId, DischargeSeries, end, cancellationToken).ConfigureAwait(false);
         var id = await store.SaveDischargeAsync(context.CompanyId, request.WarehouseId, start, number.Formatted, data.Input, result, context.UserId,
             cancellationToken).ConfigureAwait(false);
-        await outbox.EnqueueAsync(new DescarcareAmanuntValidata(request.WarehouseId, id, number.Formatted, start, end, result.K, result.SalesNet, result.Markup,
-            data.Input.SalesVat, result.Cost) { CompanyId = context.CompanyId }, cancellationToken).ConfigureAwait(false);
+        var discharge = new DescarcareAmanuntValidata(request.WarehouseId, id, number.Formatted, start, end, result.K, result.SalesNet, result.Markup,
+            data.Input.SalesVat, result.Cost) { CompanyId = context.CompanyId };
+        await outbox.EnqueueAsync(discharge with { Accounting = StockAccounting.Discharge(discharge, data.CostCenterId) }, cancellationToken).ConfigureAwait(false);
         audit.Describe("Inv.RetailDischarge", id, new { request.WarehouseId, PeriodStart = start, result.K, result.Markup });
         return Dto(id, number.Formatted, request.WarehouseId, start, data.Input, result);
     }

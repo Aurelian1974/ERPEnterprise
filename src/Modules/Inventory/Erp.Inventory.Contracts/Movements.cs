@@ -15,6 +15,9 @@ public sealed record StockMovementEventLine(long MovementId, int WarehouseId, in
     public decimal? RetailVatAmount { get; init; }
 
     public byte? RetailDischargeMethod { get; init; }
+
+    /// <summary>Centrul de cost al miscarii sau, lipsa, cel implicit al gestiunii (pentru conturile 6 si 7).</summary>
+    public int? CostCenterId { get; init; }
 }
 
 /// <summary>
@@ -22,7 +25,11 @@ public sealed record StockMovementEventLine(long MovementId, int WarehouseId, in
 /// Accounting se adauga cu modelele de contare ale Stocurilor, S3), S7, WMS, Raportare.
 /// </summary>
 public sealed record MiscareStocValidata(string SourceModule, string DocumentType, long DocumentId, string? Number, DateOnly MovementDate,
-    DateOnly AccountingDate, bool IsReversal, IReadOnlyList<StockMovementEventLine> Movements) : IntegrationEvent;
+    DateOnly AccountingDate, bool IsReversal, IReadOnlyList<StockMovementEventLine> Movements) : IntegrationEvent, Erp.Finance.Contracts.Accounting.IAccountable
+{
+    /// <summary>Blocul de contare (C2 3.1), construit de Stocuri (S3 3.6); C2 il conteaza cu modelul tipului de eveniment.</summary>
+    public Erp.Finance.Contracts.Accounting.AccountingPayload? Accounting { get; init; }
+}
 
 /// <summary>O miscare a lasat stocul pe minus (politica permisiva sau fapt din afara ERP, S1 3.6). Consumatori: notificarile gestionarului.</summary>
 public sealed record StocNegativFortat(int WarehouseId, int ItemVariantId, long MovementId, string SourceModule, long SourceDocumentId) : IntegrationEvent;
@@ -61,7 +68,11 @@ public sealed record CostAdjustmentEventLine(int WarehouseId, int ItemVariantId,
 /// Consumatori: C2 (blocul Accounting vine cu modelele de contare ale Stocurilor), Raportare, Vanzari V7.
 /// </summary>
 public sealed record CostStocAjustat(byte AdjustmentKind, string SourceModule, string SourceDocumentType, long SourceDocumentId, DateOnly AccountingDate,
-    IReadOnlyList<CostAdjustmentEventLine> Lines) : IntegrationEvent;
+    IReadOnlyList<CostAdjustmentEventLine> Lines) : IntegrationEvent, Erp.Finance.Contracts.Accounting.IAccountable
+{
+    /// <summary>Blocul de contare (C2 3.1), construit de Stocuri (S3 3.6); C2 il conteaza cu modelul tipului de eveniment.</summary>
+    public Erp.Finance.Contracts.Accounting.AccountingPayload? Accounting { get; init; }
+}
 
 /// <summary>O linie a modificarii de pret: stocul la validare, preturile si diferenta cu TVA-ul inclus.</summary>
 public sealed record RetailPriceChangeEventLine(int ItemVariantId, decimal Qty, decimal? OldPrice, decimal NewPrice, decimal DiffAmount, decimal DiffVatAmount);
@@ -70,11 +81,19 @@ public sealed record RetailPriceChangeEventLine(int ItemVariantId, decimal Qty, 
 /// Validarea documentului MP (S3 5.1): C2 conteaza diferenta pe 371 fata de 378 (adaosul) si 4428 (TVA-ul); POS ia preturile noi ale casei.
 /// </summary>
 public sealed record ModificarePretAmanuntValidata(int WarehouseId, int DocumentId, string Number, DateOnly DocumentDate,
-    IReadOnlyList<RetailPriceChangeEventLine> Lines) : IntegrationEvent;
+    IReadOnlyList<RetailPriceChangeEventLine> Lines) : IntegrationEvent, Erp.Finance.Contracts.Accounting.IAccountable
+{
+    /// <summary>Blocul de contare (C2 3.1), construit de Stocuri (S3 3.6); C2 il conteaza cu modelul tipului de eveniment.</summary>
+    public Erp.Finance.Contracts.Accounting.AccountingPayload? Accounting { get; init; }
+}
 
 /// <summary>
 /// Validarea documentului DA (S3 5.1): descarcarea lunara prin K a unei gestiuni la pret cu amanuntul; C2 face 378 = 607 (adaosul) si
 /// 4428 = 607 (TVA-ul vanzarilor).
 /// </summary>
 public sealed record DescarcareAmanuntValidata(int WarehouseId, int DocumentId, string Number, DateOnly PeriodStart, DateOnly AccountingDate, decimal K,
-    decimal SalesNet, decimal Markup, decimal SalesVat, decimal Cost) : IntegrationEvent;
+    decimal SalesNet, decimal Markup, decimal SalesVat, decimal Cost) : IntegrationEvent, Erp.Finance.Contracts.Accounting.IAccountable
+{
+    /// <summary>Blocul de contare (C2 3.1), construit de Stocuri (S3 3.6); C2 il conteaza cu modelul tipului de eveniment.</summary>
+    public Erp.Finance.Contracts.Accounting.AccountingPayload? Accounting { get; init; }
+}

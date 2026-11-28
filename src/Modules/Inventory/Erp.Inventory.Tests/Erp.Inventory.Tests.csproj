@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
     <ProjectReference Include="..\Erp.Inventory.Api\Erp.Inventory.Api.csproj" />
     <ProjectReference Include="..\..\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Finance\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
   </ItemGroup>
 

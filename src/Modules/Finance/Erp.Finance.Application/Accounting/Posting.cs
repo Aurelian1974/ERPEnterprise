@@ -252,3 +252,10 @@ public sealed class PostingService(IPostingStore store, IOutbox outbox)
         return new PostingOutcome(null, reason, details);
     }
 }
+
+/// <summary>Portul de contare pentru evenimentele altor module (C2 4.1): acelasi PostingService ca pentru evenimentele Finantelor.</summary>
+public sealed class EventAccountingPort(PostingService posting) : IEventAccountingPort
+{
+    public Task PostAsync(Guid eventId, string eventType, int companyId, AccountingPayload payload, CancellationToken ct) =>
+        posting.PostAsync(new PostingRequest(eventId, eventType, companyId, payload), ct);
+}

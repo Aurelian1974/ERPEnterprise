@@ -75,3 +75,21 @@ public interface IPeriodCloseCheck
 
     Task<CloseCheckResult> RunAsync(int companyId, DateOnly periodStart, DateOnly periodEnd, CancellationToken ct);
 }
+
+/// <summary>Soldul evidentei operative pe o cheie (gestiunea, la rolul Stock), la o data.</summary>
+public sealed record SubledgerBalance(int KeyId, string? KeyName, decimal Amount);
+
+/// <summary>
+/// Evidenta operativa a unui modul pentru concordante (C3 3.4), implementata de modul (Stocuri: rolul Stock, zona 4). C3 compara soldul cu
+/// soldul contabil (D − C) al liniilor cu dimensiunea cheii pe conturile rolurilor LedgerRoles; diferentele blocheaza inchiderea.
+/// </summary>
+public interface ISubledgerBalanceProvider
+{
+    byte Area { get; }
+
+    string AreaName { get; }
+
+    IReadOnlyList<string> LedgerRoles { get; }
+
+    Task<IReadOnlyList<SubledgerBalance>> GetBalancesAsync(int companyId, DateOnly asOf, CancellationToken ct);
+}

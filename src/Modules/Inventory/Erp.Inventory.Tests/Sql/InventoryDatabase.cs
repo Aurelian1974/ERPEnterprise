@@ -233,6 +233,8 @@ public abstract class InventoryTestBase(InventoryDatabase database)
         services.AddErpMediator(InventoryApplication.Assembly);
         services.AddCoreInfrastructure(Database.ConnectionString, new LicenseOptions(Development: true));
         services.AddInventoryInfrastructure();
+        // C2 si C3 (Finantele): contarea evenimentelor Stocurilor, lista de inchidere si concordanta (S3 3.5, 3.6).
+        Erp.Finance.Infrastructure.FinanceInfrastructureRegistration.AddFinanceInfrastructure(services, Database.ConnectionString);
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ILicenseInfo>(new FakeLicense());
         services.AddSingleton<IPeriodLock>(new FakePeriodLock(ClosedDays));

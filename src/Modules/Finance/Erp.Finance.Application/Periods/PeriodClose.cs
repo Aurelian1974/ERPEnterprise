@@ -18,7 +18,7 @@ public sealed record CloseStepRecord(string StepCode, CloseCheckSeverity Severit
 /// <summary>Un document din coada „De contat” care explica o diferenta de concordanta (C3 3.4).</summary>
 public sealed record ReconciliationExplanationDto(long QueueId, string DocumentNo, byte Reason, string Amount);
 
-/// <summary>O diferenta de concordanta (macheta c3-03). Area: 1 clienti, 2 furnizori, 3 casa; KeyId e partenerul sau casa.</summary>
+/// <summary>O diferenta de concordanta (macheta c3-03). Area: 1 clienti, 2 furnizori, 3 casa, 4 stocuri; KeyId e partenerul, casa sau gestiunea.</summary>
 public sealed record ReconciliationRowDto(byte Area, int KeyId, string? KeyName, string Ledger, string Subledger, string Difference,
     IReadOnlyList<ReconciliationExplanationDto> Explanations);
 
@@ -136,6 +136,7 @@ public sealed class PeriodCloseService(IPeriodCloseStore store, IEnumerable<IPer
             "PREV_PERIOD" => "FIN_PERIOD_PREVIOUS_OPEN",
             "EVENTS_IN_TRANSIT" => "FIN_PERIOD_EVENTS_IN_TRANSIT",
             "ALT_MAPPING" => "FIN_MAPPING_INCOMPLETE",
+            "COST_RECALC_PENDING" => "INV_RECALC_PENDING",
             _ => "FIN_PERIOD_CLOSE_BLOCKED",
         };
         return new ErpException(ErpErrorKind.Conflict, code, $"Luna nu se poate închide: {first.Name} — {first.Summary}");

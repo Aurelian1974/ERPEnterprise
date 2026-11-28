@@ -119,8 +119,10 @@ public sealed class LandedCostService(ILandedCostStore store, CostRecalculator r
         var stock = lines.Where(l => l.TargetKind == "Stock").Sum(l => l.Amount);
         var expense = lines.Where(l => l.TargetKind == "Expense").Sum(l => l.Amount);
         var number = await numbers.NextAsync(companyId, NumberSeriesType, document.DocumentDate, ct).ConfigureAwait(false);
-        await outbox.EnqueueAsync(new CostStocAjustat(kind, "inv", DocumentType, id, document.AccountingDate, lines) { CompanyId = companyId }, ct)
-            .ConfigureAwait(false);
+        await outbox.EnqueueAsync(new CostStocAjustat(kind, "inv", DocumentType, id, document.AccountingDate, lines)
+        {
+            CompanyId = companyId, Accounting = StockAccounting.Adjustment(kind, DocumentType, id, document.AccountingDate, lines),
+        }, ct).ConfigureAwait(false);
         return await store.SetStatusAsync(companyId, id, 2, number.Formatted, stock, expense, null, context.UserId, ct).ConfigureAwait(false);
     }
 

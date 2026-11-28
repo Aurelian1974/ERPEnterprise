@@ -27,6 +27,14 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Application.Costing.ILandedCostStore, Costing.LandedCostStore>();
         services.AddScoped<Application.Costing.LandedCostService>();
         services.AddScoped<Application.Costing.IRetailValuationStore, Costing.RetailValuationStore>();
+        // Lista de inchidere si concordanta C3 (S3 3.5–3.7): pasii Stocurilor si evidenta operativa a stocului.
+        foreach (var (code, severity, allowOverride, ok, fail) in Costing.StockCloseCheck.Shipped)
+        {
+            services.AddScoped<Finance.Contracts.Periods.IPeriodCloseCheck>(sp => new Costing.StockCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
+                allowOverride, ok, fail));
+        }
+
+        services.AddScoped<Finance.Contracts.Periods.ISubledgerBalanceProvider, Costing.StockSubledgerBalanceProvider>();
         services.AddScoped<Application.Documents.IStockDocumentStore, Documents.StockDocumentStore>();
         services.AddScoped<Application.Documents.TransferService>();
         services.AddScoped<Application.Movements.IStockMovementQueries, Movements.StockMovementQueries>();

@@ -9,7 +9,10 @@ USING (VALUES
     ('CASH_DAYS',         N'Toate zilele de casă din lună sunt închise', 40),
     ('POSTING_QUEUE',     N'Coada „De contat” nu are documente datate în lună', 60),
     ('DRAFT_ENTRIES',     N'Nu există ciorne de note manuale sau recurente în lună', 70),
-    ('RECONCILIATION',    N'Concordanțele cu evidența operativă (clienți, furnizori, casă) nu au diferențe', 110),
+    ('COST_RECALC_PENDING', N'Coada de recalculare a costului stocurilor e goală pentru lună', 80),
+    ('NEGATIVE_STOCK',    N'Niciun stoc negativ la sfârșitul lunii', 85),
+    ('RETAIL_DISCHARGE',  N'Descărcarea la preț cu amănuntul (DA) e validată pentru gestiunile cu metoda K', 90),
+    ('RECONCILIATION',    N'Concordanțele cu evidența operativă (clienți, furnizori, casă, stocuri) nu au diferențe', 110),
     ('ALT_MAPPING',       N'Liniile lunii sunt mapate în planurile alternative cu mapare completă', 120),
     ('ABNORMAL_BALANCES', N'Conturi cu sold pe partea greșită', 130)
 ) AS source (Code, Name, SortOrder)

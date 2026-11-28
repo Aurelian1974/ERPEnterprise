@@ -55,6 +55,8 @@ public static class FinanceInfrastructureRegistration
                 allowOverride, ok, fail));
         }
 
+        services.AddScoped<Contracts.Periods.IPeriodCloseCheck, Periods.ReconciliationCheck>();
+
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -99,6 +101,7 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Accounting.IJournalEntryStore, Accounting.JournalEntryStore>();
         services.AddScoped<Application.Accounting.IPostingStore, Accounting.PostingStore>();
         services.AddScoped<Application.Accounting.PostingService>();
+        services.AddScoped<Contracts.Accounting.IEventAccountingPort, Application.Accounting.EventAccountingPort>();
         services.AddTransient<Accounting.PostingQueueRetry>();
         services.AddScoped<Application.Accounting.IRecurringEntryStore, Accounting.RecurringEntryStore>();
         services.AddScoped<Application.Accounting.IPostingModelStore, Accounting.PostingModelStore>();

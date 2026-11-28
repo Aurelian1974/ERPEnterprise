@@ -16,6 +16,8 @@ public sealed record PostedStockMovement(long MovementId, long SourceLineId, byt
     public decimal? RetailVatAmount { get; init; }
 
     public byte? RetailDischargeMethod { get; init; }
+
+    public int? CostCenterId { get; init; }
 }
 
 /// <summary>Setarile de data ale firmei (S1 3.3), citite la fiecare inregistrare.</summary>
@@ -150,6 +152,20 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         }
 
         var outcome = await store.PostAsync(request, costed, employeeId, context.UserId, ct).ConfigureAwait(false);
+        if (!outcome.Replayed && costed.Adjustments.Count > 0)
+        {
+            // Regularizarea iesirilor pe minus (S3 3.4) schimba valoarea stocului: 371 fata de costul vanzarilor, pe iesirea regularizata.
+            var regularized = costed.Adjustments.Select(a => new CostAdjustmentEventLine(a.Key.WarehouseId, a.Key.ItemVariantId,
+                a.MovementId ?? (a.Row is { } row ? outcome.Movements[row - 1].MovementId : null), a.Amount, "Stock")).ToList();
+            await outbox.EnqueueAsync(new CostStocAjustat(CostCalculator.NegativeRegularization, request.SourceModule, request.SourceDocumentType,
+                request.SourceDocumentId, request.AccountingDate, regularized)
+            {
+                CompanyId = request.CompanyId,
+                Accounting = Costing.StockAccounting.Adjustment(CostCalculator.NegativeRegularization, request.SourceDocumentType, request.SourceDocumentId,
+                    request.AccountingDate, regularized),
+            }, ct).ConfigureAwait(false);
+        }
+
         if (!outcome.Replayed)
         {
             // Miscarea cu data anterioara altor miscari ale cheii reface costul ieșirilor ulterioare (S3 3.5).
@@ -178,12 +194,16 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
     private async Task PublishAsync(int companyId, string module, string documentType, long documentId, string? number, DateOnly movementDate,
         DateOnly accountingDate, bool reversal, StockPostingOutcome outcome, CancellationToken ct)
     {
-        await outbox.EnqueueAsync(new MiscareStocValidata(module, documentType, documentId, number, movementDate, accountingDate, reversal,
-            outcome.Movements.Select(m => new StockMovementEventLine(m.MovementId, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost,
-                m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)
-            {
-                RetailAmount = m.RetailAmount, RetailVatAmount = m.RetailVatAmount, RetailDischargeMethod = m.RetailDischargeMethod,
-            }).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
+        var lines = outcome.Movements.Select(m => new StockMovementEventLine(m.MovementId, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost,
+            m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)
+        {
+            RetailAmount = m.RetailAmount, RetailVatAmount = m.RetailVatAmount, RetailDischargeMethod = m.RetailDischargeMethod, CostCenterId = m.CostCenterId,
+        }).ToList();
+        await outbox.EnqueueAsync(new MiscareStocValidata(module, documentType, documentId, number, movementDate, accountingDate, reversal, lines)
+        {
+            CompanyId = companyId,
+            Accounting = Costing.StockAccounting.Movements(module, documentType, documentId, number, movementDate, accountingDate, reversal, lines),
+        }, ct).ConfigureAwait(false);
         foreach (var forced in outcome.Movements.Where(m => m.IsForcedNegative))
         {
             await outbox.EnqueueAsync(new StocNegativFortat(forced.WarehouseId, forced.ItemVariantId, forced.MovementId, module, documentId)

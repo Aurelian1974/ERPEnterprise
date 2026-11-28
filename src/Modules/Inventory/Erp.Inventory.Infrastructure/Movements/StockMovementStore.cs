@@ -198,12 +198,12 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
         new(rows.Select(r => new PostedStockMovement(r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase,
             r.UnitCost, r.CostAmount, r.IsForcedNegative, r.MovementTypeCode, r.ReasonCode)
         {
-            RetailAmount = r.RetailAmount, RetailVatAmount = r.RetailVatAmount, RetailDischargeMethod = r.RetailDischargeMethod,
+            RetailAmount = r.RetailAmount, RetailVatAmount = r.RetailVatAmount, RetailDischargeMethod = r.RetailDischargeMethod, CostCenterId = r.CostCenterId,
         }).ToList(), rows.Count > 0 && rows.All(r => r.Replayed));
 
     private sealed record Row(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
         decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed, decimal? RetailAmount,
-        decimal? RetailVatAmount, byte? RetailDischargeMethod);
+        decimal? RetailVatAmount, byte? RetailDischargeMethod, int? CostCenterId);
 
     private sealed record KeyRow(int WarehouseId, int DepotKey, int ItemVariantId, int LotKey, decimal QtyOnHand, decimal CostOnHand, decimal? LastUnitCost,
         byte Method, decimal? FallbackUnitCost);

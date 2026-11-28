@@ -69,3 +69,12 @@ public sealed record ContareEsuata(Guid SourceEventId, string EventType, byte Re
 
 /// <summary>Recontarea unei note automate (C2 4.6, 5.1): versiunea veche din istoric si totalurile. Consumator: Raportare.</summary>
 public sealed record NotaContabilaRecontata(long EntryId, int OldVersion, decimal OldTotalRon, decimal NewTotalRon) : IntegrationEvent;
+
+/// <summary>
+/// Contarea unui eveniment al altui modul (C2 4.1), pentru consumatorii modulelor de deasupra Finantelor (Stocuri, Vanzari...): evenimentul isi
+/// trimite blocul de contare, iar C2 il conteaza cu modelul tipului de eveniment, idempotent pe EventId, sau il pune in coada „De contat”.
+/// </summary>
+public interface IEventAccountingPort
+{
+    Task PostAsync(Guid eventId, string eventType, int companyId, AccountingPayload payload, CancellationToken ct);
+}

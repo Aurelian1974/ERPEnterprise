@@ -8,7 +8,7 @@ using Erp.Finance.Contracts.Periods;
 namespace Erp.Finance.Infrastructure.Periods;
 
 /// <summary>Lista de verificari prin fin.usp_PeriodCloseRun_*, fin.usp_AccountingPeriod_Get, fin.usp_PeriodCloseStep_Active (NET-06).</summary>
-public sealed class PeriodCloseStore(IDbSession session) : IPeriodCloseStore
+public sealed class PeriodCloseStore(IDbSession session, IEnumerable<ISubledgerBalanceProvider> subledgers) : IPeriodCloseStore
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -59,9 +59,33 @@ public sealed class PeriodCloseStore(IDbSession session) : IPeriodCloseStore
         var rows = (await grid.ReadAsync<(byte Area, int KeyId, string? KeyName, decimal Ledger, decimal Subledger, decimal Difference)>().ConfigureAwait(false)).ToList();
         var explain = (await grid.ReadAsync<(byte Area, int KeyId, long QueueId, string DocumentNo, byte Reason, decimal Amount)>().ConfigureAwait(false))
             .ToLookup(e => (e.Area, e.KeyId));
-        return rows.Select(r => new ReconciliationRowDto(r.Area, r.KeyId, r.KeyName, Domain.Money.Format(r.Ledger), Domain.Money.Format(r.Subledger),
+        var result = rows.Select(r => new ReconciliationRowDto(r.Area, r.KeyId, r.KeyName, Domain.Money.Format(r.Ledger), Domain.Money.Format(r.Subledger),
             Domain.Money.Format(r.Difference), explain[(r.Area, r.KeyId)].Select(e => new ReconciliationExplanationDto(e.QueueId, e.DocumentNo, e.Reason,
                 Domain.Money.Format(e.Amount))).ToList())).ToList();
+        grid.Dispose();
+
+        // Evidentele operative ale celorlalte module (Stocuri: zona 4, pe gestiune), fata de soldul contabil al rolurilor lor.
+        foreach (var provider in subledgers)
+        {
+            var ledger = (await session.Connection.QueryAsync<(int KeyId, decimal Amount)>(Command("fin.usp_Reconciliation_Ledger", new
+            {
+                CompanyId = companyId, AsOf = asOf.ToDateTime(TimeOnly.MinValue), Roles = string.Join(',', provider.LedgerRoles),
+            }, ct)).ConfigureAwait(false)).ToDictionary(l => l.KeyId, l => l.Amount);
+            var balances = (await provider.GetBalancesAsync(companyId, asOf, ct).ConfigureAwait(false)).ToDictionary(b => b.KeyId);
+            foreach (var key in ledger.Keys.Union(balances.Keys).Order())
+            {
+                var g = ledger.GetValueOrDefault(key);
+                var b = balances.GetValueOrDefault(key);
+                var sub = b?.Amount ?? 0;
+                if (g != sub)
+                {
+                    result.Add(new ReconciliationRowDto(provider.Area, key, b?.KeyName, Domain.Money.Format(g), Domain.Money.Format(sub), Domain.Money.Format(g - sub),
+                        []));
+                }
+            }
+        }
+
+        return result;
     }
 
     public async Task<ClosingWrite> GenerateClosingAsync(int companyId, int periodId, ClosingKind kind, bool annualOnly, int userId, CancellationToken ct)
@@ -131,8 +155,32 @@ public sealed class SqlPeriodCloseCheck(IDbSession session, string code, CloseCh
         ("CASH_DAYS", CloseCheckSeverity.Blocking, true, "Toate zilele de casă sunt închise.", "{0} zile de casă deschise."),
         ("POSTING_QUEUE", CloseCheckSeverity.Blocking, false, "Coada „De contat” e goală pentru lună.", "{0} documente așteaptă în coada „De contat”."),
         ("DRAFT_ENTRIES", CloseCheckSeverity.Blocking, true, "Nicio ciornă de notă în lună.", "{0} ciorne de note în lună."),
-        ("RECONCILIATION", CloseCheckSeverity.Blocking, true, "Concordanțele nu au diferențe.", "{0} diferențe de concordanță."),
         ("ALT_MAPPING", CloseCheckSeverity.Blocking, false, "Planurile cu mapare completă nu au linii nemapate.", "{0} planuri alternative au linii nemapate."),
         ("ABNORMAL_BALANCES", CloseCheckSeverity.Warning, false, "Niciun sold pe partea greșită.", "{0} conturi cu sold pe partea greșită."),
     ];
+}
+
+/// <summary>
+/// Pasul RECONCILIATION (C3 3.4): concordantele din SQL (clienti, furnizori, casa) si evidentele operative ale modulelor (ISubledgerBalanceProvider,
+/// de exemplu stocul pe gestiune); blocant, cu trecere permisa.
+/// </summary>
+public sealed class ReconciliationCheck(IPeriodCloseStore store, IEnumerable<ISubledgerBalanceProvider> subledgers) : IPeriodCloseCheck
+{
+    public string Code => "RECONCILIATION";
+
+    public CloseCheckSeverity Severity => CloseCheckSeverity.Blocking;
+
+    public bool AllowOverride => true;
+
+    public async Task<CloseCheckResult> RunAsync(int companyId, DateOnly periodStart, DateOnly periodEnd, CancellationToken ct)
+    {
+        var areas = subledgers.ToDictionary(s => s.Area, s => s.AreaName);
+        var rows = await store.ReconciliationAsync(companyId, periodEnd, ct).ConfigureAwait(false);
+        var issues = rows.Select(r => new CloseCheckIssue(
+            $"{(r.Area switch { 1 => "Clienți", 2 => "Furnizori", 3 => "Casa", _ => areas.GetValueOrDefault(r.Area, "Evidență") })} · {r.KeyName ?? "—"}: contabil {r.Ledger}, evidență {r.Subledger}",
+            r.KeyId.ToString(System.Globalization.CultureInfo.InvariantCulture), decimal.Parse(r.Difference, System.Globalization.CultureInfo.InvariantCulture))).ToList();
+        return issues.Count == 0
+            ? new CloseCheckResult(CloseCheckOutcome.Ok, "Concordanțele nu au diferențe.", [])
+            : new CloseCheckResult(CloseCheckOutcome.Failed, $"{issues.Count} diferențe de concordanță.", issues);
+    }
 }

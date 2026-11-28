@@ -7,7 +7,8 @@ BEGIN
     -- Datele descarcarii lunare la pret cu amanuntul (02.05, S3 3.7, metoda 1), din miscarile gestiunii, documentele MP si descarcarile anterioare
     -- (nu din contabilitate): soldurile initiale si rulajele lunii pentru 371, 378 si 4428, vanzarile cu amanuntul si TVA-ul lor. Intrarile sunt
     -- miscarile al caror tip are sensul +1 (stornarile lor scad), iesirile cele cu sensul -1. Gestiunea trebuie sa fie la pret cu amanuntul
-    -- (54312), cu descarcarea prin K (54314). Calculul lui K il face apelantul (RetailDischargeCalculator).
+    -- (54312), cu descarcarea prin K (54314). Iesirile descarcate pe loc (metoda 2, predarile) scad adaosul si TVA-ul (Rd 378, Rd 4428) si nu
+    -- intra in vanzarile descarcate prin K. Calculul lui K il face apelantul (RetailDischargeCalculator).
     SET NOCOUNT ON;
 
     DECLARE @Basis tinyint, @Method tinyint;
@@ -23,7 +24,7 @@ BEGIN
 
     WITH M AS (
         SELECT CASE WHEN m.MovementDate < @PeriodStart THEN 0 ELSE 1 END AS InPeriod, t.Direction AS TypeDirection, m.RetailAmount,
-            ISNULL(m.RetailVatAmount, 0) AS RetailVat, m.CostAmount
+            ISNULL(m.RetailVatAmount, 0) AS RetailVat, m.CostAmount, ISNULL(m.RetailDischargeMethod, 1) AS Method
         FROM inv.StockMovement AS m
         JOIN inv.MovementType AS t ON t.Id = m.MovementTypeId
         WHERE m.WarehouseId = @WarehouseId AND m.RetailAmount IS NOT NULL AND m.MovementDate < @End
@@ -40,17 +41,23 @@ BEGIN
         CAST(ISNULL((SELECT SUM(RetailAmount) FROM M WHERE InPeriod = 0), 0) + ISNULL((SELECT SUM(Diff) FROM P WHERE InPeriod = 0), 0) AS decimal(19,2))
             AS OpeningRetail,
         CAST(ISNULL((SELECT SUM(RetailAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = 1), 0) + ISNULL((SELECT SUM(Diff) FROM P WHERE InPeriod = 1), 0)
-            AS decimal(19,2)) AS RetailIn,
-        CAST(ISNULL((SELECT -SUM(RetailAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = -1), 0) AS decimal(19,2)) AS RetailOut,
+            + ISNULL((SELECT SUM(RetailAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = -1 AND Method = 2), 0) AS decimal(19,2)) AS RetailIn,
+        CAST(ISNULL((SELECT -SUM(RetailAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = -1 AND Method = 1), 0) AS decimal(19,2)) AS RetailOut,
         CAST(ISNULL((SELECT SUM(RetailAmount - RetailVat - CostAmount) FROM M WHERE InPeriod = 0 AND TypeDirection = 1), 0)
-            + ISNULL((SELECT SUM(Diff - DiffVat) FROM P WHERE InPeriod = 0), 0) - ISNULL((SELECT Markup FROM D), 0) AS decimal(19,2)) AS OpeningMarkup,
+            + ISNULL((SELECT SUM(Diff - DiffVat) FROM P WHERE InPeriod = 0), 0) - ISNULL((SELECT Markup FROM D), 0)
+            + ISNULL((SELECT SUM(RetailAmount - RetailVat - CostAmount) FROM M WHERE InPeriod = 0 AND TypeDirection = -1 AND Method = 2), 0)
+            AS decimal(19,2)) AS OpeningMarkup,
         CAST(ISNULL((SELECT SUM(RetailAmount - RetailVat - CostAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = 1), 0)
-            + ISNULL((SELECT SUM(Diff - DiffVat) FROM P WHERE InPeriod = 1), 0) AS decimal(19,2)) AS MarkupIn,
+            + ISNULL((SELECT SUM(Diff - DiffVat) FROM P WHERE InPeriod = 1), 0)
+            + ISNULL((SELECT SUM(RetailAmount - RetailVat - CostAmount) FROM M WHERE InPeriod = 1 AND TypeDirection = -1 AND Method = 2), 0)
+            AS decimal(19,2)) AS MarkupIn,
         CAST(ISNULL((SELECT SUM(RetailVat) FROM M WHERE InPeriod = 0 AND TypeDirection = 1), 0) + ISNULL((SELECT SUM(DiffVat) FROM P WHERE InPeriod = 0), 0)
-            - ISNULL((SELECT SalesVat FROM D), 0) AS decimal(19,2)) AS OpeningVat,
+            - ISNULL((SELECT SalesVat FROM D), 0) + ISNULL((SELECT SUM(RetailVat) FROM M WHERE InPeriod = 0 AND TypeDirection = -1 AND Method = 2), 0)
+            AS decimal(19,2)) AS OpeningVat,
         CAST(ISNULL((SELECT SUM(RetailVat) FROM M WHERE InPeriod = 1 AND TypeDirection = 1), 0) + ISNULL((SELECT SUM(DiffVat) FROM P WHERE InPeriod = 1), 0)
-            AS decimal(19,2)) AS VatIn,
-        CAST(ISNULL((SELECT -SUM(RetailVat) FROM M WHERE InPeriod = 1 AND TypeDirection = -1), 0) AS decimal(19,2)) AS SalesVat,
+            + ISNULL((SELECT SUM(RetailVat) FROM M WHERE InPeriod = 1 AND TypeDirection = -1 AND Method = 2), 0) AS decimal(19,2)) AS VatIn,
+        CAST(ISNULL((SELECT -SUM(RetailVat) FROM M WHERE InPeriod = 1 AND TypeDirection = -1 AND Method = 1), 0) AS decimal(19,2)) AS SalesVat,
         CAST(CASE WHEN EXISTS (SELECT 1 FROM inv.RetailDischarge WHERE WarehouseId = @WarehouseId AND PeriodStart = @PeriodStart) THEN 1 ELSE 0 END AS bit)
-            AS AlreadyDischarged;
+            AS AlreadyDischarged,
+        (SELECT DefaultCostCenterId FROM inv.Warehouse WHERE Id = @WarehouseId) AS CostCenterId;
 END;

@@ -148,9 +148,14 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
         {
             foreach (var group in changed.GroupBy(c => (c.m.SourceModule, c.m.SourceDocumentType, c.m.SourceDocumentId, c.m.AccountingDate)))
             {
+                var lines = group.Select(c => new CostAdjustmentEventLine(key.WarehouseId, key.ItemVariantId, c.m.Id, c.Item2 - c.m.CostAmount, "Expense")).ToList();
                 await outbox.EnqueueAsync(new CostStocAjustat(Recalculation, group.Key.SourceModule, group.Key.SourceDocumentType, group.Key.SourceDocumentId,
-                    group.Key.AccountingDate, group.Select(c => new CostAdjustmentEventLine(key.WarehouseId, key.ItemVariantId, c.m.Id, c.Item2 - c.m.CostAmount,
-                        "Expense")).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
+                    group.Key.AccountingDate, lines)
+                {
+                    CompanyId = companyId,
+                    Accounting = Costing.StockAccounting.Adjustment(Recalculation, group.Key.SourceDocumentType, group.Key.SourceDocumentId, group.Key.AccountingDate,
+                        lines),
+                }, ct).ConfigureAwait(false);
             }
         }
 

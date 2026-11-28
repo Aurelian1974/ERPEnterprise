@@ -76,6 +76,11 @@ builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezacti
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.FirmaModificata, Erp.Inventory.Infrastructure.Events.InitializeCompanyStock>();
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.ArticolModificat, Erp.Inventory.Infrastructure.Events.EnsureItemStockSettings>();
 builder.Services.AddIntegrationEventHandler<Erp.Inventory.Contracts.BonuriPOSSincronizate, Erp.Inventory.Infrastructure.Events.PostPosReceipts>();
+// Contarea evenimentelor Stocurilor (02.05, S3 3.6): blocul de contare trece la C2 prin IEventAccountingPort.
+builder.Services.AddIntegrationEventHandler<Erp.Inventory.Contracts.MiscareStocValidata, Erp.Inventory.Infrastructure.Events.PostStockEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Inventory.Contracts.CostStocAjustat, Erp.Inventory.Infrastructure.Events.PostStockEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Inventory.Contracts.DescarcareAmanuntValidata, Erp.Inventory.Infrastructure.Events.PostStockEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Inventory.Contracts.ModificarePretAmanuntValidata, Erp.Inventory.Infrastructure.Events.PostStockEvents>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 // Contarea automata (02.02, C2 4.1): evenimentele cu model de contare devin note validate sau intra in coada „De contat”.

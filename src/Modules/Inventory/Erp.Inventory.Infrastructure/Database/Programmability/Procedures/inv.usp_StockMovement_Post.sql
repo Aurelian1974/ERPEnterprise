@@ -53,7 +53,7 @@ BEGIN
     BEGIN
         SELECT m.Id AS MovementId, m.SourceLineId, m.SourceRole, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost, m.CostAmount,
             m.IsForcedNegative, t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(1 AS bit) AS Replayed, m.RetailAmount, m.RetailVatAmount,
-            CAST(CASE WHEN w.ValuationBasis = 2 THEN COALESCE(w.RetailDischargeMethod, ss.RetailDischargeMethod, 1) END AS tinyint) AS RetailDischargeMethod
+            m.RetailDischargeMethod, COALESCE(m.CostCenterId, w.DefaultCostCenterId) AS CostCenterId
         FROM @Rows AS r
         JOIN inv.StockMovement AS m ON m.SourceModule = @SourceModule AND m.SourceLineId = r.SourceLineId AND m.SourceRole = r.SourceRole
             AND m.ReversalKey = ISNULL(r.ReversalOfId, 0)
@@ -128,11 +128,18 @@ BEGIN
                  WHERE x.WarehouseId = r.WarehouseId AND x.ItemVariantId = r.ItemVariantId AND x.ValidFrom <= @MovementDate
                  ORDER BY x.ValidFrom DESC) AS p;
 
-    UPDATE r SET RetailPrice = m.RetailPrice, RetailAmount = -m.RetailAmount, RetailVatAmount = -m.RetailVatAmount
+    -- Predarea dintr-o gestiune la pret cu amanuntul descarca adaosul si TVA-ul pe loc (metoda 2), orice metoda ar avea gestiunea.
+    UPDATE r SET RetailDischargeMethod = 2
+    FROM @Rows AS r JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
+    WHERE r.RetailDischargeMethod IS NOT NULL AND t.Code = 'TRANSFER_OUT';
+
+    UPDATE r SET RetailPrice = m.RetailPrice, RetailAmount = -m.RetailAmount, RetailVatAmount = -m.RetailVatAmount,
+        RetailDischargeMethod = ISNULL(m.RetailDischargeMethod, r.RetailDischargeMethod)
     FROM @Rows AS r
     JOIN inv.StockMovement AS m ON m.Id = r.ReversalOfId
     WHERE r.RetailDischargeMethod IS NOT NULL;
     UPDATE @Rows SET RetailPrice = NULL, RetailAmount = NULL, RetailVatAmount = NULL WHERE RetailPrice IS NULL OR RetailAmount IS NULL;
+    UPDATE @Rows SET RetailDischargeMethod = NULL WHERE RetailAmount IS NULL AND ReversalOfId IS NOT NULL;
 
     IF EXISTS (SELECT 1 FROM @Rows WHERE RetailDischargeMethod IS NOT NULL AND RetailPrice IS NULL AND ReversalOfId IS NULL)
     BEGIN
@@ -212,12 +219,12 @@ BEGIN
     -- Miscarile: intai cele fara pereche, apoi intrarile transferurilor, cu CounterMovementId spre iesirea lor.
     DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint);
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
-        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, ReasonId, PartnerId, CostCenterId, ProjectId,
+        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, RetailDischargeMethod, ReasonId, PartnerId, CostCenterId, ProjectId,
         EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
     OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
-        r.RetailAmount, r.RetailVatAmount, r.ReasonId,
+        r.RetailAmount, r.RetailVatAmount, CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
         r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
@@ -226,13 +233,13 @@ BEGIN
 
     DELETE FROM @Inserted;
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
-        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, ReasonId, PartnerId, CostCenterId, ProjectId,
+        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, RetailDischargeMethod, ReasonId, PartnerId, CostCenterId, ProjectId,
         EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, CounterMovementId, ReversalOfId,
         IsForcedNegative, CreatedBy)
     OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
-        r.RetailAmount, r.RetailVatAmount, r.ReasonId,
+        r.RetailAmount, r.RetailVatAmount, CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
         r.SourceLineId, r.SourceRole, c.MovementId, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
@@ -289,9 +296,12 @@ BEGIN
     WHERE w.FirstMovementAt IS NULL AND EXISTS (SELECT 1 FROM @Rows AS r WHERE r.WarehouseId = w.Id);
 
     SELECT r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase, r.UnitCost, r.CostAmount, r.IsForcedNegative,
-        t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed, r.RetailAmount, r.RetailVatAmount, r.RetailDischargeMethod
+        t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed, r.RetailAmount, r.RetailVatAmount,
+        CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END AS RetailDischargeMethod,
+        COALESCE(r.CostCenterId, w.DefaultCostCenterId) AS CostCenterId
     FROM @Rows AS r
     JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
+    JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
     LEFT JOIN inv.MovementReason AS mr ON mr.Id = r.ReasonId
     ORDER BY r.RowNo;
 END;

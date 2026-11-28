@@ -73,7 +73,7 @@ public sealed class RetailValuationStore(IDbSession session) : IRetailValuationS
         var r = await session.Connection.QuerySingleAsync<ComputeRow>(Command("inv.usp_RetailDischarge_Compute",
             new { CompanyId = companyId, WarehouseId = warehouseId, PeriodStart = Date(periodStart) }, ct)).ConfigureAwait(false);
         return new RetailDischargeData(new RetailDischargeInput(r.OpeningRetail, r.RetailIn, r.RetailOut, r.OpeningMarkup, r.MarkupIn, r.OpeningVat, r.VatIn,
-            r.SalesVat), r.AlreadyDischarged);
+            r.SalesVat), r.AlreadyDischarged, r.CostCenterId);
     }
 
     public Task<int> SaveDischargeAsync(int companyId, int warehouseId, DateOnly periodStart, string number, RetailDischargeInput input,
@@ -109,7 +109,7 @@ public sealed class RetailValuationStore(IDbSession session) : IRetailValuationS
         decimal? DiffAmount, decimal? DiffVatAmount, int LineCount);
 
     private sealed record ComputeRow(decimal OpeningRetail, decimal RetailIn, decimal RetailOut, decimal OpeningMarkup, decimal MarkupIn, decimal OpeningVat,
-        decimal VatIn, decimal SalesVat, bool AlreadyDischarged);
+        decimal VatIn, decimal SalesVat, bool AlreadyDischarged, int? CostCenterId);
 
     private sealed record DischargeRow(int Id, string Number, int WarehouseId, string WarehouseCode, int WarehouseDimensionId, DateTime PeriodStart,
         decimal OpeningRetail, decimal RetailIn, decimal RetailOut, decimal OpeningMarkup, decimal MarkupIn, decimal OpeningVat, decimal VatIn,
