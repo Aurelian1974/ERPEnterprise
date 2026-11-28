@@ -196,10 +196,14 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
 
     private static StockPostingOutcome Outcome(IReadOnlyList<Row> rows) =>
         new(rows.Select(r => new PostedStockMovement(r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase,
-            r.UnitCost, r.CostAmount, r.IsForcedNegative, r.MovementTypeCode, r.ReasonCode)).ToList(), rows.Count > 0 && rows.All(r => r.Replayed));
+            r.UnitCost, r.CostAmount, r.IsForcedNegative, r.MovementTypeCode, r.ReasonCode)
+        {
+            RetailAmount = r.RetailAmount, RetailVatAmount = r.RetailVatAmount, RetailDischargeMethod = r.RetailDischargeMethod,
+        }).ToList(), rows.Count > 0 && rows.All(r => r.Replayed));
 
     private sealed record Row(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
-        decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed);
+        decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed, decimal? RetailAmount,
+        decimal? RetailVatAmount, byte? RetailDischargeMethod);
 
     private sealed record KeyRow(int WarehouseId, int DepotKey, int ItemVariantId, int LotKey, decimal QtyOnHand, decimal CostOnHand, decimal? LastUnitCost,
         byte Method, decimal? FallbackUnitCost);

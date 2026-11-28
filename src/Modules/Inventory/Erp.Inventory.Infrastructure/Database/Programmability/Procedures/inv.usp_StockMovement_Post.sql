@@ -24,7 +24,7 @@ BEGIN
     --      (CostEngine, S3), a straturilor, consumurilor si regularizarilor, a soldului si a soldurilor pe zile;
     --   4. stocul negativ verificat la data miscarii si la toate datele ulterioare, din soldurile pe zile (54101, S2 regula 5); politica
     --      permisiva si faptele din afara ERP trec, cu marcajul IsForcedNegative.
-    -- Coduri: 54001, 54005, 54017, 54101, 54102, 54104, 54105, 54108, 54110, 54116.
+    -- Coduri: 54001, 54005, 54017, 54101, 54102, 54104, 54105, 54108, 54110, 54116, 54311.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -32,7 +32,8 @@ BEGIN
         RowNo int PRIMARY KEY, SourceLineId bigint, SourceRole tinyint, MovementTypeId smallint, Direction smallint, DepotId int, WarehouseId int,
         ItemVariantId int, QtyBase decimal(19,6), LotId int, SerialId int, CostCenterId int, ProjectId int, ReasonId int,
         CounterRowNo int, ReversalOfId bigint, NegativePolicy tinyint, UnitCost decimal(19,6), CostAmount decimal(19,2),
-        IsForcedNegative bit NOT NULL DEFAULT (0), MovementId bigint, PostingSeq bigint);
+        IsForcedNegative bit NOT NULL DEFAULT (0), MovementId bigint, PostingSeq bigint, RetailPrice decimal(19,6), RetailAmount decimal(19,2),
+        RetailVatAmount decimal(19,2), RetailDischargeMethod tinyint);
 
     INSERT INTO @Rows (RowNo, SourceLineId, SourceRole, MovementTypeId, Direction, DepotId, WarehouseId, ItemVariantId, QtyBase, LotId,
         SerialId, CostCenterId, ProjectId, ReasonId, CounterRowNo, ReversalOfId, UnitCost, CostAmount)
@@ -51,11 +52,14 @@ BEGIN
     IF @Existing = (SELECT COUNT(*) FROM @Rows)
     BEGIN
         SELECT m.Id AS MovementId, m.SourceLineId, m.SourceRole, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost, m.CostAmount,
-            m.IsForcedNegative, t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(1 AS bit) AS Replayed
+            m.IsForcedNegative, t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(1 AS bit) AS Replayed, m.RetailAmount, m.RetailVatAmount,
+            CAST(CASE WHEN w.ValuationBasis = 2 THEN COALESCE(w.RetailDischargeMethod, ss.RetailDischargeMethod, 1) END AS tinyint) AS RetailDischargeMethod
         FROM @Rows AS r
         JOIN inv.StockMovement AS m ON m.SourceModule = @SourceModule AND m.SourceLineId = r.SourceLineId AND m.SourceRole = r.SourceRole
             AND m.ReversalKey = ISNULL(r.ReversalOfId, 0)
         JOIN inv.MovementType AS t ON t.Id = m.MovementTypeId
+        JOIN inv.Warehouse AS w ON w.Id = m.WarehouseId
+        LEFT JOIN inv.StockSettings AS ss ON ss.CompanyId = @CompanyId
         LEFT JOIN inv.MovementReason AS mr ON mr.Id = m.ReasonId
         ORDER BY r.RowNo;
         RETURN;
@@ -107,6 +111,38 @@ BEGIN
     JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
     JOIN core.ItemVariant AS v ON v.Id = r.ItemVariantId
     LEFT JOIN inv.ItemStockSettings AS s ON s.CompanyId = @CompanyId AND s.ItemId = v.ItemId;
+
+    -- Gestiunile la pret cu amanuntul (S3 3.7): pretul in vigoare la data miscarii pe gestiune si varianta, valoarea cu amanuntul si TVA-ul
+    -- inclus (cota articolului); stornarea ia valorile originalului, cu semn opus. Fara pret in vigoare: 54311.
+    UPDATE r
+    SET RetailDischargeMethod = COALESCE(w.RetailDischargeMethod, ss.RetailDischargeMethod, 1), RetailPrice = p.Price,
+        RetailAmount = ROUND(r.QtyBase * p.Price, 2),
+        RetailVatAmount = ROUND(ROUND(r.QtyBase * p.Price, 2) * vr.[Percent] / (100 + vr.[Percent]), 2)
+    FROM @Rows AS r
+    JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId AND w.ValuationBasis = 2
+    LEFT JOIN inv.StockSettings AS ss ON ss.CompanyId = @CompanyId
+    JOIN core.ItemVariant AS v ON v.Id = r.ItemVariantId
+    JOIN core.Item AS i ON i.Id = v.ItemId
+    JOIN core.VatRate AS vr ON vr.Id = i.DefaultVatRateId
+    OUTER APPLY (SELECT TOP (1) x.Price FROM inv.RetailPrice AS x
+                 WHERE x.WarehouseId = r.WarehouseId AND x.ItemVariantId = r.ItemVariantId AND x.ValidFrom <= @MovementDate
+                 ORDER BY x.ValidFrom DESC) AS p;
+
+    UPDATE r SET RetailPrice = m.RetailPrice, RetailAmount = -m.RetailAmount, RetailVatAmount = -m.RetailVatAmount
+    FROM @Rows AS r
+    JOIN inv.StockMovement AS m ON m.Id = r.ReversalOfId
+    WHERE r.RetailDischargeMethod IS NOT NULL;
+    UPDATE @Rows SET RetailPrice = NULL, RetailAmount = NULL, RetailVatAmount = NULL WHERE RetailPrice IS NULL OR RetailAmount IS NULL;
+
+    IF EXISTS (SELECT 1 FROM @Rows WHERE RetailDischargeMethod IS NOT NULL AND RetailPrice IS NULL AND ReversalOfId IS NULL)
+    BEGIN
+        DECLARE @NoPrice nvarchar(400);
+        SELECT TOP (1) @NoPrice = CONCAT(N'Varianta ', v.Code, N' nu are preț cu amănuntul în gestiunea ', w.Code, N' la ',
+            CONVERT(nvarchar(10), @MovementDate, 104), N'; stabiliți prețul cu un document de modificare de preț (MP).')
+        FROM @Rows AS r JOIN core.ItemVariant AS v ON v.Id = r.ItemVariantId JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
+        WHERE r.RetailDischargeMethod IS NOT NULL AND r.RetailPrice IS NULL AND r.ReversalOfId IS NULL;
+        THROW 54311, @NoPrice, 1;
+    END;
 
     -- 3. Randurile de sold: create daca lipsesc, apoi blocate in ordinea cheii.
     INSERT INTO inv.Stock (CompanyId, WarehouseId, DepotId, ItemVariantId, LotId)
@@ -176,11 +212,12 @@ BEGIN
     -- Miscarile: intai cele fara pereche, apoi intrarile transferurilor, cu CounterMovementId spre iesirea lor.
     DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint);
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
-        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, ReasonId, PartnerId, CostCenterId, ProjectId, EmployeeId, SourceModule,
-        SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
+        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, ReasonId, PartnerId, CostCenterId, ProjectId,
+        EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
     OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
-        NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.ReasonId,
+        NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
+        r.RetailAmount, r.RetailVatAmount, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
         r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
@@ -189,11 +226,13 @@ BEGIN
 
     DELETE FROM @Inserted;
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
-        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, ReasonId, PartnerId, CostCenterId, ProjectId, EmployeeId, SourceModule,
-        SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, CounterMovementId, ReversalOfId, IsForcedNegative, CreatedBy)
+        MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, ReasonId, PartnerId, CostCenterId, ProjectId,
+        EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, CounterMovementId, ReversalOfId,
+        IsForcedNegative, CreatedBy)
     OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
-        NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.ReasonId,
+        NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
+        r.RetailAmount, r.RetailVatAmount, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
         r.SourceLineId, r.SourceRole, c.MovementId, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
@@ -239,12 +278,18 @@ BEGIN
     JOIN @KeyStates AS k ON k.WarehouseId = s.WarehouseId AND ISNULL(k.DepotId, 0) = s.DepotKey AND k.ItemVariantId = s.ItemVariantId
         AND ISNULL(k.LotId, 0) = s.LotKey;
 
+    UPDATE s SET RetailValueOnHand = s.RetailValueOnHand + x.Amount
+    FROM inv.Stock AS s
+    JOIN (SELECT WarehouseId, ISNULL(DepotId, 0) AS DepotKey, ItemVariantId, ISNULL(LotId, 0) AS LotKey, SUM(RetailAmount) AS Amount
+          FROM @Rows WHERE RetailAmount IS NOT NULL GROUP BY WarehouseId, ISNULL(DepotId, 0), ItemVariantId, ISNULL(LotId, 0)) AS x
+        ON x.WarehouseId = s.WarehouseId AND x.DepotKey = s.DepotKey AND x.ItemVariantId = s.ItemVariantId AND x.LotKey = s.LotKey;
+
     UPDATE w SET FirstMovementAt = SYSUTCDATETIME()
     FROM inv.Warehouse AS w
     WHERE w.FirstMovementAt IS NULL AND EXISTS (SELECT 1 FROM @Rows AS r WHERE r.WarehouseId = w.Id);
 
     SELECT r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase, r.UnitCost, r.CostAmount, r.IsForcedNegative,
-        t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed
+        t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed, r.RetailAmount, r.RetailVatAmount, r.RetailDischargeMethod
     FROM @Rows AS r
     JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
     LEFT JOIN inv.MovementReason AS mr ON mr.Id = r.ReasonId

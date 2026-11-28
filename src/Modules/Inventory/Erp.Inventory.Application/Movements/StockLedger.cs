@@ -8,7 +8,15 @@ namespace Erp.Inventory.Application.Movements;
 public sealed record StockPostingOutcome(IReadOnlyList<PostedStockMovement> Movements, bool Replayed);
 
 public sealed record PostedStockMovement(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
-    decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode);
+    decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode)
+{
+    /// <summary>Gestiunile la pret cu amanuntul (S3 3.7): valoarea cu amanuntul (cu TVA), TVA-ul inclus si metoda de descarcare.</summary>
+    public decimal? RetailAmount { get; init; }
+
+    public decimal? RetailVatAmount { get; init; }
+
+    public byte? RetailDischargeMethod { get; init; }
+}
 
 /// <summary>Setarile de data ale firmei (S1 3.3), citite la fiecare inregistrare.</summary>
 public sealed record BackdatingSettings(short BackdatingDays, bool BackdatingWithRight);
@@ -172,7 +180,10 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
     {
         await outbox.EnqueueAsync(new MiscareStocValidata(module, documentType, documentId, number, movementDate, accountingDate, reversal,
             outcome.Movements.Select(m => new StockMovementEventLine(m.MovementId, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost,
-                m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
+                m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)
+            {
+                RetailAmount = m.RetailAmount, RetailVatAmount = m.RetailVatAmount, RetailDischargeMethod = m.RetailDischargeMethod,
+            }).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
         foreach (var forced in outcome.Movements.Where(m => m.IsForcedNegative))
         {
             await outbox.EnqueueAsync(new StocNegativFortat(forced.WarehouseId, forced.ItemVariantId, forced.MovementId, module, documentId)

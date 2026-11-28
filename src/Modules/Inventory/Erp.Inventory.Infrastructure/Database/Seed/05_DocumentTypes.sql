@@ -12,7 +12,9 @@ USING (VALUES
     (N'Inventory.ProductionNote', N'Inventory', N'Notă de predare produse',  0),
     (N'Inventory.CustodyIn',      N'Inventory', N'Intrare în custodie',      0),
     (N'Inventory.CustodyOut',     N'Inventory', N'Ieșire din custodie',      0),
-    (N'Inventory.LandedCost',     N'Inventory', N'Costuri adăugate (CA)',    0)
+    (N'Inventory.LandedCost',     N'Inventory', N'Costuri adăugate (CA)',    0),
+    (N'Inventory.RetailPriceChange', N'Inventory', N'Modificare de preț (MP)', 0),
+    (N'Inventory.RetailDischarge', N'Inventory', N'Descărcare la preț cu amănuntul (DA)', 0)
 ) AS source (Code, ModuleCode, Name, IsFiscalDefault)
 ON target.Code = source.Code
 WHEN MATCHED AND (target.Name <> source.Name OR target.IsFiscalDefault <> source.IsFiscalDefault) THEN

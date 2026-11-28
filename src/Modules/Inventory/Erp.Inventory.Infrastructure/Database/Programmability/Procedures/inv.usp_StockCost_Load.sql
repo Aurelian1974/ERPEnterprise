@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE inv.usp_StockCost_Load
 AS
 BEGIN
     -- Starea de cost a cheilor unui apel (02.05, S3 4.1), in tranzactia apelantului: randurile de sold create daca lipsesc si blocate in ordinea
-    -- cheii (UPDLOCK, SP-16), metoda (a modelului pe firma; gestiunile la pret cu amanuntul la cost mediu pana la S3.3), costul de rezerva (media
+    -- cheii (UPDLOCK, SP-16), metoda (a modelului pe firma; gestiunile la pret cu amanuntul cu descarcarea prin K la cost mediu, S3 3.7), costul de rezerva (media
     -- variantei in firma, apoi costul standard), straturile deschise si, pentru stornari, miscarile stornate cu consumurile si stratul lor.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -25,7 +25,7 @@ BEGIN
     ORDER BY s.WarehouseId, s.DepotKey, s.ItemVariantId, s.LotKey;
 
     SELECT s.WarehouseId, s.DepotKey, s.ItemVariantId, s.LotKey, s.QtyOnHand, s.CostOnHand, s.LastUnitCost,
-        CAST(CASE WHEN w.ValuationBasis = 2 THEN 2 ELSE COALESCE(iss.ValuationMethod, ss.DefaultValuationMethod, 2) END AS tinyint) AS Method,
+        CAST(CASE WHEN w.ValuationBasis = 2 AND COALESCE(w.RetailDischargeMethod, ss.RetailDischargeMethod, 1) = 1 THEN 2 ELSE COALESCE(iss.ValuationMethod, ss.DefaultValuationMethod, 2) END AS tinyint) AS Method,
         COALESCE((SELECT SUM(x.CostOnHand) / NULLIF(SUM(x.QtyOnHand), 0) FROM inv.Stock AS x
                   WHERE x.CompanyId = @CompanyId AND x.ItemVariantId = s.ItemVariantId AND x.QtyOnHand > 0), iss.StandardCost) AS FallbackUnitCost
     FROM inv.Stock AS s

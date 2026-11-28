@@ -24,6 +24,7 @@ public static class InventoryApiRegistration
         MapDepots(inventory);
         MapDocuments(inventory);
         MapLandedCosts(inventory);
+        MapRetail(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -157,6 +158,35 @@ public static class InventoryApiRegistration
         inventory.MapPost("/landed-costs/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new CancelLandedCost(id, body.RowVersion), ct))
             .WithName("CancelLandedCost").Saves();
+    }
+
+    // Stocuri › Pret cu amanuntul: modificarile de pret (MP), descarcarea lunara (DA), metoda de descarcare (02.05, S3 3.7; s3-03, s3-04).
+    private static void MapRetail(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/retail-price-changes", ([AsParameters] GetRetailPriceChanges query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetRetailPriceChanges").Produces<IReadOnlyList<RetailPriceChangeItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapGet("/retail-price-changes/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetRetailPriceChange(id), ct))
+            .WithName("GetRetailPriceChange").Produces<RetailPriceChangeDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/retail-price-changes", (SaveRetailPriceChange body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateRetailPriceChange").Saves();
+        inventory.MapPut("/retail-price-changes/{id:int}", (int id, SaveRetailPriceChange body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateRetailPriceChange").Saves();
+        inventory.MapPost("/retail-price-changes/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateRetailPriceChange(id, body.RowVersion), ct))
+            .WithName("ValidateRetailPriceChange").Saves();
+        inventory.MapPost("/retail-price-changes/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelRetailPriceChange(id, body.RowVersion), ct))
+            .WithName("CancelRetailPriceChange").Saves();
+        inventory.MapGet("/retail-discharges", ([AsParameters] GetRetailDischarges query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetRetailDischarges").Produces<IReadOnlyList<RetailDischargeDto>>();
+        inventory.MapGet("/retail-discharges/simulate", ([AsParameters] SimulateRetailDischarge query, ISender sender, CancellationToken ct) =>
+                sender.Send(query, ct))
+            .WithName("SimulateRetailDischarge").Produces<RetailDischargeDto>().ProducesProblem(StatusCodes.Status409Conflict);
+        inventory.MapPost("/retail-discharges", (ValidateRetailDischarge body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ValidateRetailDischarge").Produces<RetailDischargeDto>().ProducesProblem(StatusCodes.Status409Conflict);
+        inventory.MapPut("/retail-discharge-method", (SetRetailDischargeMethod body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SetRetailDischargeMethod").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

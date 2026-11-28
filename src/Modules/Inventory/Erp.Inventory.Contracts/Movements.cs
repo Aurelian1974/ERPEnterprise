@@ -4,7 +4,18 @@ namespace Erp.Inventory.Contracts;
 
 /// <summary>O miscare inregistrata, in evenimentul MiscareStocValidata (S2 5.1).</summary>
 public sealed record StockMovementEventLine(long MovementId, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase, decimal UnitCost,
-    decimal CostAmount, string MovementTypeCode, string? ReasonCode, bool IsForcedNegative);
+    decimal CostAmount, string MovementTypeCode, string? ReasonCode, bool IsForcedNegative)
+{
+    /// <summary>
+    /// Gestiunile la pret cu amanuntul (S3 3.7): valoarea cu amanuntul cu TVA (371), TVA-ul inclus (4428) si metoda de descarcare: 1 = C2 conteaza
+    /// iesirea la pret cu amanuntul (607 = 371), costul il da documentul DA; 2 = trei linii, costul, adaosul (pret fara TVA − cost) si TVA-ul.
+    /// </summary>
+    public decimal? RetailAmount { get; init; }
+
+    public decimal? RetailVatAmount { get; init; }
+
+    public byte? RetailDischargeMethod { get; init; }
+}
 
 /// <summary>
 /// Validarea sau stornarea oricarui document de stoc si miscarile venite prin port (S2 5.1). Consumatori: Finante (C2, contarea; blocul
@@ -51,3 +62,19 @@ public sealed record CostAdjustmentEventLine(int WarehouseId, int ItemVariantId,
 /// </summary>
 public sealed record CostStocAjustat(byte AdjustmentKind, string SourceModule, string SourceDocumentType, long SourceDocumentId, DateOnly AccountingDate,
     IReadOnlyList<CostAdjustmentEventLine> Lines) : IntegrationEvent;
+
+/// <summary>O linie a modificarii de pret: stocul la validare, preturile si diferenta cu TVA-ul inclus.</summary>
+public sealed record RetailPriceChangeEventLine(int ItemVariantId, decimal Qty, decimal? OldPrice, decimal NewPrice, decimal DiffAmount, decimal DiffVatAmount);
+
+/// <summary>
+/// Validarea documentului MP (S3 5.1): C2 conteaza diferenta pe 371 fata de 378 (adaosul) si 4428 (TVA-ul); POS ia preturile noi ale casei.
+/// </summary>
+public sealed record ModificarePretAmanuntValidata(int WarehouseId, int DocumentId, string Number, DateOnly DocumentDate,
+    IReadOnlyList<RetailPriceChangeEventLine> Lines) : IntegrationEvent;
+
+/// <summary>
+/// Validarea documentului DA (S3 5.1): descarcarea lunara prin K a unei gestiuni la pret cu amanuntul; C2 face 378 = 607 (adaosul) si
+/// 4428 = 607 (TVA-ul vanzarilor).
+/// </summary>
+public sealed record DescarcareAmanuntValidata(int WarehouseId, int DocumentId, string Number, DateOnly PeriodStart, DateOnly AccountingDate, decimal K,
+    decimal SalesNet, decimal Markup, decimal SalesVat, decimal Cost) : IntegrationEvent;

@@ -26,6 +26,7 @@ public static class InventoryInfrastructureRegistration
         services.AddTransient<Movements.CostRecalcJob>();
         services.AddScoped<Application.Costing.ILandedCostStore, Costing.LandedCostStore>();
         services.AddScoped<Application.Costing.LandedCostService>();
+        services.AddScoped<Application.Costing.IRetailValuationStore, Costing.RetailValuationStore>();
         services.AddScoped<Application.Documents.IStockDocumentStore, Documents.StockDocumentStore>();
         services.AddScoped<Application.Documents.TransferService>();
         services.AddScoped<Application.Movements.IStockMovementQueries, Movements.StockMovementQueries>();
@@ -92,6 +93,12 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54302] = (ErpErrorKind.Conflict, "INV_COST_REVERSAL_LAYER_CONSUMED"),
         [54303] = (ErpErrorKind.Validation, "INV_LANDED_COST_TARGET_INVALID"),
         [54304] = (ErpErrorKind.Validation, "INV_LANDED_COST_ALLOCATION_MISMATCH"),
+        [54307] = (ErpErrorKind.Conflict, "INV_RETAIL_DISCHARGE_EXISTS"),
         [54308] = (ErpErrorKind.Conflict, "INV_RECALC_PENDING"),
+        [54311] = (ErpErrorKind.Validation, "INV_RETAIL_PRICE_MISSING"),
+        [54312] = (ErpErrorKind.Validation, "INV_RETAIL_WAREHOUSE_REQUIRED"),
+        [54313] = (ErpErrorKind.Conflict, "INV_RETAIL_PRICE_CHANGE_BACKDATED"),
+        [54314] = (ErpErrorKind.Conflict, "INV_RETAIL_DISCHARGE_NOT_APPLICABLE"),
+        [54315] = (ErpErrorKind.Conflict, "INV_RETAIL_METHOD_CHANGE_NOT_ALLOWED"),
     };
 }

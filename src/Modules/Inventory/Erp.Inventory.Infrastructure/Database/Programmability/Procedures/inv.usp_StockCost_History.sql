@@ -15,7 +15,7 @@ BEGIN
                               WHERE WarehouseId = @WarehouseId AND DepotKey = ISNULL(@DepotId, 0) AND ItemVariantId = @ItemVariantId
                                 AND LotKey = ISNULL(@LotId, 0));
 
-    SELECT CAST(CASE WHEN w.ValuationBasis = 2 THEN 2 ELSE COALESCE(iss.ValuationMethod, ss.DefaultValuationMethod, 2) END AS tinyint) AS Method,
+    SELECT CAST(CASE WHEN w.ValuationBasis = 2 AND COALESCE(w.RetailDischargeMethod, ss.RetailDischargeMethod, 1) = 1 THEN 2 ELSE COALESCE(iss.ValuationMethod, ss.DefaultValuationMethod, 2) END AS tinyint) AS Method,
         iss.StandardCost AS FallbackUnitCost
     FROM inv.Warehouse AS w
     JOIN core.ItemVariant AS v ON v.Id = @ItemVariantId
