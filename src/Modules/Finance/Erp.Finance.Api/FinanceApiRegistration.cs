@@ -1,11 +1,16 @@
 using Erp.Core.Contracts;
 using Erp.Finance.Application;
+using Erp.Finance.Application.Accounting;
+using Erp.Finance.Application.Reporting;
 using Erp.Finance.Application.Accounts;
 using Erp.Finance.Application.Bank;
+using Erp.Finance.Application.Declarations;
 using Erp.Finance.Application.Fx;
+using Erp.Finance.Application.Periods;
 using Erp.Finance.Application.Planning;
 using Erp.Finance.Domain.Planning;
 using Erp.Finance.Application.Settlement;
+using Erp.Finance.Contracts.Accounting;
 using Erp.Finance.Contracts.Settlement;
 using Erp.Finance.Application.Treasury;
 using MediatR;
@@ -368,10 +373,261 @@ public static class FinanceApiRegistration
         finance.MapPut("/gl-accounts/{id:int}/dimension-rules", (int id, SaveGlAccountDimensionRules body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { AccountId = id }, ct))
             .WithName("SaveGlAccountDimensionRules").Produces<bool>().Problems();
+        // Planurile alternative si regulile de mapare (C1 3.5, 4.2, 4.5; machetele c1-02…c1-04).
+        finance.MapGet("/charts/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetAltChart(id), ct))
+            .WithName("GetAltChart").Produces<AltChartDto>().Problems();
+        finance.MapPost("/charts", (SaveAltChart body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateAltChart").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}", (int id, SaveAltChart body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateAltChart").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/charts/{id:int}/accounts", (int id, SaveAltGlAccount body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ChartId = id }, ct))
+            .WithName("CreateAltGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/accounts/{accountId:int}", (int id, int accountId, SaveAltGlAccount body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = accountId, ChartId = id }, ct))
+            .WithName("UpdateAltGlAccount").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/charts/{id:int}/accounts/import", (int id, ImportAltGlAccounts body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("ImportAltGlAccounts").Produces<GlAccountImportDto>().Problems();
+        finance.MapGet("/charts/{id:int}/rules", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetMappingRules(id), ct))
+            .WithName("GetMappingRules").Produces<IReadOnlyList<MappingRuleDto>>().Problems();
+        finance.MapPost("/charts/{id:int}/rules", (int id, SaveMappingRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = null, ChartId = id }, ct))
+            .WithName("CreateMappingRule").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/rules/{ruleId:int}", (int id, int ruleId, SaveMappingRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = ruleId, ChartId = id }, ct))
+            .WithName("UpdateMappingRule").Produces<FinanceSaved>().Problems();
+        finance.MapPut("/charts/{id:int}/rules/order", (int id, ReorderMappingRules body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("ReorderMappingRules").Produces<bool>().Problems();
+        finance.MapGet("/charts/{id:int}/simulate", (int id, string accountCode, byte? side, int? partnerId, int? costCenterId, int? projectId,
+                int? warehouseId, int? siteId, int? itemGroupId, string? currencyCode, DateOnly? onDate, ISender sender, CancellationToken ct) =>
+                sender.Send(new SimulateMapping(id, accountCode, side ?? 0, partnerId, costCenterId, projectId, warehouseId, siteId, itemGroupId, currencyCode,
+                    onDate), ct))
+            .WithName("SimulateMapping").Produces<SimulationDto>().Problems();
+        finance.MapGet("/charts/{id:int}/check", (int id, ISender sender, CancellationToken ct) => sender.Send(new CheckMapping(id), ct))
+            .WithName("CheckMapping").Produces<MappingCheckDto>().Problems();
+        // Rezultatul maparii (C1 3.6, 4.4, 4.5): recalcularea, inghetarea lunilor si nemapatele.
+        finance.MapGet("/charts/{id:int}/recalculation", (int id, DateOnly from, DateOnly to, ISender sender, CancellationToken ct) =>
+                sender.Send(new PreviewAltRecalculation(id, from, to), ct))
+            .WithName("PreviewAltRecalculation").Produces<IReadOnlyList<AltMonthDto>>().Problems();
+        finance.MapPost("/charts/{id:int}/recalculation", (int id, RecalculateAltMapping body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("RecalculateAltMapping").Produces<AltRecalculationDto>().Problems();
+        finance.MapPost("/charts/{id:int}/freeze", (int id, SetAltPeriodFrozen body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { ChartId = id }, ct))
+            .WithName("SetAltPeriodFrozen").Produces<bool>().Problems();
+        finance.MapGet("/charts/{id:int}/unmapped", (int id, DateOnly from, DateOnly to, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetUnmappedAccounts(id, from, to), ct))
+            .WithName("GetUnmappedAccounts").Produces<IReadOnlyList<UnmappedAccountDto>>().Problems();
         finance.MapGet("/gl-account-roles", (ISender sender, CancellationToken ct) => sender.Send(new GetGlAccountRoles(), ct))
             .WithName("GetGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
         finance.MapPut("/gl-account-roles", (SaveGlAccountRoles body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SaveGlAccountRoles").Produces<IReadOnlyList<RoleAssignmentDto>>().Problems();
+        // Perioadele contabile (C3 3.1, 3.2; macheta c3-01).
+        finance.MapGet("/periods", (ISender sender, CancellationToken ct) => sender.Send(new GetAccountingPeriods(), ct))
+            .WithName("GetAccountingPeriods").Produces<IReadOnlyList<FiscalYearDto>>().Problems();
+        finance.MapGet("/periods/{id:int}/history", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodHistory(id), ct))
+            .WithName("GetPeriodHistory").Produces<IReadOnlyList<PeriodHistoryDto>>().Problems();
+        finance.MapPost("/fiscal-years", (CreateFiscalYear body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CreateFiscalYear").Produces<int>().Problems();
+        finance.MapPost("/periods/{id:int}/soft-close", (int id, SoftClosePeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SoftClosePeriod").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/periods/{id:int}/close", (int id, ClosePeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ClosePeriod").Produces<FinanceSaved>().Problems();
+        finance.MapPost("/periods/{id:int}/reopen", (int id, ReopenPeriod body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ReopenPeriod").Produces<FinanceSaved>().Problems();
+        // Notele contabile (C2 3.5, 3.8, 4.3, 4.5; machetele c2-01, c2-02).
+        finance.MapGet("/journals", (ISender sender, CancellationToken ct) => sender.Send(new GetJournals(), ct))
+            .WithName("GetJournals").Produces<IReadOnlyList<JournalDto>>().Problems();
+        finance.MapGet("/journal-entries", (DateOnly from, DateOnly to, int? journalId, EntrySourceKind? sourceKind, byte? status, string? accountCode,
+                string? search, int? skip, int? take, ISender sender, CancellationToken ct) =>
+                sender.Send(new SearchJournalEntries(from, to, journalId, sourceKind, status, accountCode, search, skip ?? 0, take ?? 100), ct))
+            .WithName("SearchJournalEntries").Produces<JournalEntryPageDto>().Problems();
+        finance.MapGet("/journal-entries/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new GetJournalEntry(id), ct))
+            .WithName("GetJournalEntry").Produces<JournalEntryDto>().Problems();
+        finance.MapPost("/journal-entries", (SaveManualEntry body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapPut("/journal-entries/{id:long}", (long id, SaveManualEntry body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapPost("/journal-entries/{id:long}/validate", (long id, ValidateManualEntry body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ValidateManualEntry").Produces<EntrySaved>().Problems();
+        finance.MapDelete("/journal-entries/{id:long}", (long id, ISender sender, CancellationToken ct) => sender.Send(new DeleteManualEntry(id), ct))
+            .WithName("DeleteManualEntry").Produces<bool>().Problems();
+        finance.MapPost("/journal-entries/{id:long}/reverse", (long id, ReverseJournalEntry body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ReverseJournalEntry").Produces<EntrySaved>().Problems();
+        // Coada „De contat” si recontarea (C2 3.7, 4.4, 4.6; macheta c2-04).
+        finance.MapGet("/posting-queue", (byte? status, ISender sender, CancellationToken ct) => sender.Send(new GetPostingQueue(status), ct))
+            .WithName("GetPostingQueue").Produces<IReadOnlyList<PostingQueueItemDto>>().Problems();
+        finance.MapPost("/posting-queue/retry", (RetryPostingQueue body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RetryPostingQueue").Produces<PostingRetryDto>().Problems();
+        finance.MapPost("/posting-queue/{id:long}/ignore", (long id, IgnorePostingQueueItem body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("IgnorePostingQueueItem").Produces<bool>().Problems();
+        finance.MapGet("/repost/preview", (DateOnly from, DateOnly to, string? eventType, ISender sender, CancellationToken ct) =>
+                sender.Send(new PreviewRepost(from, to, eventType), ct))
+            .WithName("PreviewRepost").Produces<IReadOnlyList<RepostChangeDto>>().Problems();
+        finance.MapPost("/repost", (RepostEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RepostEntries").Produces<int>().Problems();
+        // Modelele de contare (C2 3.2, 4.2; macheta c2-03).
+        finance.MapGet("/posting-models", (ISender sender, CancellationToken ct) => sender.Send(new GetPostingModels(), ct))
+            .WithName("GetPostingModels").Produces<IReadOnlyList<PostingModelItemDto>>().Problems();
+        finance.MapGet("/posting-models/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPostingModel(id), ct))
+            .WithName("GetPostingModel").Produces<PostingModelDto>().Problems();
+        finance.MapPut("/posting-variants/{id:int}/lines", (int id, SavePostingVariantLines body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { VariantId = id }, ct))
+            .WithName("SavePostingVariantLines").Produces<byte[]>().Problems();
+        finance.MapGet("/journal-entries/{id:long}/simulation", (long id, ISender sender, CancellationToken ct) => sender.Send(new SimulatePosting(id), ct))
+            .WithName("SimulatePosting").Produces<PostingSimulationDto>().Problems();
+        // Balanta, fisa contului si cartea mare (C5 3.2, 3.3; machetele c5-01, c5-02).
+        finance.MapGet("/reports/trial-balance", (DateOnly from, DateOnly to, byte? level, int? chartId, bool? includeClosingEntries, string? accountFilter,
+                bool? byPartner, bool? byCostCenter, bool? byProject, ISender sender, CancellationToken ct) =>
+                sender.Send(new RunTrialBalance(from, to, level ?? 3, chartId, includeClosingEntries ?? true, accountFilter, byPartner ?? false, byCostCenter ?? false,
+                    byProject ?? false), ct))
+            .WithName("RunTrialBalance").Produces<TrialBalanceDto>().Problems();
+        finance.MapGet("/reports/account-ledger", (string accountCode, DateOnly from, DateOnly to, int? partnerId, int? costCenterId, int? projectId,
+                bool? includeClosingEntries, int? skip, int? take, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetAccountLedger(accountCode, from, to, partnerId, costCenterId, projectId, includeClosingEntries ?? true, skip ?? 0, take ?? 500), ct))
+            .WithName("GetAccountLedger").Produces<AccountLedgerDto>().Problems();
+        finance.MapGet("/reports/general-ledger", (int year, int month, ISender sender, CancellationToken ct) => sender.Send(new GetGeneralLedger(year, month), ct))
+            .WithName("GetGeneralLedger").Produces<IReadOnlyList<GeneralLedgerAccountDto>>().Problems();
+        // Lista de verificari la inchiderea lunii (C3 3.3, 4.1; macheta c3-02).
+        finance.MapGet("/reconciliation", (DateOnly asOf, ISender sender, CancellationToken ct) => sender.Send(new GetReconciliation(asOf), ct))
+            .WithName("GetReconciliation").Produces<IReadOnlyList<ReconciliationRowDto>>().Problems();
+        // Inchiderea anului (C3 3.6, 4.3; macheta c3-05).
+        finance.MapGet("/fiscal-years/{year:int}/close", (int year, ISender sender, CancellationToken ct) => sender.Send(new GetYearClose(year), ct))
+            .WithName("GetYearClose").Produces<YearCloseDto>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/legal-reserve", (int year, PostLegalReserve body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("PostLegalReserve").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/close", (int year, ISender sender, CancellationToken ct) => sender.Send(new CloseFiscalYear(year), ct))
+            .WithName("CloseFiscalYear").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/lock", (int year, ISender sender, CancellationToken ct) => sender.Send(new LockFiscalYear(year), ct))
+            .WithName("LockFiscalYear").Produces<bool>().Problems();
+        finance.MapPost("/fiscal-years/{year:int}/unlock", (int year, UnlockFiscalYear body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("UnlockFiscalYear").Produces<bool>().Problems();
+        // Registrul si jurnalele de TVA (C4 3.1; macheta c4-03).
+        finance.MapGet("/vat-journal", (int year, int month, byte direction, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetVatJournal(year, month, direction), ct))
+            .WithName("GetVatJournal").Produces<VatJournalDto>().Problems();
+        // Declaratiile si calendarul fiscal (C4 3.3, 3.7, 4.1; machetele c4-01, c4-02).
+        finance.MapGet("/tax-calendar", (DateOnly from, DateOnly to, ISender sender, CancellationToken ct) => sender.Send(new GetTaxCalendar(from, to), ct))
+            .WithName("GetTaxCalendar").Produces<IReadOnlyList<TaxCalendarItemDto>>().Problems();
+        finance.MapPost("/tax-calendar", (GenerateTaxCalendar body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateTaxCalendar").Produces<int>().Problems();
+        finance.MapPost("/tax-returns", (CalculateTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("CalculateTaxReturn").Produces<int>().Problems();
+        finance.MapGet("/tax-returns", (string formCode, DateOnly periodFrom, ISender sender, CancellationToken ct) => sender.Send(new FindTaxReturn(formCode, periodFrom), ct))
+            .WithName("FindTaxReturn").Produces<int?>().Problems();
+        finance.MapGet("/tax-returns/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetTaxReturn(id), ct))
+            .WithName("GetTaxReturn").Produces<TaxReturnDto>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/verify", (int id, VerifyTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("VerifyTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/generate", (int id, GenerateTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("GenerateTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/submit", (int id, SubmitTaxReturn body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("SubmitTaxReturn").Produces<byte[]>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/precompleted", (int id, ImportPrecompletedVat body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ImportPrecompletedVat").Produces<IReadOnlyList<TaxComparisonDto>>().Problems();
+        finance.MapPost("/tax-returns/{id:int}/explain", (int id, ExplainTaxDifference body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ExplainTaxDifference").Produces<bool>().Problems();
+        finance.MapGet("/tax-return-files/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new DownloadTaxReturnFile(id), ct))
+            .WithName("DownloadTaxReturnFile").Produces<DownloadedFile>().Problems();
+        finance.MapGet("/saft-checks", (DateOnly from, DateOnly to, ISender sender, CancellationToken ct) => sender.Send(new GetSaftChecks(from, to), ct))
+            .WithName("GetSaftChecks").Produces<IReadOnlyList<SaftIssueDto>>().Problems();
+        // Impozitul pe profit (C4 3.6, 4.4; macheta c4-05).
+        finance.MapGet("/profit-tax/{year:int}/{quarter:int}", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetProfitTax(year, quarter), ct))
+            .WithName("GetProfitTax").Produces<ProfitTaxDto>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/calculate", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new CalculateProfitTax(year, quarter), ct))
+            .WithName("CalculateProfitTax").Produces<int>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/manual-row", (int year, byte quarter, SetProfitTaxManualRow body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year, Quarter = quarter }, ct))
+            .WithName("SetProfitTaxManualRow").Produces<int>().Problems();
+        finance.MapPost("/profit-tax/{year:int}/{quarter:int}/post", (int year, byte quarter, ISender sender, CancellationToken ct) =>
+                sender.Send(new PostProfitTax(year, quarter), ct))
+            .WithName("PostProfitTax").Produces<long?>().Problems();
+        // Rapoartele definite (C5 3.5; macheta c5-03).
+        finance.MapGet("/report-definitions", (ISender sender, CancellationToken ct) => sender.Send(new GetReportDefinitions(), ct))
+            .WithName("GetReportDefinitions").Produces<IReadOnlyList<ReportDefinitionItemDto>>().Problems();
+        finance.MapGet("/report-definitions/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetReportDefinition(id), ct))
+            .WithName("GetReportDefinition").Produces<ReportDefinitionDto>().Problems();
+        finance.MapPost("/report-definitions", (SaveReportDefinition body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateReportDefinition").Produces<int>().Problems();
+        finance.MapPut("/report-definitions/{id:int}", (int id, SaveReportDefinition body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateReportDefinition").Produces<int>().Problems();
+        finance.MapGet("/report-definitions/{id:int}/run", (int id, DateOnly from, DateOnly to, DateOnly? previousFrom, DateOnly? previousTo, ISender sender,
+                CancellationToken ct) => sender.Send(new RunReport(id, from, to, previousFrom, previousTo), ct))
+            .WithName("RunReport").Produces<ReportResultDto>().Problems();
+        // Situatiile financiare (C5 3.6, 4.2; macheta c5-04).
+        finance.MapGet("/financial-statements/{year:int}", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetFinancialStatements(year, kind ?? 1), ct))
+            .WithName("GetFinancialStatements").Produces<FinancialStatementDto>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/calculate", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new CalculateFinancialStatements(year, kind ?? 1), ct))
+            .WithName("CalculateFinancialStatements").Produces<int>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/generate", (int year, GenerateFinancialStatements body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("GenerateFinancialStatements").Produces<byte[]>().Problems();
+        finance.MapPost("/financial-statements/{year:int}/submit", (int year, SubmitFinancialStatements body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Year = year }, ct))
+            .WithName("SubmitFinancialStatements").Produces<byte[]>().Problems();
+        finance.MapGet("/financial-statements/{year:int}/file", (int year, byte? kind, ISender sender, CancellationToken ct) =>
+                sender.Send(new DownloadFinancialStatements(year, kind ?? 1), ct))
+            .WithName("DownloadFinancialStatements").Produces<DownloadedFile>().Problems();
+        // Registrul inventar (C5 3.4).
+        finance.MapGet("/inventory-register/{year:int}", (int year, ISender sender, CancellationToken ct) => sender.Send(new GetInventoryRegister(year), ct))
+            .WithName("GetInventoryRegister").Produces<InventoryRegisterDto>().Problems();
+        finance.MapPost("/inventory-register/{year:int}", (int year, ISender sender, CancellationToken ct) => sender.Send(new GenerateInventoryRegister(year), ct))
+            .WithName("GenerateInventoryRegister").Produces<int>().Problems();
+        finance.MapGet("/inventory-register/{year:int}/pdf", (int year, ISender sender, CancellationToken ct) => sender.Send(new DownloadInventoryRegister(year), ct))
+            .WithName("DownloadInventoryRegister").Produces<DownloadedFile>().Problems();
+        // Balanta de grup (C5 3.7, 4.3; macheta c5-05).
+        finance.MapPost("/group-balance", (RunGroupBalance body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RunGroupBalance").Produces<int>().Problems();
+        finance.MapGet("/group-balance/{runId:int}", (int runId, ISender sender, CancellationToken ct) => sender.Send(new GetGroupBalance(runId), ct))
+            .WithName("GetGroupBalance").Produces<GroupBalanceDto>().Problems();
+        finance.MapGet("/intercompany-differences", (int chartId, int year, int month, ISender sender, CancellationToken ct) =>
+                sender.Send(new GetIntercompanyDifferences(chartId, year, month), ct))
+            .WithName("GetIntercompanyDifferences").Produces<IReadOnlyList<IntercompanyDifferenceDto>>().Problems();
+        finance.MapPost("/intercompany-pairs", (SaveIntercompanyPair body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveIntercompanyPair").Produces<int>().Problems();
+        // Soldurile initiale la punerea in functiune (C3 3.7).
+        finance.MapGet("/gl-opening-balances", (ISender sender, CancellationToken ct) => sender.Send(new GetOpeningBalances(), ct))
+            .WithName("GetOpeningBalances").Produces<OpeningBalanceImportDto>().Problems();
+        finance.MapPost("/gl-opening-balances", (ImportOpeningBalances body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("ImportOpeningBalances").Produces<int>().Problems();
+        finance.MapPost("/gl-opening-balances/{id:int}/validate", (int id, ISender sender, CancellationToken ct) => sender.Send(new ValidateOpeningBalances(id), ct))
+            .WithName("ValidateOpeningBalances").Produces<bool>().Problems();
+        finance.MapPost("/gl-opening-balances/{id:int}/cancel", (int id, ISender sender, CancellationToken ct) => sender.Send(new CancelOpeningBalances(id), ct))
+            .WithName("CancelOpeningBalances").Produces<bool>().Problems();
+        finance.MapGet("/periods/{id:int}/closing-entries", (int id, ISender sender, CancellationToken ct) => sender.Send(new PreviewClosingEntries(id), ct))
+            .WithName("PreviewClosingEntries").Produces<ClosingPreviewDto>().Problems();
+        finance.MapGet("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetPeriodCloseRun(id), ct))
+            .WithName("GetPeriodCloseRun").Produces<CloseRunDto>().Problems();
+        finance.MapPost("/periods/{id:int}/close-run", (int id, ISender sender, CancellationToken ct) => sender.Send(new RunPeriodClose(id), ct))
+            .WithName("RunPeriodClose").Produces<CloseRunDto>().Problems();
+        finance.MapPost("/period-close-runs/{id:long}/override", (long id, OverrideCloseStep body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { RunId = id }, ct))
+            .WithName("OverrideCloseStep").Produces<bool>().Problems();
+        // Notele recurente (C2 3.8).
+        finance.MapGet("/recurring-entries", (ISender sender, CancellationToken ct) => sender.Send(new GetRecurringTemplates(), ct))
+            .WithName("GetRecurringTemplates").Produces<IReadOnlyList<RecurringTemplateDto>>().Problems();
+        finance.MapPost("/recurring-entries", (SaveRecurringTemplate body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateRecurringTemplate").Produces<int>().Problems();
+        finance.MapPut("/recurring-entries/{id:int}", (int id, SaveRecurringTemplate body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateRecurringTemplate").Produces<int>().Problems();
+        finance.MapPost("/recurring-entries/{id:int}/active", (int id, SetRecurringTemplateActive body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("SetRecurringTemplateActive").Produces<bool>().Problems();
+        finance.MapPost("/recurring-entries/generate", (GenerateRecurringEntries body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("GenerateRecurringEntries").Produces<int>().Problems();
         // Reevaluarea valutara (F4 3.6, 4.4, 4.5; macheta f4-01).
         finance.MapGet("/fx/revaluations", (int? year, ISender sender, CancellationToken ct) => sender.Send(new GetFxRevaluations(year), ct))
             .WithName("GetFxRevaluations").Produces<IReadOnlyList<FxRunItemDto>>().Problems();

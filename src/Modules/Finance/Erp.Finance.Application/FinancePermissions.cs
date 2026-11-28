@@ -72,6 +72,46 @@ public static class FinancePermissions
     public const string MappingManage = "Fin.Mapping.Manage";
     public const string MappingFreeze = "Fin.Mapping.Freeze";
     public const string MappingUnfreeze = "Fin.Mapping.Unfreeze";
+
+    public const string ReportTrialBalance = "Fin.Report.TrialBalance";
+
+    public const string ReportDefine = "Fin.Report.Define";
+
+    public const string ReportGroup = "Fin.Report.Group";
+
+    public const string ReportInventoryRegister = "Fin.Report.InventoryRegister";
+
+    public const string ReportStatements = "Fin.Report.Statements";
+
+    public const string ReportStatementsSubmit = "Fin.Report.StatementsSubmit";
+    public const string TaxView = "Fin.Tax.View";
+    public const string TaxPrepare = "Fin.Tax.Prepare";
+    public const string TaxGenerate = "Fin.Tax.Generate";
+    public const string TaxSubmit = "Fin.Tax.Submit";
+
+    public const string ProfitTaxManage = "Fin.ProfitTax.Manage";
+    public const string PeriodView = "Fin.Period.View";
+    public const string PeriodSoftClose = "Fin.Period.SoftClose";
+    public const string PeriodClose = "Fin.Period.Close";
+    public const string PeriodCloseOverride = "Fin.Period.CloseOverride";
+    public const string PeriodReopen = "Fin.Period.Reopen";
+    public const string PeriodManageChecklist = "Fin.Period.ManageChecklist";
+    public const string FiscalYearClose = "Fin.FiscalYear.Close";
+    public const string FiscalYearLock = "Fin.FiscalYear.Lock";
+    public const string FiscalYearUnlock = "Fin.FiscalYear.Unlock";
+
+    public const string JournalEntryView = "Fin.JournalEntry.View";
+    public const string ManualEntryCreate = "Fin.ManualEntry.Create";
+    public const string ManualEntryValidate = "Fin.ManualEntry.Validate";
+    public const string ManualEntryApprove = "Fin.ManualEntry.Approve";
+    public const string ManualEntryControlledAccounts = "Fin.ManualEntry.ControlledAccounts";
+    public const string JournalEntryReverse = "Fin.JournalEntry.Reverse";
+    public const string JournalEntryReverseAutomatic = "Fin.JournalEntry.ReverseAutomatic";
+    public const string PostingModelView = "Fin.PostingModel.View";
+    public const string PostingModelManage = "Fin.PostingModel.Manage";
+    public const string PostingRetry = "Fin.Posting.Retry";
+    public const string PostingIgnore = "Fin.Posting.Ignore";
+    public const string PostingRepost = "Fin.Posting.Repost";
 }
 
 /// <summary>Codul modulului in licenta (08, 4.3) si in [Module].</summary>

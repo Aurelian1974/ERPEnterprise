@@ -113,15 +113,20 @@ public sealed class TreasuryAccountIntegrationTests(FinanceDatabase database) : 
     {
         Assert.Equal(13, await Query<int>("SELECT COUNT(*) FROM fin.TreasuryOperationType WHERE IsSystem = 1 AND AppliesToCash = 1"));
         Assert.Equal(2, await Query<byte>("SELECT Direction FROM fin.TreasuryOperationType WHERE Code = N'PLATA-AVANS-DECONTARE'"));
-        // 15 permisiuni F1 + 16 F2 (F2 8) + 15 F3 (F3 8) + 5 F4 (F4 8) + 8 F5 (F5 8) + 6 C1 (C1 8).
-        Assert.Equal(65, await Query<int>("SELECT COUNT(*) FROM core.Permission WHERE ModuleCode = N'Fin'"));
+        // 15 permisiuni F1 + 16 F2 (F2 8) + 15 F3 (F3 8) + 5 F4 (F4 8) + 8 F5 (F5 8) + 6 C1 (C1 8) + 9 C3 (C3 8) + 12 C2 (C2 8) + 1 C5a (C5 8) + 4 C4 (C4 8).
+        Assert.Equal(97, await Query<int>("SELECT COUNT(*) FROM core.Permission WHERE ModuleCode = N'Fin'"));
         Assert.Equal(0, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Permission AS p ON p.Id = rp.PermissionId WHERE p.Code = N'Fin.PaymentOrder.FreeIban'
             """));
-        Assert.Equal(11, await Query<int>("""
+        Assert.Equal(15, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId
             WHERE r.Code = N'DIRECTOR_FINANCIAR' AND p.ModuleCode = N'Fin'
             """));
+        // Deblocarea anului e doar in rolul dedicat „Deblocare an” (C3 8, decizia 6).
+        Assert.Equal(["DEBLOCARE_AN"], (await QueryList<string>("""
+            SELECT r.Code FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId
+            WHERE p.Code = N'Fin.FiscalYear.Unlock'
+            """)).ToArray());
         Assert.Equal(10, await Query<int>("""
             SELECT COUNT(*) FROM core.RolePermission AS rp JOIN core.Role AS r ON r.Id = rp.RoleId JOIN core.Permission AS p ON p.Id = rp.PermissionId
             WHERE r.Code = N'CONTABIL_DECONTARI' AND p.ModuleCode = N'Fin'

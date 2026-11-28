@@ -10,6 +10,7 @@ using Erp.Finance.Infrastructure.Bank.Formats;
 using Erp.Finance.Infrastructure.Settlement;
 using Erp.Finance.Infrastructure.Treasury;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Erp.Finance.Infrastructure;
 
@@ -32,6 +33,28 @@ public static class FinanceInfrastructureRegistration
         services.AddTransient<CashAdvanceOverdue>();
         services.AddTransient<PaymentBehaviorRecalculation>();
         services.AddTransient<CashFlowJobs>();
+        services.AddTransient<Periods.FiscalYearCreation>();
+        services.AddScoped<Application.Periods.IPeriodCloseStore, Periods.PeriodCloseStore>();
+        services.AddScoped<Application.Periods.PeriodCloseService>();
+        services.AddScoped<Application.Periods.ClosingEntries>();
+        services.AddScoped<Application.Periods.IFiscalYearCloseStore, Periods.FiscalYearCloseStore>();
+        services.AddScoped<Application.Periods.FiscalYearClosing>();
+        services.AddScoped<Application.Periods.IOpeningBalanceStore, Periods.OpeningBalanceStore>();
+        services.AddScoped<Application.Declarations.IVatRegisterStore, Declarations.VatRegisterStore>();
+        services.AddScoped<Application.Declarations.ITaxReturnStore, Declarations.TaxReturnStore>();
+        services.AddScoped<Application.Declarations.TaxReturnService>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D300XmlGenerator>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D394XmlGenerator>();
+        services.AddScoped<Application.Declarations.ITaxReturnFileGenerator, Declarations.D390XmlGenerator>();
+        services.AddScoped<Application.Declarations.ISaftStore, Declarations.SaftStore>();
+        services.AddScoped<Application.Declarations.IProfitTaxStore, Declarations.ProfitTaxStore>();
+        services.AddScoped<Application.Declarations.IStreamingTaxFileGenerator, Declarations.SaftFileGenerator>();
+        foreach (var (code, severity, allowOverride, ok, fail) in Periods.SqlPeriodCloseCheck.Shipped)
+        {
+            services.AddScoped<Contracts.Periods.IPeriodCloseCheck>(sp => new Periods.SqlPeriodCloseCheck(sp.GetRequiredService<IDbSession>(), code, severity,
+                allowOverride, ok, fail));
+        }
+
         services.AddScoped<IBankStatementStore, BankStatementStore>();
         services.AddTransient<BankFolderImport>();
         services.AddScoped<IBankFormatProfileStore, BankFormatProfileStore>();
@@ -69,6 +92,29 @@ public static class FinanceInfrastructureRegistration
         services.AddScoped<Application.Planning.ICashFlowSnapshotStore, CashFlowSnapshotStore>();
         services.AddScoped<Application.Accounts.IChartOfAccountsStore, Accounts.ChartOfAccountsStore>();
         services.AddScoped<Application.Accounts.ChartOfAccountsQueries>();
+        services.AddScoped<Application.Accounts.IAltMappingStore, Accounts.AltMappingStore>();
+        services.AddScoped<Application.Accounts.IAltMappingResultStore, Accounts.AltMappingResultStore>();
+        services.AddScoped<Application.Periods.IAccountingPeriodStore, Periods.AccountingPeriodStore>();
+        services.AddScoped<Application.Periods.AccountingPeriodGuard>();
+        services.AddScoped<Application.Accounting.IJournalEntryStore, Accounting.JournalEntryStore>();
+        services.AddScoped<Application.Accounting.IPostingStore, Accounting.PostingStore>();
+        services.AddScoped<Application.Accounting.PostingService>();
+        services.AddTransient<Accounting.PostingQueueRetry>();
+        services.AddScoped<Application.Accounting.IRecurringEntryStore, Accounting.RecurringEntryStore>();
+        services.AddScoped<Application.Accounting.IPostingModelStore, Accounting.PostingModelStore>();
+        services.AddScoped<Application.Reporting.IBalanceStore, Reporting.BalanceStore>();
+        services.AddScoped<Application.Reporting.BalanceService>();
+        services.AddScoped<Application.Reporting.IReportDefinitionStore, Reporting.ReportDefinitionStore>();
+        services.AddScoped<Application.Reporting.ReportEngine>();
+        services.AddScoped<Application.Reporting.IFinancialStatementStore, Reporting.FinancialStatementStore>();
+        services.AddScoped<Application.Reporting.IInventoryRegisterStore, Reporting.InventoryRegisterStore>();
+        services.AddScoped<Application.Reporting.IGroupBalanceStore, Reporting.GroupBalanceStore>();
+        services.AddSingleton<Application.Reporting.IInventoryRegisterPrinter, Reporting.InventoryRegisterPrinter>();
+        services.AddScoped<Contracts.Reporting.IBalanceQuery>(sp => sp.GetRequiredService<Application.Reporting.BalanceService>());
+        services.AddTransient<Accounting.RecurringEntryGeneration>();
+        services.AddScoped<Contracts.Periods.IAccountingPeriodGuard>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>());
+        // Perioadele contabile (C3a) inlocuiesc IPeriodLock-ul implicit al Nucleului (fara perioade inchise).
+        services.Replace(ServiceDescriptor.Scoped<IPeriodLock>(sp => sp.GetRequiredService<Application.Periods.AccountingPeriodGuard>()));
         services.AddScoped<Contracts.Accounts.IChartOfAccountsQueries>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<Contracts.Accounts.IGlAccountValidator>(sp => sp.GetRequiredService<Application.Accounts.ChartOfAccountsQueries>());
         services.AddScoped<ICommercialPaperStore, CommercialPaperStore>();
@@ -185,8 +231,60 @@ public sealed class FinanceSqlErrors : ISqlErrorMap
         [51805] = (ErpErrorKind.Validation, "FIN_ACCOUNT_PARENT_INVALID"),
         [51806] = (ErpErrorKind.Validation, "FIN_ACCOUNT_NOT_POSTABLE"),
         [51807] = (ErpErrorKind.Forbidden, "FIN_ACCOUNT_SYSTEM_READONLY"),
+        [51808] = (ErpErrorKind.Validation, "FIN_MAPPING_PERCENT_INVALID"),
+        [51809] = (ErpErrorKind.Conflict, "FIN_MAPPING_PRIORITY_DUPLICATE"),
+        [51810] = (ErpErrorKind.Conflict, "FIN_MAPPING_TARGET_IN_USE"),
         [51812] = (ErpErrorKind.Forbidden, "FIN_CHART_STATUTORY_READONLY"),
         [51813] = (ErpErrorKind.Validation, "FIN_ACCOUNT_DIMENSION_RULE_LOOSER"),
         [51814] = (ErpErrorKind.Conflict, "FIN_ACCOUNT_HAS_ACTIVE_CHILDREN"),
+        [51815] = (ErpErrorKind.Conflict, "FIN_MAPPING_INCOMPLETE"),
+        [51841] = (ErpErrorKind.NotFound, "FIN_ENTRY_NOT_FOUND"),
+        [51842] = (ErpErrorKind.Conflict, "FIN_CONCURRENCY_CONFLICT"),
+        [51843] = (ErpErrorKind.Validation, "FIN_ENTRY_UNBALANCED"),
+        [51844] = (ErpErrorKind.Validation, "FIN_ENTRY_ACCOUNT_INVALID"),
+        [51845] = (ErpErrorKind.Validation, "FIN_ENTRY_DIMENSION_MISSING"),
+        [51846] = (ErpErrorKind.Validation, "FIN_ENTRY_PARTY_MISSING"),
+        [51847] = (ErpErrorKind.Validation, "FIN_ENTRY_CURRENCY_NOT_ALLOWED"),
+        [51848] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSED"),
+        [51849] = (ErpErrorKind.Conflict, "FIN_ENTRY_ALREADY_POSTED"),
+        [51850] = (ErpErrorKind.Conflict, "FIN_ENTRY_NOT_DRAFT"),
+        [51852] = (ErpErrorKind.Forbidden, "FIN_ENTRY_AUTOMATIC_REVERSE_FORBIDDEN"),
+        [51853] = (ErpErrorKind.Forbidden, "FIN_ENTRY_FOUR_EYES"),
+        [51854] = (ErpErrorKind.Conflict, "FIN_REPOST_PERIOD_CLOSED"),
+        [51855] = (ErpErrorKind.NotFound, "FIN_POSTING_MODEL_MISSING"),
+        [51973] = (ErpErrorKind.Validation, "FIN_BALANCE_CROSSES_YEARS"),
+        [51971] = (ErpErrorKind.NotFound, "FIN_REPORT_NOT_FOUND"),
+        [51972] = (ErpErrorKind.Conflict, "FIN_REPORT_CONCURRENCY_CONFLICT"),
+        [51975] = (ErpErrorKind.Forbidden, "FIN_REPORT_DEFINITION_READ_ONLY"),
+        [51976] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_YEAR_NOT_CLOSED"),
+        [51977] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_UNBALANCED"),
+        [51978] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_ALREADY_SUBMITTED"),
+        [51981] = (ErpErrorKind.Conflict, "FIN_STATEMENTS_NOT_GENERATED"),
+        [51979] = (ErpErrorKind.Conflict, "FIN_GROUP_BALANCE_PERIOD_OPEN"),
+        [51980] = (ErpErrorKind.Conflict, "FIN_GROUP_BALANCE_MAPPING_INCOMPLETE"),
+        [51941] = (ErpErrorKind.NotFound, "FIN_TAX_RETURN_NOT_FOUND"),
+        [51942] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_CONCURRENCY_CONFLICT"),
+        [51943] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_PERIOD_OPEN"),
+        [51944] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_DATA_CHANGED"),
+        [51946] = (ErpErrorKind.Validation, "FIN_TAX_RETURN_REASON_REQUIRED"),
+        [51947] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_ALREADY_SUBMITTED"),
+        [51948] = (ErpErrorKind.Conflict, "FIN_TAX_RETURN_NOT_GENERATED"),
+        [51951] = (ErpErrorKind.Validation, "FIN_SAFT_ACCOUNT_CODE_MISSING"),
+        [51952] = (ErpErrorKind.Validation, "FIN_SAFT_PARTNER_INVALID"),
+        [51901] = (ErpErrorKind.NotFound, "FIN_PERIOD_NOT_FOUND"),
+        [51902] = (ErpErrorKind.Conflict, "FIN_PERIOD_CONCURRENCY_CONFLICT"),
+        [51903] = (ErpErrorKind.Conflict, "FIN_PERIOD_CLOSE_BLOCKED"),
+        [51904] = (ErpErrorKind.Conflict, "FIN_PERIOD_PREVIOUS_OPEN"),
+        [51905] = (ErpErrorKind.Conflict, "FIN_PERIOD_REOPEN_ORDER"),
+        [51906] = (ErpErrorKind.Conflict, "FIN_PERIOD_LOCKED"),
+        [51907] = (ErpErrorKind.Validation, "FIN_PERIOD_REASON_REQUIRED"),
+        [51908] = (ErpErrorKind.Conflict, "FIN_PERIOD_EVENTS_IN_TRANSIT"),
+        [51909] = (ErpErrorKind.Forbidden, "FIN_PERIOD_OVERRIDE_FORBIDDEN"),
+        [51911] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_NOT_CLOSABLE"),
+        [51913] = (ErpErrorKind.Validation, "FIN_LEGAL_RESERVE_INVALID"),
+        [51914] = (ErpErrorKind.Validation, "FIN_OPENING_BALANCE_UNBALANCED"),
+        [51915] = (ErpErrorKind.Validation, "FIN_OPENING_BALANCE_SUBLEDGER_MISMATCH"),
+        [51916] = (ErpErrorKind.Conflict, "FIN_OPENING_BALANCE_HAS_ENTRIES"),
+        [51912] = (ErpErrorKind.Conflict, "FIN_FISCAL_YEAR_LOCKED"),
     };
 }

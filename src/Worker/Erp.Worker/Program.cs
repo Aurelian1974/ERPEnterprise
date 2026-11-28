@@ -73,6 +73,19 @@ builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.EmailCerut, Erp.C
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
+// Contarea automata (02.02, C2 4.1): evenimentele cu model de contare devin note validate sau intra in coada „De contat”.
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.IncasareInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.PlataInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.TvaLaIncasareExigibil, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.DiferentaCursInregistrata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.CompensareValidata, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Treasury.DecontCheltuieliValidat, Erp.Finance.Infrastructure.Events.PostEvents>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaRedeschisa, Erp.Finance.Infrastructure.Accounting.RetryQueueOnReopen>();
+// Declaratiile (02.02, C4 4.1): redeschiderea lunii marcheaza declaratiile depuse „De verificat”; reinchiderea fara schimbari sterge marcajul.
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaRedeschisa, Erp.Finance.Infrastructure.Declarations.MarkTaxReturnsOnReopen>();
+builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Periods.PerioadaContabilaInchisa, Erp.Finance.Infrastructure.Declarations.RecheckTaxReturnsOnClose>();
 builder.Services.AddSingleton(sp => new OutboxProcessorLoop(sp.GetRequiredService<OutboxDispatcher>(),
     TimeSpan.FromSeconds(int.TryParse(builder.Configuration["Outbox:IntervalSeconds"], out var seconds) && seconds > 0 ? seconds : 2),
     sp.GetRequiredService<ILogger<OutboxProcessorLoop>>()));
@@ -124,6 +137,18 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Settlement.CashFlowJobs>(Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertJobId,
             job => job.AlertsAsync(CancellationToken.None), Erp.Finance.Infrastructure.Settlement.CashFlowJobs.AlertSchedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C3 3.1: anii financiari urmatori, cu 60 de zile inainte, zilnic la 00:20 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Periods.FiscalYearCreation>(Erp.Finance.Infrastructure.Periods.FiscalYearCreation.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Periods.FiscalYearCreation.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C2 4.4: coada „De contat” se reincearca la 15 minute (configurarea schimbata intre timp poate rezolva motivul).
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Accounting.PostingQueueRetry>(Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Accounting.PostingQueueRetry.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.02, C2 3.8: ciornele notelor recurente scadente, zilnic la 00:40 ora Romaniei.
+        jobs.AddOrUpdate<Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration>(Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Accounting.RecurringEntryGeneration.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         return new Running(new BackgroundJobServer(
             new BackgroundJobServerOptions

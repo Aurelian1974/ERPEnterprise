@@ -13,7 +13,8 @@ public sealed class ChartOfAccountsStore(IDbSession session) : IChartOfAccountsS
 {
     public async Task<IReadOnlyList<ChartDto>> ChartsAsync(CancellationToken ct) =>
         (await session.Connection.QueryAsync<ChartRow>(Command("fin.usp_ChartOfAccounts_List", null, ct)).ConfigureAwait(false))
-        .Select(c => new ChartDto(c.Id, c.Code, c.Name, c.Kind, c.Purpose, c.LanguageCode.Trim(), c.RequireCompleteMapping, c.IsActive, c.AccountCount)).ToList();
+        .Select(c => new ChartDto(c.Id, c.Code, c.Name, c.Kind, c.Purpose, c.LanguageCode.Trim(), c.RequireCompleteMapping, c.IsActive, c.AccountCount, c.RuleCount,
+            c.CompanyCount)).ToList();
 
     public async Task<IReadOnlyList<GlAccountItemDto>> AccountsAsync(int? chartId, int companyId, bool includeInactive, CancellationToken ct) =>
         (await session.Connection.QueryAsync<AccountRow>(Command("fin.usp_GlAccount_List", new
@@ -124,7 +125,7 @@ public sealed class ChartOfAccountsStore(IDbSession session) : IChartOfAccountsS
         new(name, parameters, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct);
 
     private sealed record ChartRow(int Id, string Code, string Name, byte Kind, byte? Purpose, string LanguageCode, bool RequireCompleteMapping, bool IsActive,
-        int AccountCount);
+        int AccountCount, int RuleCount, int CompanyCount);
 
     private sealed record AccountRow(int Id, string Code, string Name, int? ParentId, byte Level, byte? AccountType, bool IsPostable, int? CompanyId,
         bool IsOffBalance, bool IsManagement, bool StatutoryReporting, byte CurrencyMode, string? CurrencyCode, byte PartyRequirement, bool ManualPosting,

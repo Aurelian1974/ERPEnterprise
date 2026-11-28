@@ -22,6 +22,31 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 1.11 | Setarea `Fin.Advance.SettlementWorkingDays` (termenul de decontare a avansului) din ecran; acum valoarea e fixă, 3 zile lucrătoare | Nota F1.5 | — |
 | 1.12 | Setarea configurabilă a separării sarcinilor la aprobarea decontului; acum e mereu activă (51019) | F1 3.4 regula 5 | — |
 | 1.13 | PDF-ul și tipărirea registrului de casă | README F1.4 | QuestPDF e deja folosit la confirmări și compensări |
+| 1.14 | Importul regulilor de mapare din Excel (`ImportMappingRulesFromExcel`) | C1 6; nota C1.3 | Regulile se scriu din ecran; conturile planului alternativ se importă deja |
+| 1.15 | Contarea reevaluării valutare (`ReevaluareValutaraValidata` / `Stornata`): evenimentul are doar totaluri fără partener, iar 4111 / 401 cer partenerul; adaptorul trebuie să citească liniile din `fin.FxRevaluationLine` | C2 nota C2.2 | Reevaluarea rămâne în F4, fără notă |
+| 1.16 | Contarea efectelor comerciale (`EfectComercialModificat`) și a stornărilor de trezorerie (`DocumentTrezorerieStornat`, cu conturile notei inițiale) | C2 nota C2.2 | — |
+| 1.17 | Diferențele de curs fără partener (schimb valutar, transferuri; sursele 2 și 3) | C2 nota C2.2 | — |
+| 1.18 | Liniile de decont plătite pe o factură de furnizor (401 / 542) | C2 nota C2.2 | Restul decontului se contează |
+| 1.19 | Notele recurente cu sume calculate dintr-un sold (de exemplu 1/12 din soldul `471`) | C2 3.8; nota C2.4b | Șabloanele au doar sume fixe |
+| 1.20 | Asistentul „Împarte contul” (analitice noi sub un cont cu rulaj, nota de reclasificare; C1-A4) | C1 3.4; nota C1b | Analiticele se creează doar sub conturi fără rulaj |
+| 1.21 | Recalcularea mapării ca job de fundal, vederea indexată a balanței alternative și testul de performanță C1-A10 | C1 4.4, 7; nota C1b | Recalcularea rulează sincron |
+| 1.22 | Din machetele c2-01, c2-02, c2-04: registrul jurnal, tab-urile Document sursă / Planuri alternative / Note legate, partenerul pe linia notei manuale, efectul în planurile alternative în editor, setarea contului direct din coada De contat | C2 nota C2.5a | Contul se setează din Plan de conturi și Conturi implicite; reîncercarea automată îl preia |
+| 1.23 | Din machetele c2-03, c2-05: variantele noi și condițiile lor din ecran, versiunile modelului cu data de la care se aplică, istoricul versiunilor, conturile pe grupe de articole și pe gestiuni, exportul Excel | C2 nota C2.5b | Liniile variantei se modifică pe loc; recontarea reface notele |
+| 1.24 | Din machetele c5-01, c5-02: exportul Excel și PDF al balanței și fișei, ecranul cărții mari, deschiderea notei și a documentului sursă din fișă, balanța în valută | C5 nota C5a.2 | Datele sunt în API |
+| 1.25 | Concordanțele rămase: băncile (soldul ultimului extras), avansurile spre decontare `542`, TVA neexigibilă `4428`, stocurile (cu modulul Stocuri, prin `ISubledgerBalanceProvider`); pașii `BANK_STATEMENTS`, `FX_REVALUATION`, pașii proprii ai clientului și închiderea operativă automată | C3 nota C3.1b | Concordanțele clienți, furnizori și casă rulează |
+| 1.26 | Soldurile lunare materializate (`AccountPeriodBalance`) la închidere și ștergerea lor la redeschidere; nota de închidere rămasă fără solduri la reînchidere (de stornat) | C3 nota C3.2; C5 3.1 | Balanța citește din linii |
+| 1.27 | Nucleul refuză atribuirea rolului „Deblocare an” unui utilizator cu alte roluri; șablonul „Repartizarea profitului” cu hotărârea AGA atașată; impozitul pe profit contat înainte de închiderea lui decembrie (cu C4) | C3 3.6, 8; nota C3.3 | Repartizarea se face cu o notă manuală |
+| 1.28 | Din machetele c3-02…c3-05: pașii proprii ai clientului și confirmarea lor, linkurile din pași spre ecranul care rezolvă, raportul de închidere PDF, ecranul importului balanței de deschidere din Excel, pașii anului cu datele lor | C3 nota C3.5 | API-urile există |
+| 1.29 | Registrul de TVA pentru deconturile de cheltuieli (furnizorul pe linie), cota de deducere limitată, statusul e-Factura pe rând | C4 nota C4.1 | Facturile de vânzare și de furnizor se înregistrează |
+| 1.30 | Evenimentele `ObligatieFiscalaCreata` (F2 propunere de OP) și `DeclaratieDeVerificat` (notificarea Contabilului șef), `DeclaratieGenerata`; închiderea obligației la plată (`PlataInregistrata`); rândurile manuale cu motiv (51945, 51946); declarațiile rectificative (Kind 2, starea Înlocuită) | C4 nota C4.2 | Obligația și suma planificată se scriu la depunere |
+| 1.31 | Tabelul versionat `TaxFormRowMapping` în locul mapării din cod (`D300Layout`); D300: rândurile de regularizări, prorata, soldul de rambursat reportat din decontul anterior, opțiunea de rambursare; comparația D300 cu nota de regularizare a TVA ca pas blocant al închiderii (C3 3.5) | C4 nota C4.3 | Totalurile D300 = nota de regularizare (testul C4-A2) |
+| 1.32 | D394: completitudinea seriilor și plajelor de facturi emise, secțiunile pentru persoane fizice, bonuri fiscale, regimuri speciale și facturi anulate; D390: corecțiile pentru perioade anterioare | C4 nota C4.4 | Secțiunile L, V, A, C și codurile L, S, A, P se calculează |
+| 1.33 | D406: secțiunea `Payments` (încasările și plățile F1, F2), articolele pe liniile facturilor, generarea în job Hangfire cu progres, împărțirea fișierelor mari pe segmente, descărcarea fișierului în flux | C4 nota C4.5 | Registrul, nomenclatoarele și facturile se scriu în flux |
+| 1.34 | Impozitul pe profit: XML-ul D100 și D101, ecranul setărilor regimului și cotei (sau preluarea lor din Nucleu, cu dată de vigoare), regulile de limită livrate și versionate (ajutoare sociale 5% din salarii, sponsorizarea 0,75% / 20%), pierderea fiscală preluată din D101 anterioare, detalierea rândurilor până la note, condițiile de microîntreprindere | C4 nota C4.6 | Fișa, nota și D100 se calculează; limitele în afara protocolului sunt rânduri manuale |
+| 1.35 | Din machetele c4-01…c4-05: calendarul pe firmele grupului și exportul Excel, încărcarea recipisei PDF din ecran, facturile care explică diferențele P300, detalierea rândurilor D300 și a fișei de impozit până la note, lista conturilor nedeductibile cu tratamentul lor, avertismentul documentelor care așteaptă redeschiderea lunii | C4 nota C4.7 | API-urile există |
+| 1.36 | Rapoartele definite: coloanele configurabile (`ReportColumn`: luni, dimensiuni, firme), detalierea unei celule până la conturile care au contribuit și fișa contului, exportul | C5 nota C5.1 | Rularea are perioada curentă și pe cea de comparație |
+| 1.37 | Situațiile financiare: toate rândurile modelelor MF, corelațiile oficiale, F30 și F40, formularele pe categoria entității și confirmarea categoriei, rândurile manuale cu motiv, XML-ul prin Integrări (C5-A6), consumatorul C3 al `SituatiiFinanciareDepuse` (propunerea de blocare a anului) | C5 nota C5.2 | F10, F20, echilibrul și depunerea funcționează |
+| 1.38 | Balanța de grup: exportul în formatul companiei-mamă (Excel sau raport definit pe coloane de firme), documentele care explică diferențele intra-grup, anul financiar diferit de cel calendaristic la firmele grupului | C5 nota C5.4 | Rularea, eliminările și diferențele se calculează |
 
 ## 2. Depinde de alte module sau de Nucleu
 
@@ -38,6 +63,9 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 2.9 | Sumele planificate de salarii și taxe înlocuite de partide reale | HR și partea contabilă | F5 3.5 |
 | 2.10 | Conectarea directă la API-urile băncilor (PSD2 / corporate) | Integrare 02.xx, ulterior | F2 |
 | 2.11 | Partea contabilă a modulului: C1 Planuri de conturi, C2 Modele de contare și note, C3 Închideri, C4 Declarații, C5 Rapoarte | Fazele C1–C5 | [C1](C1-PLANURI-DE-CONTURI.md)…[C5](C5-RAPOARTE.md) |
+| 2.12 | Declarațiile prin Integrări: XML-ul validat cu DUKIntegrator (51953 la lipsă), PDF-ul cu XML-ul atașat, descărcarea P300 din SPV (`P300Descarcat`) și facturile din e-Factura care explică diferențele; criteriul C4-A6 | Modulul Integrări (02.14) | C4 nota C4.3 |
+| 2.13 | D406 active (anual) și D406 stocuri (la cerere), prin `ISaftAssetsSource` și `ISaftStockSource` | Mijloace fixe, Stocuri | C4 nota C4.5 |
+| 2.14 | Registrul inventar: valorile de inventar din listele de inventariere (Stocuri, Mijloace fixe) și din confirmările de sold (F3), elementele pe gestiune și pe mijloc fix, arhivarea PDF-ului în atașamentele Nucleului | Stocuri, Mijloace fixe, Nucleu (atașamente) | C5 nota C5.3 |
 
 ## 3. Criterii de acceptare fără test
 
@@ -52,6 +80,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | 3.7 | F2-A21 | Validarea automată a încasării potrivite exact pe factură | Integrare, cu punctul 1.7 |
 | 3.8 | F1-A14 | Raportul Z din POS, idempotent | Integrare, cu punctul 2.3 |
 | 3.9 | F5-A2 | Factura într-o singură propunere activă, verificat și cu salvări simultane (acum secvențial, prin indexul unic) | Concurență |
+| 3.10 | C4-A9 | D406 pentru o lună cu 2 milioane de linii în sub 15 minute și cel mult 1 GB memorie (scrierea e deja în flux și paginată) | Performanță |
 
 ## 4. Verificări externe
 
@@ -59,6 +88,7 @@ Inventar consemnat la cererea lui Aurelian (24.11.2026), după F1–F5.2b, ca s�
 | --- | --- | --- |
 | 4.1 | Data și forma în vigoare a Legii 70/2015 (plafoanele de numerar) — de verificat pe legislatie.just.ro | F1, cerințe legale |
 | 4.2 | Fișiere reale de extras (MT940, CAMT.053) de la bănci; testele folosesc fișiere construite după specificațiile publice | F2, TBD |
+| 4.3 | Numerele de rând și spațiul de nume ale XML-ului D300 (`D300Layout`, `D300XmlGenerator`), structura XML D394 și D390 (`InformativeXmlGenerator`) față de XSD-ul ANAF în vigoare; pragurile RO e-TVA din 2026 (5.000 lei și 20%) | C4 nota C4.3 |
 
 ## 5. Corecturi de documentație făcute la inventar
 

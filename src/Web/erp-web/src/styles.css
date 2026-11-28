@@ -2961,3 +2961,51 @@ tr.clickable.picked { background: var(--info-bg); }
 .chart-tree .analytic {
   color: var(--action-hover);
 }
+
+/* Perioade contabile (C3, macheta c3-01): cele 12 luni ale anului ca grilă de celule cu starea lor. */
+.period-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.period-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  font: inherit;
+  cursor: pointer;
+}
+
+.period-cell.picked {
+  border-color: var(--action);
+  box-shadow: 0 0 0 1px var(--action);
+}
+
+/* Note contabile (C2.5): formula notei in formatul contabilului roman si diferenta debit-credit. */
+.entry-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--surface-muted); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px; margin: 10px 0; white-space: pre; overflow-x: auto; }
+.entry-formula:empty { display: none; }
+.kpi-value.ok { color: var(--ok); }
+.kpi-value.bad { color: var(--error); }
+.row-bad td { background: var(--error-bg); }
+.error-text { color: var(--error); font-weight: 600; }
+
+/* Balanta de verificare (C5a.2): tabelul lat se deruleaza orizontal, verificarile egalitatilor sub el. */
+.table-scroll { overflow-x: auto; }
+.balance-table td, .balance-table th { white-space: nowrap; }
+.check-ok { color: var(--ok); }
+.check-bad { color: var(--error); font-weight: 600; }
+.filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filter-row .cell-input { width: auto; min-width: 140px; }
+.year-steps { display: grid; gap: 12px; padding-left: 0; list-style: none; }
+.year-steps li { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+
+/* Declaratii (02.02, C4; machetele c4-01…c4-05): listele de fisiere si de probleme, legaturile ca text. */
+.plain-list { list-style: none; padding-left: 0; display: grid; gap: 6px; }
+button.link { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }

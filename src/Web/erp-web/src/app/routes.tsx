@@ -1,4 +1,6 @@
 import { createBrowserRouter } from 'react-router';
+import { DefinedReportsPage, FinancialStatementsPage, GroupBalancePage } from '../finance/ReportsPages';
+import { ProfitTaxPage, SaftPage, TaxCalendarPage, VatJournalPage, VatReturnPage } from '../finance/DeclarationsPages';
 import { HomePage } from '../home/HomePage';
 import { AppShell } from '../shell/AppShell';
 import { ConfigPage } from '../config/ConfigPage';
@@ -20,6 +22,20 @@ import { PenaltiesPage } from '../finance/PenaltiesPage';
 import { FxDifferencesPage } from '../finance/FxDifferencesPage';
 import { FxExposurePage } from '../finance/FxExposurePage';
 import { ChartOfAccountsPage } from '../finance/ChartOfAccountsPage';
+import { AltChartsPage } from '../finance/AltChartsPage';
+import { MappingRulesPage } from '../finance/MappingRulesPage';
+import { MappingCheckPage } from '../finance/MappingCheckPage';
+import { JournalEntriesPage } from '../finance/JournalEntriesPage';
+import { ManualEntryPage } from '../finance/ManualEntryPage';
+import { PostingQueuePage } from '../finance/PostingQueuePage';
+import { PostingModelsPage } from '../finance/PostingModelsPage';
+import { DefaultAccountsPage } from '../finance/DefaultAccountsPage';
+import { TrialBalancePage } from '../finance/TrialBalancePage';
+import { AccountLedgerPage } from '../finance/AccountLedgerPage';
+import { MonthClosePage } from '../finance/MonthClosePage';
+import { ClosingEntriesPage, ReconciliationPage } from '../finance/ClosingReportsPages';
+import { YearClosePage } from '../finance/YearClosePage';
+import { AccountingPeriodsPage } from '../finance/AccountingPeriodsPage';
 import { FxRevaluationPage } from '../finance/FxRevaluationPage';
 import { PaymentOrdersPage } from '../finance/PaymentOrdersPage';
 import { MatchingRulesPage } from '../finance/MatchingRulesPage';
@@ -71,7 +87,31 @@ export const routes = [
       { path: 'finante/valuta/reevaluare', element: <FxRevaluationPage /> },
       { path: 'finante/valuta/diferente', element: <FxDifferencesPage /> },
       { path: 'finante/valuta/pozitie', element: <FxExposurePage /> },
+      { path: 'finante/contabilitate/note', element: <JournalEntriesPage /> },
+      { path: 'finante/contabilitate/note/noua', element: <ManualEntryPage /> },
+      { path: 'finante/contabilitate/note/:id', element: <ManualEntryPage /> },
+      { path: 'finante/contabilitate/de-contat', element: <PostingQueuePage /> },
+      { path: 'finante/contabilitate/modele-contare', element: <PostingModelsPage /> },
+      { path: 'finante/contabilitate/conturi-implicite', element: <DefaultAccountsPage /> },
       { path: 'finante/contabilitate/plan-de-conturi', element: <ChartOfAccountsPage /> },
+      { path: 'finante/contabilitate/planuri-alternative', element: <AltChartsPage /> },
+      { path: 'finante/contabilitate/reguli-mapare', element: <MappingRulesPage /> },
+      { path: 'finante/contabilitate/verificare-mapare', element: <MappingCheckPage /> },
+      { path: 'finante/contabilitate/perioade', element: <AccountingPeriodsPage /> },
+      { path: 'finante/inchideri/luna', element: <MonthClosePage /> },
+      { path: 'finante/inchideri/concordante', element: <ReconciliationPage /> },
+      { path: 'finante/inchideri/note', element: <ClosingEntriesPage /> },
+      { path: 'finante/inchideri/anul', element: <YearClosePage /> },
+      { path: 'finante/rapoarte/balanta', element: <TrialBalancePage /> },
+      { path: 'finante/rapoarte/fisa-contului', element: <AccountLedgerPage /> },
+      { path: 'finante/rapoarte/situatii-financiare', element: <FinancialStatementsPage /> },
+      { path: 'finante/rapoarte/balanta-de-grup', element: <GroupBalancePage /> },
+      { path: 'finante/rapoarte/rapoarte-definite', element: <DefinedReportsPage /> },
+      { path: 'finante/declaratii/calendar', element: <TaxCalendarPage /> },
+      { path: 'finante/declaratii/decont-tva', element: <VatReturnPage /> },
+      { path: 'finante/declaratii/jurnale-tva', element: <VatJournalPage /> },
+      { path: 'finante/declaratii/saf-t', element: <SaftPage /> },
+      { path: 'finante/declaratii/impozit-profit', element: <ProfitTaxPage /> },
       { path: 'nomenclatoare/articole', element: <ItemsPage /> },
       { path: 'admin/config/nomenclatoare', element: <ConfigPage /> },
       { path: 'admin/config/roluri', element: <ConfigPage /> },
