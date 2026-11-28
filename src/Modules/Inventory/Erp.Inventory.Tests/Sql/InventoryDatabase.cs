@@ -78,6 +78,18 @@ public sealed class InventoryDatabase(SqlServerFixture sql) : IAsyncLifetime
         ClujStoreId = await NewLocation(connection, CompanyId, "MAG-CJ", "Magazin Cluj", 3, true);
         InactiveLocationId = await NewLocation(connection, CompanyId, "VECHI", "Depozit închis", 2, false);
         OtherCompanyLocationId = await NewLocation(connection, OtherCompanyId, "FAB-BV", "Fabrica Brașov", 4, true);
+        // Seriile documentelor de stoc pe anul curent (si pe anul trecut, pentru documentele datate in urma), in ambele firme.
+        foreach (var company in new[] { CompanyId, OtherCompanyId })
+        {
+            await connection.ExecuteAsync("""
+                INSERT INTO core.NumberSeries (CompanyId, BranchId, DocumentTypeId, Prefix, [Year], NextNumber, Padding, IsFiscal, IsDefault, FirstNumber, CreatedBy)
+                SELECT @CompanyId, NULL, t.Id, CONCAT(N'INV', t.Id), y.[Year], 1, 6, 0, 1, 1, 1
+                FROM core.DocumentType AS t
+                CROSS JOIN (VALUES (YEAR(SYSDATETIME())), (YEAR(SYSDATETIME()) - 1)) AS y ([Year])
+                WHERE t.ModuleCode = N'Inventory';
+                """, new { CompanyId = company });
+        }
+
         LogisticPartnerId = await connection.ExecuteScalarAsync<int>("""
             INSERT INTO core.Partner (Code, Name, PartnerType, FiscalCode, IsCustomer, IsSupplier, VatPayer, Address, City, CountyCode, CountryCode,
                 IsActive, CreatedBy)
@@ -117,7 +129,11 @@ public abstract class InventoryTestBase(InventoryDatabase database)
     {
         InventoryPermissions.WarehouseView, InventoryPermissions.WarehouseManage, InventoryPermissions.WarehouseBlock,
         InventoryPermissions.WarehouseKeeper, InventoryPermissions.SettingsManage, InventoryPermissions.ItemSettingsManage,
-        InventoryPermissions.ValuationMethodChange, InventoryPermissions.MovementBackdate,
+        InventoryPermissions.ValuationMethodChange, InventoryPermissions.MovementBackdate, InventoryPermissions.DocumentView,
+        InventoryPermissions.TransferEdit, InventoryPermissions.TransferValidate, InventoryPermissions.LoadUnloadEdit, InventoryPermissions.LoadUnloadValidate,
+        InventoryPermissions.ConsumptionEdit, InventoryPermissions.ConsumptionValidate, InventoryPermissions.ProductionNoteEdit,
+        InventoryPermissions.ProductionNoteValidate, InventoryPermissions.CustodyEdit, InventoryPermissions.CustodyValidate, InventoryPermissions.DocumentReverse,
+        InventoryPermissions.ReasonManage,
     };
 
     /// <summary>Scope-ul pe gestiuni al utilizatorului de test (null = toate).</summary>

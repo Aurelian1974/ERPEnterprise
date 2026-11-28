@@ -21,6 +21,7 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Contracts.IWarehouseLookup, WarehouseLookup>();
         services.AddScoped<Application.Movements.IStockMovementStore, Movements.StockMovementStore>();
         services.AddScoped<Application.Movements.StockLedger>();
+        services.AddScoped<Application.Documents.IStockDocumentStore, Documents.StockDocumentStore>();
         // Portul de stoc al Nucleului (02.05, S2 6): Stocurile inlocuiesc implementarea goala.
         services.Replace(ServiceDescriptor.Scoped<IStockLedger>(sp => sp.GetRequiredService<Application.Movements.StockLedger>()));
         services.AddScoped<Application.Items.IItemStockSettingsStore, Items.ItemStockSettingsStore>();
@@ -31,7 +32,7 @@ public static class InventoryInfrastructureRegistration
 
 /// <summary>
 /// Codurile THROW ale Stocurilor (02.05, S1 7): plaja 54000–54999, impartita pe parti (S1 54000–54099, S2 54100–54299, S3 54300–54449,
-/// S4 54450–54549, S5 54550–54649, S6 54650–54799, S7 54800–54899). 54018–54023 sunt adaugate la implementare.
+/// S4 54450–54549, S5 54550–54649, S6 54650–54799, S7 54800–54899). 54018–54023 si 54118–54119 sunt adaugate la implementare.
 /// </summary>
 public sealed class InventorySqlErrors : ISqlErrorMap
 {
@@ -77,6 +78,8 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54115] = (ErpErrorKind.Validation, "INV_COST_CENTER_REQUIRED"),
         [54116] = (ErpErrorKind.Validation, "INV_CUSTODY_MISUSE"),
         [54117] = (ErpErrorKind.Conflict, "INV_DOCUMENT_CONCURRENCY"),
+        [54118] = (ErpErrorKind.Conflict, "INV_DOCUMENT_NOT_DRAFT"),
+        [54119] = (ErpErrorKind.Validation, "INV_UNIT_COST_REQUIRED"),
         [54199] = (ErpErrorKind.Conflict, "INV_MOVEMENT_IMMUTABLE"),
     };
 }

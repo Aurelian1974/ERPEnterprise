@@ -1,4 +1,5 @@
 using Erp.Inventory.Application;
+using Erp.Inventory.Application.Documents;
 using Erp.Inventory.Application.Items;
 using Erp.Inventory.Application.Settings;
 using Erp.Inventory.Application.Warehouses;
@@ -18,6 +19,7 @@ public static class InventoryApiRegistration
         MapWarehouses(inventory);
         MapKeepers(inventory);
         MapDepots(inventory);
+        MapDocuments(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -94,6 +96,33 @@ public static class InventoryApiRegistration
             .WithName("SaveDepotRule").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
         inventory.MapPut("/stock-level", (SetStockLevel body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SetStockLevel").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
+    }
+
+    // Stocuri › Documente: incarcari, descarcari, bonuri de consum, custodie, note de predare produse (02.05, S2 3.3–3.9; s2-03, s2-04).
+    private static void MapDocuments(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/documents", ([AsParameters] GetStockDocuments query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetStockDocuments").Produces<IReadOnlyList<StockDocumentItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapGet("/documents/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetStockDocument(id), ct))
+            .WithName("GetStockDocument").Produces<StockDocumentDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapGet("/movement-reasons", (ISender sender, CancellationToken ct) => sender.Send(new GetMovementReasons(), ct))
+            .WithName("GetMovementReasons").Produces<IReadOnlyList<MovementReasonDto>>();
+        inventory.MapPost("/documents", (SaveStockDocument body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateStockDocument").Saves();
+        inventory.MapPut("/documents/{id:int}", (int id, SaveStockDocument body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateStockDocument").Saves();
+        inventory.MapPost("/documents/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateStockDocument(id, body.RowVersion), ct))
+            .WithName("ValidateStockDocument").Saves();
+        inventory.MapPost("/documents/{id:int}/reverse", (int id, ReverseStockDocument body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ReverseStockDocument").Saves();
+        inventory.MapPost("/documents/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelStockDocument(id, body.RowVersion), ct))
+            .WithName("CancelStockDocument").Saves();
+        inventory.MapPost("/documents/{id:int}/approve", (int id, ApproveStockDocument body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("ApproveStockDocument").Saves();
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).
