@@ -4,6 +4,7 @@ using Erp.Inventory.Application.Documents;
 using Erp.Inventory.Application.Movements;
 using Erp.Inventory.Contracts;
 using Erp.Inventory.Application.Items;
+using Erp.Inventory.Application.Lots;
 using Erp.Inventory.Application.Settings;
 using Erp.Inventory.Application.Warehouses;
 using MediatR;
@@ -26,6 +27,7 @@ public static class InventoryApiRegistration
         MapLandedCosts(inventory);
         MapRetail(inventory);
         MapValuation(inventory);
+        MapLots(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -216,6 +218,23 @@ public static class InventoryApiRegistration
             .WithName("GetCostRecalcQueue").Produces<IReadOnlyList<CostRecalcQueueItemDto>>();
         inventory.MapPost("/cost-recalc", (RecalculateCost body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("RecalculateCost").Produces<int>().ProducesProblem(StatusCodes.Status403Forbidden);
+    }
+
+    // Stocuri › Loturi: lista, fisa, starea, atributele, propunerea FEFO, durata minima pe client (02.05, S4; s4-01…s4-03).
+    private static void MapLots(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/lots", ([AsParameters] GetLots query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetLots").Produces<IReadOnlyList<LotItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapGet("/lots/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetLot(id), ct))
+            .WithName("GetLot").Produces<LotDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapGet("/lots/propose", ([AsParameters] ProposeLots query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("ProposeLots").Produces<IReadOnlyList<Erp.Core.Contracts.LotAllocationDto>>();
+        inventory.MapPost("/lots/{id:int}/status", (int id, ChangeLotStatus body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("ChangeLotStatus").Saves();
+        inventory.MapPut("/lots/{id:int}", (int id, UpdateLot body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateLot").Saves();
+        inventory.MapPut("/partner-shelf-life-rules", (SavePartnerShelfLifeRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SavePartnerShelfLifeRule").Produces<IReadOnlyList<PartnerShelfLifeRuleDto>>();
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

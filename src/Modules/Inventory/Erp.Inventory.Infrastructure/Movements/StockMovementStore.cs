@@ -109,10 +109,11 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
             {
                 var existing = (await grid.ReadAsync<(int RowNo, int? LotId, decimal QtyBase)>().ConfigureAwait(false))
                     .Select(e => (e.RowNo, e.LotId, e.QtyBase)).ToList();
-                return new LotResolution(true, existing, new Dictionary<int, (byte, int?)>(), [], new Dictionary<int, int>(), 1);
+                return new LotResolution(true, existing, new Dictionary<int, (byte, int?, int)>(), [], new Dictionary<int, int>(), 1);
             }
 
-            var rows = (await grid.ReadAsync<(int RowNo, byte Kind, int? LotId)>().ConfigureAwait(false)).ToDictionary(r => r.RowNo, r => (r.Kind, r.LotId));
+            var rows = (await grid.ReadAsync<(int RowNo, byte Kind, int? LotId, int MinRemainingDays)>().ConfigureAwait(false))
+                .ToDictionary(r => r.RowNo, r => (r.Kind, r.LotId, r.MinRemainingDays));
             var candidates = (await grid.ReadAsync<CandidateRow>().ConfigureAwait(false))
                 .Select(c => new Domain.Lots.LotCandidate(c.WarehouseId, c.DepotId, c.ItemVariantId, c.LotId, c.LotCode, c.Status,
                     c.ExpiryDate is { } e ? DateOnly.FromDateTime(e) : null, c.ExpiryKind, c.FirstReceiptDate is { } f ? DateOnly.FromDateTime(f) : null,
@@ -132,12 +133,13 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
         var lines = Table(("RowNo", typeof(int)), ("SourceLineId", typeof(long)), ("SourceRole", typeof(byte)), ("MovementTypeCode", typeof(string)),
             ("DepotId", typeof(int)), ("WarehouseId", typeof(int)), ("ItemVariantId", typeof(int)), ("QtyBase", typeof(decimal)), ("UnitCost", typeof(decimal)),
             ("CostAmount", typeof(decimal)), ("LotId", typeof(int)), ("SerialId", typeof(int)), ("CostCenterId", typeof(int)), ("ProjectId", typeof(int)),
-            ("ReasonId", typeof(int)), ("CounterRowNo", typeof(int)), ("ReversalOfId", typeof(long)));
+            ("ReasonId", typeof(int)), ("CounterRowNo", typeof(int)), ("ReversalOfId", typeof(long)), ("LotOverrideReason", typeof(byte)));
         foreach (var c in costed.Lines)
         {
             var l = c.Line.Request;
             lines.Rows.Add(c.Line.Row, l.SourceLineId, l.SourceRole, l.MovementTypeCode, Db(l.DepotId), l.WarehouseId, l.ItemVariantId, l.QtyBase, c.UnitCost,
-                c.CostAmount, Db(l.LotId), Db(l.SerialId), Db(l.CostCenterId), Db(l.ProjectId), Db(l.ReasonId), Db(c.Line.CounterRow), Db(c.Line.ReversalOfId));
+                c.CostAmount, Db(l.LotId), Db(l.SerialId), Db(l.CostCenterId), Db(l.ProjectId), Db(l.ReasonId), Db(c.Line.CounterRow), Db(c.Line.ReversalOfId),
+                Db(l.LotOverrideReason));
         }
 
         var keys = Table(("WarehouseId", typeof(int)), ("DepotId", typeof(int)), ("ItemVariantId", typeof(int)), ("LotId", typeof(int)), ("Qty", typeof(decimal)),

@@ -36,7 +36,7 @@ public sealed record PostedStockMovement(long MovementId, long SourceLineId, byt
 /// de alocat, 3 pereche sau stornare) cu lotul rezolvat, loturile cheilor cu iesiri, lotul tehnic pe varianta si regula de alegere.
 /// </summary>
 public sealed record LotResolution(bool Replayed, IReadOnlyList<(int Row, int? LotId, decimal Qty)> Existing,
-    IReadOnlyDictionary<int, (byte Kind, int? LotId)> Rows, IReadOnlyList<Domain.Lots.LotCandidate> Candidates, IReadOnlyDictionary<int, int> TechnicalLots,
+    IReadOnlyDictionary<int, (byte Kind, int? LotId, int MinRemainingDays)> Rows, IReadOnlyList<Domain.Lots.LotCandidate> Candidates, IReadOnlyDictionary<int, int> TechnicalLots,
     byte PickRule);
 
 /// <summary>Setarile de data ale firmei (S1 3.3), citite la fiecare inregistrare.</summary>
@@ -66,7 +66,7 @@ public interface IStockMovementStore
 /// outbox, oricare ar fi sursa. Faptele din afara ERP (POS) nu trec prin verificarea datei. Fara modulul Stocuri licentiat nu scrie nimic.
 /// </summary>
 public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license, IPeriodLock periods, ICurrentContext context, IOutbox outbox,
-    TimeProvider time, CostRecalculator recalculator, Costing.LandedCostService landedCosts) : IStockLedger
+    TimeProvider time, CostRecalculator recalculator, Costing.LandedCostService landedCosts, Lots.LotService lots, Lots.ILotStore lotStore) : IStockLedger
 {
     public bool IsEnabled => license.IsModuleActive(InventoryModule.Code);
 
@@ -157,6 +157,19 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         return saved.Id;
     }
 
+    public Task<IReadOnlyList<LotAllocationDto>> ProposeLotsAsync(LotProposalRequest request, CancellationToken ct) =>
+        IsEnabled ? lots.ProposeAsync(request, ct) : Task.FromResult<IReadOnlyList<LotAllocationDto>>([]);
+
+    public async Task<LotInfoDto?> FindLotAsync(int companyId, int itemVariantId, string lotCode, DateOnly? expiryDate, CancellationToken ct) =>
+        Info(await lotStore.GetAsync(companyId, new Lots.LotLookup(ItemVariantId: itemVariantId, LotCode: lotCode, ExpiryDate: expiryDate), ct).ConfigureAwait(false));
+
+    public async Task<LotInfoDto?> FindCkuAsync(int companyId, string ckuCodeOrUid, CancellationToken ct) =>
+        Info(await lotStore.GetAsync(companyId, Guid.TryParse(ckuCodeOrUid, out var uid) ? new Lots.LotLookup(CkuUid: uid) : new Lots.LotLookup(CkuCode: ckuCodeOrUid),
+            ct).ConfigureAwait(false));
+
+    private static LotInfoDto? Info(Lots.LotDto? lot) =>
+        lot is null ? null : new LotInfoDto(lot.LotId, lot.CkuUid, lot.CkuCode, lot.LotCode, lot.SupplierLotCode, lot.ExpiryDate, lot.Status);
+
     /// <summary>Starea de cost a cheilor (blocate), costul calculat de motor (S3), apoi scrierea intr-un singur apel SQL.</summary>
     private async Task<StockPostingOutcome> PostCostedAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int? employeeId, CancellationToken ct)
     {
@@ -222,13 +235,15 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         {
             var demands = lines.Where(l => resolution.Rows[l.Row].Kind == 2)
                 .Select(l => new Domain.Lots.LotDemand(l.Row, l.Request.WarehouseId, l.Request.DepotId, l.Request.ItemVariantId, -l.Request.QtyBase,
-                    resolution.Rows[l.Row].LotId ?? l.Request.LotId, l.Request.MovementTypeCode))
+                    resolution.Rows[l.Row].LotId ?? l.Request.LotId, l.Request.MovementTypeCode, resolution.Rows[l.Row].MinRemainingDays,
+                    l.Request.LotOverrideReason))
                 .ToList();
             IReadOnlyList<Domain.Lots.LotAllocation> allocations;
             try
             {
                 allocations = Domain.Lots.LotAllocator.Allocate(demands, resolution.Candidates, resolution.TechnicalLots, request.MovementDate,
-                    resolution.PickRule, request.IsExternalFact);
+                    resolution.PickRule, request.IsExternalFact, new Domain.Lots.LotRights(context.HasPermission(InventoryPermissions.LotSellAfterBestBefore),
+                        context.HasPermission(InventoryPermissions.LotOverrideShelfLife)));
             }
             catch (Domain.Lots.LotAllocationException e)
             {
@@ -237,7 +252,7 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
 
             foreach (var line in lines.Where(l => l.CounterRow is null))
             {
-                var (kind, lotId) = resolution.Rows[line.Row];
+                var (kind, lotId, _) = resolution.Rows[line.Row];
                 parts[line.Row] = kind == 2
                     ? allocations.Where(a => a.Row == line.Row).Select(a => ((int?)a.LotId, -a.Qty)).ToList()
                     : [(kind == 0 ? null : lotId ?? line.Request.LotId, line.Request.QtyBase)];

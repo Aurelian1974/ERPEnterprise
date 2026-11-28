@@ -6421,6 +6421,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/lots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/lots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLot"];
+        put: operations["UpdateLot"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/lots/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProposeLots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/lots/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangeLotStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/partner-shelf-life-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SavePartnerShelfLifeRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/items/{itemId}/stock-settings": {
         parameters: {
             query?: never;
@@ -14673,6 +14753,138 @@ export interface components {
             openLayers: number;
             value: string;
             averageCost: null | string;
+        };
+        ChangeLotStatus: {
+            /** Format: int32 */
+            id: number;
+            toStatus: components["schemas"]["LotStatus"];
+            reason: null | string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        LotAllocationDto: {
+            /** Format: int32 */
+            lotId: number;
+            ckuCode: string;
+            lotCode: string;
+            /** Format: date */
+            expiryDate: null | string;
+            /** Format: double */
+            qtyBase: number;
+            /** Format: int32 */
+            daysLeft: number;
+            isFirstChoice: boolean;
+        };
+        LotDto: {
+            /** Format: int32 */
+            lotId: number;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            variantName: string;
+            lotCode: string;
+            ckuCode: string;
+            /** Format: uuid */
+            ckuUid: string;
+            supplierLotCode: null | string;
+            /** Format: int32 */
+            supplierPartnerId: null | number;
+            supplierName: null | string;
+            /** Format: date */
+            productionDate: null | string;
+            /** Format: date */
+            expiryDate: null | string;
+            /** Format: uint8 */
+            expiryKind: null | number;
+            countryOfOriginCode: null | string;
+            status: components["schemas"]["LotStatus"];
+            statusReason: null | string;
+            isTechnical: boolean;
+            /** Format: date */
+            firstReceiptDate: null | string;
+            history: components["schemas"]["LotHistoryDto"][];
+            stock: components["schemas"]["LotStockDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        LotHistoryDto: {
+            fromStatus: null | components["schemas"]["LotStatus"];
+            toStatus: components["schemas"]["LotStatus"];
+            reason: null | string;
+            sourceDocumentType: null | string;
+            /** Format: int64 */
+            sourceDocumentId: null | number;
+            /** Format: date-time */
+            changedAt: string;
+            changedByName: null | string;
+        };
+        LotItemDto: {
+            /** Format: int32 */
+            lotId: number;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            variantName: string;
+            lotCode: string;
+            ckuCode: string;
+            supplierLotCode: null | string;
+            /** Format: date */
+            expiryDate: null | string;
+            /** Format: uint8 */
+            expiryKind: null | number;
+            /** Format: int32 */
+            daysLeft: null | number;
+            status: components["schemas"]["LotStatus"];
+            isTechnical: boolean;
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            qtyOnHand: string;
+        };
+        LotStatus: number;
+        LotStockDto: {
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            qtyOnHand: string;
+        };
+        PartnerShelfLifeRuleDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            partnerId: number;
+            partnerName: string;
+            /** Format: int32 */
+            itemId: null | number;
+            itemName: null | string;
+            /** Format: int32 */
+            itemGroupId: null | number;
+            itemGroupName: null | string;
+            /** Format: int32 */
+            minRemainingDays: number;
+        };
+        SavePartnerShelfLifeRule: {
+            /** Format: int32 */
+            partnerId: number;
+            /** Format: int32 */
+            itemId: null | number;
+            /** Format: int32 */
+            itemGroupId: null | number;
+            /** Format: int32 */
+            minRemainingDays: null | number;
+        };
+        UpdateLot: {
+            /** Format: int32 */
+            id: number;
+            supplierLotCode: null | string;
+            countryOfOriginCode: null | string;
+            /** Format: date */
+            productionDate: null | string;
+            /** Format: date */
+            expiryDate: null | string;
+            reason: string;
+            /** Format: byte */
+            rowVersion: string;
         };
     };
     responses: never;
@@ -41227,6 +41439,246 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLots: {
+        parameters: {
+            query?: {
+                ItemVariantId?: number;
+                WarehouseId?: number;
+                Search?: string;
+                ExpiringWithinDays?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotItemDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLot"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ProposeLots: {
+        parameters: {
+            query: {
+                WarehouseId: number;
+                DepotId?: number;
+                ItemVariantId: number;
+                QtyBase: string;
+                CustomerPartnerId?: number;
+                DeliveryDate: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotAllocationDto"][];
+                };
+            };
+        };
+    };
+    ChangeLotStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeLotStatus"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SavePartnerShelfLifeRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePartnerShelfLifeRule"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerShelfLifeRuleDto"][];
                 };
             };
         };

@@ -66,3 +66,37 @@ public sealed class LotAllocatorTests
         Assert.Equal([(1, 1, 6m), (2, 1, 4m), (2, 2, 2m)], result.Select(a => (a.Row, a.LotId, a.Qty)));
     }
 }
+
+/// <summary>Drepturile si motivul la alegerea lotului (02.05, S4 3.2, 3.5, 8).</summary>
+public sealed class LotRightsTests
+{
+    private static readonly DateOnly Delivery = new(2026, 11, 26);
+
+    private static LotCandidate Lot(int id, DateOnly expiry, byte kind = 1) => new(1, null, 7, id, $"L{id}", 1, expiry, kind, new DateOnly(2026, 10, id), false, 100);
+
+    [Fact]
+    [Trait("Criteriu", "02.05-S4-3.5")]
+    public void Choosing_another_lot_than_the_first_proposal_needs_a_reason_and_a_short_lot_needs_the_right()
+    {
+        var lots = new[] { Lot(1, new DateOnly(2027, 1, 1)), Lot(2, new DateOnly(2027, 2, 1)), Lot(3, new DateOnly(2026, 12, 1)) };
+        Assert.Equal(LotAllocator.OverrideReasonRequired, Assert.Throws<LotAllocationException>(() =>
+            LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, 2, "ISSUE_SALE", 30)], lots, new Dictionary<int, int>(), Delivery, 1, false)).Code);
+        Assert.Single(LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, 2, "ISSUE_SALE", 30, 1)], lots, new Dictionary<int, int>(), Delivery, 1, false));
+        Assert.Equal(LotAllocator.ShelfLifeTooShort, Assert.Throws<LotAllocationException>(() =>
+            LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, 3, "ISSUE_SALE", 30, 1)], lots, new Dictionary<int, int>(), Delivery, 1, false)).Code);
+        Assert.Single(LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, 3, "ISSUE_SALE", 30, 1)], lots, new Dictionary<int, int>(), Delivery, 1, false,
+            new LotRights(false, true)));
+    }
+
+    [Fact]
+    [Trait("Criteriu", "02.05-S4-3.3")]
+    public void A_best_before_lot_past_its_date_is_sold_only_with_the_right()
+    {
+        var lots = new[] { Lot(1, new DateOnly(2026, 11, 20), kind: 2) };
+        Assert.Equal(LotAllocator.InsufficientQty, Assert.Throws<LotAllocationException>(() =>
+            LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, null, "ISSUE_SALE")], lots, new Dictionary<int, int>(), Delivery, 1, false)).Code);
+        Assert.Single(LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, null, "ISSUE_SALE")], lots, new Dictionary<int, int>(), Delivery, 1, false,
+            new LotRights(true, false)));
+        Assert.Single(LotAllocator.Allocate([new LotDemand(1, 1, null, 7, 5, null, "UNLOAD")], lots, new Dictionary<int, int>(), Delivery, 1, false));
+    }
+}

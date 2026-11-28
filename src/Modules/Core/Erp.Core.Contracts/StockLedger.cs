@@ -21,7 +21,26 @@ public interface IStockLedger
     /// 0 fara Stocuri licentiat.
     /// </summary>
     Task<int> AdjustInboundCostAsync(InboundCostAdjustmentRequest request, CancellationToken ct);
+
+    /// <summary>Propunerea FEFO de loturi pentru o iesire (02.05, S4 3.5, 6): loturile disponibile, cu durata minima a clientului.</summary>
+    Task<IReadOnlyList<LotAllocationDto>> ProposeLotsAsync(LotProposalRequest request, CancellationToken ct);
+
+    /// <summary>Lotul unei variante dupa cod si, optional, termen (S4 6).</summary>
+    Task<LotInfoDto?> FindLotAsync(int companyId, int itemVariantId, string lotCode, DateOnly? expiryDate, CancellationToken ct);
+
+    /// <summary>Lotul dupa codul sau id-ul CKU de pe eticheta interna (S4 6).</summary>
+    Task<LotInfoDto?> FindCkuAsync(int companyId, string ckuCodeOrUid, CancellationToken ct);
 }
+
+/// <summary>Cererea de propunere a loturilor: cheia, cantitatea, clientul (durata minima) si data livrarii.</summary>
+public sealed record LotProposalRequest(int CompanyId, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase, int? CustomerPartnerId,
+    DateOnly DeliveryDate, long? ExcludeReservationsOfSourceLineId);
+
+/// <summary>O parte a propunerii: lotul, cantitatea propusa, zilele ramase si daca e prima alegere FEFO.</summary>
+public sealed record LotAllocationDto(int LotId, string CkuCode, string LotCode, DateOnly? ExpiryDate, decimal QtyBase, int DaysLeft, bool IsFirstChoice);
+
+/// <summary>Un lot (CKU) gasit dupa cod sau eticheta.</summary>
+public sealed record LotInfoDto(int LotId, Guid CkuUid, string CkuCode, string LotCode, string? SupplierLotCode, DateOnly? ExpiryDate, LotStatus Status);
 
 public enum InboundCostSourceKind : byte
 {
@@ -109,4 +128,12 @@ public sealed class NoStockLedger : IStockLedger
         Task.FromResult<IReadOnlyList<StockAvailabilityDto>>([]);
 
     public Task<int> AdjustInboundCostAsync(InboundCostAdjustmentRequest request, CancellationToken ct) => Task.FromResult(0);
+
+    public Task<IReadOnlyList<LotAllocationDto>> ProposeLotsAsync(LotProposalRequest request, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<LotAllocationDto>>([]);
+
+    public Task<LotInfoDto?> FindLotAsync(int companyId, int itemVariantId, string lotCode, DateOnly? expiryDate, CancellationToken ct) =>
+        Task.FromResult<LotInfoDto?>(null);
+
+    public Task<LotInfoDto?> FindCkuAsync(int companyId, string ckuCodeOrUid, CancellationToken ct) => Task.FromResult<LotInfoDto?>(null);
 }

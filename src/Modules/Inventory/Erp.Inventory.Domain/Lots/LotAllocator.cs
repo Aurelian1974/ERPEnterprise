@@ -2,11 +2,21 @@ namespace Erp.Inventory.Domain.Lots;
 
 /// <summary>Un lot candidat al unei chei (gestiune, depozit, varianta): starea, termenul, prima intrare si disponibilul la data miscarii.</summary>
 public sealed record LotCandidate(int WarehouseId, int? DepotId, int ItemVariantId, int LotId, string LotCode, byte Status, DateOnly? ExpiryDate, byte? ExpiryKind,
-    DateOnly? FirstReceiptDate, bool IsTechnical, decimal Available);
+    DateOnly? FirstReceiptDate, bool IsTechnical, decimal Available)
+{
+    /// <summary>Codul CKU, pentru afisare (propunerea de loturi).</summary>
+    public string? CkuCode { get; init; }
+}
 
 /// <summary>O iesire de alocat: randul, cheia, cantitatea (pozitiva), lotul ales (daca e), tipul miscarii si durata minima ramasa ceruta de client.</summary>
 public sealed record LotDemand(int Row, int WarehouseId, int? DepotId, int ItemVariantId, decimal Qty, int? LotId, string MovementTypeCode,
-    int MinRemainingDays = 0);
+    int MinRemainingDays = 0, byte? OverrideReason = null);
+
+/// <summary>Drepturile utilizatorului la alegerea lotului (S4 8): vanzarea dupa data durabilitatii minimale, livrarea sub durata minima a clientului.</summary>
+public sealed record LotRights(bool SellAfterBestBefore, bool OverrideShelfLife)
+{
+    public static LotRights None { get; } = new(false, false);
+}
 
 /// <summary>O parte alocata: randul cererii, lotul si cantitatea (pozitiva).</summary>
 public sealed record LotAllocation(int Row, int LotId, decimal Qty);
@@ -29,6 +39,7 @@ public static class LotAllocator
     public const string StatusForbidsIssue = "INV_LOT_STATUS_FORBIDS_ISSUE";
     public const string Expired = "INV_LOT_EXPIRED";
     public const string ShelfLifeTooShort = "INV_LOT_SHELF_LIFE_TOO_SHORT";
+    public const string OverrideReasonRequired = "INV_LOT_OVERRIDE_REASON_REQUIRED";
 
     private static readonly HashSet<string> CustomerIssues = new(StringComparer.Ordinal) { "ISSUE_SALE", "POS_SALE" };
 
@@ -49,12 +60,27 @@ public static class LotAllocator
 
     private static bool UseByPassed(LotCandidate lot, DateOnly date) => lot.ExpiryKind == 1 && lot.ExpiryDate is { } expiry && expiry < date;
 
+    private static bool BestBeforePassed(LotCandidate lot, DateOnly date) => lot.ExpiryKind == 2 && lot.ExpiryDate is { } expiry && expiry < date;
+
+    /// <summary>Loturile propuse FEFO pentru o cerere, in ordine (S4 3.5 pasii 1–4).</summary>
+    public static IEnumerable<LotCandidate> Eligible(IEnumerable<LotCandidate> lots, LotDemand demand, DateOnly date, byte pickRule, LotRights rights)
+    {
+        ArgumentNullException.ThrowIfNull(rights);
+        var customer = IsCustomerIssue(demand.MovementTypeCode);
+        return lots.Where(l => l.Status == 1 && !l.IsTechnical
+                && !(customer && UseByPassed(l, date)) && !(customer && BestBeforePassed(l, date) && !rights.SellAfterBestBefore) && !TooShort(l, demand, date))
+            .OrderBy(l => pickRule == 2 ? l.FirstReceiptDate ?? DateOnly.MaxValue : l.ExpiryDate ?? DateOnly.MaxValue)
+            .ThenBy(l => l.FirstReceiptDate ?? DateOnly.MaxValue)
+            .ThenBy(l => l.LotId);
+    }
+
     private static bool TooShort(LotCandidate lot, LotDemand demand, DateOnly date) =>
         demand.MinRemainingDays > 0 && IsCustomerIssue(demand.MovementTypeCode) && lot.ExpiryDate is { } expiry && expiry.DayNumber - date.DayNumber < demand.MinRemainingDays;
 
     public static IReadOnlyList<LotAllocation> Allocate(IReadOnlyList<LotDemand> demands, IReadOnlyList<LotCandidate> candidates,
-        IReadOnlyDictionary<int, int> technicalLots, DateOnly date, byte pickRule, bool isExternalFact)
+        IReadOnlyDictionary<int, int> technicalLots, DateOnly date, byte pickRule, bool isExternalFact, LotRights? rights = null)
     {
+        rights ??= LotRights.None;
         ArgumentNullException.ThrowIfNull(demands);
         ArgumentNullException.ThrowIfNull(candidates);
         ArgumentNullException.ThrowIfNull(technicalLots);
@@ -93,9 +119,22 @@ public static class LotAllocator
                         throw new LotAllocationException(Expired, $"Lotul {lot.LotCode} a expirat; nu se mai poate vinde.");
                     }
 
-                    if (TooShort(lot, demand, date))
+                    if (IsCustomerIssue(demand.MovementTypeCode) && BestBeforePassed(lot, date) && !rights.SellAfterBestBefore)
+                    {
+                        throw new LotAllocationException(Expired, $"Data durabilității minimale a lotului {lot.LotCode} a trecut; vânzarea cere dreptul Inv.Lot.SellAfterBestBefore.");
+                    }
+
+                    if (TooShort(lot, demand, date) && !rights.OverrideShelfLife)
                     {
                         throw new LotAllocationException(ShelfLifeTooShort, $"Lotul {lot.LotCode} are prea puține zile până la expirare pentru acest client.");
+                    }
+
+                    // Alt lot decat primul propus, la livrarea catre client: motivul e obligatoriu si se jurnalizeaza pe miscare (S4 3.5, regula 7).
+                    var first = Eligible(lots, demand, date, pickRule, rights).FirstOrDefault();
+                    if (IsCustomerIssue(demand.MovementTypeCode) && (first is null || first.LotId != lot.LotId) && demand.OverrideReason is null)
+                    {
+                        throw new LotAllocationException(OverrideReasonRequired,
+                            $"Lotul {lot.LotCode} nu e primul propus (FEFO: {first?.LotCode ?? "niciunul"}); alegerea altui lot cere motivul.");
                     }
                 }
 
@@ -113,12 +152,7 @@ public static class LotAllocator
 
             if (remaining > 0)
             {
-                var eligible = lots.Where(l => l.Status == 1 && !l.IsTechnical && l.LotId != demand.LotId
-                        && !(IsCustomerIssue(demand.MovementTypeCode) && UseByPassed(l, date)) && !TooShort(l, demand, date))
-                    .OrderBy(l => pickRule == 2 ? l.FirstReceiptDate ?? DateOnly.MaxValue : l.ExpiryDate ?? DateOnly.MaxValue)
-                    .ThenBy(l => l.FirstReceiptDate ?? DateOnly.MaxValue)
-                    .ThenBy(l => l.LotId);
-                foreach (var lot in eligible)
+                foreach (var lot in Eligible(lots, demand, date, pickRule, rights).Where(l => l.LotId != demand.LotId).ToList())
                 {
                     if (remaining == 0)
                     {

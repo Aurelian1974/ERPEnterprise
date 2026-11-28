@@ -7,7 +7,8 @@ MERGE core.Role AS target
 USING (VALUES
     (N'SEF_DEPOZIT',      N'Șef depozit',      N'Gestiunile, blocarea lor, gestionarii și predarea, setările de stoc ale articolelor.'),
     (N'GESTIONAR',        N'Gestionar',        N'Consultarea gestiunilor, de obicei limitată la gestiunea proprie.'),
-    (N'CONTABIL_STOCURI', N'Contabil stocuri', N'Toate permisiunile Stocurilor, fără schimbarea metodei de evaluare.')
+    (N'CONTABIL_STOCURI', N'Contabil stocuri', N'Toate permisiunile Stocurilor, fără schimbarea metodei de evaluare.'),
+    (N'RESP_CALITATE',    N'Responsabil calitate', N'Loturile: carantina și eliberarea, blocarea, atributele, retragerile.')
 ) AS source (Code, Name, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 AND (target.Name <> source.Name OR ISNULL(target.Description, N'') <> source.Description) THEN
@@ -48,7 +49,16 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'GESTIONAR',   N'Inv.LoadUnload.Edit'),
         (N'DIRECTOR_GENERAL', N'Inv.LoadUnload.Approve'),
         (N'AUDITOR',     N'Inv.Document.View'),
-        (N'AUDITOR',     N'Inv.Warehouse.View')
+        (N'AUDITOR',     N'Inv.Warehouse.View'),
+        (N'RESP_CALITATE', N'Inv.Lot.View'),
+        (N'RESP_CALITATE', N'Inv.Lot.Edit'),
+        (N'RESP_CALITATE', N'Inv.Lot.Release'),
+        (N'RESP_CALITATE', N'Inv.Lot.Block'),
+        (N'RESP_CALITATE', N'Inv.Warehouse.View'),
+        (N'SEF_DEPOZIT', N'Inv.Lot.View'),
+        (N'SEF_DEPOZIT', N'Inv.Lot.Block'),
+        (N'SEF_DEPOZIT', N'Inv.Lot.OverrideShelfLife'),
+        (N'GESTIONAR',   N'Inv.Lot.View')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

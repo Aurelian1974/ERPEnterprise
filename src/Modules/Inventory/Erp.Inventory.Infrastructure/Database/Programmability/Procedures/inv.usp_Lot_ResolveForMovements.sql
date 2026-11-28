@@ -143,36 +143,27 @@ BEGIN
         WHERE r.Kind = 1 AND r.LotId IS NULL;
     END;
 
-    SELECT r.RowNo, r.Kind, r.LotId FROM @Rows AS r ORDER BY r.RowNo;
+    -- Durata minima ramasa la livrarea catre client (S4 3.2): regula clientului pe model, apoi pe grupa, apoi setarea modelului.
+    SELECT r.RowNo, r.Kind, r.LotId,
+        CASE WHEN r.Kind = 2 AND r.MovementTypeCode IN ('ISSUE_SALE', 'POS_SALE')
+             THEN COALESCE(pi.MinRemainingDays, pg.MinRemainingDays, s.MinRemainingShelfLifeDays, 0) ELSE 0 END AS MinRemainingDays
+    FROM @Rows AS r
+    JOIN core.ItemVariant AS v ON v.Id = r.ItemVariantId
+    JOIN core.Item AS i ON i.Id = v.ItemId
+    LEFT JOIN inv.ItemStockSettings AS s ON s.CompanyId = @CompanyId AND s.ItemId = i.Id
+    LEFT JOIN inv.PartnerShelfLifeRule AS pi ON pi.CompanyId = @CompanyId AND pi.PartnerId = @PartnerId AND pi.ItemId = i.Id
+    LEFT JOIN inv.PartnerShelfLifeRule AS pg ON pg.CompanyId = @CompanyId AND pg.PartnerId = @PartnerId AND pg.ItemGroupId = i.ItemGroupId
+    ORDER BY r.RowNo;
 
     -- 3. Loturile cheilor cu iesiri: starea, termenul, prima intrare si disponibilul (soldul la data miscarii si minimul la datele ulterioare).
     DECLARE @Keys TABLE (WarehouseId int, DepotKey int, ItemVariantId int, PRIMARY KEY (WarehouseId, DepotKey, ItemVariantId));
     INSERT INTO @Keys SELECT DISTINCT WarehouseId, ISNULL(DepotId, 0), ItemVariantId FROM @Rows WHERE Kind = 2;
 
-    WITH Running AS (
-        SELECT b.WarehouseId, b.DepotKey, b.ItemVariantId, b.LotKey, b.BalanceDate,
-            SUM(b.QtyIn - b.QtyOut) OVER (PARTITION BY b.WarehouseId, b.DepotKey, b.ItemVariantId, b.LotKey ORDER BY b.BalanceDate ROWS UNBOUNDED PRECEDING) AS Balance
-        FROM inv.StockDayBalance AS b
-        JOIN @Keys AS k ON k.WarehouseId = b.WarehouseId AND k.DepotKey = b.DepotKey AND k.ItemVariantId = b.ItemVariantId
-        WHERE b.LotKey <> 0
-    ),
-    Ranked AS (
-        SELECT r.*, ROW_NUMBER() OVER (PARTITION BY r.WarehouseId, r.DepotKey, r.ItemVariantId, r.LotKey
-                                       ORDER BY CASE WHEN r.BalanceDate <= @MovementDate THEN 0 ELSE 1 END, r.BalanceDate DESC) AS AtDateRank
-        FROM Running AS r
-    ),
-    Lots AS (
-        SELECT WarehouseId, DepotKey, ItemVariantId, LotKey,
-            MAX(CASE WHEN AtDateRank = 1 AND BalanceDate <= @MovementDate THEN Balance END) AS AtDate,
-            MIN(CASE WHEN BalanceDate > @MovementDate THEN Balance END) AS Later
-        FROM Ranked
-        GROUP BY WarehouseId, DepotKey, ItemVariantId, LotKey
-    )
-    SELECT l.WarehouseId, NULLIF(l.DepotKey, 0) AS DepotId, l.ItemVariantId, x.Id AS LotId, x.CkuCode, x.LotCode, x.Status, x.ExpiryDate, x.ExpiryKind,
-        x.FirstReceiptDate, x.IsTechnical,
-        CAST(CASE WHEN l.Later IS NULL OR ISNULL(l.AtDate, 0) < l.Later THEN ISNULL(l.AtDate, 0) ELSE l.Later END AS decimal(19,6)) AS Available
-    FROM Lots AS l
-    JOIN inv.Lot AS x ON x.Id = l.LotKey;
+    SELECT k.WarehouseId, NULLIF(k.DepotKey, 0) AS DepotId, k.ItemVariantId, x.Id AS LotId, x.CkuCode, x.LotCode, x.Status, x.ExpiryDate, x.ExpiryKind,
+        x.FirstReceiptDate, x.IsTechnical, a.Available
+    FROM @Keys AS k
+    CROSS APPLY inv.ufn_LotAvailability(k.WarehouseId, k.DepotKey, k.ItemVariantId, @MovementDate) AS a
+    JOIN inv.Lot AS x ON x.Id = a.LotId;
 
     -- Lotul tehnic al variantelor cu iesiri din afara ERP.
     SELECT x.ItemVariantId, x.Id AS LotId

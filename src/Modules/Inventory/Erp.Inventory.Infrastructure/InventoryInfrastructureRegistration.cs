@@ -28,6 +28,9 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Application.Costing.LandedCostService>();
         services.AddScoped<Application.Costing.IRetailValuationStore, Costing.RetailValuationStore>();
         services.AddScoped<Application.Costing.IValuationViewStore, Costing.ValuationViewStore>();
+        services.AddScoped<Application.Lots.ILotStore, Lots.LotStore>();
+        services.AddScoped<Application.Lots.LotService>();
+        services.AddTransient<Lots.LotExpiryJob>();
         // Lista de inchidere si concordanta C3 (S3 3.5–3.7): pasii Stocurilor si evidenta operativa a stocului.
         foreach (var (code, severity, allowOverride, ok, fail) in Costing.StockCloseCheck.Shipped)
         {
@@ -111,6 +114,9 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54455] = (ErpErrorKind.Conflict, "INV_LOT_INSUFFICIENT_QTY"),
         [54456] = (ErpErrorKind.Conflict, "INV_LOT_STATUS_FORBIDS_ISSUE"),
         [54457] = (ErpErrorKind.Conflict, "INV_LOT_EXPIRED"),
+        [54458] = (ErpErrorKind.Conflict, "INV_LOT_SHELF_LIFE_TOO_SHORT"),
+        [54459] = (ErpErrorKind.Validation, "INV_LOT_OVERRIDE_REASON_REQUIRED"),
+        [54464] = (ErpErrorKind.Conflict, "INV_LOT_STATUS_TRANSITION_INVALID"),
         [54311] = (ErpErrorKind.Validation, "INV_RETAIL_PRICE_MISSING"),
         [54312] = (ErpErrorKind.Validation, "INV_RETAIL_WAREHOUSE_REQUIRED"),
         [54313] = (ErpErrorKind.Conflict, "INV_RETAIL_PRICE_CHANGE_BACKDATED"),

@@ -31,14 +31,14 @@ BEGIN
     DECLARE @Rows TABLE (
         RowNo int PRIMARY KEY, SourceLineId bigint, SourceRole tinyint, MovementTypeId smallint, Direction smallint, DepotId int, WarehouseId int,
         ItemVariantId int, QtyBase decimal(19,6), LotId int, SerialId int, CostCenterId int, ProjectId int, ReasonId int,
-        CounterRowNo int, ReversalOfId bigint, NegativePolicy tinyint, UnitCost decimal(19,6), CostAmount decimal(19,2),
+        CounterRowNo int, ReversalOfId bigint, LotOverrideReason tinyint, NegativePolicy tinyint, UnitCost decimal(19,6), CostAmount decimal(19,2),
         IsForcedNegative bit NOT NULL DEFAULT (0), MovementId bigint, PostingSeq bigint, RetailPrice decimal(19,6), RetailAmount decimal(19,2),
         RetailVatAmount decimal(19,2), RetailDischargeMethod tinyint);
 
     INSERT INTO @Rows (RowNo, SourceLineId, SourceRole, MovementTypeId, Direction, DepotId, WarehouseId, ItemVariantId, QtyBase, LotId,
-        SerialId, CostCenterId, ProjectId, ReasonId, CounterRowNo, ReversalOfId, UnitCost, CostAmount)
+        SerialId, CostCenterId, ProjectId, ReasonId, CounterRowNo, ReversalOfId, LotOverrideReason, UnitCost, CostAmount)
     SELECT l.RowNo, l.SourceLineId, l.SourceRole, t.Id, SIGN(l.QtyBase), l.DepotId, l.WarehouseId, l.ItemVariantId, l.QtyBase, l.LotId,
-        l.SerialId, l.CostCenterId, l.ProjectId, l.ReasonId, l.CounterRowNo, l.ReversalOfId, l.UnitCost, l.CostAmount
+        l.SerialId, l.CostCenterId, l.ProjectId, l.ReasonId, l.CounterRowNo, l.ReversalOfId, l.LotOverrideReason, l.UnitCost, l.CostAmount
     FROM @Lines AS l
     LEFT JOIN inv.MovementType AS t ON t.Code = l.MovementTypeCode;
 
@@ -231,13 +231,14 @@ BEGIN
     DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint, LotKey int, SerialKey int);
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
         MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, RetailDischargeMethod, ReasonId, PartnerId, CostCenterId, ProjectId,
-        EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
+        EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, LotOverrideReason,
+        CreatedBy)
     OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq, inserted.LotKey, inserted.SerialKey INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
         r.RetailAmount, r.RetailVatAmount, CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
-        r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, @UserId
+        r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, r.LotOverrideReason, @UserId
     FROM @Rows AS r
     WHERE r.CounterRowNo IS NULL;
     UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq
