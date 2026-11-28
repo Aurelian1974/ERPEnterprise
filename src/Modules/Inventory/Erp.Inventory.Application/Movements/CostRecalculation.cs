@@ -10,7 +10,11 @@ public sealed record CostHistoryMovement(long Id, DateOnly MovementDate, DateOnl
 
 /// <summary>Istoria unei chei: metoda, costul de rezerva, miscarile in ordine si, pentru intrarile din transferuri, iesirile pereche.</summary>
 public sealed record CostHistory(CostMethod Method, decimal? FallbackUnitCost, IReadOnlyList<CostHistoryMovement> Movements,
-    IReadOnlyDictionary<long, decimal> CounterAmounts, ILookup<long, CostCounterPart> CounterParts);
+    IReadOnlyDictionary<long, decimal> CounterAmounts, ILookup<long, CostCounterPart> CounterParts)
+{
+    /// <summary>Schimbarile de metoda validate ale modelului (S1 4.5), in ordinea datei; goale la cheile cu metoda impusa (amanunt prin K).</summary>
+    public IReadOnlyList<(DateOnly Date, CostMethod OldMethod, CostMethod NewMethod)> MethodChanges { get; init; } = [];
+}
 
 /// <summary>O cheie in coada de recalculare, cu numarul de miscari de refacut si setarea firmei (S3 3.5).</summary>
 public sealed record QueuedCostKey(CostKey Key, DateOnly FromDate, int MovementCount, byte CostRecalcScope);
@@ -105,14 +109,24 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
     private async Task<CostRebuild> RebuildOneAsync(int companyId, CostKey key, CostAttribution? attribution, CancellationToken ct)
     {
         var history = await store.HistoryAsync(companyId, key, ct).ConfigureAwait(false);
-        var state = new CostKeyState { Method = history.Method, FallbackUnitCost = history.FallbackUnitCost };
+        var changes = new Queue<(DateOnly Date, CostMethod OldMethod, CostMethod NewMethod)>(history.MethodChanges);
+        var state = new CostKeyState { Method = changes.Count > 0 ? changes.Peek().OldMethod : history.Method, FallbackUnitCost = history.FallbackUnitCost };
         var results = new Dictionary<long, CostLineResult>();
         var rowOf = new Dictionary<int, long>();
         var row = 0;
+        long lastSeq = 0;
         foreach (var m in history.Movements)
         {
+            // Schimbarea de metoda intra in vigoare inaintea primei miscari de la data ei (S1 4.5).
+            while (changes.Count > 0 && changes.Peek().Date <= m.MovementDate)
+            {
+                var change = changes.Dequeue();
+                CostEngine.ChangeMethod(state, change.NewMethod, change.Date, lastSeq, row == 0 ? null : row);
+            }
+
             row++;
             rowOf[row] = m.Id;
+            lastSeq = m.PostingSeq;
             CostCounter? counter = m.CounterMovementId is { } outId && history.CounterAmounts.TryGetValue(outId, out var outAmount)
                 ? new CostCounter(-outAmount, history.CounterParts[outId].ToList())
                 : null;
@@ -128,6 +142,12 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
             decimal? added = plainInbound && attribution is not null && attribution.InboundDeltas.TryGetValue(m.Id, out var delta) ? delta : null;
             results[m.Id] = CostEngine.Apply(state, new CostLine(row, m.QtyBase, m.MovementDate, m.PostingSeq,
                 plainInbound && added is null ? m.UnitCost : null, counter, reversal, plainInbound ? m.CostAmount + (added ?? 0) : null));
+        }
+
+        while (changes.Count > 0)
+        {
+            var change = changes.Dequeue();
+            CostEngine.ChangeMethod(state, change.NewMethod, change.Date, lastSeq, row == 0 ? null : row);
         }
 
         var byId = history.Movements.ToDictionary(m => m.Id);

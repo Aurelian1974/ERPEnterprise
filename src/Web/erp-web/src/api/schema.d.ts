@@ -6293,6 +6293,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/valuation-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetValuationChanges"];
+        put?: never;
+        post: operations["CreateValuationChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/valuation-changes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetValuationChange"];
+        put: operations["UpdateValuationChange"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/valuation-changes/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateValuationChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/valuation-changes/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelValuationChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/cost-layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCostLayers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/cost-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCostAdjustments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/cost-recalc-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCostRecalcQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/cost-recalc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RecalculateCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/items/{itemId}/stock-settings": {
         parameters: {
             query?: never;
@@ -14406,6 +14534,145 @@ export interface components {
             warehouseId: number;
             /** Format: date */
             periodStart: string;
+        };
+        CostAdjustmentDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: uint8 */
+            kind: number;
+            /** Format: date */
+            accountingDate: string;
+            warehouseCode: string;
+            variantCode: string;
+            /** Format: int64 */
+            movementId: null | number;
+            sourceDocumentType: null | string;
+            /** Format: int64 */
+            sourceDocumentId: null | number;
+            amount: string;
+            inStock: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CostConsumptionDto: {
+            /** Format: date */
+            movementDate: string;
+            outbound: string;
+            qty: string;
+            layerDocument: string;
+            unitCost: string;
+            value: string;
+        };
+        CostLayerDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            depotCode: null | string;
+            /** Format: int32 */
+            lotId: null | number;
+            sourceDocument: string;
+            originDocument: null | string;
+            /** Format: date */
+            layerDate: string;
+            qtyIn: string;
+            qtyRemaining: string;
+            unitCost: string;
+            valueRemaining: string;
+            isNegative: boolean;
+        };
+        CostLayersDto: {
+            layers: components["schemas"]["CostLayerDto"][];
+            consumptions: components["schemas"]["CostConsumptionDto"][];
+        };
+        CostRecalcQueueItemDto: {
+            /** Format: int32 */
+            companyId: number;
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            /** Format: int32 */
+            depotId: null | number;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            /** Format: int32 */
+            lotId: null | number;
+            /** Format: date */
+            fromDate: string;
+            /** Format: date-time */
+            enqueuedAt: string;
+        };
+        RecalculateCost: {
+            /** Format: int32 */
+            warehouseId: number;
+            /** Format: int32 */
+            depotId: null | number;
+            /** Format: int32 */
+            itemVariantId: number;
+            /** Format: int32 */
+            lotId: null | number;
+        };
+        SaveValuationChange: {
+            /** Format: int32 */
+            id: null | number;
+            newMethod: components["schemas"]["ValuationMethod"];
+            /** Format: date */
+            effectiveDate: string;
+            reason: string;
+            itemIds: number[];
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        ValuationChangeDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            newMethod: components["schemas"]["ValuationMethod"];
+            /** Format: date */
+            effectiveDate: string;
+            reason: string;
+            /** Format: uint8 */
+            status: number;
+            /** Format: date-time */
+            createdAt: string;
+            createdByName: null | string;
+            items: components["schemas"]["ValuationChangeItemDto"][];
+            preview: components["schemas"]["ValuationChangePreviewDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        ValuationChangeItemDto: {
+            /** Format: int32 */
+            itemId: number;
+            itemCode: string;
+            itemName: string;
+            oldMethod: components["schemas"]["ValuationMethod"];
+        };
+        ValuationChangeListItemDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            newMethod: components["schemas"]["ValuationMethod"];
+            /** Format: date */
+            effectiveDate: string;
+            /** Format: uint8 */
+            status: number;
+            /** Format: int32 */
+            itemCount: number;
+            firstItemName: null | string;
+        };
+        ValuationChangePreviewDto: {
+            variantCode: string;
+            variantName: string;
+            warehouseCode: string;
+            depotCode: null | string;
+            qty: string;
+            /** Format: int32 */
+            openLayers: number;
+            value: string;
+            averageCost: null | string;
         };
     };
     responses: never;
@@ -40557,6 +40824,404 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetValuationChanges: {
+        parameters: {
+            query?: {
+                Status?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValuationChangeListItemDto"][];
+                };
+            };
+        };
+    };
+    CreateValuationChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveValuationChange"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetValuationChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValuationChangeDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateValuationChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveValuationChange"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateValuationChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CancelValuationChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCostLayers: {
+        parameters: {
+            query: {
+                ItemVariantId: number;
+                WarehouseId?: number;
+                OpenOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostLayersDto"];
+                };
+            };
+        };
+    };
+    GetCostAdjustments: {
+        parameters: {
+            query?: {
+                Kind?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostAdjustmentDto"][];
+                };
+            };
+        };
+    };
+    GetCostRecalcQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostRecalcQueueItemDto"][];
+                };
+            };
+        };
+    };
+    RecalculateCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecalculateCost"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

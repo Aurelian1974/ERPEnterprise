@@ -35,14 +35,16 @@ public sealed class CostRecalcStore(IDbSession session) : ICostRecalcStore
         {
             CompanyId = companyId, key.WarehouseId, key.DepotId, key.ItemVariantId, key.LotId,
         }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false);
-        var head = await grid.ReadSingleAsync<(byte Method, decimal? FallbackUnitCost)>().ConfigureAwait(false);
+        var head = await grid.ReadSingleAsync<(byte Method, decimal? FallbackUnitCost, bool IsForced)>().ConfigureAwait(false);
         var movements = (await grid.ReadAsync<MovementRow>().ConfigureAwait(false)).Select(m => new CostHistoryMovement(m.Id, DateOnly.FromDateTime(m.MovementDate),
             DateOnly.FromDateTime(m.AccountingDate), m.PostingSeq, m.QtyBase, m.UnitCost, m.CostAmount, m.CounterMovementId, m.ReversalOfId, m.SourceModule,
             m.SourceDocumentType, m.SourceDocumentId)).ToList();
         var amounts = (await grid.ReadAsync<(long MovementId, decimal CostAmount)>().ConfigureAwait(false)).ToDictionary(a => a.MovementId, a => a.CostAmount);
         var parts = (await grid.ReadAsync<PartRow>().ConfigureAwait(false))
             .ToLookup(p => p.OutboundMovementId, p => new CostCounterPart(p.Qty, p.CostAmount, DateOnly.FromDateTime(p.LayerDate), p.PostingSeq, p.LayerId));
-        return new CostHistory((CostMethod)head.Method, head.FallbackUnitCost, movements, amounts, parts);
+        var changes = (await grid.ReadAsync<(DateTime EffectiveDate, byte OldMethod, byte NewMethod)>().ConfigureAwait(false))
+            .Select(c => (DateOnly.FromDateTime(c.EffectiveDate), (CostMethod)c.OldMethod, (CostMethod)c.NewMethod)).ToList();
+        return new CostHistory((CostMethod)head.Method, head.FallbackUnitCost, movements, amounts, parts) { MethodChanges = head.IsForced ? [] : changes };
     }
 
     public async Task<IReadOnlyList<(CostKey Key, DateOnly FromDate)>> RebuildAsync(int companyId, CostKey key,

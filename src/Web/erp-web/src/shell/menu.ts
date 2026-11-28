@@ -117,6 +117,12 @@ export const menuGroups: readonly MenuGroup[] = [
       { id: 'custody', label: 'menu.custody', path: '/stocuri/custodie', icon: '', module: 'Inventory', permission: 'Inv.Custody.Edit' },
       { id: 'production-notes', label: 'menu.productionNotes', path: '/stocuri/predare-produse', icon: '', module: 'Inventory', permission: 'Inv.ProductionNote.Edit' },
       { id: 'movements', label: 'menu.movements', path: '/stocuri/registru', icon: '', module: 'Inventory', permission: 'Inv.Document.View' },
+      { id: 'landed-costs', label: 'menu.landedCosts', path: '/stocuri/evaluare/costuri-adaugate', icon: '', module: 'Inventory', permission: 'Inv.Cost.View' },
+      { id: 'retail-price-changes', label: 'menu.retailPriceChanges', path: '/stocuri/evaluare/modificari-pret', icon: '', module: 'Inventory', permission: 'Inv.RetailPrice.Edit' },
+      { id: 'retail-discharge', label: 'menu.retailDischarge', path: '/stocuri/evaluare/descarcare-amanunt', icon: '', module: 'Inventory', permission: 'Inv.Cost.View' },
+      { id: 'cost-layers', label: 'menu.costLayers', path: '/stocuri/evaluare/straturi', icon: '', module: 'Inventory', permission: 'Inv.Cost.View' },
+      { id: 'valuation-change', label: 'menu.valuationChange', path: '/stocuri/evaluare/schimbare-metoda', icon: '', module: 'Inventory', permission: 'Inv.Cost.View' },
+      { id: 'cost-recalc', label: 'menu.costRecalc', path: '/stocuri/evaluare/recalculare', icon: '', module: 'Inventory', permission: 'Inv.Cost.View' },
     ],
   },
   {

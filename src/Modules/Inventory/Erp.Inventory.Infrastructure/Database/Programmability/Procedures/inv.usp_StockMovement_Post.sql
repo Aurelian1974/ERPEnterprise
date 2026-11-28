@@ -24,7 +24,7 @@ BEGIN
     --      (CostEngine, S3), a straturilor, consumurilor si regularizarilor, a soldului si a soldurilor pe zile;
     --   4. stocul negativ verificat la data miscarii si la toate datele ulterioare, din soldurile pe zile (54101, S2 regula 5); politica
     --      permisiva si faptele din afara ERP trec, cu marcajul IsForcedNegative.
-    -- Coduri: 54001, 54005, 54017, 54101, 54102, 54104, 54105, 54108, 54110, 54116, 54311.
+    -- Coduri: 54001, 54005, 54017, 54101, 54102, 54104, 54105, 54108, 54110, 54116, 54311, 54011.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -103,6 +103,15 @@ BEGIN
                WHERE r.ReasonId IS NOT NULL AND r.ReversalOfId IS NULL
                  AND (mr.Id IS NULL OR mr.Direction <> r.Direction OR (mr.CompanyId IS NOT NULL AND mr.CompanyId <> @CompanyId)))
         THROW 54110, N'Motivul liniei nu există în firmă sau are direcția greșită.', 1;
+
+    -- Schimbarea metodei de evaluare (S1 4.5): nicio miscare cu data inaintea schimbarii validate a modelului (54011).
+    IF @IsExternalFact = 0 AND EXISTS (
+        SELECT 1 FROM @Rows AS r
+        JOIN core.ItemVariant AS v ON v.Id = r.ItemVariantId
+        JOIN inv.ValuationMethodChangeLine AS l ON l.ItemId = v.ItemId
+        JOIN inv.ValuationMethodChange AS c ON c.Id = l.ChangeId AND c.CompanyId = @CompanyId AND c.Status = 2
+        WHERE @MovementDate < c.EffectiveDate AND r.ReversalOfId IS NULL)
+        THROW 54011, N'Metoda de evaluare a articolului s-a schimbat după data mișcării; mișcarea nu se poate data înaintea schimbării.', 1;
 
     -- Politica de stoc negativ (S1 3.6): loturile si seriile, tranzitul si custodia sunt mereu blocate; altfel politica gestiunii.
     UPDATE r

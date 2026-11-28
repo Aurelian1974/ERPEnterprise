@@ -38,6 +38,13 @@ public static class CostCalculator
     public static CostedPosting Calculate(IReadOnlyList<PostingLine> lines, DateOnly movementDate, CostLoad load)
     {
         var results = new Dictionary<int, CostLineResult>();
+        // Straturile noi au numere unice in tot apelul (o plaja pe cheie), pentru maparea LayerRef → Id din inv.usp_StockMovement_Post.
+        var range = 0;
+        foreach (var state in load.Keys.Values)
+        {
+            state.NextRef = range++ * 1_000_000;
+        }
+
         var consumptionsByMovement = load.ReversalConsumptions.ToLookup(c => c.OutboundMovementId);
         foreach (var line in lines.OrderBy(l => l.CounterRow is null ? 0 : 1).ThenBy(l => l.Row))
         {

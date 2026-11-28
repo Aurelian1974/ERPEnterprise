@@ -46,7 +46,7 @@ public sealed class CostLayerState
 /// <summary>Starea unei chei de cost (gestiune, depozit, varianta, lot): cantitatea, valoarea, straturile deschise si costurile de rezerva.</summary>
 public sealed class CostKeyState
 {
-    public CostMethod Method { get; init; }
+    public CostMethod Method { get; set; }
 
     public decimal Qty { get; set; }
 
@@ -64,7 +64,8 @@ public sealed class CostKeyState
 
     public int? LastNegativeRow { get; set; }
 
-    internal int NextRef { get; set; }
+    /// <summary>Urmatorul numar de strat nou; apelantul da fiecarei chei a unui apel o plaja proprie, ca numerele sa fie unice in apel.</summary>
+    public int NextRef { get; set; }
 }
 
 /// <summary>O parte consumata dintr-un strat (S3 3.2, inv.CostLayerConsumption).</summary>
@@ -112,6 +113,45 @@ public static class CostEngine
 {
     public static CostLineResult Apply(CostKeyState key, CostLine line) =>
         line.Qty > 0 ? In(key, line) : Out(key, line);
+
+    /// <summary>
+    /// Schimbarea metodei de evaluare la o data (S1 4.5), fara schimbarea valorii cheii: spre CMP straturile deschise se inchid (valoarea ramane in
+    /// medie); dinspre CMP stocul devine un singur strat (negativ, daca cheia e pe minus), la costul mediu, cu data schimbarii si legat de ultima
+    /// miscare a cheii (lastRow); intre FIFO, LIFO si identificare directa straturile raman, se schimba doar ordinea de consum.
+    /// </summary>
+    public static IReadOnlyList<CostLayerState> ChangeMethod(CostKeyState key, CostMethod method, DateOnly date, long seq, int? lastRow)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        var created = new List<CostLayerState>();
+        if (key.Method == method)
+        {
+            return created;
+        }
+
+        if (method == CostMethod.Average)
+        {
+            foreach (var layer in key.Layers.Where(l => l.QtyRemaining != 0 || l.ValueRemaining != 0))
+            {
+                layer.QtyRemaining = 0;
+                layer.ValueRemaining = 0;
+                layer.Changed = true;
+            }
+        }
+        else if (key.Method == CostMethod.Average && (key.Qty != 0 || key.Value != 0) && lastRow is not null)
+        {
+            var negative = key.Qty < 0;
+            var layer = new CostLayerState
+            {
+                Ref = key.NextRef++, LayerDate = date, Seq = seq, QtyIn = negative ? 0 : key.Qty, QtyRemaining = key.Qty, ValueRemaining = key.Value,
+                UnitCost = Unit(key.Value, key.Qty), IsNegative = negative, MovementRow = lastRow, Changed = true,
+            };
+            key.Layers.Add(layer);
+            created.Add(layer);
+        }
+
+        key.Method = method;
+        return created;
+    }
 
     private static decimal Money(decimal value) => decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 

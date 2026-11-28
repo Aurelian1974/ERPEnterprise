@@ -117,3 +117,7 @@ public interface IWarehouseLookup
     /// <summary>Gestiunea propusa pe linie la nivelul „depozit”: regula pe articol, pe grupa, apoi gestiunea implicita a depozitului.</summary>
     Task<int?> ProposeWarehouseAsync(int depotId, int itemVariantId, CancellationToken ct);
 }
+
+/// <summary>Validarea schimbarii metodei de evaluare (S1 5.1, 4.5). Consumatori: S3 (intern), Finante (notele explicative).</summary>
+public sealed record MetodaEvaluareSchimbata(int DocumentId, string Number, IReadOnlyList<int> ItemIds, IReadOnlyList<ValuationMethod> OldMethods,
+    ValuationMethod NewMethod, DateOnly EffectiveDate, string Reason) : IntegrationEvent;

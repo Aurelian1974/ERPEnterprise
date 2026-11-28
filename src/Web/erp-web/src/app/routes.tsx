@@ -14,6 +14,12 @@ import { TreasuryAccountsPage } from '../finance/TreasuryAccountsPage';
 import { DepotsPage } from '../inventory/DepotsPage';
 import { MovementsPage } from '../inventory/MovementsPage';
 import { ReceiptsPage } from '../inventory/ReceiptsPage';
+import { LandedCostsPage } from '../inventory/LandedCostsPage';
+import { RetailPriceChangesPage } from '../inventory/RetailPriceChangesPage';
+import { RetailDischargePage } from '../inventory/RetailDischargePage';
+import { CostLayersPage } from '../inventory/CostLayersPage';
+import { CostRecalcPage } from '../inventory/CostRecalcPage';
+import { ValuationChangePage } from '../inventory/ValuationChangePage';
 import { StockDocumentsPage } from '../inventory/StockDocumentsPage';
 import { WarehousesPage } from '../inventory/WarehousesPage';
 import { CashDeskPage } from '../finance/CashDeskPage';
@@ -81,6 +87,12 @@ export const routes = [
       { path: 'stocuri/custodie', element: <StockDocumentsPage key="cu" types={['CI', 'CE']} title="menu.custody" /> },
       { path: 'stocuri/predare-produse', element: <StockDocumentsPage key="pf" types={['PF']} title="menu.productionNotes" /> },
       { path: 'stocuri/registru', element: <MovementsPage /> },
+      { path: 'stocuri/evaluare/costuri-adaugate', element: <LandedCostsPage /> },
+      { path: 'stocuri/evaluare/modificari-pret', element: <RetailPriceChangesPage /> },
+      { path: 'stocuri/evaluare/descarcare-amanunt', element: <RetailDischargePage /> },
+      { path: 'stocuri/evaluare/straturi', element: <CostLayersPage /> },
+      { path: 'stocuri/evaluare/schimbare-metoda', element: <ValuationChangePage /> },
+      { path: 'stocuri/evaluare/recalculare', element: <CostRecalcPage /> },
       { path: 'finante/trezorerie/casa', element: <CashDeskPage /> },
       { path: 'finante/trezorerie/casa/document', element: <CashDocumentPage /> },
       { path: 'finante/trezorerie/registru', element: <CashRegisterPage /> },

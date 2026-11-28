@@ -25,6 +25,7 @@ public static class InventoryApiRegistration
         MapDocuments(inventory);
         MapLandedCosts(inventory);
         MapRetail(inventory);
+        MapValuation(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -187,6 +188,34 @@ public static class InventoryApiRegistration
             .WithName("ValidateRetailDischarge").Produces<RetailDischargeDto>().ProducesProblem(StatusCodes.Status409Conflict);
         inventory.MapPut("/retail-discharge-method", (SetRetailDischargeMethod body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SetRetailDischargeMethod").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
+    }
+
+    // Stocuri › Evaluare: schimbarea metodei (s1-04), straturile (s3-05), coada de recalculare si ajustarile (s3-02).
+    private static void MapValuation(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/valuation-changes", ([AsParameters] GetValuationChanges query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetValuationChanges").Produces<IReadOnlyList<ValuationChangeListItemDto>>();
+        inventory.MapGet("/valuation-changes/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetValuationChange(id), ct))
+            .WithName("GetValuationChange").Produces<ValuationChangeDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/valuation-changes", (SaveValuationChange body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateValuationChange").Saves();
+        inventory.MapPut("/valuation-changes/{id:int}", (int id, SaveValuationChange body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateValuationChange").Saves();
+        inventory.MapPost("/valuation-changes/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateValuationChange(id, body.RowVersion), ct))
+            .WithName("ValidateValuationChange").Saves();
+        inventory.MapPost("/valuation-changes/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelValuationChange(id, body.RowVersion), ct))
+            .WithName("CancelValuationChange").Saves();
+        inventory.MapGet("/cost-layers", ([AsParameters] GetCostLayers query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetCostLayers").Produces<CostLayersDto>();
+        inventory.MapGet("/cost-adjustments", ([AsParameters] GetCostAdjustments query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetCostAdjustments").Produces<IReadOnlyList<CostAdjustmentDto>>();
+        inventory.MapGet("/cost-recalc-queue", (ISender sender, CancellationToken ct) => sender.Send(new GetCostRecalcQueue(), ct))
+            .WithName("GetCostRecalcQueue").Produces<IReadOnlyList<CostRecalcQueueItemDto>>();
+        inventory.MapPost("/cost-recalc", (RecalculateCost body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("RecalculateCost").Produces<int>().ProducesProblem(StatusCodes.Status403Forbidden);
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

@@ -112,3 +112,45 @@ public sealed class CostEngineTests
             new CostReversal(receipt.Amount, [], receipt.CreatedLayers.Single()))));
     }
 }
+
+/// <summary>Schimbarea metodei de evaluare (02.05, S1 4.5): valoarea cheii ramane aceeasi, la ban.</summary>
+public sealed class CostMethodChangeTests
+{
+    [Fact]
+    [Trait("Criteriu", "02.05-S1-A11")]
+    public void Changing_the_method_keeps_the_value_of_every_key()
+    {
+        var random = new Random(4511);
+        var day = new DateOnly(2026, 11, 2);
+        for (var run = 0; run < 300; run++)
+        {
+            var from = (CostMethod)random.Next(1, 4);
+            var to = (CostMethod)random.Next(1, 4);
+            var key = new CostKeyState { Method = from };
+            var row = 0;
+            for (var i = 0; i < random.Next(1, 12); i++)
+            {
+                row++;
+                var qty = random.Next(3) == 0 && key.Qty > 0 ? -random.Next(1, (int)key.Qty + 1) : random.Next(1, 40);
+                CostEngine.Apply(key, new CostLine(row, qty, day.AddDays(i), row, qty > 0 ? random.Next(100, 999) / 37m : null));
+            }
+
+            var before = key.Value;
+            CostEngine.ChangeMethod(key, to, day.AddDays(20), row, row);
+            Assert.Equal(before, key.Value);
+            if (to != CostMethod.Average)
+            {
+                Assert.Equal(key.Value, key.Layers.Sum(l => l.ValueRemaining));
+                Assert.Equal(key.Qty, key.Layers.Sum(l => l.QtyRemaining));
+            }
+
+            // O iesire care goleste cheia ia toata valoarea, cu noua metoda.
+            if (key.Qty > 0)
+            {
+                var issue = CostEngine.Apply(key, new CostLine(row + 1, -key.Qty, day.AddDays(21), row + 1, null));
+                Assert.Equal(-before, issue.Amount);
+                Assert.Equal(0m, key.Value);
+            }
+        }
+    }
+}
