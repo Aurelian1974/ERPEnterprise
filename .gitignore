@@ -491,3 +491,6 @@ syncfusion-license.txt
 
 # Interfata React construita (src/Web/erp-web, npm run build); se produce la build si in kit
 src/Host/Erp.Host/wwwroot/
+
+# Aplicatia Windows veche, nu se versioneaza
+Docs/arhitectura/Windows Client/
