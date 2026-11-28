@@ -80,6 +80,53 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
             consumptions.Select(c => (c.OutboundMovementId, c.CostLayerId, c.Qty, c.CostAmount)).ToList());
     }
 
+    public Task<LotResolution> ResolveLotsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, bool allowExpiredReceipt, int userId,
+        CancellationToken ct)
+    {
+        var table = Table(("RowNo", typeof(int)), ("SourceLineId", typeof(long)), ("SourceRole", typeof(byte)), ("MovementTypeCode", typeof(string)),
+            ("WarehouseId", typeof(int)), ("DepotId", typeof(int)), ("ItemVariantId", typeof(int)), ("QtyBase", typeof(decimal)), ("LotId", typeof(int)),
+            ("CkuUid", typeof(Guid)), ("NewLotCode", typeof(string)), ("ExpiryDate", typeof(DateTime)), ("ProductionDate", typeof(DateTime)),
+            ("SupplierLotCode", typeof(string)), ("CountryOfOriginCode", typeof(string)), ("ConfirmNewExpiry", typeof(bool)), ("ReversalOfId", typeof(long)),
+            ("IsCounter", typeof(bool)));
+        foreach (var line in lines)
+        {
+            var r = line.Request;
+            table.Rows.Add(line.Row, r.SourceLineId, r.SourceRole, r.MovementTypeCode, r.WarehouseId, Db(r.DepotId), r.ItemVariantId, r.QtyBase, Db(r.LotId),
+                Db(r.CkuUid), (object?)r.NewLotCode ?? DBNull.Value, Db(r.ExpiryDate?.ToDateTime(TimeOnly.MinValue)),
+                Db(r.ProductionDate?.ToDateTime(TimeOnly.MinValue)), (object?)r.SupplierLotCode ?? DBNull.Value, (object?)r.CountryOfOriginCode ?? DBNull.Value,
+                r.ConfirmNewExpiry, Db(line.ReversalOfId), line.CounterRow is not null);
+        }
+
+        // Erorile SQL apar la citirea rezultatelor, deci toata citirea e in traducere (NET-09).
+        return Translated(async () =>
+        {
+            using var grid = await session.Connection.QueryMultipleAsync(new CommandDefinition("inv.usp_Lot_ResolveForMovements", new
+            {
+                request.CompanyId, request.SourceModule, MovementDate = request.MovementDate.ToDateTime(TimeOnly.MinValue), request.IsExternalFact,
+                request.PartnerId, AllowExpiredReceipt = allowExpiredReceipt, Lines = table.AsTableValuedParameter("inv.tt_LotRequest"), UserId = userId,
+            }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false);
+            if (await grid.ReadSingleAsync<bool>().ConfigureAwait(false))
+            {
+                var existing = (await grid.ReadAsync<(int RowNo, int? LotId, decimal QtyBase)>().ConfigureAwait(false))
+                    .Select(e => (e.RowNo, e.LotId, e.QtyBase)).ToList();
+                return new LotResolution(true, existing, new Dictionary<int, (byte, int?)>(), [], new Dictionary<int, int>(), 1);
+            }
+
+            var rows = (await grid.ReadAsync<(int RowNo, byte Kind, int? LotId)>().ConfigureAwait(false)).ToDictionary(r => r.RowNo, r => (r.Kind, r.LotId));
+            var candidates = (await grid.ReadAsync<CandidateRow>().ConfigureAwait(false))
+                .Select(c => new Domain.Lots.LotCandidate(c.WarehouseId, c.DepotId, c.ItemVariantId, c.LotId, c.LotCode, c.Status,
+                    c.ExpiryDate is { } e ? DateOnly.FromDateTime(e) : null, c.ExpiryKind, c.FirstReceiptDate is { } f ? DateOnly.FromDateTime(f) : null,
+                    c.IsTechnical, c.Available))
+                .ToList();
+            var technical = (await grid.ReadAsync<(int ItemVariantId, int LotId)>().ConfigureAwait(false)).ToDictionary(t => t.ItemVariantId, t => t.LotId);
+            var pickRule = await grid.ReadSingleAsync<byte>().ConfigureAwait(false);
+            return new LotResolution(false, [], rows, candidates, technical, pickRule);
+        });
+    }
+
+    private sealed record CandidateRow(int WarehouseId, int? DepotId, int ItemVariantId, int LotId, string CkuCode, string LotCode, byte Status,
+        DateTime? ExpiryDate, byte? ExpiryKind, DateTime? FirstReceiptDate, bool IsTechnical, decimal Available);
+
     public async Task<StockPostingOutcome> PostAsync(StockPostingRequest request, CostedPosting costed, int? employeeId, int userId, CancellationToken ct)
     {
         var lines = Table(("RowNo", typeof(int)), ("SourceLineId", typeof(long)), ("SourceRole", typeof(byte)), ("MovementTypeCode", typeof(string)),
@@ -199,11 +246,12 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
             r.UnitCost, r.CostAmount, r.IsForcedNegative, r.MovementTypeCode, r.ReasonCode)
         {
             RetailAmount = r.RetailAmount, RetailVatAmount = r.RetailVatAmount, RetailDischargeMethod = r.RetailDischargeMethod, CostCenterId = r.CostCenterId,
+            LotId = r.LotId, LotCode = r.LotCode, CkuCode = r.CkuCode, CkuUid = r.CkuUid, ExpiryDate = r.ExpiryDate is { } e ? DateOnly.FromDateTime(e) : null,
         }).ToList(), rows.Count > 0 && rows.All(r => r.Replayed));
 
     private sealed record Row(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
         decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed, decimal? RetailAmount,
-        decimal? RetailVatAmount, byte? RetailDischargeMethod, int? CostCenterId);
+        decimal? RetailVatAmount, byte? RetailDischargeMethod, int? CostCenterId, int? LotId, string? LotCode, string? CkuCode, Guid? CkuUid, DateTime? ExpiryDate);
 
     private sealed record KeyRow(int WarehouseId, int DepotKey, int ItemVariantId, int LotKey, decimal QtyOnHand, decimal CostOnHand, decimal? LastUnitCost,
         byte Method, decimal? FallbackUnitCost);

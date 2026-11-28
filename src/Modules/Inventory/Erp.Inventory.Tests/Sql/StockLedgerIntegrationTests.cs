@@ -89,7 +89,7 @@ public sealed class StockLedgerIntegrationTests(InventoryDatabase database) : In
         var (item, variants) = await NewItem(Unique("LT"), true, "U");
         await Send(new Application.Items.SaveItemStockSettings(item, null, ValuationMethod.Fifo, TrackingMode.Lot, null, null, null, false, null));
         var refused = await Assert.ThrowsAsync<ErpException>(() => Post(Today, Line("UNLOAD", permissive, variants[0], -1)));
-        Assert.Equal("INV_STOCK_INSUFFICIENT", refused.Code);
+        Assert.Equal("INV_LOT_INSUFFICIENT_QTY", refused.Code);
     }
 
     [Fact]

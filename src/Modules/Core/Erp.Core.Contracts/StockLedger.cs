@@ -56,7 +56,34 @@ public sealed record StockPostingRequest(int CompanyId, string SourceModule, str
 /// <summary>O miscare ceruta: cantitatea cu semn, in UM de baza; InboundUnitCost doar la intrarile cu cost din sursa (pretul de receptie).</summary>
 public sealed record StockMovementRequest(long SourceLineId, byte SourceRole, string MovementTypeCode, int? DepotId, int WarehouseId, int ItemVariantId,
     decimal QtyBase, decimal? InboundUnitCost, int? LotId, string? NewLotCode, DateOnly? ExpiryDate, int? SerialId, int? CostCenterId, int? ProjectId,
-    int? ReasonId);
+    int? ReasonId)
+{
+    /// <summary>Lotul dat prin eticheta interna (CkuUid), alternativa la LotId (S4 6).</summary>
+    public Guid? CkuUid { get; init; }
+
+    /// <summary>La intrarea unui lot nou: codul de pe ambalajul furnizorului, data fabricatiei, tara de origine (ISO 3166-1).</summary>
+    public string? SupplierLotCode { get; init; }
+
+    public DateOnly? ProductionDate { get; init; }
+
+    public string? CountryOfOriginCode { get; init; }
+
+    /// <summary>Confirmarea unui lot nou cu un cod existent si alt termen (S4 3.2, 54452).</summary>
+    public bool ConfirmNewExpiry { get; init; }
+
+    /// <summary>Motivul alegerii altui lot decat primul propus FEFO (S4 3.5): 1 cererea clientului, 2 lot deja pregatit, 3 altul.</summary>
+    public byte? LotOverrideReason { get; init; }
+}
+
+/// <summary>Starea unui lot (02.05, S4 3.3).</summary>
+public enum LotStatus : byte
+{
+    Available = 1,
+    Quarantine = 2,
+    Blocked = 3,
+    Expired = 4,
+    Recalled = 5,
+}
 
 /// <summary>Stornarea miscarilor unui document sursa (toate sau doar liniile date), la data ceruta.</summary>
 public sealed record StockReversalRequest(int CompanyId, string SourceModule, long SourceDocumentId, IReadOnlyCollection<long>? SourceLineIds,

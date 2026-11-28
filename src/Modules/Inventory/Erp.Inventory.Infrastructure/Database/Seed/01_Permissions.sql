@@ -34,7 +34,14 @@ USING (VALUES
     (N'Inv.RetailPrice.Edit',       N'Modificări de preț cu amănuntul în ciornă'),
     (N'Inv.RetailPrice.Validate',   N'Validarea modificărilor de preț cu amănuntul'),
     (N'Inv.RetailDischarge.Validate', N'Descărcarea lunară la preț cu amănuntul'),
-    (N'Inv.StandardCost.Update',    N'Actualizarea costului standard')
+    (N'Inv.StandardCost.Update',    N'Actualizarea costului standard'),
+    (N'Inv.Lot.View',               N'Loturile, seriile, trasabilitatea'),
+    (N'Inv.Lot.Edit',               N'Atributele lotului (lot furnizor, țară, termen, cu motiv)'),
+    (N'Inv.Lot.Release',            N'Eliberarea din carantină și trecerea în carantină'),
+    (N'Inv.Lot.Block',              N'Blocarea și deblocarea loturilor'),
+    (N'Inv.Lot.OverrideShelfLife',  N'Livrarea unui lot sub durata minimă a clientului, cu motiv'),
+    (N'Inv.Lot.SellAfterBestBefore', N'Vânzarea sau donarea după data durabilității minimale'),
+    (N'Inv.Lot.ReceiveExpired',     N'Recepția unui lot deja expirat (pentru retur sau casare)')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

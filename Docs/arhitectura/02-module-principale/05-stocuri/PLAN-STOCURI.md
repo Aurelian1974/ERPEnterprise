@@ -45,4 +45,14 @@ se leagă de inventarul din S6; până atunci predarea fără inventar obligator
 | S3.4 | Concordanța cu contabilitatea, pașii de închidere (`COST_RECALC_PENDING`, `RETAIL_DISCHARGE`, `NEGATIVE_STOCK`), blocul `Accounting` și modelele de contare ale Stocurilor | S3-A9, A10 |
 | S3.5 | Ecranele s3-01…s3-05 și documentul de schimbare a metodei (S1 4.5, s1-04) | S1-A11 |
 
-Pașii părților S4–S7 se detaliază la începutul fiecărei părți.
+## 5. Pașii părții S4
+
+| Pas | Conținut | Criterii |
+| --- | --- | --- |
+| S4.1 | Loturile (CKU) ca dimensiune a stocului: `inv.Lot`, `inv.LotStatusHistory`, setările de lot pe model, crearea lotului la intrare (cod, termen, carantina la recepție), verificarea stării la ieșire, alocarea FEFO a liniilor fără lot (împărțirea pe loturi), lotul `NEIDENTIFICAT` pentru faptele POS, transferul care păstrează lotul, lotul pe evenimentul `MiscareStocValidata` | S4-A1, A2, A3 (stările la ieșire), A5, A6, A13 |
+| S4.2 | Stările lotului (carantină, eliberare, blocare), jobul de expirare și avertizarea, durata minimă la client (`PartnerShelfLifeRule`), motivul alegerii altui lot, portul `ProposeLotsAsync`, `FindLotAsync`, `FindCkuAsync` | S4-A3, A4 |
+| S4.3 | Seriile și identificatorii bucății (tipuri, reguli, validarea IMEI și VIN), modul de citire la intrare și ieșire, `SerieVanduta`, căutarea după identificator | S4-A7, A8, A14 |
+| S4.4 | Documentul `SL` (schimbarea lotului), retragerea `RL`, trasabilitatea și genealogia, pasul de închidere `UNIDENTIFIED_LOT`, parserul GS1 | S4-A9, A10, A11, A12 |
+| S4.5 | Ecranele s4-01…s4-05 | — |
+
+Pașii părților S5–S7 se detaliază la începutul fiecărei părți.

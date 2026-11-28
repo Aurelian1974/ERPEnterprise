@@ -42,6 +42,13 @@ public static class InventoryPermissions
     public const string RetailPriceValidate = "Inv.RetailPrice.Validate";
     public const string RetailDischargeValidate = "Inv.RetailDischarge.Validate";
     public const string StandardCostUpdate = "Inv.StandardCost.Update";
+    public const string LotView = "Inv.Lot.View";
+    public const string LotEdit = "Inv.Lot.Edit";
+    public const string LotRelease = "Inv.Lot.Release";
+    public const string LotBlock = "Inv.Lot.Block";
+    public const string LotOverrideShelfLife = "Inv.Lot.OverrideShelfLife";
+    public const string LotSellAfterBestBefore = "Inv.Lot.SellAfterBestBefore";
+    public const string LotReceiveExpired = "Inv.Lot.ReceiveExpired";
 }
 
 /// <summary>Codurile API ale Stocurilor ridicate din C# (NET-09). Cele din SQL sunt in InventorySqlErrors.</summary>

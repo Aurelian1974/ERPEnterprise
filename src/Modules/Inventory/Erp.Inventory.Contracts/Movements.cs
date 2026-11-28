@@ -18,6 +18,17 @@ public sealed record StockMovementEventLine(long MovementId, int WarehouseId, in
 
     /// <summary>Centrul de cost al miscarii sau, lipsa, cel implicit al gestiunii (pentru conturile 6 si 7).</summary>
     public int? CostCenterId { get; init; }
+
+    /// <summary>Lotul (CKU) miscarii (S4 5.1, aditiv): Id-ul, codul de lot, codul si id-ul CKU-ului, termenul.</summary>
+    public int? LotId { get; init; }
+
+    public string? LotCode { get; init; }
+
+    public string? CkuCode { get; init; }
+
+    public Guid? CkuUid { get; init; }
+
+    public DateOnly? ExpiryDate { get; init; }
 }
 
 /// <summary>

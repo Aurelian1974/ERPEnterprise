@@ -18,7 +18,26 @@ public sealed record PostedStockMovement(long MovementId, long SourceLineId, byt
     public byte? RetailDischargeMethod { get; init; }
 
     public int? CostCenterId { get; init; }
+
+    /// <summary>Lotul miscarii (S4): Id-ul, codul, CKU-ul si termenul.</summary>
+    public int? LotId { get; init; }
+
+    public string? LotCode { get; init; }
+
+    public string? CkuCode { get; init; }
+
+    public Guid? CkuUid { get; init; }
+
+    public DateOnly? ExpiryDate { get; init; }
 }
+
+/// <summary>
+/// Loturile unui apel (inv.usp_Lot_ResolveForMovements): reluarea cu miscarile existente, felul fiecarui rand (0 fara lot, 1 intrare, 2 iesire
+/// de alocat, 3 pereche sau stornare) cu lotul rezolvat, loturile cheilor cu iesiri, lotul tehnic pe varianta si regula de alegere.
+/// </summary>
+public sealed record LotResolution(bool Replayed, IReadOnlyList<(int Row, int? LotId, decimal Qty)> Existing,
+    IReadOnlyDictionary<int, (byte Kind, int? LotId)> Rows, IReadOnlyList<Domain.Lots.LotCandidate> Candidates, IReadOnlyDictionary<int, int> TechnicalLots,
+    byte PickRule);
 
 /// <summary>Setarile de data ale firmei (S1 3.3), citite la fiecare inregistrare.</summary>
 public sealed record BackdatingSettings(short BackdatingDays, bool BackdatingWithRight);
@@ -27,6 +46,8 @@ public sealed record BackdatingSettings(short BackdatingDays, bool BackdatingWit
 public interface IStockMovementStore
 {
     Task<BackdatingSettings> GetBackdatingAsync(int companyId, CancellationToken ct);
+
+    Task<LotResolution> ResolveLotsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, bool allowExpiredReceipt, int userId, CancellationToken ct);
 
     Task<CostLoad> LoadCostAsync(int companyId, IReadOnlyCollection<CostKey> keys, IReadOnlyCollection<long> reversalOf, CancellationToken ct);
 
@@ -139,6 +160,7 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
     /// <summary>Starea de cost a cheilor (blocate), costul calculat de motor (S3), apoi scrierea intr-un singur apel SQL.</summary>
     private async Task<StockPostingOutcome> PostCostedAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int? employeeId, CancellationToken ct)
     {
+        lines = await ResolveLotsAsync(request, lines, ct).ConfigureAwait(false);
         var keys = lines.Select(l => new CostKey(l.Request.WarehouseId, l.Request.DepotId, l.Request.ItemVariantId, l.Request.LotId)).Distinct().ToList();
         var load = await store.LoadCostAsync(request.CompanyId, keys, lines.Select(l => l.ReversalOfId).OfType<long>().ToList(), ct).ConfigureAwait(false);
         CostedPosting costed;
@@ -175,6 +197,85 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         return outcome;
     }
 
+    /// <summary>
+    /// Loturile (02.05, S4 3.2, 3.5): intrarile primesc lotul gasit sau creat de SQL; iesirile fara lot se impart pe loturi prin FEFO
+    /// (LotAllocator), cele cu lot se verifica; perechea unui transfer primeste aceleasi loturi ca iesirea ei; la reluare, aceleasi miscari.
+    /// </summary>
+    private async Task<IReadOnlyList<PostingLine>> ResolveLotsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, CancellationToken ct)
+    {
+        if (lines.Count == 0)
+        {
+            return lines;
+        }
+
+        var resolution = await store.ResolveLotsAsync(request, lines, context.HasPermission(InventoryPermissions.LotReceiveExpired), context.UserId, ct)
+            .ConfigureAwait(false);
+        var parts = new Dictionary<int, List<(int? LotId, decimal Qty)>>();
+        if (resolution.Replayed)
+        {
+            foreach (var e in resolution.Existing)
+            {
+                (parts.TryGetValue(e.Row, out var list) ? list : parts[e.Row] = []).Add((e.LotId, e.Qty));
+            }
+        }
+        else
+        {
+            var demands = lines.Where(l => resolution.Rows[l.Row].Kind == 2)
+                .Select(l => new Domain.Lots.LotDemand(l.Row, l.Request.WarehouseId, l.Request.DepotId, l.Request.ItemVariantId, -l.Request.QtyBase,
+                    resolution.Rows[l.Row].LotId ?? l.Request.LotId, l.Request.MovementTypeCode))
+                .ToList();
+            IReadOnlyList<Domain.Lots.LotAllocation> allocations;
+            try
+            {
+                allocations = Domain.Lots.LotAllocator.Allocate(demands, resolution.Candidates, resolution.TechnicalLots, request.MovementDate,
+                    resolution.PickRule, request.IsExternalFact);
+            }
+            catch (Domain.Lots.LotAllocationException e)
+            {
+                throw new ErpException(ErpErrorKind.Conflict, e.Code, e.Message);
+            }
+
+            foreach (var line in lines.Where(l => l.CounterRow is null))
+            {
+                var (kind, lotId) = resolution.Rows[line.Row];
+                parts[line.Row] = kind == 2
+                    ? allocations.Where(a => a.Row == line.Row).Select(a => ((int?)a.LotId, -a.Qty)).ToList()
+                    : [(kind == 0 ? null : lotId ?? line.Request.LotId, line.Request.QtyBase)];
+            }
+        }
+
+        // Randurile noi: fiecare linie pe loturile ei; perechea unui transfer urmeaza, parte cu parte, loturile iesirii.
+        var result = new List<PostingLine>();
+        var newRows = new Dictionary<int, List<(int Row, int? LotId, decimal Qty)>>();
+        foreach (var line in lines.Where(l => l.CounterRow is null))
+        {
+            newRows[line.Row] = [];
+            foreach (var (lotId, qty) in parts.GetValueOrDefault(line.Row) ?? [(line.Request.LotId, line.Request.QtyBase)])
+            {
+                var row = result.Count + 1;
+                result.Add(line with { Row = row, Request = line.Request with { LotId = lotId, QtyBase = qty, NewLotCode = null, CkuUid = null } });
+                newRows[line.Row].Add((row, lotId, qty));
+            }
+        }
+
+        foreach (var line in lines.Where(l => l.CounterRow is not null))
+        {
+            var counterParts = newRows.GetValueOrDefault(line.CounterRow!.Value) ?? [];
+            if (counterParts.Count == 0 || (!resolution.Replayed && resolution.Rows[line.Row].Kind == 0))
+            {
+                result.Add(line with { Row = result.Count + 1, CounterRow = counterParts.FirstOrDefault().Row });
+                continue;
+            }
+
+            foreach (var part in counterParts)
+            {
+                result.Add(line with { Row = result.Count + 1, CounterRow = part.Row, Request = line.Request with { LotId = part.LotId, QtyBase = -part.Qty } });
+            }
+        }
+
+        return result;
+    }
+
     private async Task EnsureDateAsync(int companyId, DateOnly movementDate, DateOnly accountingDate, CancellationToken ct)
     {
         var settings = await store.GetBackdatingAsync(companyId, ct).ConfigureAwait(false);
@@ -198,6 +299,7 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
             m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)
         {
             RetailAmount = m.RetailAmount, RetailVatAmount = m.RetailVatAmount, RetailDischargeMethod = m.RetailDischargeMethod, CostCenterId = m.CostCenterId,
+            LotId = m.LotId, LotCode = m.LotCode, CkuCode = m.CkuCode, CkuUid = m.CkuUid, ExpiryDate = m.ExpiryDate,
         }).ToList();
         await outbox.EnqueueAsync(new MiscareStocValidata(module, documentType, documentId, number, movementDate, accountingDate, reversal, lines)
         {

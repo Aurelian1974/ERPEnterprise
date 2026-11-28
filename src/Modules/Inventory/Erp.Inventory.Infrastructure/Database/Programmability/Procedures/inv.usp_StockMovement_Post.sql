@@ -48,16 +48,18 @@ BEGIN
     -- 2. Idempotenta pe sursa.
     DECLARE @Existing int = (SELECT COUNT(*) FROM @Rows AS r JOIN inv.StockMovement AS m
                              ON m.SourceModule = @SourceModule AND m.SourceLineId = r.SourceLineId AND m.SourceRole = r.SourceRole
-                                AND m.ReversalKey = ISNULL(r.ReversalOfId, 0));
+                                AND m.ReversalKey = ISNULL(r.ReversalOfId, 0) AND m.LotKey = ISNULL(r.LotId, 0) AND m.SerialKey = ISNULL(r.SerialId, 0));
     IF @Existing = (SELECT COUNT(*) FROM @Rows)
     BEGIN
         SELECT m.Id AS MovementId, m.SourceLineId, m.SourceRole, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost, m.CostAmount,
             m.IsForcedNegative, t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(1 AS bit) AS Replayed, m.RetailAmount, m.RetailVatAmount,
-            m.RetailDischargeMethod, COALESCE(m.CostCenterId, w.DefaultCostCenterId) AS CostCenterId
+            m.RetailDischargeMethod, COALESCE(m.CostCenterId, w.DefaultCostCenterId) AS CostCenterId, m.LotId, lot.LotCode, lot.CkuCode, lot.CkuUid,
+            lot.ExpiryDate
         FROM @Rows AS r
         JOIN inv.StockMovement AS m ON m.SourceModule = @SourceModule AND m.SourceLineId = r.SourceLineId AND m.SourceRole = r.SourceRole
-            AND m.ReversalKey = ISNULL(r.ReversalOfId, 0)
+            AND m.ReversalKey = ISNULL(r.ReversalOfId, 0) AND m.LotKey = ISNULL(r.LotId, 0) AND m.SerialKey = ISNULL(r.SerialId, 0)
         JOIN inv.MovementType AS t ON t.Id = m.MovementTypeId
+        LEFT JOIN inv.Lot AS lot ON lot.Id = m.LotId
         JOIN inv.Warehouse AS w ON w.Id = m.WarehouseId
         LEFT JOIN inv.StockSettings AS ss ON ss.CompanyId = @CompanyId
         LEFT JOIN inv.MovementReason AS mr ON mr.Id = m.ReasonId
@@ -226,11 +228,11 @@ BEGIN
                                        AND n.ItemVariantId = r.ItemVariantId AND n.LotKey = ISNULL(r.LotId, 0));
 
     -- Miscarile: intai cele fara pereche, apoi intrarile transferurilor, cu CounterMovementId spre iesirea lor.
-    DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint);
+    DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint, LotKey int, SerialKey int);
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
         MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, RetailDischargeMethod, ReasonId, PartnerId, CostCenterId, ProjectId,
         EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
-    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
+    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq, inserted.LotKey, inserted.SerialKey INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
         r.RetailAmount, r.RetailVatAmount, CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END, r.ReasonId,
@@ -238,14 +240,16 @@ BEGIN
         r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
     WHERE r.CounterRowNo IS NULL;
-    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole;
+    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq
+    FROM @Rows AS r
+    JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole AND i.LotKey = ISNULL(r.LotId, 0) AND i.SerialKey = ISNULL(r.SerialId, 0);
 
     DELETE FROM @Inserted;
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
         MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, RetailPrice, RetailAmount, RetailVatAmount, RetailDischargeMethod, ReasonId, PartnerId, CostCenterId, ProjectId,
         EmployeeId, SourceModule, SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, CounterMovementId, ReversalOfId,
         IsForcedNegative, CreatedBy)
-    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
+    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq, inserted.LotKey, inserted.SerialKey INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.RetailPrice,
         r.RetailAmount, r.RetailVatAmount, CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END, r.ReasonId,
@@ -254,7 +258,9 @@ BEGIN
     FROM @Rows AS r
     JOIN @Rows AS c ON c.RowNo = r.CounterRowNo
     WHERE r.CounterRowNo IS NOT NULL;
-    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole
+    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq
+    FROM @Rows AS r
+    JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole AND i.LotKey = ISNULL(r.LotId, 0) AND i.SerialKey = ISNULL(r.SerialId, 0)
     WHERE r.MovementId IS NULL;
 
     -- Soldul curent si prima miscare a gestiunii (blocheaza codul, tipul si baza de evaluare, S1 3.1).
@@ -300,6 +306,12 @@ BEGIN
           FROM @Rows WHERE RetailAmount IS NOT NULL GROUP BY WarehouseId, ISNULL(DepotId, 0), ItemVariantId, ISNULL(LotId, 0)) AS x
         ON x.WarehouseId = s.WarehouseId AND x.DepotKey = s.DepotKey AND x.ItemVariantId = s.ItemVariantId AND x.LotKey = s.LotKey;
 
+    -- Prima intrare a fiecarui lot nou (trasabilitatea inapoi, S4 3.2).
+    UPDATE x SET FirstReceiptMovementId = f.MovementId
+    FROM inv.Lot AS x
+    CROSS APPLY (SELECT TOP (1) r.MovementId FROM @Rows AS r WHERE r.LotId = x.Id AND r.Direction = 1 ORDER BY r.RowNo) AS f
+    WHERE x.FirstReceiptMovementId IS NULL AND x.IsTechnical = 0;
+
     UPDATE w SET FirstMovementAt = SYSUTCDATETIME()
     FROM inv.Warehouse AS w
     WHERE w.FirstMovementAt IS NULL AND EXISTS (SELECT 1 FROM @Rows AS r WHERE r.WarehouseId = w.Id);
@@ -307,10 +319,11 @@ BEGIN
     SELECT r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase, r.UnitCost, r.CostAmount, r.IsForcedNegative,
         t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed, r.RetailAmount, r.RetailVatAmount,
         CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END AS RetailDischargeMethod,
-        COALESCE(r.CostCenterId, w.DefaultCostCenterId) AS CostCenterId
+        COALESCE(r.CostCenterId, w.DefaultCostCenterId) AS CostCenterId, r.LotId, lot.LotCode, lot.CkuCode, lot.CkuUid, lot.ExpiryDate
     FROM @Rows AS r
     JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
     JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
+    LEFT JOIN inv.Lot AS lot ON lot.Id = r.LotId
     LEFT JOIN inv.MovementReason AS mr ON mr.Id = r.ReasonId
     ORDER BY r.RowNo;
 END;
