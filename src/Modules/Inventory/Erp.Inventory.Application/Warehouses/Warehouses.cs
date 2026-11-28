@@ -124,8 +124,6 @@ internal sealed class SaveWarehouseValidator : AbstractValidator<SaveWarehouse>
         RuleFor(x => x.NegativeStockPolicy).IsInEnum().When(x => x.NegativeStockPolicy is not null).WithMessage("Alegeți politica de stoc negativ.");
         RuleFor(x => x.Purpose).IsInEnum().WithMessage("Alegeți destinația gestiunii.");
         RuleFor(x => x.DeliveryOrderMode).InclusiveBetween((byte)0, (byte)2).WithMessage("Alegeți modul de livrare din gestiune.");
-        RuleFor(x => x.LocationId).NotNull().When(x => x.Kind is WarehouseKind.Depot or WarehouseKind.Store or WarehouseKind.Custody)
-            .WithMessage("Gestiunea cere locația.");
         RuleFor(x => x.ThirdPartyId).NotNull().When(x => x.Kind is WarehouseKind.Custody or WarehouseKind.AtThirdParty)
             .WithMessage("Alegeți partenerul care deține sau păstrează bunurile.");
         RuleFor(x => x.RowVersion).NotNull().When(x => x.Id is not null).WithMessage("Lipsește versiunea înregistrării.");

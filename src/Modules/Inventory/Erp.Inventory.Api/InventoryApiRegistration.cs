@@ -17,6 +17,7 @@ public static class InventoryApiRegistration
         var inventory = endpoints.MapGroup("/api/inventory").WithTags("Inventory");
         MapWarehouses(inventory);
         MapKeepers(inventory);
+        MapDepots(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -71,6 +72,28 @@ public static class InventoryApiRegistration
         inventory.MapPost("/handovers/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
                 sender.Send(new CancelHandover(id, body.RowVersion), ct))
             .WithName("CancelHandover").Saves();
+    }
+
+    // Stocuri › Depozite si nivelul de evidenta (02.05, S1 3.8; macheta s1-05).
+    private static void MapDepots(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/depots", (ISender sender, CancellationToken ct) => sender.Send(new GetDepots(), ct))
+            .WithName("GetDepots").Produces<DepotPageDto>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapPost("/depots", (SaveDepot body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateDepot").Saves();
+        inventory.MapPut("/depots/{id:int}", (int id, SaveDepot body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateDepot").Saves();
+        inventory.MapPost("/depots/{id:int}/blocked", (int id, SetDepotBlocked body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { Id = id }, ct))
+            .WithName("SetDepotBlocked").Saves();
+        inventory.MapPost("/depots/{id:int}/warehouses", (int id, SetDepotWarehouse body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { DepotId = id }, ct))
+            .WithName("SetDepotWarehouse").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
+        inventory.MapPost("/depots/{id:int}/rules", (int id, SaveDepotRule body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { DepotId = id }, ct))
+            .WithName("SaveDepotRule").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
+        inventory.MapPut("/stock-level", (SetStockLevel body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SetStockLevel").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

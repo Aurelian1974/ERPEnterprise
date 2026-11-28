@@ -21,7 +21,8 @@ BEGIN
     -- Gestiunea firmei curente (02.05, S1 3.1 si 4.1). La creare primeste valoarea de dimensiune „gestiune” (creata de apelant in aceeasi
     -- tranzactie). Firma nu se schimba; tranzitul se creeaza doar automat. Dupa prima miscare: codul, tipul si baza de evaluare raman (54004),
     -- iar locatia se muta doar intr-una de acelasi tip (54003). Coduri: 54001 inexistenta, 54002 cod existent, 54003 locatie, 54007 pret cu
-    -- amanuntul, 54012 politica permisiva pe custodie sau tranzit, 54014 versiune, 54018 referinta invalida.
+    -- amanuntul, 54012 politica permisiva pe custodie sau tranzit, 54014 versiune, 54017 locatie cu nivelul „depozit”, 54018 referinta
+    -- invalida.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -55,11 +56,19 @@ BEGIN
     IF @NegativeStockPolicy = 2 AND @Kind IN (3, 4)
         THROW 54012, N'Gestiunile de custodie și de tranzit nu pot avea stoc negativ.', 1;
 
-    IF @Kind IN (1, 2, 4)
+    IF @Kind IN (1, 2, 4) AND @LocationId IS NULL
     BEGIN
-        IF @LocationId IS NULL
-           OR NOT EXISTS (SELECT 1 FROM core.Location WHERE Id = @LocationId AND CompanyId = @CompanyId AND IsActive = 1)
+        -- La nivelul „depozit” gestiunea nu sta direct in locatie, ci in depozite (S1 3.8).
+        IF NOT EXISTS (SELECT 1 FROM inv.ufn_LocationStockLevel(@CompanyId) WHERE StockKeepingLevel = 2)
             THROW 54003, N'Gestiunea cere o locație activă a firmei.', 1;
+    END
+    ELSE IF @Kind IN (1, 2, 4)
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM core.Location WHERE Id = @LocationId AND CompanyId = @CompanyId AND IsActive = 1)
+            THROW 54003, N'Gestiunea cere o locație activă a firmei.', 1;
+        IF EXISTS (SELECT 1 FROM inv.ufn_LocationStockLevel(@CompanyId) WHERE LocationId = @LocationId AND StockKeepingLevel = 2)
+           OR (@Id IS NOT NULL AND EXISTS (SELECT 1 FROM inv.DepotWarehouse WHERE WarehouseId = @Id AND IsActive = 1))
+            THROW 54017, N'Locația ține stocul pe depozit: gestiunea se leagă de depozitele locației, nu direct de locație.', 1;
         IF @FirstMovementAt IS NOT NULL AND @CurrentLocationId IS NOT NULL AND @CurrentLocationId <> @LocationId
            AND (SELECT LocationType FROM core.Location WHERE Id = @LocationId) <> (SELECT LocationType FROM core.Location WHERE Id = @CurrentLocationId)
             THROW 54003, N'După prima mișcare, gestiunea se mută doar într-o locație de același tip.', 1;

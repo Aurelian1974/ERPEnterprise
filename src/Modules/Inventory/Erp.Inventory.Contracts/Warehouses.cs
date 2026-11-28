@@ -94,3 +94,26 @@ public interface IStockPolicyProvider
 
     Task<IReadOnlyDictionary<int, ItemStockPolicyDto>> GetManyAsync(int warehouseId, IReadOnlyCollection<int> itemVariantIds, CancellationToken ct);
 }
+
+/// <summary>Depozitul (S1 3.8), cu gestiunile active din el.</summary>
+public sealed record DepotDto(int Id, int CompanyId, string Code, string Name, int LocationId, int? DefaultWarehouseId, IReadOnlyList<int> WarehouseIds,
+    bool IsBlocked, bool IsActive);
+
+/// <summary>Gestiunile pentru celelalte module (S1 6): Vanzari, Achizitii, Productie, POS, WMS.</summary>
+public interface IWarehouseLookup
+{
+    Task<WarehouseDto?> GetAsync(int warehouseId, CancellationToken ct);
+
+    /// <summary>Gestiunile active ale firmei pe care le vede utilizatorul curent (DimensionScope).</summary>
+    Task<IReadOnlyList<WarehouseDto>> ListForUserAsync(int companyId, CancellationToken ct);
+
+    Task<int?> GetKeeperEmployeeIdAsync(int warehouseId, DateOnly onDate, CancellationToken ct);
+
+    /// <summary>Nivelul de evidenta efectiv al locatiei (S1 3.8): locatia, punctul de lucru, firma.</summary>
+    Task<StockKeepingLevel> GetLevelAsync(int locationId, CancellationToken ct);
+
+    Task<DepotDto?> GetDepotAsync(int depotId, CancellationToken ct);
+
+    /// <summary>Gestiunea propusa pe linie la nivelul „depozit”: regula pe articol, pe grupa, apoi gestiunea implicita a depozitului.</summary>
+    Task<int?> ProposeWarehouseAsync(int depotId, int itemVariantId, CancellationToken ct);
+}
