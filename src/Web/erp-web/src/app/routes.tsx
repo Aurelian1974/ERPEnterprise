@@ -16,6 +16,13 @@ import { MovementsPage } from '../inventory/MovementsPage';
 import { ReceiptsPage } from '../inventory/ReceiptsPage';
 import { LandedCostsPage } from '../inventory/LandedCostsPage';
 import { RetailPriceChangesPage } from '../inventory/RetailPriceChangesPage';
+import { ExpiriesPage } from '../inventory/ExpiriesPage';
+import { LotChangesPage } from '../inventory/LotChangesPage';
+import { LotProposalPage } from '../inventory/LotProposalPage';
+import { LotsPage } from '../inventory/LotsPage';
+import { LotTracePage } from '../inventory/LotTracePage';
+import { RecallsPage } from '../inventory/RecallsPage';
+import { SerialsPage } from '../inventory/SerialsPage';
 import { RetailDischargePage } from '../inventory/RetailDischargePage';
 import { CostLayersPage } from '../inventory/CostLayersPage';
 import { CostRecalcPage } from '../inventory/CostRecalcPage';
@@ -87,6 +94,13 @@ export const routes = [
       { path: 'stocuri/custodie', element: <StockDocumentsPage key="cu" types={['CI', 'CE']} title="menu.custody" /> },
       { path: 'stocuri/predare-produse', element: <StockDocumentsPage key="pf" types={['PF']} title="menu.productionNotes" /> },
       { path: 'stocuri/registru', element: <MovementsPage /> },
+      { path: 'stocuri/loturi', element: <LotsPage /> },
+      { path: 'stocuri/loturi/alegere', element: <LotProposalPage /> },
+      { path: 'stocuri/serii', element: <SerialsPage /> },
+      { path: 'stocuri/trasabilitate', element: <LotTracePage /> },
+      { path: 'stocuri/retrageri', element: <RecallsPage /> },
+      { path: 'stocuri/schimbari-lot', element: <LotChangesPage /> },
+      { path: 'stocuri/rapoarte/expirari', element: <ExpiriesPage /> },
       { path: 'stocuri/evaluare/costuri-adaugate', element: <LandedCostsPage /> },
       { path: 'stocuri/evaluare/modificari-pret', element: <RetailPriceChangesPage /> },
       { path: 'stocuri/evaluare/descarcare-amanunt', element: <RetailDischargePage /> },

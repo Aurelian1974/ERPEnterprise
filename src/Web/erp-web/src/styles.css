@@ -3015,3 +3015,40 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .segmented.four {
   grid-template-columns: repeat(4, 1fr);
 }
+
+/* ---------- Stocuri › Loturi, serii, trasabilitate (machetele s4-01…s4-05) ---------- */
+.grid.g4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.section-title {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.validation-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.validation-steps li {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .grid.g4 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+}
