@@ -47,7 +47,7 @@ public sealed class CostRecalcStore(IDbSession session) : ICostRecalcStore
 
     public async Task<IReadOnlyList<(CostKey Key, DateOnly FromDate)>> RebuildAsync(int companyId, CostKey key,
         IReadOnlyList<(long MovementId, decimal UnitCost, decimal Amount)> updates, IReadOnlyList<LayerWrite> layers, IReadOnlyList<ConsumptionWrite> consumptions,
-        IReadOnlyList<AdjustmentWrite> adjustments, CostKeyState state, int userId, CancellationToken ct)
+        IReadOnlyList<AdjustmentWrite> adjustments, CostKeyState state, int userId, CostAttribution? attribution, CancellationToken ct)
     {
         var updateTable = StockMovementStore.Table(("MovementId", typeof(long)), ("UnitCost", typeof(decimal)), ("CostAmount", typeof(decimal)));
         foreach (var u in updates)
@@ -70,6 +70,8 @@ public sealed class CostRecalcStore(IDbSession session) : ICostRecalcStore
             Consumptions = consumptionTable.AsTableValuedParameter("inv.tt_CostConsumptionWrite"),
             Adjustments = StockMovementStore.AdjustmentTable(adjustments).AsTableValuedParameter("inv.tt_CostAdjustmentWrite"),
             state.Qty, state.Value, state.LastUnitCost, UserId = userId,
+            AdjustmentDocumentType = attribution?.DocumentType, AdjustmentDocumentId = attribution?.DocumentId,
+            AdjustmentDate = attribution?.AccountingDate.ToDateTime(TimeOnly.MinValue),
         }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false))
         .Select(f => (new CostKey(f.WarehouseId, f.DepotId, f.ItemVariantId, f.LotId), DateOnly.FromDateTime(f.FromDate)))
         .ToList();

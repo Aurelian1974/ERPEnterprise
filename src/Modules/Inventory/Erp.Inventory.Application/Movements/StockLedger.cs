@@ -35,7 +35,7 @@ public interface IStockMovementStore
 /// outbox, oricare ar fi sursa. Faptele din afara ERP (POS) nu trec prin verificarea datei. Fara modulul Stocuri licentiat nu scrie nimic.
 /// </summary>
 public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license, IPeriodLock periods, ICurrentContext context, IOutbox outbox,
-    TimeProvider time, CostRecalculator recalculator) : IStockLedger
+    TimeProvider time, CostRecalculator recalculator, Costing.LandedCostService landedCosts) : IStockLedger
 {
     public bool IsEnabled => license.IsModuleActive(InventoryModule.Code);
 
@@ -97,6 +97,34 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         IReadOnlyCollection<int> itemVariantIds, DateOnly onDate, CancellationToken ct) =>
         IsEnabled ? store.GetAvailabilityAsync(companyId, depotId, warehouseId, itemVariantIds, onDate, ct)
             : Task.FromResult<IReadOnlyList<StockAvailabilityDto>>([]);
+
+    /// <summary>
+    /// Costul adaugat din Achizitii (S3 3.3, 4.2): documentul CA cu tintele date prin liniile sursa (pe module), repartizat dupa baza ceruta; validat
+    /// imediat daca apelantul o cere, altfel ramane in ciorna pentru contabilul de stocuri.
+    /// </summary>
+    public async Task<int> AdjustInboundCostAsync(InboundCostAdjustmentRequest request, CancellationToken ct)
+    {
+        if (!IsEnabled || request.Targets.Count == 0)
+        {
+            return 0;
+        }
+
+        var modules = request.Targets.Select(t => t.SourceModule).Distinct().ToList();
+        if (modules.Count != 1)
+        {
+            throw new ErpException(ErpErrorKind.Validation, "INV_LANDED_COST_TARGET_INVALID", "Liniile vizate de costul adăugat trebuie să fie din același modul.");
+        }
+
+        var saved = await landedCosts.SaveAsync(request.CompanyId, new Costing.LandedCostDraft(null, request.AccountingDate, request.AccountingDate,
+            (byte)request.Kind, request.SupplierInvoiceId, null, request.AmountRon, (byte)request.Basis, null, modules[0],
+            request.Targets.Select(t => (t.SourceLineId, t.ManualAmountRon)).ToList(), null), ct).ConfigureAwait(false);
+        if (request.ValidateImmediately)
+        {
+            await landedCosts.ValidateAsync(request.CompanyId, saved.Id, null, ct).ConfigureAwait(false);
+        }
+
+        return saved.Id;
+    }
 
     /// <summary>Starea de cost a cheilor (blocate), costul calculat de motor (S3), apoi scrierea intr-un singur apel SQL.</summary>
     private async Task<StockPostingOutcome> PostCostedAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int? employeeId, CancellationToken ct)

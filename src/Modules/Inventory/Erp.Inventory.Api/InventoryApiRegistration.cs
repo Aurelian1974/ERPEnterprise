@@ -1,4 +1,5 @@
 using Erp.Inventory.Application;
+using Erp.Inventory.Application.Costing;
 using Erp.Inventory.Application.Documents;
 using Erp.Inventory.Application.Movements;
 using Erp.Inventory.Contracts;
@@ -22,6 +23,7 @@ public static class InventoryApiRegistration
         MapKeepers(inventory);
         MapDepots(inventory);
         MapDocuments(inventory);
+        MapLandedCosts(inventory);
         MapItemSettings(inventory);
         MapSettings(inventory);
         return endpoints;
@@ -136,6 +138,25 @@ public static class InventoryApiRegistration
         inventory.MapPost("/documents/{id:int}/approve", (int id, ApproveStockDocument body, ISender sender, CancellationToken ct) =>
                 sender.Send(body with { Id = id }, ct))
             .WithName("ApproveStockDocument").Saves();
+    }
+
+    // Stocuri › Costuri adaugate: documentul CA (02.05, S3 3.3; macheta s3-01).
+    private static void MapLandedCosts(RouteGroupBuilder inventory)
+    {
+        inventory.MapGet("/landed-costs", ([AsParameters] GetLandedCosts query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetLandedCosts").Produces<IReadOnlyList<LandedCostItemDto>>().ProducesProblem(StatusCodes.Status403Forbidden);
+        inventory.MapGet("/landed-costs/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetLandedCost(id), ct))
+            .WithName("GetLandedCost").Produces<LandedCostDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/landed-costs", (SaveLandedCost body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateLandedCost").Saves();
+        inventory.MapPut("/landed-costs/{id:int}", (int id, SaveLandedCost body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateLandedCost").Saves();
+        inventory.MapPost("/landed-costs/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateLandedCost(id, body.RowVersion), ct))
+            .WithName("ValidateLandedCost").Saves();
+        inventory.MapPost("/landed-costs/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelLandedCost(id, body.RowVersion), ct))
+            .WithName("CancelLandedCost").Saves();
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

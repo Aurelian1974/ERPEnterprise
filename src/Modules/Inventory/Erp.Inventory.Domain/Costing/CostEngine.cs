@@ -89,8 +89,12 @@ public sealed record CostReversal(decimal OriginalAmount, IReadOnlyList<(CostLay
     }
 }
 
-/// <summary>O miscare de costat: cantitatea cu semn, data, ordinea, costul intrarii din sursa si, dupa caz, perechea transferului sau stornarea.</summary>
-public sealed record CostLine(int Row, decimal Qty, DateOnly Date, long Seq, decimal? InboundUnitCost, CostCounter? Counter = null, CostReversal? Reversal = null);
+/// <summary>
+/// O miscare de costat: cantitatea cu semn, data, ordinea, costul intrarii din sursa si, dupa caz, perechea transferului sau stornarea.
+/// InboundAmount fixeaza valoarea intrarii (la recalculare, valoarea scrisa, eventual cu costul adaugat al unui document CA, S3 3.3).
+/// </summary>
+public sealed record CostLine(int Row, decimal Qty, DateOnly Date, long Seq, decimal? InboundUnitCost, CostCounter? Counter = null, CostReversal? Reversal = null,
+    decimal? InboundAmount = null);
 
 /// <summary>Costul unei miscari si efectele lui: consumurile, stratul creat (sau straturile, la transfer) si regularizarile.</summary>
 public sealed record CostLineResult(int Row, decimal UnitCost, decimal Amount, IReadOnlyList<CostConsumption> Consumptions, IReadOnlyList<CostLayerState> CreatedLayers,
@@ -145,7 +149,7 @@ public static class CostEngine
             ? (Layered(key) && counter.Parts.Count > 0
                 ? counter.Parts.Select(p => (p.Qty, p.Value, p.LayerDate, p.Seq, p.LayerId)).ToList()
                 : [(qty, counter.Amount, line.Date, line.Seq, (long?)null)])
-            : [(qty, Money(qty * (line.InboundUnitCost ?? CurrentUnit(key))), line.Date, line.Seq, null)];
+            : [(qty, line.InboundAmount ?? Money(qty * (line.InboundUnitCost ?? CurrentUnit(key))), line.Date, line.Seq, null)];
         var total = parts.Sum(p => p.Item2);
         var unit = line.Counter is null && line.InboundUnitCost is { } given ? given : Unit(total, qty);
         var adjustments = new List<CostAdjustmentResult>();

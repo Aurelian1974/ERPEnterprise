@@ -18,6 +18,19 @@ public sealed record QueuedCostKey(CostKey Key, DateOnly FromDate, int MovementC
 /// <summary>Rezultatul refacerii unei chei: miscarile schimbate (cu documentul lor) si cheile pereche de refacut.</summary>
 public sealed record CostRebuild(IReadOnlyList<(CostHistoryMovement Movement, decimal NewAmount)> Changed, IReadOnlyList<(CostKey Key, DateOnly FromDate)> Followers);
 
+/// <summary>O miscare al carei cost s-a schimbat la recalculare, cu cheia ei.</summary>
+public sealed record CostChange(CostKey Key, CostHistoryMovement Movement, decimal NewAmount)
+{
+    public decimal Delta => NewAmount - Movement.CostAmount;
+}
+
+/// <summary>
+/// Atribuirea unei recalculari unui document (costul adaugat, S3 3.3): suma adaugata pe fiecare intrare tinta, tipul ajustarii si documentul cu
+/// data lui. Urmele schimbarilor poarta documentul, iar evenimentul il publica apelantul, nu recalcularea.
+/// </summary>
+public sealed record CostAttribution(byte AdjustmentKind, string DocumentType, long DocumentId, DateOnly AccountingDate,
+    IReadOnlyDictionary<long, decimal> InboundDeltas);
+
 /// <summary>Accesul la date pentru recalculare (inv.usp_CostRecalc_Enqueue, inv.usp_StockCost_History, _Rebuild, inv.usp_CostRecalcQueue_List).</summary>
 public interface ICostRecalcStore
 {
@@ -27,7 +40,7 @@ public interface ICostRecalcStore
 
     Task<IReadOnlyList<(CostKey Key, DateOnly FromDate)>> RebuildAsync(int companyId, CostKey key, IReadOnlyList<(long MovementId, decimal UnitCost, decimal Amount)> updates,
         IReadOnlyList<LayerWrite> layers, IReadOnlyList<ConsumptionWrite> consumptions, IReadOnlyList<AdjustmentWrite> adjustments, CostKeyState state, int userId,
-        CancellationToken ct);
+        CostAttribution? attribution, CancellationToken ct);
 
     Task<IReadOnlyList<CostRecalcQueueItemDto>> QueueAsync(int? companyId, int top, CancellationToken ct);
 }
@@ -59,15 +72,23 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
     }
 
     /// <summary>Reface cheia si, in lant, cheile pereche ale transferurilor schimbate (cel mult 50 de pasi, apoi raman in coada).</summary>
-    public async Task<int> RecalculateAsync(int companyId, CostKey key, CancellationToken ct)
+    public async Task<int> RecalculateAsync(int companyId, CostKey key, CancellationToken ct) =>
+        (await RunAsync(companyId, [key], null, ct).ConfigureAwait(false)).Count;
+
+    /// <summary>
+    /// Reface cheile date si lantul transferurilor. Fara atribuire, publica CostStocAjustat (recalculare) pe document sursa; cu atribuire (documentul
+    /// CA), intrarile tinta primesc suma adaugata, urmele poarta documentul, iar schimbarile se intorc apelantului, care publica evenimentul.
+    /// </summary>
+    public async Task<IReadOnlyList<CostChange>> RunAsync(int companyId, IReadOnlyCollection<CostKey> keys, CostAttribution? attribution, CancellationToken ct)
     {
-        var pending = new Queue<CostKey>([key]);
-        var changed = 0;
+        var pending = new Queue<CostKey>(keys.Distinct());
+        var changes = new List<CostChange>();
         for (var step = 0; step < 50 && pending.Count > 0; step++)
         {
-            var rebuild = await RebuildOneAsync(companyId, pending.Dequeue(), ct).ConfigureAwait(false);
-            changed += rebuild.Changed.Count;
-            foreach (var follower in rebuild.Followers)
+            var current = pending.Dequeue();
+            var rebuild = await RebuildOneAsync(companyId, current, attribution, ct).ConfigureAwait(false);
+            changes.AddRange(rebuild.Changed.Select(c => new CostChange(current, c.Movement, c.NewAmount)));
+            foreach (var follower in rebuild.Followers.Where(f => !pending.Contains(f.Key)))
             {
                 pending.Enqueue(follower.Key);
             }
@@ -78,10 +99,10 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
             await store.EnqueueAsync(companyId, [left], DateOnly.MinValue, ct).ConfigureAwait(false);
         }
 
-        return changed;
+        return changes;
     }
 
-    private async Task<CostRebuild> RebuildOneAsync(int companyId, CostKey key, CancellationToken ct)
+    private async Task<CostRebuild> RebuildOneAsync(int companyId, CostKey key, CostAttribution? attribution, CancellationToken ct)
     {
         var history = await store.HistoryAsync(companyId, key, ct).ConfigureAwait(false);
         var state = new CostKeyState { Method = history.Method, FallbackUnitCost = history.FallbackUnitCost };
@@ -102,8 +123,11 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
                     m.QtyBase < 0 ? originalResult.CreatedLayers.Where(l => !l.IsNegative).ToList() : []);
             }
 
+            // Intrarea simpla se reface la valoarea scrisa; intrarea tinta a unui CA, la valoarea scrisa plus suma adaugata (S3 3.3).
+            var plainInbound = counter is null && reversal is null && m.QtyBase > 0;
+            decimal? added = plainInbound && attribution is not null && attribution.InboundDeltas.TryGetValue(m.Id, out var delta) ? delta : null;
             results[m.Id] = CostEngine.Apply(state, new CostLine(row, m.QtyBase, m.MovementDate, m.PostingSeq,
-                counter is null && reversal is null && m.QtyBase > 0 ? m.UnitCost : null, counter, reversal));
+                plainInbound && added is null ? m.UnitCost : null, counter, reversal, plainInbound ? m.CostAmount + (added ?? 0) : null));
         }
 
         var byId = history.Movements.ToDictionary(m => m.Id);
@@ -112,18 +136,22 @@ public sealed class CostRecalculator(ICostRecalcStore store, IOutbox outbox, ICu
             byId[rowOf[l.MovementRow ?? 0]].CounterMovementId is not null ? l.Seq : null, l.QtyIn, l.QtyRemaining, l.ValueRemaining, l.UnitCost, l.IsNegative,
             l.OriginLayerId)).ToList();
         var consumptions = results.SelectMany(r => r.Value.Consumptions.Select(c => new ConsumptionWrite(null, r.Key, c.Layer.Ref, null, c.Qty, c.Value))).ToList();
+        var traceKind = attribution?.AdjustmentKind ?? Recalculation;
         var adjustments = results.Values.SelectMany(r => r.Adjustments.Select(a => new AdjustmentWrite(null, rowOf[a.MovementRow ?? r.Row], key,
                 CostCalculator.NegativeRegularization, true, a.Amount)))
-            .Concat(changed.Select(c => new AdjustmentWrite(null, c.m.Id, key, Recalculation, false, c.Item2 - c.m.CostAmount)))
+            .Concat(changed.Select(c => new AdjustmentWrite(null, c.m.Id, key, traceKind, false, c.Item2 - c.m.CostAmount)))
             .ToList();
         var followers = await store.RebuildAsync(companyId, key, changed.Select(c => (c.m.Id, results[c.m.Id].UnitCost, c.Item2)).ToList(), layers, consumptions,
-            adjustments, state, context.UserId, ct).ConfigureAwait(false);
+            adjustments, state, context.UserId, attribution, ct).ConfigureAwait(false);
 
-        foreach (var group in changed.GroupBy(c => (c.m.SourceModule, c.m.SourceDocumentType, c.m.SourceDocumentId, c.m.AccountingDate)))
+        if (attribution is null)
         {
-            await outbox.EnqueueAsync(new CostStocAjustat(Recalculation, group.Key.SourceModule, group.Key.SourceDocumentType, group.Key.SourceDocumentId,
-                group.Key.AccountingDate, group.Select(c => new CostAdjustmentEventLine(key.WarehouseId, key.ItemVariantId, c.m.Id, c.Item2 - c.m.CostAmount,
-                    "Expense")).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
+            foreach (var group in changed.GroupBy(c => (c.m.SourceModule, c.m.SourceDocumentType, c.m.SourceDocumentId, c.m.AccountingDate)))
+            {
+                await outbox.EnqueueAsync(new CostStocAjustat(Recalculation, group.Key.SourceModule, group.Key.SourceDocumentType, group.Key.SourceDocumentId,
+                    group.Key.AccountingDate, group.Select(c => new CostAdjustmentEventLine(key.WarehouseId, key.ItemVariantId, c.m.Id, c.Item2 - c.m.CostAmount,
+                        "Expense")).ToList()) { CompanyId = companyId }, ct).ConfigureAwait(false);
+            }
         }
 
         return new CostRebuild(changed.Select(c => (c.m, c.Item2)).ToList(), followers);

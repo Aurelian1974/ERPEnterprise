@@ -133,7 +133,8 @@ public abstract class InventoryTestBase(InventoryDatabase database)
         InventoryPermissions.TransferEdit, InventoryPermissions.TransferValidate, InventoryPermissions.LoadUnloadEdit, InventoryPermissions.LoadUnloadValidate,
         InventoryPermissions.ConsumptionEdit, InventoryPermissions.ConsumptionValidate, InventoryPermissions.ProductionNoteEdit,
         InventoryPermissions.ProductionNoteValidate, InventoryPermissions.CustodyEdit, InventoryPermissions.CustodyValidate, InventoryPermissions.DocumentReverse,
-        InventoryPermissions.ReasonManage, InventoryPermissions.CostView,
+        InventoryPermissions.ReasonManage, InventoryPermissions.CostView, InventoryPermissions.LandedCostEdit,
+        InventoryPermissions.LandedCostValidate,
     };
 
     /// <summary>Scope-ul pe gestiuni al utilizatorului de test (null = toate).</summary>

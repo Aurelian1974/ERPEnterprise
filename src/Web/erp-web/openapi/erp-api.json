@@ -33122,6 +33122,399 @@
         }
       }
     },
+    "/api/inventory/landed-costs": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetLandedCosts",
+        "parameters": [
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LandedCostItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CreateLandedCost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLandedCost"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/landed-costs/{id}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetLandedCost",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedCostDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "UpdateLandedCost",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLandedCost"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/landed-costs/{id}/validate": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ValidateLandedCost",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/landed-costs/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CancelLandedCost",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/inventory/items/{itemId}/stock-settings": {
       "get": {
         "tags": [
@@ -63415,6 +63808,365 @@
           "ageDays": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "LandedCostDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "accountingDate",
+          "sourceKind",
+          "supplierInvoiceId",
+          "partnerId",
+          "partnerName",
+          "amount",
+          "allocationBasis",
+          "status",
+          "notes",
+          "stockAmount",
+          "expenseAmount",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "supplierInvoiceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "allocationBasis": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stockAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expenseAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LandedCostLineDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "LandedCostItemDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "accountingDate",
+          "sourceKind",
+          "supplierInvoiceId",
+          "partnerName",
+          "amount",
+          "allocationBasis",
+          "status",
+          "stockAmount",
+          "expenseAmount",
+          "lineCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "supplierInvoiceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "allocationBasis": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "stockAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expenseAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "LandedCostLineDto": {
+        "required": [
+          "lineNo",
+          "movementId",
+          "warehouseId",
+          "warehouseCode",
+          "itemVariantId",
+          "variantCode",
+          "variantName",
+          "movementDate",
+          "sourceDocumentType",
+          "sourceDocumentNumber",
+          "qtyBase",
+          "costAmount",
+          "manualAmount",
+          "allocatedAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "movementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "warehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantCode": {
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string"
+          },
+          "movementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "costAmount": {
+            "type": "string"
+          },
+          "manualAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allocatedAmount": {
+            "type": "string"
+          }
+        }
+      },
+      "LandedCostLineInput": {
+        "required": [
+          "movementId",
+          "manualAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "movementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "manualAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveLandedCost": {
+        "required": [
+          "id",
+          "documentDate",
+          "accountingDate",
+          "sourceKind",
+          "supplierInvoiceId",
+          "partnerId",
+          "amount",
+          "allocationBasis",
+          "notes",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountingDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "supplierInvoiceId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "allocationBasis": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LandedCostLineInput"
+            }
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
           }
         }
       }

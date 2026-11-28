@@ -11,13 +11,16 @@ CREATE OR ALTER PROCEDURE inv.usp_StockCost_Rebuild
     @Qty           decimal(19,6),
     @Value         decimal(19,2),
     @LastUnitCost  decimal(19,6) = NULL,
-    @UserId        int
+    @UserId        int,
+    @AdjustmentDocumentType varchar(30) = NULL,
+    @AdjustmentDocumentId   bigint = NULL,
+    @AdjustmentDate         date = NULL
 AS
 BEGIN
     -- Refacerea costului unei chei (02.05, S3 3.5), din calculul motorului pe toata istoria ei: straturile, consumurile si regularizarile de negativ
     -- ale cheii se inlocuiesc; miscarile al caror cost se schimba se actualizeaza (singura exceptie a triggerului, prin SESSION_CONTEXT) si primesc
     -- ajustarea de recalculare; soldul se aliniaza; cheia iese din coada. Intoarce cheile intrarilor pereche ale iesirilor schimbate (transferurile),
-    -- de recalculat la randul lor.
+    -- de recalculat la randul lor. Cu @AdjustmentDocumentType (documentul CA, S3 3.3), urmele schimbarilor poarta documentul si data lui.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -42,8 +45,10 @@ BEGIN
 
     INSERT INTO inv.CostAdjustment (CompanyId, WarehouseId, DepotId, ItemVariantId, LotId, MovementId, Kind, InStock, Amount, AccountingDate,
         SourceDocumentType, SourceDocumentId, CreatedBy)
-    SELECT @CompanyId, a.WarehouseId, a.DepotId, a.ItemVariantId, a.LotId, a.MovementId, a.Kind, a.InStock, a.Amount, m.AccountingDate,
-        m.SourceDocumentType, m.SourceDocumentId, @UserId
+    SELECT @CompanyId, a.WarehouseId, a.DepotId, a.ItemVariantId, a.LotId, a.MovementId, a.Kind, a.InStock, a.Amount,
+        CASE WHEN a.Kind = 2 OR @AdjustmentDocumentType IS NULL THEN m.AccountingDate ELSE @AdjustmentDate END,
+        CASE WHEN a.Kind = 2 OR @AdjustmentDocumentType IS NULL THEN m.SourceDocumentType ELSE @AdjustmentDocumentType END,
+        CASE WHEN a.Kind = 2 OR @AdjustmentDocumentType IS NULL THEN m.SourceDocumentId ELSE @AdjustmentDocumentId END, @UserId
     FROM @Adjustments AS a
     JOIN inv.StockMovement AS m ON m.Id = a.MovementId;
 

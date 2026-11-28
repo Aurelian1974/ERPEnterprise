@@ -6117,6 +6117,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/landed-costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLandedCosts"];
+        put?: never;
+        post: operations["CreateLandedCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/landed-costs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLandedCost"];
+        put: operations["UpdateLandedCost"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/landed-costs/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateLandedCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/landed-costs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelLandedCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/items/{itemId}/stock-settings": {
         parameters: {
             query?: never;
@@ -14033,6 +14097,103 @@ export interface components {
             status: number;
             /** Format: int32 */
             ageDays: number;
+        };
+        LandedCostDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            accountingDate: string;
+            /** Format: uint8 */
+            sourceKind: number;
+            /** Format: int64 */
+            supplierInvoiceId: null | number;
+            /** Format: int32 */
+            partnerId: null | number;
+            partnerName: null | string;
+            amount: string;
+            /** Format: uint8 */
+            allocationBasis: number;
+            /** Format: uint8 */
+            status: number;
+            notes: null | string;
+            stockAmount: null | string;
+            expenseAmount: null | string;
+            lines: components["schemas"]["LandedCostLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        LandedCostItemDto: {
+            /** Format: int32 */
+            id: number;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            accountingDate: string;
+            /** Format: uint8 */
+            sourceKind: number;
+            /** Format: int64 */
+            supplierInvoiceId: null | number;
+            partnerName: null | string;
+            amount: string;
+            /** Format: uint8 */
+            allocationBasis: number;
+            /** Format: uint8 */
+            status: number;
+            stockAmount: null | string;
+            expenseAmount: null | string;
+            /** Format: int32 */
+            lineCount: number;
+        };
+        LandedCostLineDto: {
+            /** Format: int32 */
+            lineNo: number;
+            /** Format: int64 */
+            movementId: number;
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            variantName: string;
+            /** Format: date */
+            movementDate: string;
+            sourceDocumentType: string;
+            sourceDocumentNumber: null | string;
+            qtyBase: string;
+            costAmount: string;
+            manualAmount: null | string;
+            allocatedAmount: string;
+        };
+        LandedCostLineInput: {
+            /** Format: int64 */
+            movementId: number;
+            manualAmount: null | string;
+        };
+        SaveLandedCost: {
+            /** Format: int32 */
+            id: null | number;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            accountingDate: null | string;
+            /** Format: uint8 */
+            sourceKind: number;
+            /** Format: int64 */
+            supplierInvoiceId: null | number;
+            /** Format: int32 */
+            partnerId: null | number;
+            amount: string;
+            /** Format: uint8 */
+            allocationBasis: number;
+            notes: null | string;
+            lines: components["schemas"]["LandedCostLineInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
         };
     };
     responses: never;
@@ -39406,6 +39567,314 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ApproveStockDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLandedCosts: {
+        parameters: {
+            query?: {
+                Status?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedCostItemDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateLandedCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveLandedCost"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLandedCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedCostDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLandedCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveLandedCost"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateLandedCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CancelLandedCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
             };
         };
         responses: {

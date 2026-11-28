@@ -15,7 +15,36 @@ public interface IStockLedger
 
     Task<IReadOnlyList<StockAvailabilityDto>> GetAvailabilityAsync(int companyId, int? depotId, int? warehouseId, IReadOnlyCollection<int> itemVariantIds,
         DateOnly onDate, CancellationToken ct);
+
+    /// <summary>
+    /// Costul adaugat sau diferenta de pret dupa receptie (02.05, S3 3.3 si 6): creeaza documentul CA (in ciorna sau validat) si intoarce Id-ul lui;
+    /// 0 fara Stocuri licentiat.
+    /// </summary>
+    Task<int> AdjustInboundCostAsync(InboundCostAdjustmentRequest request, CancellationToken ct);
 }
+
+public enum InboundCostSourceKind : byte
+{
+    ServiceInvoice = 1,
+    InvoicePriceDifference = 2,
+    RebateAfterReceipt = 3,
+}
+
+public enum AllocationBasis : byte
+{
+    Value = 1,
+    Quantity = 2,
+    Weight = 3,
+    Volume = 4,
+    Manual = 5,
+}
+
+/// <summary>Cererea de cost adaugat: suma fara TVA in RON (negativa la reducere), baza de repartizare si liniile de receptie vizate.</summary>
+public sealed record InboundCostAdjustmentRequest(int CompanyId, InboundCostSourceKind Kind, long SupplierInvoiceId, DateOnly AccountingDate, decimal AmountRon,
+    AllocationBasis Basis, IReadOnlyList<InboundCostTarget> Targets, bool ValidateImmediately);
+
+/// <summary>O linie de receptie vizata: modulul si linia sursa a miscarii de intrare; suma, doar la repartizarea manuala.</summary>
+public sealed record InboundCostTarget(string SourceModule, long SourceLineId, decimal? ManualAmountRon);
 
 /// <summary>
 /// Un set de miscari dintr-un document sursa. IsExternalFact = fapt deja petrecut in afara ERP (bon POS): se accepta mereu, cu marcajul de
@@ -51,4 +80,6 @@ public sealed class NoStockLedger : IStockLedger
     public Task<IReadOnlyList<StockAvailabilityDto>> GetAvailabilityAsync(int companyId, int? depotId, int? warehouseId,
         IReadOnlyCollection<int> itemVariantIds, DateOnly onDate, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<StockAvailabilityDto>>([]);
+
+    public Task<int> AdjustInboundCostAsync(InboundCostAdjustmentRequest request, CancellationToken ct) => Task.FromResult(0);
 }
