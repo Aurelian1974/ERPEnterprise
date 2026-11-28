@@ -21,6 +21,8 @@ public sealed class StockCloseCheck(IDbSession session, string code, CloseCheckS
         ("NEGATIVE_STOCK", CloseCheckSeverity.Blocking, true, "Niciun stoc negativ la sfârșitul lunii.", "{0} stocuri negative la sfârșitul lunii."),
         ("RETAIL_DISCHARGE", CloseCheckSeverity.Blocking, false, "Descărcările la preț cu amănuntul ale lunii sunt validate.",
             "{0} gestiuni la preț cu amănuntul fără descărcarea (DA) lunii."),
+        ("UNIDENTIFIED_LOT", CloseCheckSeverity.Blocking, true, "Niciun sold pe lotul NEIDENTIFICAT.",
+            "{0} variante au sold pe lotul NEIDENTIFICAT; corectați-l cu documentul de schimbare a lotului (SL)."),
     ];
 
     public string Code => code;

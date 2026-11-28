@@ -244,6 +244,46 @@ public static class InventoryApiRegistration
             .WithName("SaveSerialIdentifierRule").Produces<IReadOnlyList<SerialIdentifierRuleDto>>();
         inventory.MapPut("/partner-shelf-life-rules", (SavePartnerShelfLifeRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SavePartnerShelfLifeRule").Produces<IReadOnlyList<PartnerShelfLifeRuleDto>>();
+        inventory.MapGet("/lots/{id:int}/trace", (int id, int? maxDepth, ISender sender, CancellationToken ct) =>
+                sender.Send(new TraceLot(id, maxDepth ?? 10), ct))
+            .WithName("TraceLot").Produces<LotTraceDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapGet("/gs1/parse", (string raw, ISender sender, CancellationToken ct) => sender.Send(new ParseGs1(raw), ct))
+            .WithName("ParseGs1").Produces<Erp.Inventory.Contracts.Gs1ParseResult>();
+
+        // Schimbarea lotului (SL, S4 3.7).
+        inventory.MapGet("/lot-changes", (ISender sender, CancellationToken ct) => sender.Send(new GetLotChanges(), ct))
+            .WithName("GetLotChanges").Produces<IReadOnlyList<LotChangeItemDto>>();
+        inventory.MapGet("/lot-changes/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetLotChange(id), ct))
+            .WithName("GetLotChange").Produces<LotChangeDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/lot-changes", (SaveLotChange body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateLotChange").Saves();
+        inventory.MapPut("/lot-changes/{id:int}", (int id, SaveLotChange body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateLotChange").Saves();
+        inventory.MapPost("/lot-changes/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateLotChange(id, body.RowVersion), ct))
+            .WithName("ValidateLotChange").Saves();
+        inventory.MapPost("/lot-changes/{id:int}/cancel", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CancelLotChange(id, body.RowVersion), ct))
+            .WithName("CancelLotChange").Saves();
+
+        // Retragerea (RL, S4 3.6; s4-05).
+        inventory.MapGet("/recalls", (ISender sender, CancellationToken ct) => sender.Send(new GetRecalls(), ct))
+            .WithName("GetRecalls").Produces<IReadOnlyList<RecallItemDto>>();
+        inventory.MapGet("/recalls/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetRecall(id), ct))
+            .WithName("GetRecall").Produces<RecallDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/recalls", (SaveRecall body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = null }, ct))
+            .WithName("CreateRecall").Saves();
+        inventory.MapPut("/recalls/{id:int}", (int id, SaveRecall body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
+            .WithName("UpdateRecall").Saves();
+        inventory.MapPost("/recalls/{id:int}/validate", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new ValidateRecall(id, body.RowVersion), ct))
+            .WithName("ValidateRecall").Saves();
+        inventory.MapPost("/recalls/{id:int}/close", (int id, InventoryRowVersionBody body, ISender sender, CancellationToken ct) =>
+                sender.Send(new CloseRecall(id, body.RowVersion), ct))
+            .WithName("CloseRecall").Saves();
+        inventory.MapPut("/recall-customers/{id:long}/outcome", (long id, SetRecallOutcome body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { CustomerLineId = id }, ct))
+            .WithName("SetRecallOutcome").Produces<bool>().ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     // Nucleu › Articol › tab Stoc (02.05, S1 3.4; macheta s1-03).

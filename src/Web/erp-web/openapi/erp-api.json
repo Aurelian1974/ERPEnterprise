@@ -35161,6 +35161,882 @@
         }
       }
     },
+    "/api/inventory/lots/{id}/trace": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "TraceLot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "maxDepth",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LotTraceDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/gs1/parse": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ParseGs1",
+        "parameters": [
+          {
+            "name": "raw",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gs1ParseResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/lot-changes": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetLotChanges",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LotChangeItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CreateLotChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLotChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/lot-changes/{id}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetLotChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LotChangeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "UpdateLotChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLotChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/lot-changes/{id}/validate": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ValidateLotChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/lot-changes/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CancelLotChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/recalls": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetRecalls",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecallItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CreateRecall",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRecall"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/recalls/{id}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetRecall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "UpdateRecall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRecall"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/recalls/{id}/validate": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ValidateRecall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/recalls/{id}/close": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CloseRecall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/recall-customers/{id}/outcome": {
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "SetRecallOutcome",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRecallOutcome"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/inventory/items/{itemId}/stock-settings": {
       "get": {
         "tags": [
@@ -67534,6 +68410,865 @@
       },
       "SerialStatus": {
         "type": "integer"
+      },
+      "Gs1ParseResult": {
+        "required": [
+          "gtin",
+          "lotCode",
+          "productionDate",
+          "expiryDate",
+          "serialNo",
+          "quantity",
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "gtin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "productionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "serialNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quantity": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LotChangeDto": {
+        "required": [
+          "id",
+          "number",
+          "warehouseId",
+          "warehouseCode",
+          "depotId",
+          "documentDate",
+          "status",
+          "notes",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "warehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "depotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LotChangeLineDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "LotChangeItemDto": {
+        "required": [
+          "id",
+          "number",
+          "warehouseId",
+          "warehouseCode",
+          "documentDate",
+          "status",
+          "lineCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "warehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "LotChangeLineDto": {
+        "required": [
+          "lineId",
+          "lineNumber",
+          "itemVariantId",
+          "variantCode",
+          "fromLotId",
+          "fromCku",
+          "toLotId",
+          "toCku",
+          "newLotCode",
+          "newExpiryDate",
+          "qtyBase"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantCode": {
+            "type": "string"
+          },
+          "fromLotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromCku": {
+            "type": "string"
+          },
+          "toLotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toCku": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newExpiryDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "qtyBase": {
+            "type": "string"
+          }
+        }
+      },
+      "LotChangeLineInput": {
+        "required": [
+          "itemVariantId",
+          "fromLotId",
+          "toLotId",
+          "newLotCode",
+          "newExpiryDate",
+          "qtyBase"
+        ],
+        "type": "object",
+        "properties": {
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromLotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toLotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "newLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newExpiryDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "qtyBase": {
+            "type": "string"
+          }
+        }
+      },
+      "LotTraceDto": {
+        "required": [
+          "lotId",
+          "ckuCode",
+          "supplierLotCode",
+          "supplierName",
+          "firstReceiptDate",
+          "receiptDocument",
+          "back",
+          "forward",
+          "stockNow"
+        ],
+        "type": "object",
+        "properties": {
+          "lotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ckuCode": {
+            "type": "string"
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supplierName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstReceiptDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "receiptDocument": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "back": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LotTraceOriginDto"
+            }
+          },
+          "forward": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LotTraceMovementDto"
+            }
+          },
+          "stockNow": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LotStockDto"
+            }
+          }
+        }
+      },
+      "LotTraceMovementDto": {
+        "required": [
+          "depth",
+          "movementId",
+          "lotId",
+          "ckuCode",
+          "movementDate",
+          "movementTypeCode",
+          "warehouseCode",
+          "qtyBase",
+          "partnerId",
+          "partnerName",
+          "sourceDocumentType",
+          "sourceDocumentId",
+          "sourceDocumentNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "depth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "movementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ckuCode": {
+            "type": "string"
+          },
+          "movementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "movementTypeCode": {
+            "type": "string"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceDocumentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LotTraceOriginDto": {
+        "required": [
+          "depth",
+          "lotId",
+          "ckuCode",
+          "supplierLotCode",
+          "supplierName",
+          "firstReceiptDate"
+        ],
+        "type": "object",
+        "properties": {
+          "depth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ckuCode": {
+            "type": "string"
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supplierName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstReceiptDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "RecallCustomerDto": {
+        "required": [
+          "id",
+          "lotId",
+          "ckuCode",
+          "partnerId",
+          "partnerName",
+          "sourceDocumentType",
+          "sourceDocumentId",
+          "sourceDocumentNumber",
+          "movementDate",
+          "qtyBase",
+          "outcome",
+          "outcomeNote"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ckuCode": {
+            "type": "string"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceDocumentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "movementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "outcomeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecallDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "sourceKind",
+          "reason",
+          "supplierPartnerId",
+          "supplierName",
+          "supplierLotCode",
+          "status",
+          "validatedAt",
+          "closedAt",
+          "lots",
+          "customers",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "supplierPartnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "supplierName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecallLotDto"
+            }
+          },
+          "customers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecallCustomerDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "RecallItemDto": {
+        "required": [
+          "id",
+          "number",
+          "documentDate",
+          "sourceKind",
+          "supplierLotCode",
+          "status",
+          "lotCount",
+          "customerCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "lotCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "customerCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RecallLotDto": {
+        "required": [
+          "lotId",
+          "ckuCode",
+          "lotCode",
+          "supplierLotCode",
+          "status",
+          "qtyOnHand"
+        ],
+        "type": "object",
+        "properties": {
+          "lotId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ckuCode": {
+            "type": "string"
+          },
+          "lotCode": {
+            "type": "string"
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LotStatus"
+          },
+          "qtyOnHand": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveLotChange": {
+        "required": [
+          "id",
+          "warehouseId",
+          "depotId",
+          "documentDate",
+          "notes",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "warehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "depotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LotChangeLineInput"
+            }
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "SaveRecall": {
+        "required": [
+          "id",
+          "documentDate",
+          "sourceKind",
+          "reason",
+          "supplierPartnerId",
+          "supplierLotCode",
+          "lotIds",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceKind": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "supplierPartnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "supplierLotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lotIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "SetRecallOutcome": {
+        "required": [
+          "customerLineId",
+          "outcome",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "customerLineId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outcome": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },

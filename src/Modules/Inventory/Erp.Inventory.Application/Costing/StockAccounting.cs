@@ -15,12 +15,12 @@ public static class StockAccounting
 {
     private static readonly HashSet<string> Inbound = new(StringComparer.Ordinal)
     {
-        "RECEIPT_PURCHASE", "RETURN_FROM_CUSTOMER", "TRANSFER_IN", "LOAD", "PRODUCTION_IN", "COUNT_PLUS", "CUSTODY_IN",
+        "RECEIPT_PURCHASE", "RETURN_FROM_CUSTOMER", "TRANSFER_IN", "LOAD", "PRODUCTION_IN", "COUNT_PLUS", "CUSTODY_IN", "LOT_CHANGE_IN",
     };
 
     private static readonly HashSet<string> NoCounter = new(StringComparer.Ordinal) { "TRANSFER_IN", "TRANSFER_OUT" };
 
-    private static readonly HashSet<string> NotPosted = new(StringComparer.Ordinal) { "CUSTODY_IN", "CUSTODY_OUT" };
+    private static readonly HashSet<string> NotPosted = new(StringComparer.Ordinal) { "CUSTODY_IN", "CUSTODY_OUT", "LOT_CHANGE_OUT", "LOT_CHANGE_IN" };
 
     public static AccountingPayload Movements(string module, string documentType, long documentId, string? number, DateOnly movementDate,
         DateOnly accountingDate, bool reversal, IReadOnlyList<StockMovementEventLine> lines)

@@ -58,7 +58,12 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
         (N'SEF_DEPOZIT', N'Inv.Lot.View'),
         (N'SEF_DEPOZIT', N'Inv.Lot.Block'),
         (N'SEF_DEPOZIT', N'Inv.Lot.OverrideShelfLife'),
-        (N'GESTIONAR',   N'Inv.Lot.View')
+        (N'GESTIONAR',   N'Inv.Lot.View'),
+        (N'GESTIONAR',   N'Inv.LotChange.Edit'),
+        (N'SEF_DEPOZIT', N'Inv.LotChange.Edit'),
+        (N'RESP_CALITATE', N'Inv.Recall.Edit'),
+        (N'RESP_CALITATE', N'Inv.Recall.Validate'),
+        (N'RESP_CALITATE', N'Inv.Recall.Close')
     ) AS fixed (RoleCode, PermissionCode)
 )
 INSERT INTO core.RolePermission (RoleId, PermissionId)

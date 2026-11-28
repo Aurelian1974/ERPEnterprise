@@ -51,6 +51,11 @@ public static class InventoryPermissions
     public const string LotReceiveExpired = "Inv.Lot.ReceiveExpired";
     public const string SerialEditIdentifiers = "Inv.Serial.EditIdentifiers";
     public const string SettingsSerialIdentifiers = "Inv.Settings.SerialIdentifiers";
+    public const string LotChangeEdit = "Inv.LotChange.Edit";
+    public const string LotChangeValidate = "Inv.LotChange.Validate";
+    public const string RecallEdit = "Inv.Recall.Edit";
+    public const string RecallValidate = "Inv.Recall.Validate";
+    public const string RecallClose = "Inv.Recall.Close";
 }
 
 /// <summary>Codurile API ale Stocurilor ridicate din C# (NET-09). Cele din SQL sunt in InventorySqlErrors.</summary>

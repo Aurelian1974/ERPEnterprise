@@ -338,7 +338,11 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
 
             foreach (var part in counterParts)
             {
-                result.Add(line with { Row = result.Count + 1, CounterRow = part.Row, Request = line.Request with { LotId = part.LotId, QtyBase = -part.Qty } });
+                // Perechea pastreaza lotul iesirii (transferul), cu exceptia schimbarii lotului (SL), unde intrarea are lotul ei (S4 3.7).
+                var lot = line.Request.MovementTypeCode != "LOT_CHANGE_IN" ? part.LotId
+                    : resolution.Replayed && parts.TryGetValue(line.Row, out var own) ? own[0].LotId
+                    : resolution.Rows.GetValueOrDefault(line.Row).LotId ?? line.Request.LotId;
+                result.Add(line with { Row = result.Count + 1, CounterRow = part.Row, Request = line.Request with { LotId = lot, QtyBase = -part.Qty } });
             }
         }
 

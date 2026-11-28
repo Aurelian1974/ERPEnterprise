@@ -87,10 +87,11 @@ BEGIN
         WHERE (w.IsBlocked = 1 OR d.IsBlocked = 1) AND t.Code <> 'TRANSFER_IN')
         THROW 54005, N'Gestiunea sau depozitul unei linii este blocat (inventar, predare sau blocare manuală).', 1;
     IF EXISTS (SELECT 1 FROM @Rows AS r JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
-               WHERE w.Kind = 3 AND t.Code NOT IN ('TRANSFER_OUT', 'TRANSFER_IN', 'UNLOAD', 'LOAD'))
+               WHERE w.Kind = 3 AND t.Code NOT IN ('TRANSFER_OUT', 'TRANSFER_IN', 'UNLOAD', 'LOAD', 'LOT_CHANGE_OUT', 'LOT_CHANGE_IN'))
         THROW 54108, N'Gestiunea de tranzit primește doar transferurile în două etape și rezolvarea diferențelor.', 1;
     IF EXISTS (SELECT 1 FROM @Rows AS r JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
-               WHERE (w.Kind = 4 AND t.Code NOT IN ('CUSTODY_IN', 'CUSTODY_OUT', 'TRANSFER_OUT', 'TRANSFER_IN', 'COUNT_PLUS', 'COUNT_MINUS'))
+               WHERE (w.Kind = 4 AND t.Code NOT IN ('CUSTODY_IN', 'CUSTODY_OUT', 'TRANSFER_OUT', 'TRANSFER_IN', 'COUNT_PLUS', 'COUNT_MINUS', 'LOT_CHANGE_OUT',
+                                                    'LOT_CHANGE_IN'))
                   OR (w.Kind <> 4 AND t.Code IN ('CUSTODY_IN', 'CUSTODY_OUT')))
         THROW 54116, N'Custodia are doar intrări și ieșiri de custodie; din ea nu se vinde și nu se consumă.', 1;
     -- Nivelul „depozit” (S1 3.8): gestiunea fara locatie dintr-un depozit cere depozitul liniei; depozitul trebuie sa contina gestiunea.
@@ -143,7 +144,7 @@ BEGIN
     -- Predarea dintr-o gestiune la pret cu amanuntul descarca adaosul si TVA-ul pe loc (metoda 2), orice metoda ar avea gestiunea.
     UPDATE r SET RetailDischargeMethod = 2
     FROM @Rows AS r JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
-    WHERE r.RetailDischargeMethod IS NOT NULL AND t.Code = 'TRANSFER_OUT';
+    WHERE r.RetailDischargeMethod IS NOT NULL AND t.Code IN ('TRANSFER_OUT', 'LOT_CHANGE_OUT');
 
     UPDATE r SET RetailPrice = m.RetailPrice, RetailAmount = -m.RetailAmount, RetailVatAmount = -m.RetailVatAmount,
         RetailDischargeMethod = ISNULL(m.RetailDischargeMethod, r.RetailDischargeMethod)

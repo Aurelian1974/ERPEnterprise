@@ -137,6 +137,7 @@ public sealed class PeriodCloseService(IPeriodCloseStore store, IEnumerable<IPer
             "EVENTS_IN_TRANSIT" => "FIN_PERIOD_EVENTS_IN_TRANSIT",
             "ALT_MAPPING" => "FIN_MAPPING_INCOMPLETE",
             "COST_RECALC_PENDING" => "INV_RECALC_PENDING",
+            "UNIDENTIFIED_LOT" => "INV_UNIDENTIFIED_LOT_OPEN",
             _ => "FIN_PERIOD_CLOSE_BLOCKED",
         };
         return new ErpException(ErpErrorKind.Conflict, code, $"Luna nu se poate închide: {first.Name} — {first.Summary}");

@@ -42,4 +42,18 @@ BEGIN
           AND EXISTS (SELECT 1 FROM inv.StockMovement AS m WHERE m.WarehouseId = w.Id AND m.MovementDate <= @End AND m.RetailAmount IS NOT NULL)
           AND NOT EXISTS (SELECT 1 FROM inv.RetailDischarge AS d WHERE d.WarehouseId = w.Id AND d.PeriodStart = @Start)
         ORDER BY w.Code;
+    ELSE IF @Code = 'UNIDENTIFIED_LOT'
+        -- Soldul pe lotul tehnic NEIDENTIFICAT la sfarsitul lunii (S4 3.7, decizia 8); setarea firmei 0 dezactiveaza pasul.
+        SELECT CONCAT(N'Gestiunea ', w.Code, N' · ', v.Code, N': sold ', FORMAT(b.Balance, N'0.######', 'ro-RO'), N' pe lotul NEIDENTIFICAT.') AS Message,
+            CAST(b.ItemVariantId AS nvarchar(100)) AS DocumentRef, CAST(b.Balance AS decimal(19,2)) AS Amount
+        FROM (SELECT d.WarehouseId, d.ItemVariantId, SUM(d.QtyIn - d.QtyOut) AS Balance
+              FROM inv.StockDayBalance AS d
+              JOIN inv.Lot AS x ON x.Id = d.LotKey AND x.IsTechnical = 1 AND x.CompanyId = @CompanyId
+              WHERE d.BalanceDate <= @End
+              GROUP BY d.WarehouseId, d.ItemVariantId
+              HAVING SUM(d.QtyIn - d.QtyOut) <> 0) AS b
+        JOIN inv.Warehouse AS w ON w.Id = b.WarehouseId
+        JOIN core.ItemVariant AS v ON v.Id = b.ItemVariantId
+        WHERE ISNULL((SELECT UnidentifiedLotCloseCheck FROM inv.StockSettings WHERE CompanyId = @CompanyId), 1) <> 0
+        ORDER BY w.Code, v.Code;
 END;

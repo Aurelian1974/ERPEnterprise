@@ -18,7 +18,8 @@ USING (VALUES
     ('SAMPLES',          N'Mostre, bunuri promoționale',                         -1, 1, 1, 0, NULL,    NULL,                0, 1),
     ('SHORTAGE_CHARGED', N'Lipsă imputată (angajat, transportator)',             -1, 1, 1, 1, NULL,    NULL,                0, 1),
     ('SHORTAGE_TRANSIT', N'Lipsă sau degradare la transport, neimputabilă',      -1, 2, 0, 1, 5000.00, N'CONTABIL_SEF',     0, 1),
-    ('EMPLOYEE_ISSUE',   N'Ieșire către angajați (echipament, beneficii în natură)', -1, 1, 1, 0, NULL, NULL,               0, 1)
+    ('EMPLOYEE_ISSUE',   N'Ieșire către angajați (echipament, beneficii în natură)', -1, 1, 1, 0, NULL, NULL,               0, 1),
+    ('RECALL',           N'Retragere de lot (casare sau retur la furnizor)',     -1, 2, 1, 1, NULL,    NULL,                0, 1)
 ) AS source (Code, Name, Direction, VatTreatment, IsDeductible, RequiresAttachment, ApprovalThreshold, ApproverRoleCode, NoPosting, CostSource)
 ON target.Code = source.Code
 WHEN MATCHED AND target.IsSystem = 1 THEN

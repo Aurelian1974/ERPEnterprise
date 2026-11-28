@@ -31,6 +31,8 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Application.Lots.ILotStore, Lots.LotStore>();
         services.AddScoped<Application.Lots.LotService>();
         services.AddScoped<Application.Lots.ISerialStore, Lots.SerialStore>();
+        services.AddScoped<Application.Lots.ILotDocumentStore, Lots.LotDocumentStore>();
+        services.AddSingleton<Contracts.IGs1BarcodeParser, Domain.Lots.Gs1BarcodeParser>();
         services.AddTransient<Lots.LotExpiryJob>();
         // Lista de inchidere si concordanta C3 (S3 3.5–3.7): pasii Stocurilor si evidenta operativa a stocului.
         foreach (var (code, severity, allowOverride, ok, fail) in Costing.StockCloseCheck.Shipped)
@@ -122,6 +124,9 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54462] = (ErpErrorKind.Conflict, "INV_SERIAL_STATUS_INVALID"),
         [54463] = (ErpErrorKind.Conflict, "INV_SERIAL_DUPLICATE"),
         [54464] = (ErpErrorKind.Conflict, "INV_LOT_STATUS_TRANSITION_INVALID"),
+        [54465] = (ErpErrorKind.Validation, "INV_LOT_CHANGE_VARIANT_MISMATCH"),
+        [54466] = (ErpErrorKind.Conflict, "INV_RECALL_OPEN_STOCK"),
+        [54467] = (ErpErrorKind.Conflict, "INV_UNIDENTIFIED_LOT_OPEN"),
         [54471] = (ErpErrorKind.Validation, "INV_SERIAL_IDENTIFIER_INVALID"),
         [54472] = (ErpErrorKind.Conflict, "INV_SERIAL_IDENTIFIER_DUPLICATE"),
         [54473] = (ErpErrorKind.Validation, "INV_SERIAL_IDENTIFIER_REQUIRED"),

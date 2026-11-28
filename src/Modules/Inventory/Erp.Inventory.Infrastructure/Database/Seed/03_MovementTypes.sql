@@ -19,7 +19,9 @@ USING (VALUES
     (13, 'COUNT_PLUS',           N'Plus la inventar',               1, 'InventoryDifference'),
     (14, 'COUNT_MINUS',          N'Minus la inventar',             -1, 'InventoryDifference'),
     (15, 'CUSTODY_IN',           N'Intrare în custodie',            1, 'CustodyMovement'),
-    (16, 'CUSTODY_OUT',          N'Ieșire din custodie',           -1, 'CustodyMovement')
+    (16, 'CUSTODY_OUT',          N'Ieșire din custodie',           -1, 'CustodyMovement'),
+    (17, 'LOT_CHANGE_OUT',       N'Schimbare lot (ieșire)',        -1, 'LotChange'),
+    (18, 'LOT_CHANGE_IN',        N'Schimbare lot (intrare)',        1, 'LotChange')
 ) AS source (Id, Code, Name, Direction, PostingDocumentType)
 ON target.Id = source.Id
 WHEN MATCHED AND (target.Code <> source.Code OR target.Name <> source.Name OR target.Direction <> source.Direction

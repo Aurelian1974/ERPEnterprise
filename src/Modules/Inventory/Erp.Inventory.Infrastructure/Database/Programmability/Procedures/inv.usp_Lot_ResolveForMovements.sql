@@ -44,7 +44,7 @@ BEGIN
         ISNULL(s.ReceiptQuarantine, 0), ISNULL(s.LotNumbering, 1), l.LotId, NULLIF(LTRIM(RTRIM(l.NewLotCode)), N''), l.ExpiryDate, l.ProductionDate,
         NULLIF(LTRIM(RTRIM(l.SupplierLotCode)), N''), l.CountryOfOriginCode, l.ConfirmNewExpiry,
         CASE WHEN ISNULL(s.TrackingMode, 0) NOT IN (1, 2, 4) THEN 0
-             WHEN l.IsCounter = 1 OR l.ReversalOfId IS NOT NULL THEN 3
+             WHEN l.ReversalOfId IS NOT NULL OR (l.IsCounter = 1 AND l.MovementTypeCode <> 'LOT_CHANGE_IN') THEN 3
              WHEN l.QtyBase > 0 THEN 1 ELSE 2 END
     FROM @Lines AS l
     JOIN core.ItemVariant AS v ON v.Id = l.ItemVariantId

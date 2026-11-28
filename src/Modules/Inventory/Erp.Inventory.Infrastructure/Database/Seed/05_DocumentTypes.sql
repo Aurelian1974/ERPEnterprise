@@ -15,7 +15,9 @@ USING (VALUES
     (N'Inventory.LandedCost',     N'Inventory', N'Costuri adăugate (CA)',    0),
     (N'Inventory.RetailPriceChange', N'Inventory', N'Modificare de preț (MP)', 0),
     (N'Inventory.RetailDischarge', N'Inventory', N'Descărcare la preț cu amănuntul (DA)', 0),
-    (N'Inventory.ValuationMethodChange', N'Inventory', N'Schimbare metodă de evaluare (SM)', 0)
+    (N'Inventory.ValuationMethodChange', N'Inventory', N'Schimbare metodă de evaluare (SM)', 0),
+    (N'Inventory.LotChange',      N'Inventory', N'Schimbare lot (SL)',       0),
+    (N'Inventory.Recall',         N'Inventory', N'Retragere lot (RL)',       0)
 ) AS source (Code, ModuleCode, Name, IsFiscalDefault)
 ON target.Code = source.Code
 WHEN MATCHED AND (target.Name <> source.Name OR target.IsFiscalDefault <> source.IsFiscalDefault) THEN
