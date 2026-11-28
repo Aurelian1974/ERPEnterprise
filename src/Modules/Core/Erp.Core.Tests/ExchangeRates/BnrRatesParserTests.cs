@@ -53,7 +53,49 @@ public sealed class BnrRatesParserTests
 
         var error = Assert.Throws<BnrFormatException>(() => BnrRatesParser.Parse(page));
         Assert.Contains("BNR", error.Message, StringComparison.Ordinal);
+        Assert.Contains("pagină HTML", error.Message, StringComparison.Ordinal);
         Assert.Throws<BnrFormatException>(() => BnrRatesParser.Parse("<DataSet><Body/></DataSet>"));
         Assert.Throws<BnrFormatException>(() => BnrRatesParser.Parse(Sample("x", ("2026-11-13", """<Rate currency="EUR">5,08</Rate>"""))));
+    }
+
+    private const string FirewallPage = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "x"><html><body>This page can't be displayed.</body></html>""";
+
+    [Fact]
+    public void Default_addresses_use_the_dedicated_xml_host()
+    {
+        Assert.Equal("https://curs.bnr.ro/nbrfxrates.xml", BnrOptions.Default.DailyUrl.AbsoluteUri);
+        Assert.Equal("https://curs.bnr.ro/nbrfxrates10days.xml", BnrOptions.Default.TenDaysUrl.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task Client_retries_when_the_firewall_sends_an_error_page_instead_of_xml()
+    {
+        var handler = new QueueHandler(FirewallPage, Sample("https://www.bnr.ro/xsd", ("2026-11-27", Rates)));
+        var client = new BnrRatesClient(new HttpClient(handler), TimeSpan.Zero);
+
+        var rates = await client.GetAsync(BnrOptions.Default.DailyUrl, CancellationToken.None);
+
+        Assert.Equal(3, rates.Count);
+        Assert.Equal(2, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Client_gives_up_after_the_last_attempt_and_does_not_retry_valid_xml_without_rates()
+    {
+        var blocked = new QueueHandler(Enumerable.Repeat(FirewallPage, BnrRatesClient.Attempts + 1).ToArray());
+        await Assert.ThrowsAsync<BnrFormatException>(() => new BnrRatesClient(new HttpClient(blocked), TimeSpan.Zero).GetAsync(BnrOptions.Default.DailyUrl, CancellationToken.None));
+        Assert.Equal(BnrRatesClient.Attempts, blocked.Calls);
+
+        var empty = new QueueHandler("<DataSet><Body/></DataSet>", Sample("x", ("2026-11-27", Rates)));
+        await Assert.ThrowsAsync<BnrFormatException>(() => new BnrRatesClient(new HttpClient(empty), TimeSpan.Zero).GetAsync(BnrOptions.Default.DailyUrl, CancellationToken.None));
+        Assert.Equal(1, empty.Calls);
+    }
+
+    private sealed class QueueHandler(params string[] bodies) : HttpMessageHandler
+    {
+        public int Calls { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(bodies[Calls++]) });
     }
 }

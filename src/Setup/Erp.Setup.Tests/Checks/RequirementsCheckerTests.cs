@@ -322,8 +322,8 @@ public sealed class RequirementsCheckerTests : IDisposable
             new[]
             {
                 (HttpMethod.Head, "https://api.anaf.ro/"),
+                (HttpMethod.Get, "https://curs.bnr.ro/nbrfxrates.xml"),
                 (HttpMethod.Head, "https://webservicesp.anaf.ro/"),
-                (HttpMethod.Get, "https://www.bnr.ro/nbrfxrates.xml"),
             },
             network.Requests.Select(r => (r.Method, r.Uri.AbsoluteUri)).OrderBy(r => r.AbsoluteUri, StringComparer.Ordinal));
         Assert.All(network.Requests, r => Assert.Equal(TimeSpan.FromSeconds(10), r.Timeout));
@@ -340,7 +340,7 @@ public sealed class RequirementsCheckerTests : IDisposable
         Assert.Equal(CheckStatus.Warning, c19.Status);
         Assert.Contains("webservicesp.anaf.ro", c19.Message);
         Assert.DoesNotContain("api.anaf.ro", c19.Message);
-        Assert.DoesNotContain("www.bnr.ro", c19.Message);
+        Assert.DoesNotContain("curs.bnr.ro", c19.Message);
         Assert.Equal(ExitCodes.SuccessWithWarnings, report.ExitCode);
     }
 

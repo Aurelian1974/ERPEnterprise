@@ -369,7 +369,7 @@ Toate valorile alese (fără parole) se salvează în `instance.json` (5.7) și 
 | C-16 | Folderul de backup (în afară de Express) | `EXEC master.dbo.xp_create_subdir @Path` (creat de contul serviciului SQL Server) | ✗ |
 | C-17 | Licența | 4.2 și 4.5 | ✗ (cod 40 / 41) |
 | C-18 | Ceasul | Diferența față de `SYSUTCDATETIME()` din SQL < 2 minute | ⚠ |
-| C-19 | Ieșire spre ANAF și BNR | `HEAD https://api.anaf.ro/`, `HEAD https://webservicesp.anaf.ro/` (serviciul web TVA folosit la preluarea partenerului, 02.01, 3.2), `GET https://www.bnr.ro/nbrfxrates.xml`, timeout 10 s fiecare; orice răspuns HTTP înseamnă server accesibil, doar lipsa conexiunii dă avertismentul, cu adresele care nu răspund | ⚠ |
+| C-19 | Ieșire spre ANAF și BNR | `HEAD https://api.anaf.ro/`, `HEAD https://webservicesp.anaf.ro/` (serviciul web TVA folosit la preluarea partenerului, 02.01, 3.2), `GET https://curs.bnr.ro/nbrfxrates.xml`, timeout 10 s fiecare; orice răspuns HTTP înseamnă server accesibil, doar lipsa conexiunii dă avertismentul, cu adresele care nu răspund | ⚠ |
 | C-20 | Folderele de date și log alese în „Avansat” | `xp_create_subdir`, ca la C-16 | ✗ |
 
 La actualizare se rulează C-01–C-05, C-07, C-10–C-13, C-17–C-19, plus verificările din 10.2 (U-01).

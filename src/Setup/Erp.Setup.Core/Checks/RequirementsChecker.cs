@@ -426,7 +426,7 @@ public sealed class RequirementsChecker(
         [
             (HttpMethod.Head, new Uri("https://api.anaf.ro/")),
             (HttpMethod.Head, new Uri("https://webservicesp.anaf.ro/")),
-            (HttpMethod.Get, new Uri("https://www.bnr.ro/nbrfxrates.xml")),
+            (HttpMethod.Get, new Uri("https://curs.bnr.ro/nbrfxrates.xml")),
         ];
         var reachable = await Task.WhenAll(targets.Select(t => network.CanReachAsync(t.Method, t.Uri, timeout, ct))).ConfigureAwait(false);
         var down = targets.Where((_, i) => !reachable[i]).Select(t => t.Uri.Host).ToList();

@@ -19,6 +19,11 @@ public static class BnrRatesParser
 {
     public static IReadOnlyList<BnrRate> Parse(string xml)
     {
+        if (IsHtmlPage(xml))
+        {
+            throw new BnrFormatException("BNR a trimis o pagină HTML (eroare sau blocare a firewall-ului) în locul fișierului XML de cursuri.");
+        }
+
         XDocument document;
         try
         {
@@ -69,29 +74,54 @@ public static class BnrRatesParser
 
         return rates;
     }
+
+    /// <summary>Raspunsul este o pagina HTML (de exemplu pagina de eroare a firewall-ului BNR), nu un fisier XML.</summary>
+    public static bool IsHtmlPage(string body)
+    {
+        var start = body.AsSpan().TrimStart();
+        return start.StartsWith("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) || start.StartsWith("<html", StringComparison.OrdinalIgnoreCase);
+    }
 }
 
-/// <summary>Adresele fisierelor BNR (configurabile: Bnr:DailyUrl, Bnr:TenDaysUrl).</summary>
+/// <summary>
+/// Adresele fisierelor BNR (configurabile: Bnr:DailyUrl, Bnr:TenDaysUrl). BNR publica fluxurile XML pe subdomeniul dedicat
+/// curs.bnr.ro; adresele vechi de pe www.bnr.ro intorc pagina de eroare a firewall-ului in locul XML-ului.
+/// </summary>
 public sealed record BnrOptions(Uri DailyUrl, Uri TenDaysUrl)
 {
-    public static readonly BnrOptions Default = new(new Uri("https://www.bnr.ro/nbrfxrates.xml"), new Uri("https://www.bnr.ro/nbrfxrates10days.xml"));
+    public static readonly BnrOptions Default = new(new Uri("https://curs.bnr.ro/nbrfxrates.xml"), new Uri("https://curs.bnr.ro/nbrfxrates10days.xml"));
 }
 
 /// <summary>
 /// Clientul HTTP pentru fisierele BNR. BNR cere HTTPS (TLS 1.2+) si recomanda sa nu se descarce mai des decat e nevoie: fisierul
-/// se actualizeaza o data pe zi bancara, putin dupa ora 13:00.
+/// se actualizeaza o data pe zi bancara, putin dupa ora 13:00. Firewall-ul BNR intoarce uneori, cu 200, o pagina de eroare HTML in
+/// locul XML-ului; un raspuns HTML se reincearca de cel mult <see cref="Attempts"/> ori, la <paramref name="retryDelay"/>.
 /// </summary>
-public sealed class BnrRatesClient(HttpClient http)
+public sealed class BnrRatesClient(HttpClient http, TimeSpan? retryDelay = null)
 {
+    public const int Attempts = 3;
+
+    private readonly TimeSpan delay = retryDelay ?? TimeSpan.FromSeconds(2);
+
     public async Task<IReadOnlyList<BnrRate>> GetAsync(Uri url, CancellationToken ct)
     {
-        using var response = await http.GetAsync(url, ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        for (var attempt = 1; ; attempt++)
         {
-            throw new HttpRequestException($"BNR a răspuns {(int)response.StatusCode} la {url}.", null, response.StatusCode);
-        }
+            using var response = await http.GetAsync(url, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"BNR a răspuns {(int)response.StatusCode} la {url}.", null, response.StatusCode);
+            }
 
-        var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        return BnrRatesParser.Parse(body);
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            try
+            {
+                return BnrRatesParser.Parse(body);
+            }
+            catch (BnrFormatException) when (attempt < Attempts && BnrRatesParser.IsHtmlPage(body))
+            {
+                await Task.Delay(delay, ct).ConfigureAwait(false);
+            }
+        }
     }
 }
