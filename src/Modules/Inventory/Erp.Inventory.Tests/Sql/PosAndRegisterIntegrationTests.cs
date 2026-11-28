@@ -60,5 +60,7 @@ public sealed class PosAndRegisterIntegrationTests(InventoryDatabase database) :
         Assert.Equal(["10", "6", "11"], page.Select(m => m.BalanceQty));
         var next = await Send(new GetStockMovements(store, variants[0], AfterSeq: page[0].PostingSeq, Top: 1));
         Assert.Equal(page[1].Id, Assert.Single(next).Id);
+        var option = Assert.Single(await Send(new SearchStockVariants(page[0].VariantCode, store)));
+        Assert.Equal((variants[0], "11"), (option.Id, option.OnHand));
     }
 }

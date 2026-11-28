@@ -110,6 +110,13 @@ export const menuGroups: readonly MenuGroup[] = [
     items: [
       { id: 'warehouses', label: 'menu.warehouses', path: '/stocuri/gestiuni', icon: '', module: 'Inventory', permission: 'Inv.Warehouse.View' },
       { id: 'depots', label: 'menu.depots', path: '/stocuri/depozite', icon: '', module: 'Inventory', permission: 'Inv.Warehouse.View' },
+      { id: 'transfer-notes', label: 'menu.transferNotes', path: '/stocuri/note-predare', icon: '', module: 'Inventory', permission: 'Inv.Transfer.Edit' },
+      { id: 'receipts', label: 'menu.receipts', path: '/stocuri/de-primit', icon: '', module: 'Inventory', permission: 'Inv.Transfer.Edit' },
+      { id: 'load-unload', label: 'menu.loadUnload', path: '/stocuri/incarcari-descarcari', icon: '', module: 'Inventory', permission: 'Inv.LoadUnload.Edit' },
+      { id: 'consumption', label: 'menu.consumption', path: '/stocuri/bonuri-consum', icon: '', module: 'Inventory', permission: 'Inv.Consumption.Edit' },
+      { id: 'custody', label: 'menu.custody', path: '/stocuri/custodie', icon: '', module: 'Inventory', permission: 'Inv.Custody.Edit' },
+      { id: 'production-notes', label: 'menu.productionNotes', path: '/stocuri/predare-produse', icon: '', module: 'Inventory', permission: 'Inv.ProductionNote.Edit' },
+      { id: 'movements', label: 'menu.movements', path: '/stocuri/registru', icon: '', module: 'Inventory', permission: 'Inv.Document.View' },
     ],
   },
   {

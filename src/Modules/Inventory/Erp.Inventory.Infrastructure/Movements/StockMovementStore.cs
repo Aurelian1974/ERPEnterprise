@@ -146,3 +146,16 @@ public sealed class StockMovementQueries(IDbSession session) : IStockMovementQue
         string SourceModule, string SourceDocumentType, long SourceDocumentId, string? SourceDocumentNumber, string? ReasonCode, bool IsForcedNegative,
         long? ReversalOfId);
 }
+
+/// <summary>Cautarea variantelor stocabile prin inv.usp_StockVariant_Search.</summary>
+public sealed class StockVariantSearch(IDbSession session) : IStockVariantSearch
+{
+    public async Task<IReadOnlyList<StockVariantOptionDto>> SearchAsync(int companyId, string? search, int? warehouseId, CancellationToken ct) =>
+        (await session.Connection.QueryAsync<Row>(new CommandDefinition("inv.usp_StockVariant_Search",
+            new { CompanyId = companyId, Search = search, WarehouseId = warehouseId }, session.Transaction, commandType: CommandType.StoredProcedure,
+            cancellationToken: ct)).ConfigureAwait(false))
+        .Select(r => new StockVariantOptionDto(r.Id, r.Code, r.Name, r.ItemId, r.BaseUomCode, Erp.Inventory.Domain.Quantity.Format(r.OnHand)))
+        .ToList();
+
+    private sealed record Row(int Id, string Code, string Name, int ItemId, string BaseUomCode, decimal? OnHand);
+}

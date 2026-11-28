@@ -26,3 +26,28 @@ internal sealed class GetStockMovementsHandler(IStockMovementQueries queries, IC
         .Select(r => r.Movement)
         .ToList();
 }
+
+/// <summary>O varianta stocabila pentru liniile documentelor, cu stocul din gestiunea aleasa (text, UI).</summary>
+public sealed record StockVariantOptionDto(int Id, string Code, string Name, int ItemId, string BaseUomCode, string? OnHand);
+
+/// <summary>Cautarea variantelor stocabile pe liniile documentelor de stoc (S2 4.2 pasul 1).</summary>
+[Module(InventoryModule.Code)]
+[RequiresPermission(InventoryPermissions.DocumentView)]
+public sealed record SearchStockVariants(string? Search = null, int? WarehouseId = null) : IQuery<IReadOnlyList<StockVariantOptionDto>>;
+
+public interface IStockVariantSearch
+{
+    Task<IReadOnlyList<StockVariantOptionDto>> SearchAsync(int companyId, string? search, int? warehouseId, CancellationToken ct);
+}
+
+internal sealed class SearchStockVariantsHandler(IStockVariantSearch search, ICurrentContext context)
+    : IQueryHandler<SearchStockVariants, IReadOnlyList<StockVariantOptionDto>>
+{
+    public Task<IReadOnlyList<StockVariantOptionDto>> Handle(SearchStockVariants request, CancellationToken cancellationToken)
+    {
+        var text = string.IsNullOrWhiteSpace(request.Search) ? null
+            : request.Search.Trim().Replace("[", "[[]", StringComparison.Ordinal).Replace("%", "[%]", StringComparison.Ordinal)
+                .Replace("_", "[_]", StringComparison.Ordinal);
+        return search.SearchAsync(context.CompanyId, text, request.WarehouseId, cancellationToken);
+    }
+}

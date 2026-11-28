@@ -12,6 +12,9 @@ import { UsersPage } from '../users/UsersPage';
 import { EmployeesPage } from '../employees/EmployeesPage';
 import { TreasuryAccountsPage } from '../finance/TreasuryAccountsPage';
 import { DepotsPage } from '../inventory/DepotsPage';
+import { MovementsPage } from '../inventory/MovementsPage';
+import { ReceiptsPage } from '../inventory/ReceiptsPage';
+import { StockDocumentsPage } from '../inventory/StockDocumentsPage';
 import { WarehousesPage } from '../inventory/WarehousesPage';
 import { CashDeskPage } from '../finance/CashDeskPage';
 import { CashDocumentPage } from '../finance/CashDocumentPage';
@@ -71,6 +74,13 @@ export const routes = [
       { path: 'finante/trezorerie/conturi', element: <TreasuryAccountsPage /> },
       { path: 'stocuri/gestiuni', element: <WarehousesPage /> },
       { path: 'stocuri/depozite', element: <DepotsPage /> },
+      { path: 'stocuri/note-predare', element: <StockDocumentsPage key="np" types={['NP']} title="menu.transferNotes" /> },
+      { path: 'stocuri/de-primit', element: <ReceiptsPage /> },
+      { path: 'stocuri/incarcari-descarcari', element: <StockDocumentsPage key="ni" types={['NI', 'ND']} title="menu.loadUnload" /> },
+      { path: 'stocuri/bonuri-consum', element: <StockDocumentsPage key="bc" types={['BC']} title="menu.consumption" /> },
+      { path: 'stocuri/custodie', element: <StockDocumentsPage key="cu" types={['CI', 'CE']} title="menu.custody" /> },
+      { path: 'stocuri/predare-produse', element: <StockDocumentsPage key="pf" types={['PF']} title="menu.productionNotes" /> },
+      { path: 'stocuri/registru', element: <MovementsPage /> },
       { path: 'finante/trezorerie/casa', element: <CashDeskPage /> },
       { path: 'finante/trezorerie/casa/document', element: <CashDocumentPage /> },
       { path: 'finante/trezorerie/registru', element: <CashRegisterPage /> },

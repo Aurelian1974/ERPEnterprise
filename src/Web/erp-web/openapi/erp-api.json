@@ -32196,6 +32196,932 @@
         }
       }
     },
+    "/api/inventory/documents": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetStockDocuments",
+        "parameters": [
+          {
+            "name": "DocumentType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "WarehouseId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "DateFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "DateTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockDocumentItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CreateStockDocument",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStockDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockDocumentDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "UpdateStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveStockDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/movement-reasons": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetMovementReasons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovementReasonDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}/validate": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ValidateStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}/reverse": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ReverseStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseStockDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CancelStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryRowVersionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/movements": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetStockMovements",
+        "parameters": [
+          {
+            "name": "WarehouseId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ItemVariantId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "DateFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "DateTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "AfterSeq",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Top",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockMovementDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/variants": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "SearchStockVariants",
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "WarehouseId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockVariantOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/transit-shipments": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetTransitShipments",
+        "parameters": [
+          {
+            "name": "ToWarehouseId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "OpenOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransitShipmentDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/transit-shipments/{id}/receipt": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "CreateReceiptFromShipment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReceiptFromShipment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}/receipt": {
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "SaveReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveReceipt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/documents/{id}/approve": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "ApproveStockDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveStockDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventorySaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/inventory/items/{itemId}/stock-settings": {
       "get": {
         "tags": [
@@ -61391,6 +62317,1106 @@
       },
       "WarehousePurpose": {
         "type": "integer"
+      },
+      "ApproveStockDocument": {
+        "required": [
+          "id",
+          "approve",
+          "note",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "approve": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "CreateReceiptFromShipment": {
+        "required": [
+          "shipmentId",
+          "documentDate"
+        ],
+        "type": "object",
+        "properties": {
+          "shipmentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MovementReasonDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "direction",
+          "vatTreatment",
+          "isDeductible",
+          "requiresAttachment",
+          "approvalThreshold",
+          "approverRoleCode",
+          "noPosting",
+          "costSource",
+          "isSystem",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "integer",
+            "format": "int16"
+          },
+          "vatTreatment": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "isDeductible": {
+            "type": "boolean"
+          },
+          "requiresAttachment": {
+            "type": "boolean"
+          },
+          "approvalThreshold": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "approverRoleCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "noPosting": {
+            "type": "boolean"
+          },
+          "costSource": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "isSystem": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReceiptLineInput": {
+        "required": [
+          "lineId",
+          "receivedQtyBase",
+          "resolution"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "receivedQtyBase": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          }
+        }
+      },
+      "ReverseStockDocument": {
+        "required": [
+          "id",
+          "documentDate",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "documentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "SaveReceipt": {
+        "required": [
+          "id",
+          "notes",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptLineInput"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "SaveStockDocument": {
+        "required": [
+          "id",
+          "documentType",
+          "documentDate",
+          "accountingDate",
+          "fromDepotId",
+          "fromWarehouseId",
+          "toDepotId",
+          "toWarehouseId",
+          "reasonId",
+          "partnerId",
+          "costCenterId",
+          "projectId",
+          "employeeId",
+          "notes",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentType": {
+            "type": "string"
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountingDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "fromDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "reasonId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employeeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockDocumentLineInput"
+            }
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "StockDocumentDto": {
+        "required": [
+          "id",
+          "documentType",
+          "number",
+          "documentDate",
+          "accountingDate",
+          "fromDepotId",
+          "fromWarehouseId",
+          "fromWarehouseCode",
+          "toDepotId",
+          "toWarehouseId",
+          "toWarehouseCode",
+          "reasonId",
+          "reasonCode",
+          "reasonName",
+          "requiresAttachment",
+          "partnerId",
+          "costCenterId",
+          "projectId",
+          "employeeId",
+          "transferMode",
+          "transitShipmentId",
+          "relatedDocumentId",
+          "isReversal",
+          "status",
+          "approvalStatus",
+          "approvalNote",
+          "notes",
+          "isForcedNegative",
+          "totalCost",
+          "validatedAt",
+          "reversedByDocumentId",
+          "createdBy",
+          "createdAt",
+          "modifiedAt",
+          "lines",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "documentType": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "accountingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fromDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasonId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "reasonCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasonName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAttachment": {
+            "type": "boolean"
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employeeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "transferMode": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "transitShipmentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "relatedDocumentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "isReversal": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "approvalStatus": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "approvalNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isForcedNegative": {
+            "type": "boolean"
+          },
+          "totalCost": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reversedByDocumentId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockDocumentLineDto"
+            }
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "StockDocumentItemDto": {
+        "required": [
+          "id",
+          "documentType",
+          "number",
+          "documentDate",
+          "status",
+          "approvalStatus",
+          "isReversal",
+          "fromWarehouseId",
+          "fromWarehouseCode",
+          "toWarehouseId",
+          "toWarehouseCode",
+          "reasonName",
+          "totalCost",
+          "lineCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "documentType": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "approvalStatus": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "isReversal": {
+            "type": "boolean"
+          },
+          "fromWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasonName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "totalCost": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StockDocumentLineDto": {
+        "required": [
+          "id",
+          "lineNo",
+          "itemVariantId",
+          "variantCode",
+          "itemName",
+          "uomId",
+          "qty",
+          "uomFactor",
+          "qtyBase",
+          "unitCost",
+          "fromDepotId",
+          "fromWarehouseId",
+          "toDepotId",
+          "toWarehouseId",
+          "costCenterId",
+          "projectId",
+          "receivedQtyBase",
+          "differenceQtyBase",
+          "differenceResolution",
+          "reversedLineId",
+          "unitCostPosted",
+          "costAmountPosted",
+          "shipmentLineId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantCode": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "uomId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "qty": {
+            "type": "string"
+          },
+          "uomFactor": {
+            "type": "string"
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "unitCost": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fromDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "receivedQtyBase": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "differenceQtyBase": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "differenceResolution": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint8"
+          },
+          "reversedLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "unitCostPosted": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "costAmountPosted": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shipmentLineId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "StockDocumentLineInput": {
+        "required": [
+          "itemVariantId",
+          "uomId",
+          "qty",
+          "uomFactor",
+          "unitCost",
+          "fromDepotId",
+          "fromWarehouseId",
+          "toDepotId",
+          "toWarehouseId",
+          "costCenterId",
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uomId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "qty": {
+            "type": "string"
+          },
+          "uomFactor": {
+            "type": "string"
+          },
+          "unitCost": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fromDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fromWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toDepotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toWarehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "costCenterId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "StockMovementDto": {
+        "required": [
+          "id",
+          "postingSeq",
+          "movementDate",
+          "warehouseId",
+          "warehouseCode",
+          "depotId",
+          "itemVariantId",
+          "variantCode",
+          "movementTypeCode",
+          "qtyBase",
+          "unitCost",
+          "costAmount",
+          "balanceQty",
+          "sourceModule",
+          "sourceDocumentType",
+          "sourceDocumentId",
+          "sourceDocumentNumber",
+          "reasonCode",
+          "isForcedNegative",
+          "reversalOfId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "postingSeq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "movementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "warehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "depotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantCode": {
+            "type": "string"
+          },
+          "movementTypeCode": {
+            "type": "string"
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "unitCost": {
+            "type": "string"
+          },
+          "costAmount": {
+            "type": "string"
+          },
+          "balanceQty": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceModule": {
+            "type": "string"
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceDocumentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasonCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isForcedNegative": {
+            "type": "boolean"
+          },
+          "reversalOfId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "StockVariantOptionDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "itemId",
+          "baseUomCode",
+          "onHand"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baseUomCode": {
+            "type": "string"
+          },
+          "onHand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TransitShipmentDto": {
+        "required": [
+          "id",
+          "npDocumentId",
+          "npNumber",
+          "fromWarehouseId",
+          "fromWarehouseCode",
+          "toWarehouseId",
+          "toWarehouseCode",
+          "shippedDate",
+          "status",
+          "ageDays"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "npDocumentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "npNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fromWarehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromWarehouseCode": {
+            "type": "string"
+          },
+          "toWarehouseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toWarehouseCode": {
+            "type": "string"
+          },
+          "shippedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "ageDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },

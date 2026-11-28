@@ -4,6 +4,7 @@ import {
   type WarehouseItem, type WarehouseKeepers,
 } from './inventoryApi';
 import { toWarehouseBody } from './WarehousesPage';
+import { receiptDifference, toLinesBody } from './documentsApi';
 
 const row = (id: number, isActive: boolean, isBlocked: boolean): WarehouseItem => ({
   id, code: `G${id}`, name: `Gestiune ${id}`, kind: 1, valuationBasis: 1, locationId: 1, locationName: 'Cluj', thirdPartyId: null, thirdPartyName: null,
@@ -60,5 +61,16 @@ describe('gestiunile (02.05, S1 3.1)', () => {
     expect(quantityForApi('')).toBeNull();
     expect(quantityForInput('0.25')).toBe('0,25');
     expect(quantityForInput(null)).toBe('');
+  });
+
+  it('diferența la primire se compară pe text, fără number', () => {
+    expect(receiptDifference('50', '26')).toBe('shortage');
+    expect(receiptDifference('10', '12,5')).toBe('surplus');
+    expect(receiptDifference('0.1', '0,100000')).toBe('none');
+    expect(receiptDifference('1', 'x')).toBe('invalid');
+  });
+
+  it('liniile documentului circulă cu cantitatea și costul invariante', () => {
+    expect(toLinesBody([{ itemVariantId: 4, label: 'APA', qty: '2,5', unitCost: '' }])[0]).toMatchObject({ qty: '2.5', unitCost: null, uomFactor: '1' });
   });
 });

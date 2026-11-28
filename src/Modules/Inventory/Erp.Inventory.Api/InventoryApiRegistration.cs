@@ -124,6 +124,8 @@ public static class InventoryApiRegistration
             .WithName("CancelStockDocument").Saves();
         inventory.MapGet("/movements", ([AsParameters] GetStockMovements query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("GetStockMovements").Produces<IReadOnlyList<StockMovementDto>>();
+        inventory.MapGet("/variants", ([AsParameters] SearchStockVariants query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("SearchStockVariants").Produces<IReadOnlyList<StockVariantOptionDto>>();
         inventory.MapGet("/transit-shipments", ([AsParameters] GetTransitShipments query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
             .WithName("GetTransitShipments").Produces<IReadOnlyList<TransitShipmentDto>>();
         inventory.MapPost("/transit-shipments/{id:int}/receipt", (int id, CreateReceiptFromShipment body, ISender sender, CancellationToken ct) =>

@@ -5925,6 +5925,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetStockDocuments"];
+        put?: never;
+        post: operations["CreateStockDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetStockDocument"];
+        put: operations["UpdateStockDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/movement-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMovementReasons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateStockDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReverseStockDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelStockDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetStockMovements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SearchStockVariants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/transit-shipments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTransitShipments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/transit-shipments/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateReceiptFromShipment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SaveReceipt"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/documents/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApproveStockDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/items/{itemId}/stock-settings": {
         parameters: {
             query?: never;
@@ -13553,6 +13745,295 @@ export interface components {
             lookups: components["schemas"]["WarehouseLookupsDto"];
         };
         WarehousePurpose: number;
+        ApproveStockDocument: {
+            /** Format: int32 */
+            id: number;
+            approve: boolean;
+            note: null | string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        CreateReceiptFromShipment: {
+            /** Format: int32 */
+            shipmentId: number;
+            /** Format: date */
+            documentDate: string;
+        };
+        MovementReasonDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: int16 */
+            direction: number;
+            /** Format: uint8 */
+            vatTreatment: number;
+            isDeductible: boolean;
+            requiresAttachment: boolean;
+            approvalThreshold: null | string;
+            approverRoleCode: null | string;
+            noPosting: boolean;
+            /** Format: uint8 */
+            costSource: number;
+            isSystem: boolean;
+            isActive: boolean;
+        };
+        ReceiptLineInput: {
+            /** Format: int64 */
+            lineId: number;
+            receivedQtyBase: string;
+            /** Format: uint8 */
+            resolution: null | number;
+        };
+        ReverseStockDocument: {
+            /** Format: int32 */
+            id: number;
+            /** Format: date */
+            documentDate: null | string;
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveReceipt: {
+            /** Format: int32 */
+            id: number;
+            notes: null | string;
+            lines: components["schemas"]["ReceiptLineInput"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        SaveStockDocument: {
+            /** Format: int32 */
+            id: null | number;
+            documentType: string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            accountingDate: null | string;
+            /** Format: int32 */
+            fromDepotId: null | number;
+            /** Format: int32 */
+            fromWarehouseId: null | number;
+            /** Format: int32 */
+            toDepotId: null | number;
+            /** Format: int32 */
+            toWarehouseId: null | number;
+            /** Format: int32 */
+            reasonId: null | number;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            notes: null | string;
+            lines: components["schemas"]["StockDocumentLineInput"][];
+            /** Format: byte */
+            rowVersion: null | string;
+        };
+        StockDocumentDto: {
+            /** Format: int32 */
+            id: number;
+            documentType: string;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: date */
+            accountingDate: string;
+            /** Format: int32 */
+            fromDepotId: null | number;
+            /** Format: int32 */
+            fromWarehouseId: null | number;
+            fromWarehouseCode: null | string;
+            /** Format: int32 */
+            toDepotId: null | number;
+            /** Format: int32 */
+            toWarehouseId: null | number;
+            toWarehouseCode: null | string;
+            /** Format: int32 */
+            reasonId: null | number;
+            reasonCode: null | string;
+            reasonName: null | string;
+            requiresAttachment: boolean;
+            /** Format: int32 */
+            partnerId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            /** Format: int32 */
+            employeeId: null | number;
+            /** Format: uint8 */
+            transferMode: null | number;
+            /** Format: int32 */
+            transitShipmentId: null | number;
+            /** Format: int32 */
+            relatedDocumentId: null | number;
+            isReversal: boolean;
+            /** Format: uint8 */
+            status: number;
+            /** Format: uint8 */
+            approvalStatus: number;
+            approvalNote: null | string;
+            notes: null | string;
+            isForcedNegative: boolean;
+            totalCost: null | string;
+            /** Format: date-time */
+            validatedAt: null | string;
+            /** Format: int32 */
+            reversedByDocumentId: null | number;
+            /** Format: int32 */
+            createdBy: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            modifiedAt: null | string;
+            lines: components["schemas"]["StockDocumentLineDto"][];
+            /** Format: byte */
+            rowVersion: string;
+        };
+        StockDocumentItemDto: {
+            /** Format: int32 */
+            id: number;
+            documentType: string;
+            number: null | string;
+            /** Format: date */
+            documentDate: string;
+            /** Format: uint8 */
+            status: number;
+            /** Format: uint8 */
+            approvalStatus: number;
+            isReversal: boolean;
+            /** Format: int32 */
+            fromWarehouseId: null | number;
+            fromWarehouseCode: null | string;
+            /** Format: int32 */
+            toWarehouseId: null | number;
+            toWarehouseCode: null | string;
+            reasonName: null | string;
+            totalCost: null | string;
+            /** Format: int32 */
+            lineCount: number;
+        };
+        StockDocumentLineDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            lineNo: number;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            itemName: string;
+            /** Format: int32 */
+            uomId: null | number;
+            qty: string;
+            uomFactor: string;
+            qtyBase: string;
+            unitCost: null | string;
+            /** Format: int32 */
+            fromDepotId: null | number;
+            /** Format: int32 */
+            fromWarehouseId: null | number;
+            /** Format: int32 */
+            toDepotId: null | number;
+            /** Format: int32 */
+            toWarehouseId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+            receivedQtyBase: null | string;
+            differenceQtyBase: null | string;
+            /** Format: uint8 */
+            differenceResolution: null | number;
+            /** Format: int64 */
+            reversedLineId: null | number;
+            unitCostPosted: null | string;
+            costAmountPosted: null | string;
+            /** Format: int64 */
+            shipmentLineId: null | number;
+        };
+        StockDocumentLineInput: {
+            /** Format: int32 */
+            itemVariantId: number;
+            /** Format: int32 */
+            uomId: null | number;
+            qty: string;
+            uomFactor: string;
+            unitCost: null | string;
+            /** Format: int32 */
+            fromDepotId: null | number;
+            /** Format: int32 */
+            fromWarehouseId: null | number;
+            /** Format: int32 */
+            toDepotId: null | number;
+            /** Format: int32 */
+            toWarehouseId: null | number;
+            /** Format: int32 */
+            costCenterId: null | number;
+            /** Format: int32 */
+            projectId: null | number;
+        };
+        StockMovementDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            postingSeq: number;
+            /** Format: date */
+            movementDate: string;
+            /** Format: int32 */
+            warehouseId: number;
+            warehouseCode: string;
+            /** Format: int32 */
+            depotId: null | number;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            movementTypeCode: string;
+            qtyBase: string;
+            unitCost: string;
+            costAmount: string;
+            balanceQty: null | string;
+            sourceModule: string;
+            sourceDocumentType: string;
+            /** Format: int64 */
+            sourceDocumentId: number;
+            sourceDocumentNumber: null | string;
+            reasonCode: null | string;
+            isForcedNegative: boolean;
+            /** Format: int64 */
+            reversalOfId: null | number;
+        };
+        StockVariantOptionDto: {
+            /** Format: int32 */
+            id: number;
+            code: string;
+            name: string;
+            /** Format: int32 */
+            itemId: number;
+            baseUomCode: string;
+            onHand: null | string;
+        };
+        TransitShipmentDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            npDocumentId: number;
+            npNumber: null | string;
+            /** Format: int32 */
+            fromWarehouseId: number;
+            fromWarehouseCode: string;
+            /** Format: int32 */
+            toWarehouseId: number;
+            toWarehouseCode: string;
+            /** Format: date */
+            shippedDate: string;
+            /** Format: uint8 */
+            status: number;
+            /** Format: int32 */
+            ageDays: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -38309,6 +38790,659 @@ export interface operations {
                 };
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetStockDocuments: {
+        parameters: {
+            query?: {
+                DocumentType?: string;
+                Status?: number;
+                WarehouseId?: number;
+                DateFrom?: string;
+                DateTo?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockDocumentItemDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveStockDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockDocumentDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveStockDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMovementReasons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementReasonDto"][];
+                };
+            };
+        };
+    };
+    ValidateStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseStockDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CancelStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryRowVersionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetStockMovements: {
+        parameters: {
+            query?: {
+                WarehouseId?: number;
+                ItemVariantId?: number;
+                DateFrom?: string;
+                DateTo?: string;
+                AfterSeq?: number;
+                Top?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockMovementDto"][];
+                };
+            };
+        };
+    };
+    SearchStockVariants: {
+        parameters: {
+            query?: {
+                Search?: string;
+                WarehouseId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockVariantOptionDto"][];
+                };
+            };
+        };
+    };
+    GetTransitShipments: {
+        parameters: {
+            query?: {
+                ToWarehouseId?: number;
+                OpenOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransitShipmentDto"][];
+                };
+            };
+        };
+    };
+    CreateReceiptFromShipment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReceiptFromShipment"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveReceipt"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ApproveStockDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveStockDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventorySaved"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Conflict */
