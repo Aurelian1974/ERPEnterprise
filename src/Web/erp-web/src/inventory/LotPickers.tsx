@@ -16,7 +16,7 @@ export function VariantPicker({ value, onChange }: {
     );
   }
   return (
-    <span className="chips-row inline">
+    <span className="picker">
       <input className="cell-input" placeholder={t('inv.doc.searchVariant')} aria-label={t('inv.doc.searchVariant')} value={search}
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { void searchVariants(search, undefined).then(setOptions, () => setOptions([])); } }} />
@@ -59,7 +59,7 @@ export function PartnerPicker({ value, onChange, placeholder }: {
   }
   const find = () => void searchPartners(search).then(setOptions, () => setOptions([]));
   return (
-    <span className="chips-row inline">
+    <span className="picker">
       <input className="cell-input" placeholder={placeholder} aria-label={placeholder} value={search} onChange={(e) => setSearch(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { find(); } }} />
       <button type="button" className="btn ghost" onClick={find}>{t('inv.doc.find')}</button>

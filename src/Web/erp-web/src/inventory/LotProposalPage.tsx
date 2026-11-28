@@ -51,7 +51,7 @@ export function LotProposalPage() {
           <VariantPicker value={variant} onChange={setVariant} />
           <input className="cell-input num" placeholder={t('inv.prop.qty')} aria-label={t('inv.prop.qty')} value={qty} onChange={(e) => setQty(e.target.value)} />
           <PartnerPicker value={customer} onChange={setCustomer} placeholder={t('inv.prop.customer')} />
-          <label className="chips-row inline">
+          <label className="picker">
             <span className="muted small">{t('inv.prop.delivery')}</span>
             <input className="cell-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>

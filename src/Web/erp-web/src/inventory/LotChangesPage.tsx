@@ -205,7 +205,7 @@ function LineEditor({ line, warehouse, onChange, onRemove }: {
       {line.toLotId === undefined ? (
         <label className="field">
           <span className="label">{t('inv.sl.newLotCode')}</span>
-          <span className="chips-row inline">
+          <span className="picker">
             <input className="cell-input" aria-label={t('inv.sl.newLotCode')} value={line.newLotCode} onChange={(e) => onChange({ newLotCode: e.target.value })} />
             <input className="cell-input" type="date" aria-label={t('inv.lot.expiry')} value={line.newExpiryDate} onChange={(e) => onChange({ newExpiryDate: e.target.value })} />
           </span>
@@ -213,7 +213,7 @@ function LineEditor({ line, warehouse, onChange, onRemove }: {
       ) : <span />}
       <label className="field">
         <span className="label">{t('inv.serial.pieces')}</span>
-        <span className="chips-row inline">
+        <span className="picker">
           <input className="cell-input num" aria-label={t('inv.serial.pieces')} value={line.qty} onChange={(e) => onChange({ qty: e.target.value })} />
           <button type="button" className="btn ghost" aria-label={t('inv.sl.removeLine')} onClick={onRemove}>✕</button>
         </span>
