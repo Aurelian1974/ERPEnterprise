@@ -26,7 +26,15 @@ USING (VALUES
     (N'Inv.Custody.Validate',       N'Validarea documentelor de custodie'),
     (N'Inv.Document.Reverse',       N'Stornarea documentelor de stoc'),
     (N'Inv.Movement.Backdate',      N'Mișcări cu dată mai veche decât limita firmei'),
-    (N'Inv.Reason.Manage',          N'Motivele de încărcare și descărcare')
+    (N'Inv.Reason.Manage',          N'Motivele de încărcare și descărcare'),
+    (N'Inv.Cost.View',              N'Costurile, straturile, ajustările și coada de recalculare'),
+    (N'Inv.Cost.Recalculate',       N'Recalcularea la cerere a costului'),
+    (N'Inv.LandedCost.Edit',        N'Costuri adăugate în ciornă'),
+    (N'Inv.LandedCost.Validate',    N'Validarea costurilor adăugate'),
+    (N'Inv.RetailPrice.Edit',       N'Modificări de preț cu amănuntul în ciornă'),
+    (N'Inv.RetailPrice.Validate',   N'Validarea modificărilor de preț cu amănuntul'),
+    (N'Inv.RetailDischarge.Validate', N'Descărcarea lunară la preț cu amănuntul'),
+    (N'Inv.StandardCost.Update',    N'Actualizarea costului standard')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

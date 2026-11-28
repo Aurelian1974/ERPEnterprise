@@ -35,4 +35,14 @@ se leagă de inventarul din S6; până atunci predarea fără inventar obligator
 | S2.3 | Nota de predare într-o etapă și în două etape (`TRANZIT`, `TransitShipment`), nota de primire cu diferențele și rezolvarea lor, avizul de însoțire | S2-A5, A6 |
 | S2.4 | Consumatorul POS (`BonuriPOSSincronizate`), registrul de mișcări, ecranele s2-01…s2-05 | S2-A9, A13 |
 
-Pașii părților S3–S7 se detaliază la începutul fiecărei părți.
+## 4. Pașii părții S3
+
+| Pas | Conținut | Criterii |
+| --- | --- | --- |
+| S3.1 | Motorul de cost (FIFO, LIFO, CMP, identificare directă pe lot), straturile și consumul lor, transferul care mută straturile cu data lor, stornarea care le reface, stratul negativ și regularizarea lui, coada de recalculare, recalcularea după mișcări retroactive (imediat sub 2.000 de mișcări, altfel jobul la 15 minute), `CostStocAjustat`, costul standard (coloana) | S3-A1, A2, A3, A4, A5, A7 |
+| S3.2 | Costurile adăugate și diferențele de preț (documentul `CA`, `AdjustInboundCostAsync`) | S3-A6 |
+| S3.3 | Gestiunile la preț cu amănuntul: `RetailAmount`, descărcarea lunară prin K (`DA`), modificarea prețului (`MP`), metoda 2 pe fiecare vânzare | S3-A8, A13 |
+| S3.4 | Concordanța cu contabilitatea, pașii de închidere (`COST_RECALC_PENDING`, `RETAIL_DISCHARGE`, `NEGATIVE_STOCK`), blocul `Accounting` și modelele de contare ale Stocurilor | S3-A9, A10 |
+| S3.5 | Ecranele s3-01…s3-05 și documentul de schimbare a metodei (S1 4.5, s1-04) | S1-A11 |
+
+Pașii părților S4–S7 se detaliază la începutul fiecărei părți.

@@ -18,9 +18,12 @@ public interface IStockMovementStore
 {
     Task<BackdatingSettings> GetBackdatingAsync(int companyId, CancellationToken ct);
 
-    Task<StockPostingOutcome> PostAsync(StockPostingRequest request, int? employeeId, int userId, CancellationToken ct);
+    Task<CostLoad> LoadCostAsync(int companyId, IReadOnlyCollection<CostKey> keys, IReadOnlyCollection<long> reversalOf, CancellationToken ct);
 
-    Task<StockPostingOutcome> ReverseAsync(StockReversalRequest request, int userId, CancellationToken ct);
+    Task<StockPostingOutcome> PostAsync(StockPostingRequest request, CostedPosting costed, int? employeeId, int userId, CancellationToken ct);
+
+    /// <summary>Miscarile de stornat ale unui document sursa (inv.usp_StockMovement_ForReversal), ca cereri cu semn opus.</summary>
+    Task<IReadOnlyList<(long MovementId, StockMovementRequest Request)>> ForReversalAsync(StockReversalRequest request, CancellationToken ct);
 
     Task<IReadOnlyList<StockAvailabilityDto>> GetAvailabilityAsync(int companyId, int? depotId, int? warehouseId, IReadOnlyCollection<int> itemVariantIds,
         DateOnly onDate, CancellationToken ct);
@@ -32,7 +35,7 @@ public interface IStockMovementStore
 /// outbox, oricare ar fi sursa. Faptele din afara ERP (POS) nu trec prin verificarea datei. Fara modulul Stocuri licentiat nu scrie nimic.
 /// </summary>
 public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license, IPeriodLock periods, ICurrentContext context, IOutbox outbox,
-    TimeProvider time) : IStockLedger
+    TimeProvider time, CostRecalculator recalculator) : IStockLedger
 {
     public bool IsEnabled => license.IsModuleActive(InventoryModule.Code);
 
@@ -52,7 +55,10 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
             await EnsureDateAsync(request.CompanyId, request.MovementDate, request.AccountingDate, ct).ConfigureAwait(false);
         }
 
-        var outcome = await store.PostAsync(request, employeeId, context.UserId, ct).ConfigureAwait(false);
+        var lines = request.Lines.Select((l, i) => new PostingLine(i + 1, l, null, l.SourceRole == 2
+            ? request.Lines.Select((x, j) => (x, j)).Where(p => p.x.SourceLineId == l.SourceLineId && p.x.SourceRole == 1).Select(p => (int?)(p.j + 1)).FirstOrDefault()
+            : null)).ToList();
+        var outcome = await PostCostedAsync(request, lines, employeeId, ct).ConfigureAwait(false);
         if (!outcome.Replayed)
         {
             await PublishAsync(request.CompanyId, request.SourceModule, request.SourceDocumentType, request.SourceDocumentId, request.SourceDocumentNumber,
@@ -73,7 +79,11 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         }
 
         await EnsureDateAsync(request.CompanyId, request.MovementDate, request.MovementDate, ct).ConfigureAwait(false);
-        var outcome = await store.ReverseAsync(request, context.UserId, ct).ConfigureAwait(false);
+        var originals = await store.ForReversalAsync(request, ct).ConfigureAwait(false);
+        var posting = new StockPostingRequest(request.CompanyId, request.SourceModule, request.ReversalDocumentType, request.ReversalDocumentId,
+            request.ReversalDocumentNumber, request.MovementDate, request.MovementDate, null, false, originals.Select(o => o.Request).ToList());
+        var lines = originals.Select((o, i) => new PostingLine(i + 1, o.Request, o.MovementId, null)).ToList();
+        var outcome = await PostCostedAsync(posting, lines, null, ct).ConfigureAwait(false);
         if (!outcome.Replayed)
         {
             await PublishAsync(request.CompanyId, request.SourceModule, request.ReversalDocumentType, request.ReversalDocumentId,
@@ -87,6 +97,31 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         IReadOnlyCollection<int> itemVariantIds, DateOnly onDate, CancellationToken ct) =>
         IsEnabled ? store.GetAvailabilityAsync(companyId, depotId, warehouseId, itemVariantIds, onDate, ct)
             : Task.FromResult<IReadOnlyList<StockAvailabilityDto>>([]);
+
+    /// <summary>Starea de cost a cheilor (blocate), costul calculat de motor (S3), apoi scrierea intr-un singur apel SQL.</summary>
+    private async Task<StockPostingOutcome> PostCostedAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int? employeeId, CancellationToken ct)
+    {
+        var keys = lines.Select(l => new CostKey(l.Request.WarehouseId, l.Request.DepotId, l.Request.ItemVariantId, l.Request.LotId)).Distinct().ToList();
+        var load = await store.LoadCostAsync(request.CompanyId, keys, lines.Select(l => l.ReversalOfId).OfType<long>().ToList(), ct).ConfigureAwait(false);
+        CostedPosting costed;
+        try
+        {
+            costed = CostCalculator.Calculate(lines, request.MovementDate, load);
+        }
+        catch (Domain.Costing.CostLayerConsumedException e)
+        {
+            throw ErpException.Conflict("INV_COST_REVERSAL_LAYER_CONSUMED", e.Message);
+        }
+
+        var outcome = await store.PostAsync(request, costed, employeeId, context.UserId, ct).ConfigureAwait(false);
+        if (!outcome.Replayed)
+        {
+            // Miscarea cu data anterioara altor miscari ale cheii reface costul ieșirilor ulterioare (S3 3.5).
+            await recalculator.AfterPostingAsync(request.CompanyId, keys, request.MovementDate, ct).ConfigureAwait(false);
+        }
+
+        return outcome;
+    }
 
     private async Task EnsureDateAsync(int companyId, DateOnly movementDate, DateOnly accountingDate, CancellationToken ct)
     {

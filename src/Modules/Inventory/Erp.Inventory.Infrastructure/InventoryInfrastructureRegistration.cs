@@ -21,6 +21,9 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Contracts.IWarehouseLookup, WarehouseLookup>();
         services.AddScoped<Application.Movements.IStockMovementStore, Movements.StockMovementStore>();
         services.AddScoped<Application.Movements.StockLedger>();
+        services.AddScoped<Application.Movements.ICostRecalcStore, Movements.CostRecalcStore>();
+        services.AddScoped<Application.Movements.CostRecalculator>();
+        services.AddTransient<Movements.CostRecalcJob>();
         services.AddScoped<Application.Documents.IStockDocumentStore, Documents.StockDocumentStore>();
         services.AddScoped<Application.Documents.TransferService>();
         services.AddScoped<Application.Movements.IStockMovementQueries, Movements.StockMovementQueries>();
@@ -84,5 +87,7 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54118] = (ErpErrorKind.Conflict, "INV_DOCUMENT_NOT_DRAFT"),
         [54119] = (ErpErrorKind.Validation, "INV_UNIT_COST_REQUIRED"),
         [54199] = (ErpErrorKind.Conflict, "INV_MOVEMENT_IMMUTABLE"),
+        [54302] = (ErpErrorKind.Conflict, "INV_COST_REVERSAL_LAYER_CONSUMED"),
+        [54308] = (ErpErrorKind.Conflict, "INV_RECALC_PENDING"),
     };
 }

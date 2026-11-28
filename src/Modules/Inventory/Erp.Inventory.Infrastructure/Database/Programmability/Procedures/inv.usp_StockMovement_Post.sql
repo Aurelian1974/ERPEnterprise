@@ -9,15 +9,19 @@ CREATE OR ALTER PROCEDURE inv.usp_StockMovement_Post
     @PartnerId            int = NULL,
     @EmployeeId           int = NULL,
     @IsExternalFact       bit = 0,
-    @Lines                inv.tt_StockMovementRequest READONLY,
+    @Lines                inv.tt_StockMovementCosted READONLY,
+    @KeyStates            inv.tt_CostKeyState READONLY,
+    @Layers               inv.tt_CostLayerWrite READONLY,
+    @Consumptions         inv.tt_CostConsumptionWrite READONLY,
+    @Adjustments          inv.tt_CostAdjustmentWrite READONLY,
     @UserId               int
 AS
 BEGIN
     -- Inregistrarea unui set de miscari (02.05, S2 4.1; portul IStockLedger), in tranzactia apelantului:
     --   1. verificarile pe linii (gestiunea firmei, activa si neblocata, depozitul, tipul si semnul, varianta stocabila, tranzitul si custodia);
     --   2. idempotenta: daca toate liniile sursei sunt deja inregistrate se intorc miscarile existente; doar unele: 54102 (S2 regula 6);
-    --   3. blocarea randurilor de sold atinse (UPDLOCK, in ordinea cheii, SP-16), costul mediu ponderat pe cheie (S1 decizia 3; FIFO, LIFO si
-    --      identificarea directa le adauga S3), scrierea miscarilor, a soldului si a soldurilor pe zile;
+    --   3. blocarea randurilor de sold atinse (UPDLOCK, in ordinea cheii, SP-16), scrierea miscarilor cu costul calculat de motorul de cost
+    --      (CostEngine, S3), a straturilor, consumurilor si regularizarilor, a soldului si a soldurilor pe zile;
     --   4. stocul negativ verificat la data miscarii si la toate datele ulterioare, din soldurile pe zile (54101, S2 regula 5); politica
     --      permisiva si faptele din afara ERP trec, cu marcajul IsForcedNegative.
     -- Coduri: 54001, 54005, 54017, 54101, 54102, 54104, 54105, 54108, 54110, 54116.
@@ -26,14 +30,14 @@ BEGIN
 
     DECLARE @Rows TABLE (
         RowNo int PRIMARY KEY, SourceLineId bigint, SourceRole tinyint, MovementTypeId smallint, Direction smallint, DepotId int, WarehouseId int,
-        ItemVariantId int, QtyBase decimal(19,6), InboundUnitCost decimal(19,6), LotId int, SerialId int, CostCenterId int, ProjectId int, ReasonId int,
-        CounterRowNo int, ReversalOfId bigint, FixedCostAmount decimal(19,2), NegativePolicy tinyint, UnitCost decimal(19,6), CostAmount decimal(19,2),
-        IsForcedNegative bit NOT NULL DEFAULT (0), MovementId bigint);
+        ItemVariantId int, QtyBase decimal(19,6), LotId int, SerialId int, CostCenterId int, ProjectId int, ReasonId int,
+        CounterRowNo int, ReversalOfId bigint, NegativePolicy tinyint, UnitCost decimal(19,6), CostAmount decimal(19,2),
+        IsForcedNegative bit NOT NULL DEFAULT (0), MovementId bigint, PostingSeq bigint);
 
-    INSERT INTO @Rows (RowNo, SourceLineId, SourceRole, MovementTypeId, Direction, DepotId, WarehouseId, ItemVariantId, QtyBase, InboundUnitCost, LotId,
-        SerialId, CostCenterId, ProjectId, ReasonId, CounterRowNo, ReversalOfId, FixedCostAmount)
-    SELECT l.RowNo, l.SourceLineId, l.SourceRole, t.Id, SIGN(l.QtyBase), l.DepotId, l.WarehouseId, l.ItemVariantId, l.QtyBase, l.InboundUnitCost, l.LotId,
-        l.SerialId, l.CostCenterId, l.ProjectId, l.ReasonId, l.CounterRowNo, l.ReversalOfId, l.FixedCostAmount
+    INSERT INTO @Rows (RowNo, SourceLineId, SourceRole, MovementTypeId, Direction, DepotId, WarehouseId, ItemVariantId, QtyBase, LotId,
+        SerialId, CostCenterId, ProjectId, ReasonId, CounterRowNo, ReversalOfId, UnitCost, CostAmount)
+    SELECT l.RowNo, l.SourceLineId, l.SourceRole, t.Id, SIGN(l.QtyBase), l.DepotId, l.WarehouseId, l.ItemVariantId, l.QtyBase, l.LotId,
+        l.SerialId, l.CostCenterId, l.ProjectId, l.ReasonId, l.CounterRowNo, l.ReversalOfId, l.UnitCost, l.CostAmount
     FROM @Lines AS l
     LEFT JOIN inv.MovementType AS t ON t.Code = l.MovementTypeCode;
 
@@ -112,77 +116,13 @@ BEGIN
                       WHERE s.WarehouseId = r.WarehouseId AND s.DepotKey = ISNULL(r.DepotId, 0) AND s.ItemVariantId = r.ItemVariantId
                         AND s.LotKey = ISNULL(r.LotId, 0));
 
-    DECLARE @Keys TABLE (StockId bigint PRIMARY KEY, WarehouseId int, DepotKey int, ItemVariantId int, LotKey int, Qty decimal(19,6),
-        Cost decimal(19,2), LastUnitCost decimal(19,6));
-    INSERT INTO @Keys (StockId, WarehouseId, DepotKey, ItemVariantId, LotKey, Qty, Cost, LastUnitCost)
-    SELECT s.Id, s.WarehouseId, s.DepotKey, s.ItemVariantId, s.LotKey, s.QtyOnHand, s.CostOnHand, s.LastUnitCost
-    FROM inv.Stock AS s WITH (UPDLOCK, ROWLOCK)
+    -- Randurile de sold sunt blocate de inv.usp_StockCost_Load inaintea calculului; aici se reblocheaza in aceeasi ordine (fara efect nou).
+    DECLARE @Locked TABLE (StockId bigint PRIMARY KEY);
+    INSERT INTO @Locked
+    SELECT s.Id FROM inv.Stock AS s WITH (UPDLOCK, ROWLOCK)
     WHERE EXISTS (SELECT 1 FROM @Rows AS r WHERE r.WarehouseId = s.WarehouseId AND ISNULL(r.DepotId, 0) = s.DepotKey
                   AND r.ItemVariantId = s.ItemVariantId AND ISNULL(r.LotId, 0) = s.LotKey)
     ORDER BY s.WarehouseId, s.DepotKey, s.ItemVariantId, s.LotKey;
-
-    -- Costul pe linie, in ordinea liniilor; intrarile unui transfer dupa iesirile lor (acelasi cost).
-    DECLARE @RowNo int, @StockId bigint, @Qty decimal(19,6), @Dir smallint, @In decimal(19,6), @Fixed decimal(19,2), @Counter int, @Variant int,
-        @KQty decimal(19,6), @KCost decimal(19,2), @KLast decimal(19,6), @Unit decimal(19,6), @Amount decimal(19,2);
-    DECLARE lines CURSOR LOCAL FAST_FORWARD FOR
-        SELECT r.RowNo FROM @Rows AS r ORDER BY CASE WHEN r.CounterRowNo IS NOT NULL THEN 1 ELSE 0 END, r.RowNo;
-    OPEN lines;
-    FETCH NEXT FROM lines INTO @RowNo;
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        SELECT @Qty = r.QtyBase, @Dir = r.Direction, @In = r.InboundUnitCost, @Fixed = r.FixedCostAmount, @Counter = r.CounterRowNo,
-            @Variant = r.ItemVariantId, @StockId = k.StockId, @KQty = k.Qty, @KCost = k.Cost, @KLast = k.LastUnitCost
-        FROM @Rows AS r
-        JOIN @Keys AS k ON k.WarehouseId = r.WarehouseId AND k.DepotKey = ISNULL(r.DepotId, 0) AND k.ItemVariantId = r.ItemVariantId
-            AND k.LotKey = ISNULL(r.LotId, 0)
-        WHERE r.RowNo = @RowNo;
-
-        IF @Fixed IS NOT NULL
-        BEGIN
-            SET @Amount = @Fixed;
-            SET @Unit = ROUND(ABS(@Fixed) / ABS(@Qty), 6);
-        END
-        ELSE IF @Counter IS NOT NULL
-        BEGIN
-            SELECT @Amount = -CostAmount, @Unit = UnitCost FROM @Rows WHERE RowNo = @Counter;
-            SET @Amount = ROUND(@Amount * ABS(@Qty) / ABS((SELECT QtyBase FROM @Rows WHERE RowNo = @Counter)), 2);
-        END
-        ELSE IF @Dir = 1
-        BEGIN
-            -- Intrare: costul din sursa, altfel ultimul cost al cheii, altfel costul mediu al variantei in firma.
-            SET @Unit = COALESCE(@In, @KLast, CASE WHEN @KQty > 0 THEN ROUND(@KCost / @KQty, 6) END,
-                (SELECT ROUND(SUM(CostOnHand) / NULLIF(SUM(QtyOnHand), 0), 6) FROM inv.Stock
-                 WHERE CompanyId = @CompanyId AND ItemVariantId = @Variant AND QtyOnHand > 0), 0);
-            SET @Amount = ROUND(@Qty * @Unit, 2);
-        END
-        ELSE
-        BEGIN
-            -- Iesire la costul mediu al cheii; tot stocul iese cu toata valoarea (fara rest de rotunjire); pe minus, ultimul cost cunoscut.
-            IF @KQty > 0 AND @KQty + @Qty = 0
-            BEGIN
-                SET @Amount = -@KCost;
-                SET @Unit = ROUND(@KCost / @KQty, 6);
-            END
-            ELSE
-            BEGIN
-                SET @Unit = COALESCE(CASE WHEN @KQty > 0 THEN ROUND(@KCost / @KQty, 6) END, @KLast,
-                    (SELECT ROUND(SUM(CostOnHand) / NULLIF(SUM(QtyOnHand), 0), 6) FROM inv.Stock
-                     WHERE CompanyId = @CompanyId AND ItemVariantId = @Variant AND QtyOnHand > 0), 0);
-                SET @Amount = ROUND(@Qty * @Unit, 2);
-            END;
-        END;
-
-        UPDATE @Rows SET UnitCost = @Unit, CostAmount = @Amount WHERE RowNo = @RowNo;
-        UPDATE @Keys
-        SET Qty = Qty + @Qty,
-            -- Valoarea soldului e mereu suma registrului (S2-A1); diferenta dupa o iesire pe minus o regularizeaza S3 printr-o miscare de cost.
-            Cost = Cost + @Amount,
-            LastUnitCost = CASE WHEN @Dir = 1 THEN @Unit ELSE LastUnitCost END
-        WHERE StockId = @StockId;
-        FETCH NEXT FROM lines INTO @RowNo;
-    END;
-    CLOSE lines;
-    DEALLOCATE lines;
 
     -- Soldurile pe zile.
     MERGE inv.StockDayBalance WITH (HOLDLOCK) AS target
@@ -234,24 +174,24 @@ BEGIN
                                        AND n.ItemVariantId = r.ItemVariantId AND n.LotKey = ISNULL(r.LotId, 0));
 
     -- Miscarile: intai cele fara pereche, apoi intrarile transferurilor, cu CounterMovementId spre iesirea lor.
-    DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint);
+    DECLARE @Inserted TABLE (MovementId bigint, SourceLineId bigint, SourceRole tinyint, PostingSeq bigint);
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
         MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, ReasonId, PartnerId, CostCenterId, ProjectId, EmployeeId, SourceModule,
         SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, ReversalOfId, IsForcedNegative, CreatedBy)
-    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole INTO @Inserted
+    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
         r.SourceLineId, r.SourceRole, r.ReversalOfId, r.IsForcedNegative, @UserId
     FROM @Rows AS r
     WHERE r.CounterRowNo IS NULL;
-    UPDATE r SET MovementId = i.MovementId FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole;
+    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole;
 
     DELETE FROM @Inserted;
     INSERT INTO inv.StockMovement (CompanyId, DepotId, WarehouseId, ItemVariantId, LotId, SerialId, MovementDate, AccountingDate, PostingSeq,
         MovementTypeId, Direction, QtyBase, UnitCost, CostAmount, ReasonId, PartnerId, CostCenterId, ProjectId, EmployeeId, SourceModule,
         SourceDocumentType, SourceDocumentId, SourceDocumentNumber, SourceLineId, SourceRole, CounterMovementId, ReversalOfId, IsForcedNegative, CreatedBy)
-    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole INTO @Inserted
+    OUTPUT inserted.Id, inserted.SourceLineId, inserted.SourceRole, inserted.PostingSeq INTO @Inserted
     SELECT @CompanyId, r.DepotId, r.WarehouseId, r.ItemVariantId, r.LotId, r.SerialId, @MovementDate, @AccountingDate,
         NEXT VALUE FOR inv.seq_StockPosting OVER (ORDER BY r.RowNo), r.MovementTypeId, r.Direction, r.QtyBase, r.UnitCost, r.CostAmount, r.ReasonId,
         @PartnerId, r.CostCenterId, r.ProjectId, @EmployeeId, @SourceModule, @SourceDocumentType, @SourceDocumentId, @SourceDocumentNumber,
@@ -259,14 +199,45 @@ BEGIN
     FROM @Rows AS r
     JOIN @Rows AS c ON c.RowNo = r.CounterRowNo
     WHERE r.CounterRowNo IS NOT NULL;
-    UPDATE r SET MovementId = i.MovementId FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole
+    UPDATE r SET MovementId = i.MovementId, PostingSeq = i.PostingSeq FROM @Rows AS r JOIN @Inserted AS i ON i.SourceLineId = r.SourceLineId AND i.SourceRole = r.SourceRole
     WHERE r.MovementId IS NULL;
 
     -- Soldul curent si prima miscare a gestiunii (blocheaza codul, tipul si baza de evaluare, S1 3.1).
+    -- Straturile noi (cu Id-ul din calcul mapat), straturile existente atinse, consumurile si regularizarile (S3 3.2, 3.4).
+    DECLARE @LayerMap TABLE (LayerRef int PRIMARY KEY, LayerId bigint);
+    MERGE inv.CostLayer AS target
+    USING (SELECT l.*, COALESCE(l.MovementId, r.MovementId) AS OwnerMovementId, COALESCE(l.SeqOverride, r.PostingSeq) AS Seq
+           FROM @Layers AS l LEFT JOIN @Rows AS r ON r.RowNo = l.RowNo WHERE l.LayerRef IS NOT NULL) AS source
+    ON 1 = 0
+    WHEN NOT MATCHED THEN
+        INSERT (CompanyId, WarehouseId, DepotId, ItemVariantId, LotId, MovementId, OriginLayerId, LayerDate, PostingSeq, QtyIn, QtyRemaining, ValueRemaining,
+            UnitCost, IsNegative, CreatedBy)
+        VALUES (@CompanyId, source.WarehouseId, source.DepotId, source.ItemVariantId, source.LotId, source.OwnerMovementId, source.OriginLayerId,
+            source.LayerDate, source.Seq, source.QtyIn, source.QtyRemaining, source.ValueRemaining, source.UnitCost, source.IsNegative, @UserId)
+    OUTPUT source.LayerRef, inserted.Id INTO @LayerMap;
+
+    UPDATE c SET QtyRemaining = l.QtyRemaining, ValueRemaining = l.ValueRemaining, ModifiedAt = SYSUTCDATETIME()
+    FROM inv.CostLayer AS c JOIN @Layers AS l ON l.LayerId = c.Id
+    WHERE l.LayerRef IS NULL;
+
+    INSERT INTO inv.CostLayerConsumption (OutboundMovementId, CostLayerId, Qty, CostAmount)
+    SELECT COALESCE(x.MovementId, r.MovementId), COALESCE(x.LayerId, m.LayerId), x.Qty, x.CostAmount
+    FROM @Consumptions AS x
+    LEFT JOIN @Rows AS r ON r.RowNo = x.RowNo
+    LEFT JOIN @LayerMap AS m ON m.LayerRef = x.LayerRef;
+
+    INSERT INTO inv.CostAdjustment (CompanyId, WarehouseId, DepotId, ItemVariantId, LotId, MovementId, Kind, InStock, Amount, AccountingDate,
+        SourceDocumentType, SourceDocumentId, CreatedBy)
+    SELECT @CompanyId, a.WarehouseId, a.DepotId, a.ItemVariantId, a.LotId, COALESCE(a.MovementId, r.MovementId), a.Kind, a.InStock, a.Amount,
+        @AccountingDate, @SourceDocumentType, @SourceDocumentId, @UserId
+    FROM @Adjustments AS a
+    LEFT JOIN @Rows AS r ON r.RowNo = a.RowNo;
+
     UPDATE s
-    SET QtyOnHand = k.Qty, CostOnHand = k.Cost, LastUnitCost = k.LastUnitCost, LastMovementAt = SYSUTCDATETIME()
+    SET QtyOnHand = k.Qty, CostOnHand = k.Value, LastUnitCost = k.LastUnitCost, LastMovementAt = SYSUTCDATETIME()
     FROM inv.Stock AS s
-    JOIN @Keys AS k ON k.StockId = s.Id;
+    JOIN @KeyStates AS k ON k.WarehouseId = s.WarehouseId AND ISNULL(k.DepotId, 0) = s.DepotKey AND k.ItemVariantId = s.ItemVariantId
+        AND ISNULL(k.LotId, 0) = s.LotKey;
 
     UPDATE w SET FirstMovementAt = SYSUTCDATETIME()
     FROM inv.Warehouse AS w

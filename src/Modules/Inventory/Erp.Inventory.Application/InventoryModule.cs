@@ -34,6 +34,14 @@ public static class InventoryPermissions
     public const string DocumentReverse = "Inv.Document.Reverse";
     public const string MovementBackdate = "Inv.Movement.Backdate";
     public const string ReasonManage = "Inv.Reason.Manage";
+    public const string CostView = "Inv.Cost.View";
+    public const string CostRecalculate = "Inv.Cost.Recalculate";
+    public const string LandedCostEdit = "Inv.LandedCost.Edit";
+    public const string LandedCostValidate = "Inv.LandedCost.Validate";
+    public const string RetailPriceEdit = "Inv.RetailPrice.Edit";
+    public const string RetailPriceValidate = "Inv.RetailPrice.Validate";
+    public const string RetailDischargeValidate = "Inv.RetailDischarge.Validate";
+    public const string StandardCostUpdate = "Inv.StandardCost.Update";
 }
 
 /// <summary>Codurile API ale Stocurilor ridicate din C# (NET-09). Cele din SQL sunt in InventorySqlErrors.</summary>

@@ -120,6 +120,10 @@ internal sealed class HangfireProcessingFactory(JobStorage storage, string insta
         // 02.01, 4.3: cursurile BNR, in zilele lucratoare dupa ora publicarii (ora Romaniei).
         jobs.AddOrUpdate<BnrRatesJob>(BnrRatesJob.Id, job => job.RunAsync(CancellationToken.None), BnrRatesJob.Schedule,
             new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
+        // 02.05, S3 3.5: recalcularea costului cheilor din coada, la 15 minute.
+        jobs.AddOrUpdate<Erp.Inventory.Infrastructure.Movements.CostRecalcJob>(Erp.Inventory.Infrastructure.Movements.CostRecalcJob.JobId,
+            job => job.RunAsync(CancellationToken.None), Erp.Inventory.Infrastructure.Movements.CostRecalcJob.Schedule,
+            new RecurringJobOptions { TimeZone = BnrRatesJob.Romania });
         // 02.02, F1 4.2: inchiderea automata a zilelor de casa, la 00:05 ora Romaniei.
         jobs.AddOrUpdate<Erp.Finance.Infrastructure.Treasury.CashDayAutoClose>(Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.JobId,
             job => job.RunAsync(CancellationToken.None), Erp.Finance.Infrastructure.Treasury.CashDayAutoClose.Schedule,

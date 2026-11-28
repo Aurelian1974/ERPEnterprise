@@ -41,3 +41,13 @@ public sealed record BonuriPOSSincronizate(int CashRegisterId, IReadOnlyList<Pos
 public sealed record StockMovementDto(long Id, long PostingSeq, DateOnly MovementDate, int WarehouseId, string WarehouseCode, int? DepotId, int ItemVariantId,
     string VariantCode, string MovementTypeCode, string QtyBase, string UnitCost, string CostAmount, string? BalanceQty, string SourceModule,
     string SourceDocumentType, long SourceDocumentId, string? SourceDocumentNumber, string? ReasonCode, bool IsForcedNegative, long? ReversalOfId);
+
+/// <summary>O linie a unei ajustari de cost: cheia, miscarea afectata (iesirea, pentru marja din Vanzari V7), suma si tinta (Stock sau Expense).</summary>
+public sealed record CostAdjustmentEventLine(int WarehouseId, int ItemVariantId, long? SourceMovementId, decimal Amount, string TargetKind);
+
+/// <summary>
+/// Ajustari de valoare fara cantitate (S3 5.1): recalcularea, regularizarea negativului, costurile adaugate; grupate pe document sursa si luna.
+/// Consumatori: C2 (blocul Accounting vine cu modelele de contare ale Stocurilor), Raportare, Vanzari V7.
+/// </summary>
+public sealed record CostStocAjustat(byte AdjustmentKind, string SourceModule, string SourceDocumentType, long SourceDocumentId, DateOnly AccountingDate,
+    IReadOnlyList<CostAdjustmentEventLine> Lines) : IntegrationEvent;
