@@ -1,0 +1,29 @@
+# ERP · 02.05 Stocuri · Planul de implementare (S1–S7)
+
+Plan întocmit la cererea lui Aurelian (28.11.2026), din documentele validate [S1](S1-GESTIUNI-SI-SETARI.md) … [S7](S7-RAPOARTE-DECLARATII-CONFIGURARE.md).
+Ca la Finanțe, fiecare pas e mic: commit, push pe `main`, CI verde, nota de implementare în documentul părții și rândul în [README](README.md).
+Plaja de erori a modulului e `54000–54999`, împărțită pe părți (README). Ce rămâne nefăcut la sfârșitul unui pas se trece în nota pasului.
+
+## 1. Ordinea
+
+```
+S1 Gestiuni și setări ──► S2 Mișcări (registrul, documentele, portul de stoc) ──► S3 Evaluare și cost ──► S4 Loturi și serii
+                                                                                         │
+                                                                    S5 Rezervări ◄───────┤
+                                                                    S6 Inventariere ◄────┤
+                                                                    S7 Rapoarte, D406, Intrastat, Configurare
+```
+
+Schimbarea metodei de evaluare (S1 4.5) transformă straturile de cost, deci se implementează după S3. Predarea gestiunii cu inventar (S1 4.2)
+se leagă de inventarul din S6; până atunci predarea fără inventar obligatoriu funcționează complet.
+
+## 2. Pașii părții S1
+
+| Pas | Conținut | Criterii |
+| --- | --- | --- |
+| S1.1 | Proiectele `Erp.Inventory.*`; `inv.StockSettings`, `inv.Warehouse`; gestiunea ca valoare de dimensiune „gestiune” (`IDimensionLookup.EnsureAsync`, `SyncAsync` nou în Nucleu); tranzitul și setările create automat (`FirmaModificata`, idempotent); salvarea, blocarea, dezactivarea gestiunii; `GestiuneModificata`; permisiunile `Inv.*` și rolurile Șef depozit, Gestionar, Contabil stocuri; accesul pe gestiuni prin scope | S1-A1, A2, A3 (câmpurile blocate, cu marcajul primei mișcări), A4, A5 (listele), A12 (fără stoc încă), A13 |
+| S1.2 | Gestionarii (titular, înlocuitori, perioade) și predarea-primirea; setările de stoc ale articolului pe firmă și pe gestiune; politica efectivă `IStockPolicyProvider` | S1-A6, A7 (fără inventar), A8, A15 (partea 1) |
+| S1.3 | Depozitele, gestiunile din depozite, regulile de propunere, nivelul de evidență (firmă, punct de lucru, locație); `IWarehouseLookup` | S1-A15 (partea 2) |
+| S1.4 | Ecranele Gestiuni, Gestionari și predare, Articol · tab Stoc, Depozite (s1-01, s1-02, s1-03, s1-05) | — |
+
+Pașii părților S2–S7 se detaliază la începutul fiecărei părți.

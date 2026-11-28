@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Regulile de business ale Stocurilor (NET-01), fara acces la date. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Inventory.Contracts\Erp.Inventory.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Inventory.Tests" />
+  </ItemGroup>
+
+</Project>

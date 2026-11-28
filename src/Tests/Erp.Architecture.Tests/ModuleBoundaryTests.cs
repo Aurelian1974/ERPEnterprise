@@ -24,6 +24,7 @@ public sealed class ModuleBoundaryTests
     private static string PermissionPrefix(string module) => module switch
     {
         "Finance" => "Fin",
+        "Inventory" => "Inv",
         _ => module,
     };
 
@@ -34,6 +35,7 @@ public sealed class ModuleBoundaryTests
         Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Core.Infrastructure");
         Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Finance.Application");
         Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Finance.Infrastructure");
+        Assert.Contains(ErpAssemblies, a => a.GetName().Name == "Erp.Inventory.Application");
     }
 
     [Fact]

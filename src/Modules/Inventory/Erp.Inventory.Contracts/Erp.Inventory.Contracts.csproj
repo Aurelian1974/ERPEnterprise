@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contractele publice ale Stocurilor (02.05, S1 6): singurul proiect al modulului pe care il vad celelalte module (P1). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Erp.Core.Contracts\Erp.Core.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

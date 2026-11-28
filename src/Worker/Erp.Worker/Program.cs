@@ -1,6 +1,7 @@
 using Erp.Core.Application;
 using Erp.Core.Infrastructure;
 using Erp.Finance.Infrastructure;
+using Erp.Inventory.Infrastructure;
 using Erp.Core.Infrastructure.Messaging;
 using Erp.Hosting;
 using Erp.Worker.Jobs;
@@ -54,10 +55,11 @@ builder.Services.AddSingleton<Func<SqlConnection>>(() => new SqlConnection(conne
 builder.Services.AddTransient<UserAccessExpirationJob>();
 // Pipeline-ul comenzilor, ca in Erp.Host, pentru joburile care trimit comenzi in numele utilizatorului de sistem (de exemplu importul
 // extraselor din folder): licenta, validare, tranzactie, audit, outbox. Contextul e cel de sistem (AddOutboxDispatcher, mai jos).
-builder.Services.AddErpMediator(Erp.Finance.Application.FinanceApplication.Assembly);
+builder.Services.AddErpMediator(Erp.Finance.Application.FinanceApplication.Assembly, Erp.Inventory.Application.InventoryApplication.Assembly);
 builder.Services.AddCoreInfrastructure(connectionString, new Erp.Core.Infrastructure.Licensing.LicenseOptions(development));
 // Finante (02.02): inchiderea automata a zilelor de casa, avansurile depasite, importul extraselor din folder.
 builder.Services.AddFinanceInfrastructure(connectionString);
+builder.Services.AddInventoryInfrastructure();
 builder.Services.AddTransient<CompanyVersionJob>();
 // Cursurile BNR (02.01, 4.3): aceleasi adrese ca Erp.Host (Bnr:DailyUrl), clientul HTTP partajat.
 builder.Services.AddSingleton(new Erp.Bnr.BnrOptions(
@@ -71,6 +73,7 @@ builder.Services.AddOutboxDispatcher(connectionString);
 // Emailul din aplicatie (02.01, 4.7): mesajele puse in outbox pleaca prin serverul SMTP al instalarii.
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.EmailCerut, Erp.Core.Infrastructure.Data.SendEmail>();
 builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.UtilizatorDezactivat, Erp.Finance.Infrastructure.Events.CloseCashierAssignments>();
+builder.Services.AddIntegrationEventHandler<Erp.Core.Contracts.FirmaModificata, Erp.Inventory.Infrastructure.Events.InitializeCompanyStock>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaEmisa, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 builder.Services.AddIntegrationEventHandler<Erp.Finance.Contracts.Settlement.FacturaFurnizorValidata, Erp.Finance.Infrastructure.Events.RegisterInvoices>();
 // Contarea automata (02.02, C2 4.1): evenimentele cu model de contare devin note validate sau intra in coada „De contat”.

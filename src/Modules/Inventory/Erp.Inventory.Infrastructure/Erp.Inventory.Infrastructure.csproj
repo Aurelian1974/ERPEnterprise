@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Accesul la date al Stocurilor (Dapper + proceduri stocate, NET-06/07). Database\ = scripturile schemei inv din kit. -->
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Inventory.Application\Erp.Inventory.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Erp.Inventory.Tests" />
+  </ItemGroup>
+
+</Project>

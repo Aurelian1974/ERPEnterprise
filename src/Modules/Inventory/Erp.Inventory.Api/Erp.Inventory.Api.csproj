@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Endpoint-urile Stocurilor, subtiri (NET-03): cererea merge direct in MediatR. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Inventory.Application\Erp.Inventory.Application.csproj" />
+  </ItemGroup>
+
+</Project>

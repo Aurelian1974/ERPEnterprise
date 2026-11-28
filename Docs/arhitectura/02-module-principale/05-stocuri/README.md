@@ -16,6 +16,14 @@ Schema SQL `inv`, prefix de cod `Erp.Inventory`, plaja de erori SQL `54000–549
 
 Vezi documentul principal: [MODULE_PRINCIPALE.md](../MODULE_PRINCIPALE.md).
 
+## Implementare
+
+Planul pașilor: [PLAN-STOCURI.md](PLAN-STOCURI.md). Detaliile fiecărui pas sunt în „Note de implementare” din documentul părții.
+
+| Pas | Conținut | Stare |
+| --- | --- | --- |
+| S1.1 | Modulul `Erp.Inventory`, gestiunile (cod unic pe firmă, tipuri, locație, preț cu amănuntul, blocare, dezactivare, dimensiunea „gestiune”), tranzitul și setările de stoc ale firmei create automat, permisiunile și rolurile; testele S1-A1–A5, A12, A13 | Implementat (stocul la dezactivare cu S2) |
+
 ## Machete de ecran (`ecrane/`)
 
 Același stil, aceeași bară de sus și aceleași date demo ca machetele Nucleu și Finanțe (Grupul Exemplu, firma curentă Exemplu Distribuție SRL). Generatoare: `/_unelte/machete-stocuri/` (`sh.py` + `sN.py`, `render.js`). Date demo noi: contabila de stocuri Simona Iordache, șeful de depozit Gheorghe Ilie, gestiunile DC-PL, AMB-PL, CUST-PL (Ploiești, nivel „depozit”, halele HALA-A și HALA-B), DEP-CJ (fără cont de stoc, cauza lui BC 10255), MAG-CJ (preț cu amănuntul), DEP-TM (blocată pentru predarea PG 0007), TRANZIT, LA-LOG; responsabilul de calitate Mihaela Dobre, loturile APA05 din DEP-CJ (L2609-11, L2610-18, L2611-07, L2611-15 în carantină), dozatoarele DZ20 pe serie; stoc propriu în 371: 4.215.500,00 lei.

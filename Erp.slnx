@@ -24,6 +24,14 @@
     <Project Path="src/Modules/Finance/Erp.Finance.Infrastructure/Erp.Finance.Infrastructure.csproj" />
     <Project Path="src/Modules/Finance/Erp.Finance.Tests/Erp.Finance.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Api/Erp.Inventory.Api.csproj" />
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Application/Erp.Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Contracts/Erp.Inventory.Contracts.csproj" />
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Domain/Erp.Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Infrastructure/Erp.Inventory.Infrastructure.csproj" />
+    <Project Path="src/Modules/Inventory/Erp.Inventory.Tests/Erp.Inventory.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Setup/">
     <Project Path="src/Setup/Erp.Setup.Core/Erp.Setup.Core.csproj" />
     <Project Path="src/Setup/Erp.Setup.Engine/Erp.Setup.Engine.csproj" />

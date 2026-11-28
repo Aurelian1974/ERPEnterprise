@@ -28,6 +28,7 @@
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <!-- Joburile Finantelor (inchiderea automata a zilelor de casa): Worker-ul compune modulele, ca Erp.Host. -->
     <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

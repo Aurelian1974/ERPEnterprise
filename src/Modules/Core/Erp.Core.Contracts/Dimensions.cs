@@ -7,8 +7,9 @@ public static class DimensionTypes
     public const string Project = "PROJECT";
     public const string Warehouse = "WAREHOUSE";
     public const string Site = "SITE";
+    public const string Depot = "DEPOT";
 
-    public static readonly IReadOnlyList<string> All = [CostCenter, Project, Warehouse, Site];
+    public static readonly IReadOnlyList<string> All = [CostCenter, Project, Warehouse, Depot, Site];
 }
 
 /// <summary>O valoare de dimensiune (centru de cost, proiect, gestiune, santier) a unei firme.</summary>
@@ -24,6 +25,12 @@ public interface IDimensionLookup
     Task<DimensionValueDto?> GetAsync(int dimensionValueId, CancellationToken ct);
 
     Task<int> EnsureAsync(int companyId, string dimensionType, string code, string name, CancellationToken ct);
+
+    /// <summary>
+    /// Aliniaza o valoare detinuta de modul (gestiunea, santierul) cu entitatea lui: codul, denumirea si starea. Codul existent pe alta valoare
+    /// de acelasi tip din firma e refuzat (CORE_DUPLICATE_CODE).
+    /// </summary>
+    Task SyncAsync(int dimensionValueId, string code, string name, bool isActive, CancellationToken ct);
 }
 
 /// <summary>Regula unei dimensiuni implicite (02.01, 3.6 punctul 14): optionala (valoare propusa), obligatorie sau fixa.</summary>

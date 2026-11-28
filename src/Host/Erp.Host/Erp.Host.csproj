@@ -19,6 +19,8 @@
     <ProjectReference Include="..\..\Modules\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Api\Erp.Finance.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Finance\Erp.Finance.Infrastructure\Erp.Finance.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\Erp.Inventory.Api\Erp.Inventory.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
   </ItemGroup>
 
   <!-- Baza de dezvoltare care se tine singura la zi (07, „Mediul de dezvoltare”): numai in Debug. Kitul se publica in

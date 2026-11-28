@@ -8,6 +8,7 @@ USING (VALUES
     ('COST_CENTER', N'Centre de cost', 10),
     ('PROJECT',     N'Proiecte', 20),
     ('WAREHOUSE',   N'Gestiuni', 30),
+    ('DEPOT',       N'Depozite', 35),
     ('SITE',        N'Șantiere', 40)
 ) AS source (Code, Name, SortOrder)
 ON target.Code = source.Code

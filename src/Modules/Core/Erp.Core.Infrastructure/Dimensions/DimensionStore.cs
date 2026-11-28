@@ -71,6 +71,21 @@ public sealed class DimensionLookup(IDbSession session, ICurrentContext context,
         }
     }
 
+    public async Task SyncAsync(int dimensionValueId, string code, string name, bool isActive, CancellationToken ct)
+    {
+        try
+        {
+            await session.Connection.ExecuteAsync(new CommandDefinition("core.usp_DimensionValue_Sync", new
+            {
+                Id = dimensionValueId, Code = code, Name = name, IsActive = isActive, context.UserId,
+            }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (errors.Translate(exception) is { } translated)
+        {
+            throw translated;
+        }
+    }
+
     private sealed record Row(int Id, int CompanyId, string DimensionType, string Code, string Name, int? ParentId, DateTime? ValidFrom,
         DateTime? ValidTo, bool IsActive);
 }

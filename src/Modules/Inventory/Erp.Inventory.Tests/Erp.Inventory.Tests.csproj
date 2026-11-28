@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Erp.Testing.Sql" />
+  </ItemGroup>
+
+  <!-- Pipeline-ul comun si infrastructura Nucleului (conexiune, tranzactie, audit) compuse ca in Erp.Host, plus modulul Stocuri. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\Erp.Inventory.Api\Erp.Inventory.Api.csproj" />
+    <ProjectReference Include="..\..\Core\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Tests\Erp.Testing.Sql\Erp.Testing.Sql.csproj" />
+  </ItemGroup>
+
+</Project>
