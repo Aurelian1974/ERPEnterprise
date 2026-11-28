@@ -6,65 +6,54 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    /* Paleta din Docs/arhitectura/10-interfata-tema/INTERFATA_TEMA.md (ST5). Numele vechi sunt pastrate
-       ca aliasuri, ca restul machetei sa nu se rescrie. */
-    --navy-900: #0b1f3a; --navy-800: #102a4c; --navy-700: #16375f; --navy-600: #1d4a80;
-    --surface-input: #f4f8fd; --surface-card: #eaf1fb; --surface-app: #dde8f7; --surface-muted: #cfdcf0; --surface-sunken: #bcccea;
-    --ink: #14233b; --muted: #4a5a75; --on-dark: #fff; --on-dark-muted: #c8d6ee; --ok-on-dark: #6fd3a3; --warn-on-dark: #e0a21b;
-    --line: #bcccea; --line-strong: #566fa8;
-    --action: #2f6fed; --action-hover: #2459c9; --focus: #1d47a0;
-    --ok: #146b43; --ok-bg: #dcebe2; --warn: #8a5f00; --warn-bg: #f0e8d4; --error: #b3261e; --error-bg: #f4e0de;
-    --info: #2459c9; --info-bg: #dbe6fc; --surface-violet: #e6e2f7;
-    --accent-core: #2459c9; --accent-finance: #4b3fb8; --accent-sales: #0f6d78; --accent-purchasing: #8a5f00;
-    --accent-stock: #146b43; --accent-production: #8a2d6b; --accent-hr: #15607a; --accent-integrations: #a63a1f;
-    --blue-500: var(--action); --blue-600: var(--action-hover); --blue-50: var(--info-bg); --blue-100: var(--surface-muted);
-    --bg: var(--surface-app); --card: var(--surface-card);
-    --green: var(--ok); --green-50: var(--ok-bg); --red: var(--error); --red-50: var(--error-bg);
-    --amber: var(--warn); --amber-50: var(--warn-bg);
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
   }
   html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
 
   /* BARA DE SUS */
-  .top { height: 56px; background: var(--navy-700); border-bottom: 3px solid var(--accent-core); color: var(--on-dark); display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
-  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--action), var(--action)); display: grid; place-items: center; font-size: 13px; }
-  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: var(--navy-700); border: 1px solid var(--navy-600); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: var(--on-dark-muted); }
-  .kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--navy-600); border-radius: 5px; padding: 1px 6px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
   .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-  .company { display: flex; align-items: center; gap: 10px; background: var(--navy-700); border: 1px solid var(--navy-600); border-radius: 9px; padding: 5px 12px; }
-  .company .lbl { font-size: 10px; color: var(--on-dark-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
   .company .nm { font-weight: 600; font-size: 13px; }
-  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: var(--on-dark-muted); font-size: 16px; }
-  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: var(--on-dark); font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
   .user { display: flex; align-items: center; gap: 10px; }
-  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--navy-600); display: grid; place-items: center; font-weight: 700; font-size: 12px; }
-  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: var(--on-dark-muted); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
 
   .layout { display: flex; height: 844px; }
 
   /* MENIU STÂNGA */
-  .side { width: 240px; background: var(--navy-800); border-right: 1px solid var(--navy-900); padding: 14px 10px; display: flex; flex-direction: column; }
-  .sec { font-size: 10.5px; font-weight: 700; color: var(--on-dark-muted); text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
-  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--on-dark-muted); font-size: 13px; }
-  .item .ic { width: 18px; text-align: center; color: var(--on-dark-muted); font-size: 13px; }
-  .item.active { background: var(--navy-700); color: var(--on-dark); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent-core); }
-  .item.active .ic { color: var(--on-dark); }
-  .item .chev { margin-left: auto; color: var(--on-dark-muted); font-size: 11px; }
-  .item.open { font-weight: 600; color: var(--on-dark); }
-  .sub { padding-left: 38px; color: var(--on-dark-muted); font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
-  .star { color: var(--warn-on-dark); }
-  .side-foot { margin-top: auto; border-top: 1px solid var(--navy-900); padding: 10px; color: var(--on-dark-muted); font-size: 12px; }
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
 
   /* ZONA DE LUCRU */
   .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
-  .crumb { font-size: 12px; color: var(--muted); }
+  .crumb { font-size: 12px; color: #8a94a3; }
   .head { display: flex; align-items: flex-end; justify-content: space-between; }
   .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
   .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
   .actions { display: flex; gap: 10px; }
   .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
-  .btn.ghost { background: var(--surface-card); border: 1px solid var(--line); color: var(--ink); }
-  .btn.primary { background: var(--blue-500); color: var(--on-dark); }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
 
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
   .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
@@ -73,7 +62,7 @@
 
   /* DE REZOLVAT */
   .todo { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-  .task { background: var(--surface-card); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; display: flex; gap: 12px; align-items: center; }
+  .task { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; display: flex; gap: 12px; align-items: center; }
   .task .n { font-size: 22px; font-weight: 700; min-width: 34px; height: 40px; border-radius: 9px; display: grid; place-items: center; padding: 0 6px; }
   .task .t { font-weight: 600; font-size: 12.5px; line-height: 1.3; }
   .task .d { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
@@ -97,7 +86,7 @@
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
   .aging { padding: 8px 16px 12px; }
   .ag-row { display: grid; grid-template-columns: 92px 1fr 92px; align-items: center; gap: 10px; margin: 9px 0; font-size: 12px; }
-  .ag-bar { height: 12px; background: var(--surface-muted); border-radius: 6px; overflow: hidden; }
+  .ag-bar { height: 12px; background: #eef1f5; border-radius: 6px; overflow: hidden; }
   .ag-bar div { height: 100%; border-radius: 6px; }
   .ag-row .val { text-align: right; font-weight: 600; }
 
@@ -107,7 +96,7 @@
   .qa { border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12.5px; }
   .qa .p { width: 22px; height: 22px; border-radius: 6px; background: var(--blue-50); color: var(--blue-600); display: grid; place-items: center; font-weight: 700; }
   .list { padding: 6px 16px 10px; }
-  .li { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--surface-muted); font-size: 12.5px; }
+  .li { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f2f5; font-size: 12.5px; }
   .li:last-child { border-bottom: 0; }
   .li .s { color: var(--muted); font-size: 11.5px; }
   .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
@@ -189,15 +178,15 @@
       <div class="charts">
         <div class="card">
           <div class="card-h"><h3>Vânzări și încasări pe luni</h3>
-            <div class="legend"><span><i style="background:var(--action)"></i>Vânzări</span><span><i style="background:var(--ok)"></i>Încasări</span></div></div>
+            <div class="legend"><span><i style="background:#2f6fed"></i>Vânzări</span><span><i style="background:#1f9d63"></i>Încasări</span></div></div>
           <svg width="100%" height="200" viewBox="0 0 700 200" preserveAspectRatio="none" style="display:block;padding:6px 8px 4px">
-            <g stroke="var(--surface-muted)" stroke-width="1">
+            <g stroke="#eef1f5" stroke-width="1">
               <line x1="40" y1="20" x2="690" y2="20"/><line x1="40" y1="65" x2="690" y2="65"/><line x1="40" y1="110" x2="690" y2="110"/><line x1="40" y1="155" x2="690" y2="155"/>
             </g>
-            <g font-size="10" fill="var(--muted)" font-family="Inter, Segoe UI, sans-serif">
+            <g font-size="10" fill="#8a94a3" font-family="Inter, Segoe UI, sans-serif">
               <text x="2" y="24">1,5 mil</text><text x="2" y="69">1,0 mil</text><text x="2" y="114">0,5 mil</text><text x="20" y="159">0</text>
             </g>
-            <g fill="var(--action)">
+            <g fill="#2f6fed">
               <rect x="58" y="72" width="22" height="83" rx="3"/><rect x="112" y="63" width="22" height="92" rx="3"/>
               <rect x="166" y="68" width="22" height="87" rx="3"/><rect x="220" y="55" width="22" height="100" rx="3"/>
               <rect x="274" y="60" width="22" height="95" rx="3"/><rect x="328" y="48" width="22" height="107" rx="3"/>
@@ -205,9 +194,9 @@
               <rect x="490" y="46" width="22" height="109" rx="3"/><rect x="544" y="38" width="22" height="117" rx="3"/>
               <rect x="598" y="44" width="22" height="111" rx="3"/><rect x="652" y="43" width="22" height="112" rx="3" opacity=".45"/>
             </g>
-            <polyline fill="none" stroke="var(--ok)" stroke-width="2.5" points="69,88 123,80 177,78 231,70 285,72 339,64 393,62 447,58 501,60 555,52 609,54 663,66"/>
-            <g fill="var(--ok)"><circle cx="609" cy="54" r="3.5"/><circle cx="663" cy="66" r="3.5"/></g>
-            <g font-size="10.5" fill="var(--muted)" font-family="Inter, Segoe UI, sans-serif" text-anchor="middle">
+            <polyline fill="none" stroke="#1f9d63" stroke-width="2.5" points="69,88 123,80 177,78 231,70 285,72 339,64 393,62 447,58 501,60 555,52 609,54 663,66"/>
+            <g fill="#1f9d63"><circle cx="609" cy="54" r="3.5"/><circle cx="663" cy="66" r="3.5"/></g>
+            <g font-size="10.5" fill="#8a94a3" font-family="Inter, Segoe UI, sans-serif" text-anchor="middle">
               <text x="69" y="176">Dec</text><text x="123" y="176">Ian</text><text x="177" y="176">Feb</text><text x="231" y="176">Mar</text>
               <text x="285" y="176">Apr</text><text x="339" y="176">Mai</text><text x="393" y="176">Iun</text><text x="447" y="176">Iul</text>
               <text x="501" y="176">Aug</text><text x="555" y="176">Sep</text><text x="609" y="176">Oct</text><text x="663" y="176">Nov*</text>
@@ -217,12 +206,12 @@
         <div class="card">
           <div class="card-h"><h3>Scadențar clienți</h3><span class="lnk">Detalii ›</span></div>
           <div class="aging">
-            <div class="ag-row"><span>Nescadente</span><div class="ag-bar"><div style="width:88%;background:var(--action)"></div></div><span class="val">1.104.200</span></div>
-            <div class="ag-row"><span>1–30 zile</span><div class="ag-bar"><div style="width:42%;background:var(--warn)"></div></div><span class="val">198.400</span></div>
-            <div class="ag-row"><span>31–60 zile</span><div class="ag-bar"><div style="width:18%;background:var(--warn)"></div></div><span class="val">71.900</span></div>
-            <div class="ag-row"><span>61–90 zile</span><div class="ag-bar"><div style="width:8%;background:var(--warn)"></div></div><span class="val">27.150</span></div>
-            <div class="ag-row"><span>peste 90 zile</span><div class="ag-bar"><div style="width:6%;background:var(--error)"></div></div><span class="val">15.300</span></div>
-            <div class="ag-row" style="margin-top:12px;border-top:1px solid var(--surface-muted);padding-top:9px"><span style="font-weight:700">Total</span><span></span><span class="val">1.416.950 RON</span></div>
+            <div class="ag-row"><span>Nescadente</span><div class="ag-bar"><div style="width:88%;background:#2f6fed"></div></div><span class="val">1.104.200</span></div>
+            <div class="ag-row"><span>1–30 zile</span><div class="ag-bar"><div style="width:42%;background:#e0a21b"></div></div><span class="val">198.400</span></div>
+            <div class="ag-row"><span>31–60 zile</span><div class="ag-bar"><div style="width:18%;background:#e5862a"></div></div><span class="val">71.900</span></div>
+            <div class="ag-row"><span>61–90 zile</span><div class="ag-bar"><div style="width:8%;background:#d9622b"></div></div><span class="val">27.150</span></div>
+            <div class="ag-row"><span>peste 90 zile</span><div class="ag-bar"><div style="width:6%;background:#d14343"></div></div><span class="val">15.300</span></div>
+            <div class="ag-row" style="margin-top:12px;border-top:1px solid #f0f2f5;padding-top:9px"><span style="font-weight:700">Total</span><span></span><span class="val">1.416.950 RON</span></div>
           </div>
         </div>
       </div>
@@ -254,7 +243,7 @@
           <div class="list">
             <div class="li"><div>NC-2026-00981 · Amortizare octombrie<div class="s">Notă contabilă · azi, 15:12</div></div><span class="pill" style="background:var(--green-50);color:var(--green)">Validată</span></div>
             <div class="li"><div>FCT-2026-01247 · Mega Retail SA<div class="s">Factură client · azi, 14:40</div></div><span class="pill" style="background:var(--amber-50);color:var(--amber)">La ANAF</span></div>
-            <div class="li"><div>OP-2026-00412 · Furnizor Ambalaje SRL<div class="s">Plată · ieri, 17:05</div></div><span class="pill" style="background:var(--surface-muted);color:var(--muted)">Ciornă</span></div>
+            <div class="li"><div>OP-2026-00412 · Furnizor Ambalaje SRL<div class="s">Plată · ieri, 17:05</div></div><span class="pill" style="background:#eef1f5;color:var(--muted)">Ciornă</span></div>
           </div>
         </div>
       </div>

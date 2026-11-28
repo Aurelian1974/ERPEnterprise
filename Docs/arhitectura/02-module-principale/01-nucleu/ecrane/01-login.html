@@ -6,37 +6,26 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    /* Paleta din Docs/arhitectura/10-interfata-tema/INTERFATA_TEMA.md (ST5). Numele vechi sunt pastrate
-       ca aliasuri, ca restul machetei sa nu se rescrie. */
-    --navy-900: #0b1f3a; --navy-800: #102a4c; --navy-700: #16375f; --navy-600: #1d4a80;
-    --surface-input: #f4f8fd; --surface-card: #eaf1fb; --surface-app: #dde8f7; --surface-muted: #cfdcf0; --surface-sunken: #bcccea;
-    --ink: #14233b; --muted: #4a5a75; --on-dark: #fff; --on-dark-muted: #c8d6ee; --ok-on-dark: #6fd3a3; --warn-on-dark: #e0a21b;
-    --line: #bcccea; --line-strong: #566fa8;
-    --action: #2f6fed; --action-hover: #2459c9; --focus: #1d47a0;
-    --ok: #146b43; --ok-bg: #dcebe2; --warn: #8a5f00; --warn-bg: #f0e8d4; --error: #b3261e; --error-bg: #f4e0de;
-    --info: #2459c9; --info-bg: #dbe6fc; --surface-violet: #e6e2f7;
-    --accent-core: #2459c9; --accent-finance: #4b3fb8; --accent-sales: #0f6d78; --accent-purchasing: #8a5f00;
-    --accent-stock: #146b43; --accent-production: #8a2d6b; --accent-hr: #15607a; --accent-integrations: #a63a1f;
-    --blue-500: var(--action); --blue-600: var(--action-hover); --blue-50: var(--info-bg); --blue-100: var(--surface-muted);
-    --bg: var(--surface-app); --card: var(--surface-card);
-    --green: var(--ok); --green-50: var(--ok-bg); --red: var(--error); --red-50: var(--error-bg);
-    --amber: var(--warn); --amber-50: var(--warn-bg);
+    --navy-900: #0b1f3a; --navy-800: #102a4c; --navy-700: #16375f;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd;
+    --ink: #1a2433; --muted: #5b6676; --line: #d9dee6; --bg: #ffffff;
+    --green: #1f9d63; --amber: #e0a21b;
   }
   html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
   .screen { display: flex; width: 1440px; height: 900px; }
 
   /* STÂNGA 60% */
   .left { width: 60%; height: 100%; position: relative; overflow: hidden;
-    background: radial-gradient(1200px 700px at 20% 10%, var(--navy-600) 0%, var(--navy-800) 45%, var(--navy-900) 100%);
-    color: var(--on-dark); padding: 56px 64px; display: flex; flex-direction: column; }
+    background: radial-gradient(1200px 700px at 20% 10%, #1d4a80 0%, var(--navy-800) 45%, var(--navy-900) 100%);
+    color: #fff; padding: 56px 64px; display: flex; flex-direction: column; }
   .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 20px; letter-spacing: .2px; z-index: 2; }
-  .brand .mark { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, var(--action), var(--action)); display: grid; place-items: center; font-size: 15px; }
+  .brand .mark { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 15px; }
   .grid-bg { position: absolute; inset: 0; background-image:
-      linear-gradient(var(--navy-700) 1px, transparent 1px),
-      linear-gradient(90deg, var(--navy-700) 1px, transparent 1px);
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
     background-size: 48px 48px; z-index: 0; }
   .illustration { position: absolute; left: 64px; right: 64px; top: 130px; height: 430px; z-index: 1; }
-  .card { position: absolute; background: var(--surface-card); color: var(--ink); border-radius: 14px;
+  .card { position: absolute; background: rgba(255,255,255,.96); color: var(--ink); border-radius: 14px;
     box-shadow: 0 18px 40px rgba(0,0,0,.28); padding: 18px 20px; }
   .card h4 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
   .kpi { font-size: 26px; font-weight: 700; }
@@ -44,22 +33,22 @@
 
   .c-sales { left: 0; top: 20px; width: 380px; }
   .bars { display: flex; align-items: flex-end; gap: 10px; height: 120px; margin-top: 14px; }
-  .bars div { flex: 1; border-radius: 5px 5px 0 0; background: var(--line-strong); }
+  .bars div { flex: 1; border-radius: 5px 5px 0 0; background: #c9d8fb; }
   .bars div.hi { background: var(--blue-500); }
   .months { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--muted); }
   .months span { flex: 1; text-align: center; }
 
   .c-invoice { left: 340px; top: 285px; width: 380px; }
-  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--surface-muted); }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #edf0f4; }
   .row:last-child { border-bottom: 0; }
   .pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
-  .ok { background: var(--ok-bg); color: var(--green); }
-  .wait { background: var(--warn-bg); color: var(--warn); }
+  .ok { background: #e3f5ec; color: var(--green); }
+  .wait { background: #fbf1dc; color: #a77300; }
 
   .c-stock { left: 450px; top: 20px; width: 240px; }
   .ring { width: 110px; height: 110px; border-radius: 50%; margin: 6px auto 8px;
-    background: conic-gradient(var(--blue-500) 0 68%, var(--warn) 68% 86%, var(--surface-sunken) 86% 100%); display: grid; place-items: center; }
-  .ring div { width: 74px; height: 74px; border-radius: 50%; background: var(--surface-card); display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+    background: conic-gradient(var(--blue-500) 0 68%, #f0b429 68% 86%, #e6ebf2 86% 100%); display: grid; place-items: center; }
+  .ring div { width: 74px; height: 74px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-weight: 700; font-size: 18px; }
   .legend { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
 
   .c-modules { left: 0; top: 300px; width: 300px; }
@@ -68,15 +57,15 @@
 
   .message { margin-top: auto; z-index: 2; max-width: 640px; }
   .message h1 { font-size: 40px; line-height: 1.15; font-weight: 700; letter-spacing: -.5px; }
-  .message p { margin-top: 14px; font-size: 17px; line-height: 1.55; color: var(--on-dark-muted); }
-  .badges { display: flex; gap: 22px; margin-top: 22px; font-size: 14px; color: var(--on-dark-muted); }
-  .badges span::before { content: "✓"; color: var(--ok-on-dark); font-weight: 700; margin-right: 7px; }
+  .message p { margin-top: 14px; font-size: 17px; line-height: 1.55; color: #c8d6ee; }
+  .badges { display: flex; gap: 22px; margin-top: 22px; font-size: 14px; color: #c8d6ee; }
+  .badges span::before { content: "✓"; color: #6fd3a3; font-weight: 700; margin-right: 7px; }
 
   /* DREAPTA 40% */
-  .right { width: 40%; height: 100%; display: flex; flex-direction: column; padding: 48px 72px; background: var(--surface-card); }
+  .right { width: 40%; height: 100%; display: flex; flex-direction: column; padding: 48px 72px; background: #fff; }
   .lang { align-self: flex-end; font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
   .form-wrap { margin: auto 0; width: 100%; }
-  .client-logo { width: 64px; height: 64px; border-radius: 14px; border: 1.5px dashed var(--line-strong); display: grid; place-items: center; font-size: 10px; color: var(--muted); text-align: center; line-height: 1.2; margin-bottom: 18px; }
+  .client-logo { width: 64px; height: 64px; border-radius: 14px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 10px; color: var(--muted); text-align: center; line-height: 1.2; margin-bottom: 18px; }
   .client-name { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
   .form-wrap h2 { font-size: 28px; font-weight: 700; letter-spacing: -.3px; }
   .sub { font-size: 15px; color: var(--muted); margin-top: 6px; margin-bottom: 30px; }
@@ -84,17 +73,21 @@
   .field { margin-bottom: 18px; }
   .input { height: 46px; border: 1px solid var(--line); border-radius: 10px; display: flex; align-items: center; padding: 0 14px; font-size: 15px; color: var(--ink); gap: 10px; }
   .input.focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(47,111,237,.15); }
-  .input .ph { color: var(--muted); }
+  .input .ph { color: #9aa4b2; }
   .input .eye { margin-left: auto; color: var(--muted); font-size: 13px; }
   .between { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 4px 0 24px; }
   .check { display: flex; align-items: center; gap: 8px; color: var(--ink); }
-  .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--muted); }
+  .box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #9aa4b2; }
   a { color: var(--blue-600); text-decoration: none; font-weight: 600; }
   .btn { height: 48px; border-radius: 10px; display: grid; place-items: center; font-size: 15px; font-weight: 600; }
-  .primary { background: var(--blue-500); color: var(--on-dark); }
-  .secondary { background: var(--surface-card); border: 1px solid var(--line-strong); color: var(--ink); display: flex; justify-content: center; align-items: center; gap: 10px; }
+  .primary { background: var(--blue-500); color: #fff; }
+  .or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 22px 0; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .secondary { border: 1px solid var(--line); color: var(--ink); display: flex; justify-content: center; align-items: center; gap: 10px; }
+  .win { display: grid; grid-template-columns: 8px 8px; gap: 2px; }
+  .win i { width: 8px; height: 8px; background: #2f6fed; display: block; }
   .help { font-size: 13px; color: var(--muted); margin-top: 26px; text-align: center; }
-  .footer { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .footer { display: flex; justify-content: space-between; font-size: 12px; color: #8a94a3; }
 </style>
 </head>
 <body>
@@ -169,7 +162,9 @@
 
       <div class="btn primary">Autentificare</div>
 
-      <!-- „Autentificare cu contul Windows” revine când autentificarea AD e implementată (10, secțiunea 9). -->
+      <div class="or">sau</div>
+
+      <div class="btn secondary"><span class="win"><i></i><i></i><i></i><i></i></span>Autentificare cu contul Windows</div>
 
       <div class="help">Probleme la autentificare? Contactează administratorul sistemului.</div>
     </div>

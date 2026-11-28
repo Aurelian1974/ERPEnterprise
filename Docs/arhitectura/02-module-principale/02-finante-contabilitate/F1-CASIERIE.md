@@ -88,8 +88,6 @@ Nomenclator extensibil de client (`SQL-10`: tabelă, nu enum), comun casei (F1) 
 | `PLATA-SALARII` | Plată salarii în numerar | Ieșire | Angajat | `421` |
 | `PLATA-DIVERSE` | Alte plăți | Ieșire | Text explicativ | — |
 
-Implementare (22.11.2026): `CashLimitCategory` are valorile `Incasare` și `Plata` (plafonul PJ sau PF se alege după tipul partenerului, regula 3 din 3.6), `AvansPersoanaZi` sau gol (fără plafon: operațiuni interne, salarii, deconturi).
-
 Câmpuri: `Code`, `Name`, `Direction` (1 Intrare, 2 Ieșire), `RequiresPartner`, `RequiresEmployee`, `RequiresCounterAccount` (alt cont de trezorerie), `SettlementKind` (0 Nimic, 1 Facturi client, 2 Facturi furnizor, 3 Avans spre decontare, 4 Decont), `CounterGlAccountCode` (referință pentru partea contabilă), `CashLimitCategory` (ce plafon se aplică, 3.6), `AppliesToCash`, `AppliesToBank` (unde poate fi folosit), `IsSystem` (tipurile livrate nu se șterg și nu își schimbă sensul).
 
 ### 3.3 Document de casă (`CashDocument` + `CashDocumentLine`)
@@ -156,8 +154,6 @@ Registrul tipărit (sau PDF semnat și atașat, 02.01 `Attachment`) conține, î
 | `SettledAmount`, `ReturnedAmount`, `Balance` | Actualizate de decont și de restituiri |
 | `Status` | 1 Acordat, 2 Decontat parțial, 3 Decontat, 4 Depășit termenul (calculat de un job zilnic), 5 Stornat |
 
-Implementare (22.11.2026): starea **0 De plătit** (avansul există, dispoziția de plată e încă ciornă) a fost adăugată; soldul avansului e calculat: `Amount - SettledAmount - ReturnedAmount + PaidDifference` (ce datorează angajatul; negativ = ce îi datorează firma). Efectele documentelor de casă asupra avansului (plata, restituirea, diferența de plată, stornările lor) se aplică în validarea documentului (`fin.usp_CashAdvance_Apply`). Ciornele generate din avans și decont le face contabilul, fără atribuirea pe casă; validarea lor o face casierul atribuit. Termenul de decontare numără zilele de luni până vineri (sărbătorile legale nu sunt încă în calendar); setarea `Fin.Advance.SettlementWorkingDays` are deocamdată valoarea fixă 3. Separarea sarcinilor la aprobarea decontului e mereu activă (setarea configurabilă vine cu Configurare › Finanțe). Diurna internă livrată (50 lei/zi, plafon neimpozabil 57,50 lei/zi, din macheta f1-06) **se verifică cu HG 714/2018 și Codul fiscal în vigoare înainte de livrare**. Codurile SQL noi: 51024 `FIN_EXPENSE_REPORT_NOT_FOUND` (404), 51025 `FIN_EXPENSE_REPORT_WRONG_STATUS` (409).
-
 ### 3.6 Plafoane de numerar (`CashLimitRule`)
 
 Plafoanele din Legea 70/2015 se țin în tabel, cu dată de vigoare (P6), ca o modificare legislativă să fie o actualizare de date, nu de cod.
@@ -220,8 +216,6 @@ Reguli:
 3. Se alocă paginile registrului, se generează PDF-ul registrului și se atașează zilei (hash SHA-256, 02.01).
 4. Se publică `RegistruCasaInchis`.
 5. Redeschiderea cere `Fin.Cash.ReopenDay`, un motiv scris și condiția ca perioada contabilă să nu fie închisă; se redeschid automat și zilele ulterioare închise, în ordine inversă. Toate se auditează.
-
-Implementare (22.11.2026): o zi viitoare nu se închide (`FIN_CASH_DAY_IN_FUTURE`, 409, verificat în C#); paginile se alocă câte una la 25 de documente, continuu pe casă și an, și se păstrează la redeschidere; avertizarea de sold compară soldul final cu cel mai mic dintre plafonul legal `SoldCasa` și plafonul propriu al casei. Jobul de la miezul nopții (`fin-cash-day-autoclose`, în `Erp.Worker`, care compune modulele ca `Erp.Host`) închide zilele deschise până ieri, în ordine, fiecare în tranzacția ei, și se oprește pe casă la prima zi care nu îndeplinește condițiile; motivul se jurnalizează. Notificarea casierului și a contabilului și PDF-ul atașat zilei vin odată cu notificările (02.01, 4.7) și atașamentele Nucleului.
 
 Moduri de închidere (decizia lui Aurelian, 15.11.2026), setate pe fiecare casă în `TreasuryAccount.CloseMode`:
 
@@ -291,7 +285,7 @@ Toate moștenesc `IntegrationEvent` din `Erp.Core.Contracts` (02.01, secțiunea 
 | Eveniment | De la | Ce face F1 |
 | --- | --- | --- |
 | `ZiInchisaPOS` | POS (02.10) | Dispoziție de încasare automată în casa magazinului (fluxul 4.6) |
-| `UtilizatorDezactivat` | Nucleu | Închide atribuirile `TreasuryAccountUser` ale utilizatorului (implementat 23.11.2026: `CloseCashierAssignments`, livrat de dispecerul outbox-ului din Worker; atribuirile se închid cu ziua dezactivării, cele neîncepute se șterg) |
+| `UtilizatorDezactivat` | Nucleu | Închide atribuirile `TreasuryAccountUser` ale utilizatorului |
 | `FirmaModificata` | Nucleu | Nimic de recalculat; datele firmei se citesc la tipărire |
 
 ## 6. Contracte publice (`Erp.Finance.Contracts`, partea F1)
@@ -536,8 +530,6 @@ BEGIN
 END;
 ```
 
-Implementare (22.11.2026), pe lângă schema de mai sus: linia are `LineNumber` (`LINENO` e cuvânt rezervat în T-SQL); documentul are `ReversedById` (legătura inversă a stornării, cu index unic pe `ReversalOfId`) și `ConfirmedWarnings`; `fin.CashLimitRule` are `CompanyId` (gol = plafonul legal livrat, altfel plafonul propriu al firmei; se verifică amândouă). Validarea refuză și un document datat într-o zi anterioară unei zile închise a casei (51004), ca soldul de început al zilei închise să nu se schimbe, și un document datat înaintea soldului inițial. Refuzurile de plafon se scriu în `fin.CashLimitCheck` pe o conexiune proprie, în afara tranzacției care se anulează; avertizările confirmate, în tranzacția validării. Validarea cere atribuirea cu `CanValidate` și utilizatorilor cu `Fin.Cash.ViewAll`. Actul de identitate al persoanei fără fișă se criptează cu Data Protection-ul instalării (scopul `Erp.Finance.CashDocument.PersonId.v1`). `ICashDocumentWriter` (POS) vine odată cu modulul POS. Plafoanele legale livrate au `ValidFrom` 01.01.2024; data și forma în vigoare a Legii 70/2015 **rămân de verificat pe legislatie.just.ro înainte de livrare** (căutarea din 22.11.2026 a găsit doar modificările OUG 98/2023 și OUG 115/2023).
-
 `fin.CashRegisterDay.ClosingBalance` e coloană calculată persistată `AS (OpeningBalance + TotalIn - TotalOut) PERSISTED`, ca să nu existe două surse pentru sold. Documentul de stornare are sume negative, deci intră pe aceeași formulă.
 
 Proceduri stocate principale:
@@ -579,9 +571,6 @@ Coduri de eroare. Plaja modulului e `51000–51999` (`SP-04`); o împart pe sub-
 | 51018 | `FIN_ADVANCE_OVERDUE_UNCONFIRMED` | 409 | Angajatul are un avans nedecontat după termen, iar avertizarea nu a fost confirmată |
 | 51019 | `FIN_EXPENSE_REPORT_SELF_APPROVAL` | 403 | Aprobarea propriului decont, cu separarea sarcinilor activă |
 | 51020 | `FIN_EXPENSE_REPORT_ADVANCE_MISMATCH` | 409 | Decontul referă un avans al altui angajat sau deja decontat |
-| 51021 | `FIN_INVALID_REFERENCE` | 400 | Referință a altei firme, inactivă sau inexistentă (punct de lucru, cont bancar, serie, casier, monedă); tipul contului schimbat după creare. Adăugat la implementare (22.11.2026) |
-| 51022 | `FIN_DUPLICATE_CODE` | 409 | Cod de cont de trezorerie (sau de nomenclator F1) existent deja în firmă. Adăugat la implementare (22.11.2026) |
-| 51023 | `FIN_TREASURY_ACCOUNT_NOT_FOUND` | 404 | Contul de trezorerie nu există în firma curentă. Adăugat la implementare (22.11.2026) |
 
 Conformitate: schema și procedurile respectă `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`. `CashDocument` folosește `int` (antet), liniile și jurnalul de verificări `bigint` (`SQL-13`). Abateri: niciuna.
 
@@ -613,8 +602,6 @@ Roluri livrate (adaptabile de client):
 | Contabil șef | Toate permisiunile F1 |
 | Aprobator (șef direct) | `ExpenseReport.Approve` |
 | Auditor | `TreasuryAccount.View`, `Cash.ViewAll`, rapoartele |
-
-Implementare (22.11.2026): permisiunile au în `core.Permission` `ModuleCode = 'Fin'`, iar codul modulului din licență și din `[Module]` rămâne `Finance`; testul de arhitectură (`NET-04`) acceptă prefixul `Fin.` pentru assembly-urile `Erp.Finance.*`. Rolurile livrate au codurile `CASIER`, `CONTABIL_TREZORERIE`, `CONTABIL_SEF`, `APROBATOR_DECONTURI`; `AUDITOR` (Nucleu) primește `TreasuryAccount.View` și `Cash.ViewAll`.
 
 Scope suplimentar: pe lângă firmă și dimensiuni (02.01), accesul la o casă cere atribuirea din `TreasuryAccountUser` sau `Fin.Cash.ViewAll`. Verificarea e în `AuthorizationBehavior`, printr-un furnizor de scope înregistrat de modulul Finanțe.
 

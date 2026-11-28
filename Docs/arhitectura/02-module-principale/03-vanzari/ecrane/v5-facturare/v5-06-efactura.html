@@ -1,0 +1,321 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>e-Factura emise</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: inline-grid; place-items: center; font-size: 11px; color: #fff; vertical-align: middle; }
+  .cb.on { background: var(--blue-500); border-color: var(--blue-500); }
+  td { padding: 7px 12px; }
+  td .pc, td .pn { white-space: nowrap; }
+  .code { font-family: Consolas, monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 5px; background: #eef1f5; color: #5b6676; white-space: nowrap; }
+  .chip.b { background: var(--blue-50); color: var(--blue-600); }
+  .chip.g { background: var(--green-50); color: var(--green); }
+  .chip.a { background: var(--amber-50); color: var(--amber); }
+  .chip.r { background: var(--red-50); color: var(--red); }
+  .chip.v { background: #f1ebf8; color: #6b3fa0; }
+  .sub-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #8a94a3; padding: 12px 20px 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px; }
+  .kpi .l { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .kpi .v { font-size: 20px; font-weight: 700; margin-top: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .kpi .t { font-size: 11.5px; color: #8a94a3; margin-top: 2px; white-space: nowrap; }
+  tr.tot td { background: #fafbfc; font-weight: 700; }
+  .lock { color: #8a94a3; font-size: 11px; }
+  .main { gap: 12px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .seg { height: 32px; } .seg span { font-size: 12px; }
+  .ic2 { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; flex: none; }
+  .ic2.ok { background: var(--green-50); color: var(--green); } .ic2.w { background: var(--amber-50); color: var(--amber); }
+  .ic2.n { background: #f0f2f5; color: #8a94a3; } .ic2.x { background: var(--red-50); color: var(--red); } .ic2.p { background: var(--blue-50); color: var(--blue-600); }
+  .step { display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; padding: 8px 20px; border-bottom: 1px solid #eef1f5; font-size: 12.5px; }
+  .step .t { font-weight: 600; } .step .s { font-size: 11.5px; color: #5b6676; margin-top: 1px; }
+  .side .sub2l, .side .grp { padding-top: 4px; padding-bottom: 4px; }
+  .side .item { padding-top: 6px; padding-bottom: 6px; }
+  .step.cur { background: var(--blue-50); box-shadow: inset 3px 0 0 var(--blue-500); }
+
+
+  .split { grid-template-columns: 500px 1fr; }
+  .split > .panel:first-child td { padding: 7px 10px; }
+  .wb { margin: 10px 20px 0; }
+  .kv2 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; padding: 12px 20px 4px; }
+  .kv2.c5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .kv2 > div { background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; }
+  .kv2 > div.w { background: #fff8e6; border-color: #f1dcaa; } .kv2 > div.r { background: var(--red-50); border-color: #f3c9c9; }
+  .kv2 .l { font-size: 10.5px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .kv2 .v { font-size: 15px; font-weight: 700; margin-top: 2px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .kv2 .t { font-size: 11px; color: #5b6676; margin-top: 1px; white-space: nowrap; }
+  tr.sel td { background: var(--blue-50); }
+  tr.warnr td { background: #fff8e6; }
+  tr.mut td { color: #8a94a3; }
+  .mini td, .mini th { padding: 6px 10px; font-size: 12px; }
+  .inq { display: inline-flex; min-width: 76px; justify-content: flex-end; height: 28px; align-items: center; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; background: #fff; font-weight: 700; }
+  .inq.w { border-color: #e9b949; background: #fff8e6; }
+  .ph { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .ph h3 { font-size:15px; font-weight:700; white-space:nowrap; }
+  .mut { color:#8a94a3; font-size:11.5px; }
+  .ph .r { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .btn.sm { height: 30px; font-size: 12px; padding: 0 10px; }
+  .pill.w { background: var(--amber-50); color: var(--amber); } .pill.r { background: var(--red-50); color: var(--red); } .pill.b { background: var(--blue-50); color: var(--blue-600); }
+  .lot { font-size: 11px; color: #445064; white-space: nowrap; }
+  .bar { height: 8px; border-radius: 6px; background: #eef1f5; overflow: hidden; margin: 6px 20px 2px; display: flex; }
+  .bar > span { display: block; height: 100%; }
+  .legend { display: flex; gap: 14px; padding: 4px 20px 0; font-size: 11.5px; color: #5b6676; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .tree .n { padding: 7px 14px; border-bottom: 1px solid #eef1f5; font-size: 12.5px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+  .tree .n .nm { font-weight: 600; } .tree .n .ds { font-size: 11px; color: #5b6676; }
+  .tree .n.sel { background: var(--blue-50); box-shadow: inset 3px 0 0 var(--blue-500); }
+
+  .num { font-variant-numeric: tabular-nums; }
+  .strike { text-decoration: line-through; color: #8a94a3; }
+  .dsc { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .exp { padding: 9px 16px; border-bottom: 1px solid #eef1f5; display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start; font-size: 12.5px; }
+  .exp .t { font-weight: 600; } .exp .s { font-size: 11.5px; color: #5b6676; margin-top: 2px; }
+  .exp .r { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .exp.no { opacity: .62; }
+  .tot2 { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; padding: 10px 16px; }
+  .tot2 > div { border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; background: #f7f9fc; }
+  .tot2 .l { font-size: 10.5px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .tot2 .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  tr.bon td { background: #f4fbf7; }
+  .tierbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: #eef1f5; margin: 6px 0 4px; }
+  .tierbar span { display: block; height: 100%; }
+  .cond { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 20px 8px; }
+  .cond .k { font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; width: 100%; margin-top: 4px; }
+  .opt2 { margin: 8px 16px 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 12.5px; }
+  .opt2.on { border-color: var(--blue-500); background: var(--blue-50); }
+  .opt2.dis { opacity: .55; }
+  .opt2 .t { font-weight: 700; } .opt2 .s { font-size: 11.5px; color: #5b6676; margin-top: 2px; }
+  .rb2 { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #9aa4b2; display: inline-block; margin-top: 1px; }
+  .rb2.on { border: 5px solid var(--blue-500); }
+  .lot { font-family: Consolas, monospace; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .sub3 { font-size: 11px; color: #5b6676; white-space: nowrap; }
+  tr.grpr td { background: #f3f6fa; font-weight: 700; font-size: 12px; color: #445064; }
+  tr.neg td { color: #9c3b3b; }
+  .idx { font-family: Consolas, monospace; font-size: 11.5px; color: #445064; white-space: nowrap; }
+  .err { margin: 8px 16px 0; border: 1px solid #f3c9c9; background: var(--red-50); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; color: #7a2a2a; }
+  .err b { color: #9c2b2b; }
+
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">4</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#2f8a7a">ED</div><div><div class="nm">Elena Dima</div><div class="rl">Operator facturare</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Comenzi de livrat</div>
+<div class="item"><span class="ic star">★</span>Avize nefacturate</div>
+<div class="sec">Nomenclatoare</div>
+<div class="item"><span class="ic">◉</span>Parteneri</div>
+<div class="item"><span class="ic">▣</span>Articole</div>
+<div class="sec">Module</div>
+<div class="item"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">›</span></div>
+<div class="item open"><span class="ic">◧</span>Vânzări<span class="chev">⌄</span></div>
+<div class="sub2l" style="padding-left:30px">Comenzi</div>
+<div class="sub2l" style="padding-left:30px">Avize</div>
+<div class="sub2l" style="padding-left:30px">Facturi</div>
+<div class="grp closed">Oferte<span class="chev">›</span></div>
+<div class="grp closed">Livrare<span class="chev">›</span></div>
+<div class="grp">Facturare<span class="chev">⌄</span></div>
+<div class="sub2l">Facturare în masă</div>
+<div class="sub2l">Facturi de avans</div>
+<div class="sub2l">Facturare recurentă</div>
+<div class="sub2l active">e-Factura emise</div>
+<div class="grp closed">Retururi<span class="chev">›</span></div>
+<div class="grp closed">Clienți<span class="chev">›</span></div>
+<div class="grp closed">Prețuri<span class="chev">›</span></div>
+<div class="grp closed">Rapoarte<span class="chev">›</span></div>
+<div class="item"><span class="ic">◨</span>Achiziții<span class="chev">›</span></div>
+<div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+<div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+<div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Vânzări › Facturare › e-Factura emise</div>
+    <div class="head">
+      <div><h1>e-Factura emise</h1><div class="sub2">Starea fiecărei facturi în sistemul național: în coadă, trimisă, validată, respinsă; termenele și corecția după respingere.</div></div>
+      <div class="actions"><span class="btn ghost">↻ Actualizează stările</span></div>
+    </div>
+  </div>
+
+  <div class="split" style="grid-template-columns:1fr 360px">
+    <section class="panel">
+      <div class="ltools"><div class="tsearch">⌕ Factură, client, index SPV…</div>
+        <div class="tfilters"><span class="tf on">Decembrie</span><span class="tf">De rezolvat</span><span class="tf">Respinse</span><span class="tf">Aproape de termen</span><span class="tf">Trimise azi</span></div></div>
+      <table><thead><tr><th>Factură</th><th>Client</th><th class="num">Data</th><th>Index încărcare</th><th>Stare</th><th class="num">Termen</th><th>Notă</th></tr></thead><tbody><tr class=""><td><span class="code">FV EXD 10262</span></td><td>Pensiunea Arieșul</td><td class="num">03.12</td><td><span class="idx">5018861120</span></td><td><span class="chip b">Trimisă</span></td><td class="num">10.12</td><td class="pc">se așteaptă răspunsul ANAF</td></tr><tr class=""><td><span class="code">FV EXD 10261</span></td><td>Market Turda</td><td class="num">02.12</td><td><span class="idx">5018851904</span></td><td><span class="chip g">Validată</span></td><td class="num">09.12</td><td class="pc"></td></tr><tr class=""><td><span class="code">FV EXD 10260</span></td><td>Pizzeria Napoli</td><td class="num">02.12</td><td><span class="idx">5018850077</span></td><td><span class="chip g">Validată</span></td><td class="num">09.12</td><td class="pc">trimisă din mașina agentului</td></tr><tr class="sel"><td><span class="code">FV EXD 10256</span></td><td>Asoc. Turistică Vlădeasa</td><td class="num">02.12</td><td><span class="idx">5018848630</span></td><td><span class="chip g">Corectată · validată</span></td><td class="num">09.12</td><td class="pc">respinsă 09:15 · corectată și retrimisă 09:38</td></tr><tr class=""><td><span class="code">FV EXD 10251</span></td><td>Bistro 9</td><td class="num">02.12</td><td><span class="idx">5018847960</span></td><td><span class="chip g">Validată</span></td><td class="num">09.12</td><td class="pc"></td></tr><tr class=""><td><span class="code">FV EXD 10247</span></td><td>Hotel Central</td><td class="num">02.12</td><td><span class="idx">5018847213</span></td><td><span class="chip g">Validată</span></td><td class="num">09.12</td><td class="pc"></td></tr><tr class=""><td><span class="code">FV EXD 10244</span></td><td>Birou Notarial Pop</td><td class="num">01.12</td><td><span class="idx">5018839452</span></td><td><span class="chip g">Validată</span></td><td class="num">08.12</td><td class="pc">job recurent 06:00</td></tr></tbody></table>
+      <div class="kv2">
+        <div><div class="l">Validate</div><div class="v">18</div><div class="t">în medie în 14 minute</div></div>
+        <div><div class="l">Trimise</div><div class="v">1</div><div class="t">FV EXD 10262, 03.12</div></div>
+        <div><div class="l">Respinse acum</div><div class="v">0</div><div class="t">1 corectată azi</div></div>
+        <div><div class="l">Peste termen</div><div class="v">0</div><div class="t">în 2026: 0</div></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="lfoot"><span>Termenul: 5 zile lucrătoare de la data facturii (setare, după calendarul firmei)</span><span>Transmiterea și răspunsurile: Integrări ANAF</span></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h3>FV EXD 10256 · respingere</h3><span class="chip g">Corectată · validată</span></div>
+      <div class="err"><b>Respinsă de ANAF, 02.12 09:15.</b> Adresa cumpărătorului: codul județului lipsește sau e invalid (regulă CIUS-RO pentru adresele din România).</div>
+      <div class="sub-h">Ce s-a corectat</div>
+      <table class="mini"><thead><tr><th>Câmp</th><th>Înainte</th><th>După</th></tr></thead><tbody>
+        <tr><td>Județ cumpărător</td><td class="mut">—</td><td>RO-CJ</td></tr>
+        <tr><td>Localitate</td><td>Huedin</td><td>Huedin</td></tr></tbody></table>
+      <div class="exp"><span class="ic2 ok">✓</span><div><div class="t">Date nefiscale: se poate retrimite</div><div class="s">numărul, data și valorile rămân aceleași; corecția e în auditul partenerului</div></div><span></span></div>
+      <div class="step"><span class="ic2 x">✕</span><div><div class="t">Încercarea 1 · respinsă</div><div class="s">index 5018847744 · mesajul ANAF păstrat</div></div><span class="mut">09:15</span></div>
+      <div class="step"><span class="ic2 ok">✓</span><div><div class="t">Încercarea 2 · validată</div><div class="s">index 5018848630 · Elena Dima</div></div><span class="mut">09:40</span></div>
+      <div class="note warn wb">Dacă eroarea ar fi fost la cantități, prețuri sau cote, retrimiterea e blocată (52550): factura se stornează și se emite alta.</div>
+      <div style="flex:1"></div>
+    </section>
+  </div>
+</main>
+</div></body></html>

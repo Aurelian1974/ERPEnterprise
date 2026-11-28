@@ -357,6 +357,21 @@ Fiecare criteriu are cel puțin un test automat marcat `[Trait("Criteriu", "02.0
 
 Criteriile C5-A1, C5-A2 și C5-A5 sunt critice: balanța e baza tuturor celorlalte raportări și a auditului.
 
+## Precizări din 02.15 Mijloace fixe și obiecte de inventar (aplicate pe 27.11.2026)
+
+Modulul 02.15 ([README](../15-mijloace-fixe/README.md), părțile M1–M7) a fost adăugat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate.
+
+- **Situația activelor imobilizate (F40)** se completează din `IFixedAssetStatementQuery` ([M7 §6](../15-mijloace-fixe/M7-INVENTARIERE-RAPOARTE.md)), pe categoriile formularului.
+- **Registrul-inventar** primește elementele conturilor de imobilizări și ale `8039` din `IAssetCountResultQuery` (inventarierea M7), cu valoarea contabilă și de inventar.
+
+## Precizări din 02.13 Raportare și BI (aplicate pe 27.11.2026)
+
+Modulul 02.13 Raportare și BI ([README](../13-raportare-bi/README.md), părțile BI1–BI5) a fost documentat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate. Vederile publicate sunt doar citire și sunt contracte versionate: o schimbare incompatibilă cere o versiune nouă a vederii (`_v2`), cu vechea păstrată o versiune de produs.
+
+- **Vederea publicată** `fin.vw_GlLineFact` (v1): linia de notă validată, contul, dimensiunile analitice, debit și credit în lei și valută, jurnalul, documentul sursă. Sursa setului „Note contabile” și a realizatului din bugetare. [BI2 §9](../13-raportare-bi/BI2-DEPOZIT-DATE.md)
+- **Tipul de coloană „Buget”** în `fin.ReportColumn` (cu versiunea bugetului aleasă), pentru rapoartele pe rânduri „Realizat vs Buget”, de exemplu contul de profit și pierdere pe centre de cost. [BI5 §3.2](../13-raportare-bi/BI5-BUGETARE.md)
+- **Balanța sintetică** și **contul de profit și pierdere pe centre de cost** intră în pachetul livrat „Închiderea lunii pentru conducere” (BI3).
+
 ## Decizii de validare
 
 Toate deciziile au fost confirmate de Aurelian pe 15.11.2026:

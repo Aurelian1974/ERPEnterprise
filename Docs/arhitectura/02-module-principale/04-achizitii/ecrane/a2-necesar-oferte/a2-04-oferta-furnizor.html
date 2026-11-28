@@ -1,0 +1,289 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>OF 0193</title><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy-900: #0b1f3a; --navy-800: #102a4c;
+    --blue-500: #2f6fed; --blue-600: #2459c9; --blue-50: #eef3fd; --blue-100: #dbe6fc;
+    --ink: #1a2433; --muted: #5b6676; --line: #e3e7ee; --bg: #f5f7fa; --card: #fff;
+    --green: #1f9d63; --green-50: #e3f5ec; --red: #d14343; --red-50: #fbe9e9; --amber: #b07a00; --amber-50: #fbf1dc;
+  }
+  html, body { width: 1440px; height: 900px; font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 13px; }
+
+  /* BARA DE SUS */
+  .top { height: 56px; background: var(--navy-900); color: #fff; display: flex; align-items: center; padding: 0 20px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; width: 200px; }
+  .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f8cff, #2f6fed); display: grid; place-items: center; font-size: 13px; }
+  .search { flex: 0 0 520px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; padding: 0 12px; gap: 10px; color: #b8c6dd; }
+  .kbd { margin-left: auto; font-size: 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; padding: 1px 6px; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .company { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 5px 12px; }
+  .company .lbl { font-size: 10px; color: #9fb2d1; text-transform: uppercase; letter-spacing: .5px; }
+  .company .nm { font-weight: 600; font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; position: relative; color: #d6e0f0; font-size: 16px; }
+  .badge { position: absolute; top: 3px; right: 2px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 5px; line-height: 15px; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #3b5f92; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .user .nm { font-weight: 600; font-size: 13px; } .user .rl { font-size: 11px; color: #9fb2d1; }
+
+  .layout { display: flex; height: 844px; }
+
+  /* MENIU STÂNGA */
+  .side { width: 240px; background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; }
+  .sec { font-size: 10.5px; font-weight: 700; color: #8a94a3; text-transform: uppercase; letter-spacing: .7px; padding: 10px 10px 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: #334155; font-size: 13px; }
+  .item .ic { width: 18px; text-align: center; color: #7b8698; font-size: 13px; }
+  .item.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .item.active .ic { color: var(--blue-600); }
+  .item .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .item.open { font-weight: 600; color: var(--ink); }
+  .sub { padding-left: 38px; color: #4b5565; font-size: 12.5px; padding-top: 5px; padding-bottom: 5px; }
+  .star { color: #e0a21b !important; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 10px; color: #7b8698; font-size: 12px; }
+
+  
+  .main { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .crumb { font-size: 12px; color: #8a94a3; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .head .sub2 { color: var(--muted); margin-top: 3px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { background: var(--blue-500); color: #fff; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .split { flex: 1; display: grid; grid-template-columns: 410px 1fr; gap: 14px; min-height: 0; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+  /* FIȘA */
+  .d-head { padding: 16px 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .logo { width: 52px; height: 52px; border-radius: 12px; border: 1.5px dashed #b7c1cf; display: grid; place-items: center; font-size: 9px; color: var(--muted); text-align: center; }
+  .d-title { flex: 1; }
+  .d-title h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .ok { background: var(--green-50); color: var(--green); }
+  .path { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; }
+  .stat { font-size: 11.5px; background: #f3f5f8; border-radius: 6px; padding: 3px 8px; color: #445064; }
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+  .tab { padding: 9px 12px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tab.on { color: var(--blue-600); font-weight: 700; border-bottom: 2px solid var(--blue-500); }
+  .form { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .f label { display: block; font-size: 11.5px; font-weight: 600; color: #445064; margin-bottom: 5px; }
+  .f .in { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; font-size: 13px; gap: 8px; }
+  .f .in .act { margin-left: auto; color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .f .hint { font-size: 11px; color: var(--green); margin-top: 4px; }
+  .span2 { grid-column: span 2; } .span3 { grid-column: span 3; }
+  .sw { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 13px; }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #cfd6e0; position: relative; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--blue-500); } .tog.on::after { left: 16px; }
+  .secttl { grid-column: span 3; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8a94a3; margin-top: 4px; border-top: 1px solid #f0f2f5; padding-top: 10px; }
+  .d-foot { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .d-foot .info { font-size: 11.5px; color: #8a94a3; }
+
+  .split { grid-template-columns: 530px 1fr; } .st { white-space: nowrap; } .tab { padding: 9px 9px; font-size: 12.5px; white-space: nowrap; } .stat { white-space: nowrap; } .seg span { white-space: nowrap; font-size: 11.5px; } .tp { white-space: nowrap; }
+  .ltools { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .tsearch { height: 34px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: #9aa4b2; gap: 8px; }
+  .tfilters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tf { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tf.on { background: var(--blue-50); border-color: var(--blue-100); color: var(--blue-600); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-size: 11px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #fafbfc; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  tr.sel td { background: var(--blue-50); }
+  tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue-500); }
+  .pn { font-weight: 600; } .pc { color: #8a94a3; font-size: 11.5px; margin-top: 2px; }
+  .rc { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-right: 3px; }
+  .rc.c { background: #e7f0ff; color: #2459c9; } .rc.f { background: #f3e8ff; color: #7c3aed; }
+  .tp { font-size: 11.5px; color: #445064; }
+  .st { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+  .st.ok { background: var(--green-50); color: var(--green); } .st.bad { background: var(--red-50); color: var(--red); } .st.warn { background: var(--amber-50); color: var(--amber); }
+  .lfoot { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; font-size: 11.5px; color: #8a94a3; display: flex; justify-content: space-between; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; height: 34px; }
+  .seg span { flex: 1; display: grid; place-items: center; font-size: 12px; color: #445064; border-right: 1px solid var(--line); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--blue-500); color: #fff; font-weight: 600; }
+  .roles { display: flex; gap: 10px; }
+  .rb { flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .rb.on { border-color: var(--blue-500); background: var(--blue-50); color: var(--blue-600); }
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: grid; place-items: center; font-size: 11px; color: #fff; }
+  .rb.on .cb { background: var(--blue-500); border-color: var(--blue-500); }
+  .req { color: var(--red); }
+  .anaf { grid-column: span 3; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 12px; }
+  .anaf .t { font-weight: 700; color: #445064; margin-right: 4px; }
+  .anaf .when { margin-left: auto; color: #8a94a3; font-size: 11.5px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .anaf { padding: 6px 12px; }
+
+
+  .note { font-size: 12px; border-radius: 9px; padding: 8px 12px; }
+  .note.info { background: #f7f9fc; border: 1px dashed #c9d3e1; color: #445064; }
+  .note.warn { background: var(--amber-50); border: 1px solid #f1dcaa; color: #7a5600; }
+  .note.bad { background: var(--red-50); border: 1px solid #f3c9c9; color: #9b2c2c; }
+  .grp { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 30px; border-radius: 8px; color: #334155; font-size: 12.5px; font-weight: 600; }
+  .grp .chev { margin-left: auto; color: #a3acb9; font-size: 11px; }
+  .grp.closed { font-weight: 500; color: #4b5565; }
+  .sub2l { padding: 5px 10px 5px 46px; color: #4b5565; font-size: 12.5px; border-radius: 8px; }
+  .sub2l.active { background: var(--blue-50); color: var(--blue-600); font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.num { text-align: right; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .card-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .card-h h3 { font-size: 13.5px; font-weight: 700; }
+  .lnk { color: var(--blue-600); font-weight: 600; font-size: 12px; }
+  .muted { color: #8a94a3; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .st.info { background: var(--blue-50); color: var(--blue-600); } .st.grey { background: #eef1f5; color: #5b6676; }
+  .kbdk { font-size: 10.5px; border: 1px solid #cfd6e0; border-radius: 4px; padding: 0 5px; color: #5b6676; background: #fff; font-weight: 600; }
+  .btn.primary .kbdk { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; }
+  .btn.danger { background: #fff; border: 1px solid #f3c9c9; color: var(--red); }
+  .grpr td { background: #f7f9fc; font-size: 11px; font-weight: 700; color: #5b6676; text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px; }
+  .bar { height: 8px; background: #eef1f5; border-radius: 5px; overflow: hidden; }
+  .bar div { height: 100%; border-radius: 5px; }
+  .split > *, .main > div > * { min-width: 0; }
+  .panel { overflow: hidden; }
+  .btn { white-space: nowrap; } td b { white-space: nowrap; }
+  .form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .f .in { white-space: nowrap; overflow: hidden; }
+
+
+  .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9aa4b2; display: inline-grid; place-items: center; font-size: 11px; color: #fff; vertical-align: middle; }
+  .cb.on { background: var(--blue-500); border-color: var(--blue-500); }
+  td { padding: 7px 12px; }
+  td .pc, td .pn { white-space: nowrap; }
+  .code { font-family: Consolas, monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 5px; background: #eef1f5; color: #5b6676; white-space: nowrap; }
+  .chip.b { background: var(--blue-50); color: var(--blue-600); }
+  .chip.g { background: var(--green-50); color: var(--green); }
+  .chip.a { background: var(--amber-50); color: var(--amber); }
+  .chip.r { background: var(--red-50); color: var(--red); }
+  .chip.v { background: #f1ebf8; color: #6b3fa0; }
+  .sub-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #8a94a3; padding: 12px 20px 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px; }
+  .kpi .l { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .kpi .v { font-size: 20px; font-weight: 700; margin-top: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .kpi .t { font-size: 11.5px; color: #8a94a3; margin-top: 2px; white-space: nowrap; }
+  tr.tot td { background: #fafbfc; font-weight: 700; }
+  .lock { color: #8a94a3; font-size: 11px; }
+  .main { gap: 12px; }
+  .form { gap: 8px 16px; padding: 12px 20px; } .f .in { height: 32px; } .seg { height: 32px; } .seg span { font-size: 12px; }
+  .ic2 { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; flex: none; }
+  .ic2.ok { background: var(--green-50); color: var(--green); } .ic2.w { background: var(--amber-50); color: var(--amber); }
+  .ic2.n { background: #f0f2f5; color: #8a94a3; } .ic2.x { background: var(--red-50); color: var(--red); } .ic2.p { background: var(--blue-50); color: var(--blue-600); }
+  .step { display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; padding: 8px 20px; border-bottom: 1px solid #eef1f5; font-size: 12.5px; }
+  .step .t { font-weight: 600; } .step .s { font-size: 11.5px; color: #5b6676; margin-top: 1px; }
+  .side .sub2l, .side .grp { padding-top: 4px; padding-bottom: 4px; }
+  .side .item { padding-top: 6px; padding-bottom: 6px; }
+  .step.cur { background: var(--blue-50); box-shadow: inset 3px 0 0 var(--blue-500); }
+
+
+  .split { grid-template-columns: 500px 1fr; }
+  .split > .panel:first-child td { padding: 7px 10px; }
+  .wb { margin: 10px 20px 0; }
+  .kv2 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; padding: 12px 20px 4px; }
+  .kv2 > div { background: #f7f9fc; border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; }
+  .kv2 .l { font-size: 10.5px; color: #8a94a3; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .kv2 .v { font-size: 15px; font-weight: 700; margin-top: 2px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.sel td { background: var(--blue-50); }
+  tr.warnr td { background: #fff8e6; }
+  .mini td, .mini th { padding: 6px 10px; font-size: 12px; }
+  .inq { display: inline-flex; min-width: 84px; justify-content: flex-end; height: 28px; align-items: center; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; background: #fff; font-weight: 700; }
+  .inq.w { border-color: #e9b949; background: #fff8e6; }
+  .ph { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .ph h3 { font-size:15px; font-weight:700; white-space:nowrap; }
+  .mut { color:#8a94a3; font-size:11.5px; }
+  .ph .r { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .btn.sm { height: 30px; font-size: 12px; padding: 0 10px; }
+
+  .lvl { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #eef1f5; font-size: 12.5px; }
+  .lvl .t { font-weight: 700; } .lvl .s { color: #5b6676; font-size: 11.5px; margin-top: 2px; }
+  .lvl.cur { background: var(--blue-50); box-shadow: inset 3px 0 0 var(--blue-500); }
+  .strike { text-decoration: line-through; color: #8a94a3; font-weight: 400; margin-right: 4px; }
+  .best { background: #e8f6ee !important; font-weight: 700; color: #1d7a4a; }
+  .cmp td, .cmp th { padding: 6px 9px; font-size: 12px; }
+  .cmp th.sup { text-align: center; border-left: 1px solid var(--line); }
+  .cmp td.c { text-align: right; border-left: 1px solid #eef1f5; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cmp td.c .o { color: #8a94a3; font-size: 10.5px; display: block; font-weight: 400; }
+  .rad { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #9aa4b2; display: inline-block; vertical-align: -2px; margin-right: 5px; }
+  .rad.on { border: 4px solid var(--blue-500); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; padding: 12px 16px 0; }
+  .orig { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  .o1 { background: #f1ebf8; color: #6b3fa0; } .o2 { background: var(--amber-50); color: var(--amber); } .o3 { background: var(--blue-50); color: var(--blue-600); }
+  .snap { font-size: 11px; color: #5b6676; white-space: nowrap; }
+
+</style></head><body>
+<header class="top">
+    <div class="brand"><div class="mark">E</div>ERP</div>
+    <div class="search">⌕ <span>Caută parteneri, articole, documente sau ecrane…</span><span class="kbd">Ctrl K</span></div>
+    <div class="top-right">
+      <div class="company"><div><div class="lbl">Firma curentă</div><div class="nm">Exemplu Distribuție SRL ▾</div></div></div>
+      <div class="icon-btn">🔔<span class="badge">4</span></div>
+      <div class="icon-btn">?</div>
+      <div class="user"><div class="avatar" style="background:#2f6f8a">LV</div><div><div class="nm">Laura Vasile</div><div class="rl">Achizitor</div></div></div>
+    </div>
+  </header>
+<div class="layout">
+<nav class="side">
+<div class="item"><span class="ic">⌂</span>Acasă</div>
+<div class="sec">Favorite</div>
+<div class="item"><span class="ic star">★</span>Comenzi deschise</div>
+<div class="item"><span class="ic star">★</span>e-Factura primite</div>
+<div class="sec">Nomenclatoare</div>
+<div class="item"><span class="ic">◉</span>Parteneri</div>
+<div class="item"><span class="ic">▣</span>Articole</div>
+<div class="sec">Module</div>
+<div class="item"><span class="ic">▤</span>Finanțe și contabilitate<span class="chev">›</span></div>
+<div class="item"><span class="ic">◧</span>Vânzări<span class="chev">›</span></div>
+<div class="item open"><span class="ic">◨</span>Achiziții<span class="chev">⌄</span></div>
+<div class="sub2l" style="padding-left:30px">Comenzi</div>
+<div class="sub2l" style="padding-left:30px">Recepții (NIR)</div>
+<div class="sub2l" style="padding-left:30px">Facturi</div>
+<div class="grp">Necesar<span class="chev">⌄</span></div>
+<div class="sub2l">Referate</div>
+<div class="sub2l">Necesar de aprovizionare</div>
+<div class="sub2l">Cereri de ofertă</div>
+<div class="sub2l active">Oferte furnizori</div>
+<div class="sub2l">Comparare oferte</div>
+<div class="grp closed">Documente<span class="chev">›</span></div>
+<div class="grp closed">Import<span class="chev">›</span></div>
+<div class="grp closed">Furnizori<span class="chev">›</span></div>
+<div class="grp closed">Rapoarte<span class="chev">›</span></div>
+<div class="item"><span class="ic">▦</span>Stocuri<span class="chev">›</span></div>
+<div class="item"><span class="ic">◔</span>Raportare<span class="chev">›</span></div>
+<div class="item"><span class="ic">⛭</span>Administrare<span class="chev">›</span></div>
+<div class="side-foot">« Strânge meniul</div></nav>
+<main class="main">
+  <div>
+    <div class="crumb">Achiziții › Necesar › Oferte furnizori › OF 0193</div>
+    <div class="head">
+      <div><h1>Ofertă furnizor OF 0193</h1><div class="sub2">Oferta primită de la Ambalaje Vest, în EUR, importată din Excelul de răspuns trimis cu cererea de ofertă.</div></div>
+      <div class="actions"><span class="btn ghost">Atașamentul furnizorului</span></div>
+    </div>
+  </div>
+
+  <section class="panel" style="flex:1">
+    <div class="d-head"><div class="d-title"><h2><span class="code" style="font-size:18px">OF 0193</span> Ambalaje Vest SRL <span class="pill ok">Înregistrată</span> <span class="chip ">versiunea 1</span></h2>
+      <div class="path">Ofertă furnizor · OF-CO din CO 0056 · numărul furnizorului AV-Q-2611-08 din 24.11.2026 · importată din Excelul de răspuns (semnătură validă) de Laura Vasile</div></div></div>
+    <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
+      <div class="f"><label>Monedă</label><div class="in">EUR</div></div>
+      <div class="f"><label>Valabilă până la</label><div class="in">10.12.2026 <span class="act">14 zile</span></div></div>
+      <div class="f"><label>Termen de livrare</label><div class="in">7 zile</div></div>
+      <div class="f"><label>Termen de plată</label><div class="in">30 zile</div></div>
+      <div class="f"><label>Incoterm</label><div class="in">DAP Cluj-Napoca</div></div>
+      <div class="f"><label>Transport separat</label><div class="in">0,00 · inclus</div></div>
+      <div class="f"><label>Valoare minimă de comandă</label><div class="in"><b>1.000,00 EUR</b></div></div>
+      <div class="f"><label>Rating furnizor</label><div class="in">3 din 5</div></div>
+      <div class="f span2"><label>Observații furnizor</label><div class="in">Prices valid for full pallets. Delivery Tue/Thu.</div></div>
+      <div class="f span2"><label>Curs pentru comparare</label><div class="in">BNR 26.11.2026 · 1 EUR = 5,0910 lei</div></div>
+    </div>
+    <table><thead><tr><th>Linie cerere</th><th>Articol (al nostru) · la furnizor</th><th>UM</th><th class="num">Cantitate ofertată</th><th class="num">De la cantitatea</th><th class="num">Preț EUR</th><th class="num">Reducere %</th><th class="num">Lei / UM</th><th>Sursă</th></tr></thead>
+      <tbody><tr class=""><td>1</td><td><span class="code">FOLIE23</span><div class="pc">la furnizor: Stretch film 23 mic, 500 mm</div></td><td>rolă</td><td class="num">480</td><td class="num">0</td><td class="num"><b>7,6000</b></td><td class="num">0</td><td class="num">38,69</td><td><span class="chip g">din Excel</span></td></tr><tr class=""><td>2</td><td><span class="code">ETT100</span><div class="pc">la furnizor: Thermal labels 100x150</div></td><td>rolă</td><td class="num">720</td><td class="num">0</td><td class="num"><b>3,8000</b></td><td class="num">0</td><td class="num">19,35</td><td><span class="chip g">din Excel</span></td></tr><tr class=""><td>3</td><td><span class="code">BANDA48</span><div class="pc">la furnizor: Packing tape 48 mm x 66 m</div></td><td>rolă</td><td class="num">960</td><td class="num">0</td><td class="num"><b>0,7900</b></td><td class="num">0</td><td class="num">4,02</td><td><span class="chip g">din Excel</span></td></tr><tr class="warnr"><td>3</td><td><span class="code">BANDA48</span><div class="pc">la furnizor: Packing tape 48 mm x 66 m</div></td><td>rolă</td><td class="num">—</td><td class="num">2.000</td><td class="num"><b>0,7400</b></td><td class="num">0</td><td class="num">3,77</td><td><span class="chip g">din Excel</span></td></tr><tr class="tot"><td></td><td colspan="4">Total pentru cantitățile cerute</td><td class="num">7.142,40 EUR</td><td></td><td class="num">36.362,96</td><td></td></tr></tbody></table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 0">
+      <div class="note info"><b>Recunoscută fără potrivire.</b> Foaia ascunsă din Excel a identificat cererea CO 0056 și furnizorul; liniile s-au legat după identificatorul liniei de cerere. Denumirile furnizorului se pot salva în catalogul lui (A1 §3.5).</div>
+      <div class="note warn"><b>Prag de cantitate pe BANDA48:</b> de la 2.000 de role prețul scade la 0,7400 EUR. La 960 de role cerute se aplică 0,7900. Valoarea minimă de comandă (1.000 EUR) contează doar pentru liniile atribuite acestui furnizor.</div>
+    </div>
+    <div style="flex:1"></div>
+    <div class="d-foot"><span class="info">Legătura cu cererea e informativă (grupul QUOTE): furnizorul poate oferta altă cantitate decât cea cerută</span><span style="display:flex;gap:8px"><span class="btn ghost">Versiune nouă</span><span class="btn ghost">Creează listă de prețuri</span><span class="btn primary">Compară ofertele</span></span></div>
+  </section>
+</main>
+</div></body></html>

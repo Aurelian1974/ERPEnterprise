@@ -124,7 +124,16 @@ Exemple livrate (contările standard, cu analiticele pe categorii din C1):
 | Factură de vânzare · TVA la încasare | `4111.01` = `707` + `4428` |
 | TVA devenit exigibil la încasare (`TvaLaIncasareExigibil`) | `4428` = `4427` |
 | Factură de vânzare · livrare intracomunitară | `4111.02` = `707` (fără TVA, categoria `K`) |
-| Factură de furnizor · standard | `371` / `6xx` + `4426` = `401.01` |
+| Aviz de livrare nefacturat (Vânzări V4, `LivrareEfectuata`) | `418` = `707` + `4428` (TVA neexigibil); stornarea avizului (`AvizStornat`) inversează nota; factura din aviz (V5) închide `4111.01` = `418` și `4428` = `4427`. Avizul intern al facturii cu livrare și avizul de consignație nu au notă de venit (precizare din Vânzări V4, 27.11.2026) |
+| Transfer în consignație la client (Stocuri S2, din avizul de consignație) | `357` = `371`; factura din raportul de consum: `607` = `357` (precizare din Vânzări V4, 27.11.2026) |
+| Factură de avans emisă (Vânzări V5) | `4111.01` = `419` + `4427`; regularizarea pe factura finală: `419` = `4111.01` cu baza, și TVA-ul negativ pe `4427` (precizare din Vânzări V5, 27.11.2026) |
+| Factură din avize (Vânzări V5) | `4111.01` = `418` (totalul avizelor), `4428` = `4427` (TVA-ul avizelor); diferența de rotunjire a TVA-ului facturii față de avize (bani) pe `4111.01` / `4427` (precizare din Vânzări V5, 27.11.2026) |
+| Factură de consignație (Vânzări V5) | `4111.01` = `707` + `4427`; `607` = `357` (precizare din Vânzări V5, 27.11.2026) |
+| Notă de credit din storno sau retur (Vânzări V6, `FacturaEmisa` cu `IsReversal`) | Aceleași conturi ca factura inițială, cu valori negative (storno în roșu): `4111.01` = `707` + `4427`; la TVA la încasare `4428`. Returul în stoc e contat de S2 (`371` = `607` cu minus) (precizare din Vânzări V6, 27.11.2026) |
+| Reducere comercială ulterioară (Vânzări V6, `FS-RED`: diferență de preț, rabat, bonus) | `4111.01` = `709` + `4427`, cu valori negative; `709` din cheia `SalesDiscount` (precizare din Vânzări V6, 27.11.2026) |
+| Garanție SGR (Vânzări V3–V6) | Încasarea garanției pe un cont de terți, retururile de ambalaje pe același cont, cu valori negative; contul (de exemplu un analitic `462` sau `419`) se alege cu contabilul firmei la punerea în funcțiune, prin cheia `DepositLiability` (precizare din Vânzări V6, 27.11.2026) |
+| Factură de furnizor · standard | `371` / `6xx` + `4426` = `401.01`; pentru liniile de marfă recepționate prin NIR: `408` = `401.01` și `4426` = `4428` (precizare din Achiziții A4, 27.11.2026) |
+| Recepție de la furnizor (NIR, Achiziții A4) | `371` = `408` (costul, din mișcarea de stoc); `4428` = `408` (TVA-ul, pe cantitatea încă nefacturată); retur: `408` = `371` |
 | Factură de furnizor · achiziție intracomunitară (taxare inversă) | `371` / `6xx` = `401.02`; `4426` = `4427` |
 | Factură de furnizor · TVA la încasare | `371` / `6xx` + `4428` = `401.01`; la plată `4426` = `4428` |
 | Ieșire din stoc la vânzare (Stocuri) | `607` = `371` |
@@ -146,7 +155,7 @@ Cheile sunt un nomenclator livrat (cod, nu text liber). Fiecare cheie are un **l
 | --- | --- |
 | `Revenue` | Override pe linie → articol (`fin.ItemAccounting.RevenueAccount`, pe firmă) → grupa de articole → tipul articolului → rolul `SalesRevenue` (cu condiții) → implicit model |
 | `Expense` | Override → articol (`ExpenseAccount`) → grupa → tipul → tipul de cheltuială (decont, F1) → rolul `PurchaseExpense` → implicit |
-| `Stock` | Override → articol (`StockAccount`) → grupa → tipul → gestiunea (cont pe gestiune, pentru `371` vs `378` / `357`) → implicit |
+| `Stock` | Override → gestiunea cu `StockAccountOverride` = 1 (`357`, `354`, `8033`; adăugat pe 26.11.2026, Stocuri S1 §3.5) → articol (`StockAccount`) → grupa → tipul → gestiunea (cont pe gestiune, pentru `371` vs `378` / `357`) → implicit |
 | `CostOfSales` | Articol → grupa → tipul → rolul `CostOfGoodsSold` → implicit |
 | `PartnerReceivable`, `PartnerPayable` | Contul de pe profilul financiar al partenerului (excepție, F3) → rolul `CustomerReceivable` / `SupplierPayable` cu condițiile lui (tip partener, grupă, monedă → `4111.01` / `.02` / `.03`, `401.01` / `.02` / `.03`) → implicit |
 | `PartnerAdvance` | Profilul partenerului → rolul `CustomerAdvance` / `SupplierAdvance` → implicit |
@@ -155,6 +164,15 @@ Cheile sunt un nomenclator livrat (cod, nu text liber). Fiecare cheie are un **l
 | `VatCollected`, `VatDeductible`, `VatPending`, `VatNonDeductible` | Cota de TVA (cont pe cotă, dacă există analitic `4427.21`) → rolul → implicit |
 | `FxGain`, `FxLoss`, `IndexGain`, `IndexLoss` | Contul din eveniment (F4 trimite contul) → rolul |
 | `Rounding` | Rolul `RoundingGain` / `RoundingLoss` |
+| `CustomerAdvanceInvoiced` | Rolul `CustomerAdvance` (implicit `419`) → implicit; folosit de facturile de avans și de regularizare (precizare din Vânzări V5, 27.11.2026) |
+| `SalesDiscount` | Articol → grupa → rolul `SalesDiscountGranted` (implicit `709`) → implicit (precizare din Vânzări V6, 27.11.2026) |
+| `DepositLiability` | Rolul `SgrDepositLiability` (fără implicit livrat; se configurează la punerea în funcțiune) (precizare din Vânzări V6, 27.11.2026) |
+| `DeliveredNotInvoiced` | Rolul `CustomerInvoicesToIssue` (implicit `418`) → implicit (precizare din Vânzări V4, 27.11.2026) |
+| `GoodsReceivedNotInvoiced` | Rolul `GoodsReceivedNotInvoiced` (implicit `408`) → implicit (precizare din Achiziții A4, 27.11.2026) |
+| `VatNotDue` | Rolul `VatNotDueOnReceipts` (implicit un analitic al `4428`, separat de TVA-ul la încasare) → implicit (precizare din Achiziții A4, 27.11.2026) |
+| `CustomsDuty` | Rolul `CustomsDutyPayable` (implicit `446` analitic taxe vamale) → implicit; folosit de DVI pentru taxa vamală, antidumping și acciză (precizare din Achiziții A6, 27.11.2026) |
+| `CustomsVat` | Rolul `CustomsVatPayable` (implicit `446` analitic TVA în vamă) → implicit; folosit de DVI cu TVA plătit în vamă (precizare din Achiziții A6, 27.11.2026) |
+| `GoodsInTransit` | Articol → grupa → tipul articolului (`321`, `322`, `323`, `327`, `328`) → implicit `327` (precizare din Achiziții A5, 27.11.2026) |
 | `Fixed` | Doar `DefaultAccountId` al liniei de model |
 
 Cheile noi (de exemplu pentru Mijloace fixe sau HR) se adaugă cu versiunea modulului care le folosește, nu de client.
@@ -209,7 +227,7 @@ C3 nu închide luna cât timp există rânduri în așteptare cu data contabilă
 ### 3.8 Notă manuală și note recurente
 
 - Nota manuală se creează ca ciornă în jurnalul `DV` (sau altul ales), cu justificativul atașat; validarea verifică regulile 2 și 8. Cu setarea `Fin.ManualEntry.FourEyes` (implicit oprită), nota se validează de alt utilizator decât autorul.
-- Conturile cu `ManualPosting = 0` (atribut nou în C1, livrat pe conturile ținute de module: `4111*`, `401*`, `371`, `5121*`, `5311*`, `4427`, `4426`) nu acceptă note manuale fără dreptul `Fin.ManualEntry.ControlledAccounts`, ca soldul lor să rămână egal cu evidența operativă (partide în F3, stocuri, trezorerie).
+- Conturile cu `ManualPosting = 0` (atribut nou în C1, livrat pe conturile ținute de module: `4111*`, `401*`, `371`, `408`, `5121*`, `5311*`, `4427`, `4426`) nu acceptă note manuale fără dreptul `Fin.ManualEntry.ControlledAccounts`, ca soldul lor să rămână egal cu evidența operativă (partide în F3, stocuri, trezorerie).
 - **Note recurente** (`RecurringEntryTemplate`): o notă-șablon cu periodicitate (lunar, trimestrial), sume fixe sau calculate dintr-un sold (de exemplu „1/12 din soldul `471`”), generate ca ciorne la data aleasă, validate de om.
 
 ## 4. Fluxuri principale
@@ -483,6 +501,21 @@ Fiecare criteriu are cel puțin un test automat marcat `[Trait("Criteriu", "02.0
 | C2-A12 | Toate procedurile C2 rulează corect pe baza case sensitive creată pe un server cu collation case insensitive | Test de integrare (`TST-09`) |
 
 Criteriile C2-A1, C2-A4, C2-A6 și C2-A7 sunt critice: orice eroare aici ajunge direct în balanță și în declarații.
+
+## Precizări din 02.15 Mijloace fixe și obiecte de inventar (aplicate pe 27.11.2026)
+
+Modulul 02.15 ([README](../15-mijloace-fixe/README.md), părțile M1–M7) a fost adăugat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate.
+
+- **Chei de cont noi** (rezolvate pe lanțul override pe linie → grupa de mijloace fixe `fa.AssetGroup` → rol → implicit model): `FixedAsset` (`21x` / `20x`), `AccumulatedDepreciation` (`28xx`), `DepreciationExpense` (`6811`), `ImpairmentAllowance` (`29xx`), `ImpairmentExpense` (`6813`), `ImpairmentReversalIncome` (`7813`), `RevaluationReserve` (`105`), `RealizedRevaluationSurplus` (`1175`), `RevaluationLoss`, `RevaluationGain`, `AssetDisposalExpense` (`6583`), `AssetSaleIncome` (`7583`), `ConstructionInProgress` (`231`), `OwnProductionAssetIncome` (`722` / `721`), `AssetSupplierPayable` (`404`), `AssetPendingIntake` (`231.PRL`), `LeaseLiability` (`167`), `InventoryObjectInUse` (`8039`), `ContributionInKind` (`456`), `DonationReceived` (`4753`), `DonationExpense` (`6582`), `ContributedInvestment` (`261` / `263` / `265`), `AssetContributionGain` / `AssetContributionLoss`, `ChargeReceivableEmployee` (`4282`), `ChargeIncome` (`7581`), `RecoveredMaterialIncome` (`7588`), `ThirdPartyAssetsRented` (`8031`), `ThirdPartyAssetsCustody` (`8033`). Lista completă și modelele: [M1 §3.9](../15-mijloace-fixe/M1-CONFIGURARE.md).
+- **Componente noi în `AccountingPayload`**: `AssetCost`, `Depreciation`, `Impairment`, `RevaluationSurplus`, `Reclassification`, `DisposalGross`, `DisposalDepreciation`, `DisposalNetValue`, `DisposalImpairment`, `InUseValue` (extrabilanțier), cu `AssetGroupId`, `AssetId` și `InventoryNumber` pe componentă.
+- **Modele livrate** pentru evenimentele `MijlocFixIntrat`, `AmortizareCalculata` (pe grupă și centru de cost, opțional pe bun; plus transferul `105` = `1175`), `MijlocFixModificat` (modernizare, depreciere, reluare, reevaluare cu metoda netă sau brută, reclasificare), `MijlocFixRestructurat`, `MijlocFixIesit`, `ObiectInventarDatInFolosinta` / `ObiectInventarScosDinFolosinta` (extrabilanțier) și imputările. Jurnalul `MF` (existent) primește notele modulului.
+- **Factura de vânzare `FV-MF`** (Vânzări) folosește `AssetSaleIncome` în locul lui `Revenue`; factura de furnizor cu linii de imobilizare contează `AssetPendingIntake` (`231.PRL`) = `AssetSupplierPayable` (`404`).
+
+## Precizări din 02.13 Raportare și BI (aplicate pe 27.11.2026)
+
+Modulul 02.13 Raportare și BI ([README](../13-raportare-bi/README.md), părțile BI1–BI5) a fost documentat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate. Vederile publicate sunt doar citire și sunt contracte versionate: o schimbare incompatibilă cere o versiune nouă a vederii (`_v2`), cu vechea păstrată o versiune de produs.
+
+- **Index columnstore neclusterizat** pe `fin.JournalEntryLine`, pentru rapoartele și analizele pe liniile de notă (sursa vederii `fin.vw_GlLineFact`, precizare în C5). [BI2 §9](../13-raportare-bi/BI2-DEPOZIT-DATE.md)
 
 ## Decizii de validare
 

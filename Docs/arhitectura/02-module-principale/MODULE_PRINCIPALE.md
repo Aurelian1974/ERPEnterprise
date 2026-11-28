@@ -22,6 +22,7 @@ Produsul are **14 module**: nucleul comun, 12 module de business și modulul de 
 | 02.12 | CRM | `crm` | `Erp.Crm` | 4 | Nucleu (cu Vânzări doar prin evenimente) | Lead-uri, oportunități, activități |
 | 02.13 | Raportare și BI | `rpt` | `Erp.Reporting` | 1 → 4 | Toate (doar citire) | Rapoarte operaționale, legale, consolidate, dashboard-uri |
 | 02.14 | Integrări ANAF și BNR | `intg` | `Erp.Integrations` | 1 | Nucleu | e-Factura, e-Transport, SPV, declarații, curs BNR |
+| 02.15 | Mijloace fixe și obiecte de inventar | `fa` | `Erp.FixedAssets` | 1 | Nucleu, Finanțe | Registrul mijloacelor fixe, amortizare contabilă și fiscală, operații pe durata vieții, ieșiri, obiecte de inventar în folosință, inventariere (adăugat pe 27.11.2026) |
 
 Raportarea crește odată cu fiecare fază: fiecare modul nou vine cu rapoartele lui de bază. Integrările intră în faza 1 pentru că e-Factura e obligatorie de la prima factură.
 
@@ -74,9 +75,9 @@ Fundația comună: tot ce folosesc toate celelalte module și nu aparține niciu
 
 Sursa de adevăr financiar (P2): transformă evenimentele modulelor în note contabile și produce raportările legale.
 
-- **Entități cheie**: `Account` (plan de conturi), `JournalEntry`, `PostingRule`, `FiscalPeriod`, `BankAccount`, `Payment`, `FixedAsset`, `VatRegister`, `ConsolidationMap`.
-- **Documente**: notă contabilă manuală, extras bancar, registru de casă, ordin de plată, fișă de mijloc fix, notă de reevaluare valutară.
-- **Funcții**: reguli de contare, jurnale TVA, D300/D394/D390/D406, închidere de lună și an, trezorerie, reconciliere bancară, mijloace fixe și amortizare, multivalută, consolidare de grup.
+- **Entități cheie**: `Account` (plan de conturi), `JournalEntry`, `PostingRule`, `FiscalPeriod`, `BankAccount`, `Payment`, `VatRegister`, `ConsolidationMap`.
+- **Documente**: notă contabilă manuală, extras bancar, registru de casă, ordin de plată, notă de reevaluare valutară.
+- **Funcții**: reguli de contare, jurnale TVA, D300/D394/D390/D406, închidere de lună și an, trezorerie, reconciliere bancară, contarea amortizării primite de la Mijloace fixe (02.15), multivalută, consolidare de grup.
 - **Publică**: `PlataInregistrata`, `IncasareInregistrata`, `PerioadaInchisa`.
 - **Consumă**: evenimentele de document validat din toate modulele operaționale.
 
@@ -171,20 +172,22 @@ Urmărirea proiectelor de construcții pe șantiere, cu buget și situații de l
 
 ### 02.12 CRM · [folder](12-crm/)
 
-Relația cu clienții înainte și după vânzare.
+Relația cu clienții înainte și după vânzare. **✓ Complet (27.11.2026)**, părțile CR1–CR5, aprobat autonom ([README](12-crm/README.md)).
 
-- **Entități cheie**: `Lead`, `Opportunity`, `Activity`, `Campaign`, `Contact`.
-- **Funcții**: pipeline de vânzări, activități și memento-uri, istoric complet client (oferte, facturi, încasări din alte module, doar citire).
-- **Publică**: `OportunitateCastigata`.
-- **Consumă**: `FacturaEmisa`, `IncasareInregistrata`.
+- **Entități cheie**: `Lead`, `Opportunity`, `Activity`, `Campaign`, `Case`, `Consent`; clientul și persoana de contact rămân `Partner` și `PartnerContact` din Nucleu, agenții și echipele cei din Vânzări V1.
+- **Funcții**: captarea lead-urilor (formular web, import, e-mail), deduplicare, scor, atribuire, calificare; pipeline-uri cu kanban, oferta din V3 legată, câștig automat la comanda confirmată, reînnoiri din planurile de facturare, prognoză; activități, calendar, secvențe, vizite de teren, sincronizare e-mail; campanii cu consimțământ GDPR și ROI; cazuri după vânzare cu SLA; fișa 360 a clientului (oferte, comenzi, facturi, încasări, sold din alte module, doar citire).
+- **Publică**: `OportunitateCastigata`, `OportunitatePierduta`, `LeadCalificat`, `ActivitateRealizata`, `CazCreat`, `CazInchis`.
+- **Consumă**: `OfertaTrimisa`, `OfertaInchisa`, `ComandaConfirmata`, `FacturaEmisa`, `IncasareInregistrata`, `ReturCreat`, `PlanFacturareModificat`.
 
 ### 02.13 Raportare și BI · [folder](13-raportare-bi/)
 
-Rapoartele care citesc din mai multe module; fiecare modul își are și rapoartele proprii.
+Rapoartele care citesc din mai multe module, tablourile, analizele și bugetarea; fiecare modul își are și rapoartele proprii. **✓ Complet (27.11.2026)**, părțile BI1–BI5, aprobat autonom ([README](13-raportare-bi/README.md)).
 
-- **Surse**: view-uri read-only dedicate în schema `rpt`, singurul loc unde se fac join-uri între scheme (P1).
-- **Funcții**: rapoarte legale (bilanț, situații financiare), rapoarte consolidate de grup, dashboard-uri pe rol, export Excel/PDF, rapoarte programate pe email.
-- **Publică / consumă**: nimic; doar citește.
+- **Surse**: vederile publicate și versionate de module (`sales.vw_SalesFact`, `inv.vw_StockMovementFact`, `fin.vw_GlLineFact`, `fin.vw_OpenItemFact`, `fa.vw_AssetLedgerFact`, `crm.vw_*Fact` etc.), citite doar în schema `rpt`, singurul loc unde se fac join-uri între scheme (P1). Instantanee nocturne, înghețate la închiderea lunii.
+- **Entități cheie**: `ReportCatalog`, `Measure`, `Dimension`, `Dashboard`, `KpiTarget`, `AlertRule`, `ReportPack`, `Budget`; motorul comun de rapoarte (`ReportView`, `ReportSchedule`) rămâne în Nucleu §3.5.
+- **Funcții**: catalogul unic al rapoartelor, stratul semantic cu măsuri definite o singură dată, generatorul de analize fără SQL, export Excel cu pivot, pachete de rapoarte în PDF, programare cu așteptarea închiderii lunii, tablouri pe rol cu ținte și semafor, alerte, ecrane mari, rapoarte pe grup fără tranzacțiile din grup, bugetare (BVC, buget de vânzări, rectificări, plan vs realizat, control bugetar), acces extern doar citire (SQL, OData).
+- **Publică**: `BugetAprobat`, `DepasireBugetConfirmata`, `AlertaDeclansata`.
+- **Consumă**: `LunaInchisa`, `LicentaActualizata`, `RolModificat`.
 
 ### 02.14 Integrări ANAF și BNR · [folder](14-integrari-anaf-bnr/)
 
@@ -194,6 +197,15 @@ Toate comunicările cu sisteme externe ale statului, izolate ca să poată fi ac
 - **Funcții**: OAuth SPV, generare UBL CIUS-RO, trimitere și urmărire stare e-Factura, descărcare facturi primite, e-Transport, generare XML declarații, preluare curs BNR, reîncercări și alerte.
 - **Publică**: `EFacturaAcceptata`, `EFacturaRespinsa`, `FacturaPrimitaSPV`, `UitObtinut`, `CursBnrPreluat`.
 - **Consumă**: `FacturaEmisa`, `CursaPlanificata`, cereri de declarații din Finanțe și Salarizare.
+
+### 02.15 Mijloace fixe și obiecte de inventar · [folder](15-mijloace-fixe/)
+
+Modul adăugat pe 27.11.2026: în schița inițială, mijloacele fixe erau doar o funcție a Finanțelor. Ține registrul imobilizărilor și al obiectelor de inventar în folosință și trimite Finanțelor amortizarea și operațiile de valoare spre contare.
+
+- **Entități cheie**: `Asset` (fișa mijlocului fix, cu componente), `AssetBook` (regimul contabil, fiscal și opțional IFRS), `DepreciationPlan`, `DepreciationRun` (fișa de amortizare lunară), `AssetDocument` (intrare, PIF, transfer, modernizare, depreciere, reevaluare, conservare, compunere, descompunere, ieșire), `InventoryItemInUse` (obiect de inventar în folosință pe persoană și locație).
+- **Funcții**: catalogul HG 2139/2004, fișa mijlocului fix și registrul numerelor de inventar, intrări din Achiziții și investiții în curs, amortizare lunară contabilă și fiscală, reevaluare, depreciere, compunere și descompunere, ieșiri (vânzare prin Vânzări, casare), obiecte de inventar în folosință (prag 5.000 lei, configurabil în timp), inventariere, D406 active.
+- **Publică**: `AmortizareCalculata`, `MijlocFixIntrat`, `MijlocFixModificat`, `MijlocFixIesit`, `ObiectInventarDatInFolosinta`.
+- **Consumă**: `FacturaFurnizorValidata` și `NirValidat` (liniile de imobilizare), `BonConsumValidat` (obiecte de inventar), `FacturaEmisa` (vânzarea unui mijloc fix), `PerioadaInchisa`.
 
 ## Licențiere
 
@@ -209,9 +221,10 @@ Propunerea: un **pachet de bază obligatoriu** plus module opționale, cu depend
 | Producție | Producție de proces și MRP | Logistic |
 | Retail | POS (licență și pe număr de case) | Logistic |
 | Construcții | Construcții | Logistic |
+| Active | Mijloace fixe și obiecte de inventar (02.15) | Bază |
 | Oameni | HR și salarizare (licență și pe număr de angajați) | Bază |
 | CRM | CRM | Bază (Comercial recomandat) |
-| BI avansat | Rapoarte consolidate, dashboard-uri, rapoarte programate | Bază |
+| BI | Raportare și BI avansat (02.13): generatorul de analize, tablourile proprii, alertele, ecranele mari, bugetarea, accesul extern. Catalogul, rapoartele modulelor și tablourile livrate rămân în Bază | Bază |
 
 Cum funcționează tehnic: fișierul de licență semnat conține lista de module active; la pornire, host-ul înregistrează doar acele module (endpoint-uri, handler-e MediatR, consumatori de evenimente, joburi, meniuri). Un modul inactiv nu apare deloc în interfață, dar schema lui există în bază, ca activarea ulterioară să nu ceară migrare specială.
 
@@ -235,16 +248,17 @@ Fiecare modul primește un document separat, scris în ordinea roadmap-ului, ca 
 | Ordine | Document | Fază | Folder în Library | Stare |
 | --- | --- | --- | --- | --- |
 | 1 | 02.01 Nucleu (Platform) | 0 | [NUCLEU.md](01-nucleu/NUCLEU.md) · [Claude Docs](https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU) | Validat (14.11.2026) |
-| 2 | 02.02 Finanțe și contabilitate | 1 | [02-finante-contabilitate](02-finante-contabilitate/) | Validat (15.11.2026); în implementare (F1) |
+| 2 | 02.02 Finanțe și contabilitate | 1 | [02-finante-contabilitate](02-finante-contabilitate/) | ✓ Validat (15.11.2026): F1–F5 și C1–C5, cu machetele de ecran |
 | 3 | 02.14 Integrări ANAF și BNR | 1 | [14-integrari-anaf-bnr](14-integrari-anaf-bnr/) | De făcut |
-| 4 | 02.03 Vânzări | 1 | [03-vanzari](03-vanzari/) | De făcut |
-| 5 | 02.04 Achiziții | 1 | [04-achizitii](04-achizitii/) | De făcut |
-| 6 | 02.13 Raportare și BI | 1 → 4 | [13-raportare-bi](13-raportare-bi/) | De făcut |
-| 7 | 02.05 Stocuri | 2 | [05-stocuri](05-stocuri/) | De făcut |
+| 4 | 02.03 Vânzări | 1 | [03-vanzari](03-vanzari/) | ✓ Validat (27.11.2026): V1–V7 |
+| 5 | 02.04 Achiziții | 1 | [04-achizitii](04-achizitii/) | ✓ Complet: A1–A7 validate (26–27.11.2026) |
+| 6 | 02.13 Raportare și BI | 1 → 4 | [13-raportare-bi](13-raportare-bi/) | ✓ Complet (27.11.2026): BI1–BI5, aprobat autonom |
+| 7 | 02.05 Stocuri | 2 | [05-stocuri](05-stocuri/) | ✓ Validat (26.11.2026), S1–S7 |
 | 8 | 02.06 WMS | 2 | [06-wms](06-wms/) | De făcut |
 | 9 | 02.07 Transport (TMS) | 2 | [07-transport-tms](07-transport-tms/) | De făcut |
 | 10 | 02.08 Producție de proces și MRP | 3 | [08-productie-mrp](08-productie-mrp/) | De făcut |
 | 11 | 02.09 HR și salarizare | 4 | [09-hr-salarizare](09-hr-salarizare/) | De făcut |
 | 12 | 02.10 Vânzări retail (POS) | 4 | [10-retail-pos](10-retail-pos/) | De făcut |
 | 13 | 02.11 Construcții | 4 | [11-constructii](11-constructii/) | De făcut |
-| 14 | 02.12 CRM | 4 | [12-crm](12-crm/) | De făcut |
+| 14 | 02.12 CRM | 4 | [12-crm](12-crm/) | ✓ Complet (27.11.2026): CR1–CR5, aprobat autonom |
+| 15 | 02.15 Mijloace fixe și obiecte de inventar | 1 | [15-mijloace-fixe](15-mijloace-fixe/) | ✓ Complet (27.11.2026): M1–M7, aprobat autonom |

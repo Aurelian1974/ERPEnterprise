@@ -1,6 +1,6 @@
 # ERP · 02.01 Nucleu (Platform)
 
-14 noiembrie 2026 · Aurelian · **Validat (14.11.2026), inclusiv machetele de ecran 01–10; completat pe 14.11.2026 pentru baza case sensitive, administratorul creat la instalare și autentificarea cu ASP.NET Core Identity + cookie (validat 14.11.2026)** · Versiune editabilă: https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU
+14 noiembrie 2026 · Aurelian · **Validat (14.11.2026), inclusiv machetele de ecran 01–10; completat pe 14.11.2026 pentru baza case sensitive, administratorul creat la instalare și autentificarea cu ASP.NET Core Identity + cookie (validat 14.11.2026); completat pe 16.11.2026 cu articolele cu variante configurabile (§3.3.1, validat 16.11.2026)** · completat pe 26.11.2026 cu tipurile de tranzacții și legăturile între documente (§3.6, validat 26.11.2026 odată cu 02.04 A1) · completat pe 27.11.2026 cu motorul comun de rapoarte (§3.5, `ReportView` și `ReportSchedule`, mutate din Stocuri S7, validat 27.11.2026 odată cu 02.04 A7) · completat pe 27.11.2026 cu codurile NC8 și nomenclatoarele INS de comerț exterior (§3.3, validat 27.11.2026 odată cu 02.04 A6) · completat pe 27.11.2026 cu modalitățile de plată, codurile UNCL 4461 și GLN-ul pe adresa partenerului (§3.2, §3.5, validat 27.11.2026 odată cu 02.03 V1) · completat pe 27.11.2026 cu căutarea prețului în lanțul de liste (§3.3.1 regula 9, validat 27.11.2026 odată cu 02.03 V2) · Versiune editabilă: https://claude.ai/artifact/UE59RnaWRpVe5dfdJgzrqU
 
 Nucleul e primul modul livrat (faza 0) și singurul pe care îl folosesc toate celelalte. Conține identitatea instalării și a firmelor, utilizatorii și drepturile, nomenclatoarele comune, numerotarea, precizia, audit-ul, atașamentele și licența, plus pipeline-ul comun prin care trece orice comandă. Document părinte: [02 Module principale](../MODULE_PRINCIPALE.md). Principii: [01 Scop și principii](../../01-scop-si-principii/SCOP_SI_PRINCIPII.md) (P1–P10).
 
@@ -11,7 +11,7 @@ Nucleul e primul modul livrat (faza 0) și singurul pe care îl folosesc toate c
 | Instalare și firme | Datele instalării, firmele din grup (CUI, registru, adresă, regim TVA), puncte de lucru | Planul de conturi și perioadele contabile (Finanțe) |
 | Utilizatori și drepturi | Utilizatori, roluri, permisiuni, atribuiri pe firmă și dimensiuni | Autentificarea propriu-zisă: o face ASP.NET Core Identity cu cookie, în aceeași aplicație (`Erp.Auth` în `Erp.Host`); Nucleul ține profilul și drepturile |
 | Parteneri | Nomenclatorul unic de parteneri (persoane juridice și fizice), adrese, conturi bancare, contacte | Condițiile comerciale (Vânzări, Achiziții), soldurile (Finanțe) |
-| Articole | Nomenclatorul unic de articole: cod, denumire, UM, cotă TVA implicită, tip, coduri de bare, grupe | Atributele de stoc, rețetă, preț (extensii în Stocuri, Producție, Vânzări) |
+| Articole | Nomenclatorul unic de articole: cod, denumire, UM, cotă TVA implicită, tip, coduri de bare, grupe; familii de articole, liste de valori și variante (SKU), unitatea de stoc pentru toate modulele (§3.3.1) | Atributele de stoc, rețetă, preț (extensii în Stocuri, Producție, Vânzări) |
 | Valute și cursuri | Valute, cursuri pe zi (BNR și manuale) | Preluarea automată BNR (Integrări), reevaluarea (Finanțe) |
 | Nomenclatoare fiscale | Cote TVA, unități de măsură cu cod UN/ECE, țări, județe, localități, cu dată de intrare în vigoare (P6) | Codurile SAF-T și schemele XML (Integrări) |
 | Numerotare | Serii per firmă, tip de document și an; alocare atomică la validare, fără goluri | — |
@@ -32,8 +32,8 @@ Entitățile Nucleului se grupează în patru zone. Firma (`Company`) e cheia: d
 
 Reguli de business ale modelului:
 
-1. **Partenerii și articolele sunt la nivel de instalare** (grup), nu de firmă, ca același client să fie recunoscut în toate firmele și la consolidare. Completare (decizia lui Aurelian din 21.11.2026): un articol sau partener e fie **comun** grupului (implicit, ca până acum), fie **propriu** unei firme, unui punct de lucru sau unei locații; codul și CUI-ul rămân unice în toată baza (vezi 3.4, „Domeniul drepturilor și proprietarul”).
-2. **Drepturile sunt la nivel de firmă**: același utilizator poate fi contabil în firma A și doar consultant în firma B. Un rol se atribuie pe instalare, pe un grup de firme, pe o firmă, pe un punct de lucru sau pe o locație (21.11.2026).
+1. **Partenerii și articolele sunt la nivel de instalare** (grup), nu de firmă, ca același client să fie recunoscut în toate firmele și la consolidare.
+2. **Drepturile sunt la nivel de firmă**: același utilizator poate fi contabil în firma A și doar consultant în firma B.
 3. **Seriile de numerotare aparțin unei firme și unui an**; nu există serii comune între firme.
 4. **Un CUI apare o singură dată** între parteneri și o singură dată între firme.
 5. **Nomenclatoarele fiscale au dată de vigoare**; un document folosește întotdeauna valoarea valabilă la data lui (P6).
@@ -77,9 +77,6 @@ Regula pentru chei primare (validată 14.11.2026, detaliată în secțiunea 05 D
 
 Sub firmă: **puncte de lucru** (`Branch`: denumire, adresă, cod), folosite pe documente, în seriile de numerotare și în e-Factura, și **conturi bancare** (`CompanyBankAccount`: IBAN validat, bancă, monedă, cont implicit), tipărite pe facturi.
 
-**Adrese ale firmei:** sediul social este unic și rămâne pe `Company` (obligatoriu). Celelalte adrese stau în `core.CompanyAddress` (migrarea `2026.11.009`), pe tip, cu cel mult o adresă implicită per firmă și tip (index unic filtrat); alegerea unui nou implicit îl dezactivează pe cel vechi. Tipurile sunt un nomenclator configurabil, `core.AddressType` (cod tehnic unic, denumire, ordine, activ; cele de sistem `DELIVERY`, `BILLING`, `CORRESPONDENCE`, `OTHER` nu se dezactivează, iar codul nu se schimbă), gestionat în Configurare › Tipuri de adrese (`usp_AddressType_Save`, `POST /address-types` și `PUT /address-types/{id}`, `CompanyManage`, auditat, `RowVersion`; erori 50029 cod duplicat, 50030 tip protejat). Un tip inactiv nu se mai poate alege pentru adrese noi. Salvare adresă: `usp_CompanyAddress_Save`, endpoint-uri `POST /companies/{companyId}/addresses` și `PUT .../{id}` (`CompanyManage`, auditat, `RowVersion`); lista vine în `usp_Company_Get`, tipurile în `usp_OrgLookups_Get`. UI: tab „Adrese” în administrarea firmelor.
-
-**Telefon, e-mail și persoane de contact:** `core.Company`, fiecare `core.CompanyAddress`, `core.Branch` (punct de lucru) și `core.Location` au `Phone` și `Email` opționale (format validat în handler). Persoanele de contact stau în `core.CompanyContact` (nume obligatoriu, funcție, telefon, e-mail, observații, activ, `RowVersion`; cel puțin telefon sau e-mail) și pot fi mai multe pe firmă, pe punct de lucru (`BranchId`) sau pe locație (`LocationId`, cel mult unul dintre ele), salvate prin `usp_CompanyContact_Save` (`POST /companies/{companyId}/contacts`, `PUT .../{id}`, `CompanyManage`, auditat); lista firmei vine în `usp_Company_Get`, cea a punctelor de lucru și locațiilor în `usp_OrgTree_Get`. UI: secțiunea „Contact” în „Date generale”, tab „Persoane de contact” la firmă și secțiunea „Persoane de contact” sub formularul punctului de lucru și al locației.
 **Structura organizatorică (arbore)**, adăugată pe 14.11.2026 la cererea lui Aurelian: firmele se organizează într-un arbore cu patru tipuri de noduri.
 
 | Nivel | Entitate | Părinte permis | Câmpuri principale | Reguli |
@@ -89,27 +86,9 @@ Sub firmă: **puncte de lucru** (`Branch`: denumire, adresă, cod), folosite pe 
 | Punct de lucru | `Branch` | Firmă | `Code`, `Name`, adresă, `IsActive` | Apare pe documente și în e-Factura; poate avea serii de numerotare proprii |
 | Locație | `Location` | Punct de lucru sau direct firmă | `Code`, `Name`, `LocationType` (birou, depozit, magazin, fabrică, șantier, punct de livrare), adresă, `IsActive` | Locul fizic folosit de Stocuri, WMS, POS, Construcții și TMS; firma se deduce din părinte. Nu are sub-locații (confirmat 14.11.2026): zonele și rafturile se definesc în WMS |
 
-Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; un nod folosit pe documente nu se șterge, se dezactivează (`SQL-20`); codul e unic în cadrul firmei pentru puncte de lucru și locații și unic în instalare pentru grupuri. Drepturile se restrâng pe punct de lucru sau locație atribuind rolul pe acel nod (21.11.2026, vezi 3.4); `DimensionScope` rămâne pentru gestiuni, centre de cost și șantiere.
+Reguli: o locație nu are copii; un nod cu copii activi nu se poate dezactiva; un nod folosit pe documente nu se șterge, se dezactivează (`SQL-20`); codul e unic în cadrul firmei pentru puncte de lucru și locații și unic în instalare pentru grupuri. Drepturile se pot restrânge pe punct de lucru sau locație prin `DimensionScope`.
 
 ![Ecranul Firme și structură](ecrane/03-firme.png)
-
-**Detalii de implementare (etapa 4, 15.11.2026):**
-
-- Tabelele `core.CompanyGroup`, `Company`, `Branch`, `Location`, `CompanyBankAccount` (migrarea `2026.11.006`). CUI-ul se salvează fără prefixul RO (prefixul rezultă din `VatPayer`), validat cu cifra de control ANAF. Numărul de registrul comerțului se validează doar ca formă (clasic și formatul unic ONRC, Legea 265/2022); cifra de control a formatului nou nu se recalculează, pentru că nu am găsit o descriere oficială sigură a algoritmului. IBAN-ul se validează mod 97 (ISO 13616).
-- `IsGroupParent` nu e o coloană: firma-mamă e `CompanyGroup.ParentCompanyId` și trebuie să fie în grup sau într-un subgrup. Din machetă s-a adăugat `IncludeInConsolidation`. `FunctionalCurrency` e fixă `RON` (`CHECK`).
-- Firma folosește țările și județele livrate acum (`core.Country`: România, statele UE și câteva frecvente; `core.County`: cele 41 de județe și București, cod ISO 3166-2:RO) și politica de zecimale STANDARD. Localitatea se alege din nomenclatorul SIRUTA (21.11.2026, vezi 3.5). Moneda contului bancar are cheie străină spre nomenclatorul de valute (migrarea `2026.11.016`, 21.11.2026) și se alege dintre monedele active. `LogoAttachmentId` așteaptă atașamentele (etapa 10).
-- O firmă activă trebuie să aibă CUI-ul în licență (4.4): altfel 409 `CORE_COMPANY_NOT_LICENSED`; în `Development`, fără licență, orice CUI e acceptat. Salvarea firmei publică `FirmaModificata`.
-- Acces: arborele arată firmele cu `Core.Company.View` (pe firmă sau la nivelul instalării) și grupurile care le conțin. Firma curentă vine din antetul `X-Company-Id`, acceptat numai dacă utilizatorul are un rol pe acea firmă (altfel firma efectivă devine 0). `X-Company-Id: 0` înseamnă nivelul instalării: numai rolurile fără firmă (ADMIN). Grupurile și firmele noi se creează doar la acest nivel; punctele de lucru, locațiile, conturile bancare și seriile, numai pe firma lor.
-- Ecranul: arbore (Syncfusion TreeView) cu căutare fără diacritice, filtrele „Toate”, „Doar firme”, „Arată inactive”, „Extinde tot”; fișa cu tab-urile Date generale, Conturi bancare și Serii (doar citire, cu legătură spre Configurare › Serii). Tab-urile Structură, Setări, Certificat ANAF și Istoric, precum și Export/Import, vin cu etapele care le dețin (Istoric cu auditul, etapa 10; certificatul cu Integrări). Fără `Core.Company.Manage`, fișele sunt doar pentru citire.
-
-**Îmbunătățiri după verificare (20.11.2026):**
-
-- Schimbarea țării golește județul dacă nu aparține țării noi (Firmă, Punct de lucru, Locație). Înainte județul vechi rămânea ascuns în formular, iar salvarea pica pe server cu „Țara sau județul nu există în nomenclator”.
-- Oprirea „Plătitor de TVA” oprește și „TVA la încasare”. Înainte acesta rămânea pornit pe un comutator dezactivat, iar serverul respingea salvarea pe un câmp pe care utilizatorul nu-l mai putea schimba.
-- Județul obligatoriu pentru România se verifică și în formular, cu mesajul „Alegeți județul.” pe câmp (la locație, doar dacă s-a ales România), nu doar ca eroare generică de pe server.
-- Modificările nesalvate nu se mai pierd (`UI-18`): tab-urile fișei se montează la prima vizită și apoi doar se ascund, iar alegerea altui nod, butoanele „+ Adaugă”, meniul, firma curentă din antet și închiderea paginii trec prin garda comună cu „Rămân” / „Renunț la modificări”. Formularul contului bancar are prefixul de id-uri `bank-`, pentru că fișa firmei rămâne montată alături și ar fi repetat id-ul `f-isActive`.
-- Accesibilitate (`UI-09`): tab-urile urmează tiparul WAI-ARIA (săgeți, Home, End, un singur tab în ordinea Tab); panoul de detaliu nu mai e regiune `aria-live`, care făcea cititorul de ecran să citească tot formularul la fiecare nod ales.
-- Grila conturilor bancare primește handler-e stabile (`UI-12`), mesajele de validare stau în fișierul de traduceri (`UI-06`), iar tab-ul Serii arată eroarea de încărcare cu „Reîncearcă”, în loc să rămână gol.
 
 ### 3.2 Partener (`Partner`)
 
@@ -134,7 +113,7 @@ Un singur nomenclator pentru clienți și furnizori, la nivel de instalare; rolu
 | `IntraGroupCompanyId` | `int` | Nu | Legătura cu o firmă din grup, pentru eliminări la consolidare |
 | `IsActive` | `bit` | Da | — |
 
-Copii: `PartnerAddress` (sediu, livrare, facturare), `PartnerBankAccount` (IBAN validat, bancă, monedă), `PartnerContact` (nume, rol, email, telefon). Regulă: un CUI apare o singură dată în nomenclator; duplicatele se semnalează la salvare.
+Copii: `PartnerAddress` (sediu, livrare, facturare; coloana `Gln varchar(13) NULL`, codul GLN al locației, cu cifra de control verificată, cerut de lanțurile de retail în EDI și în e-Factura la `DeliveryLocation/ID`, schema `0088`; precizare din Vânzări V1, 27.11.2026), `PartnerBankAccount` (IBAN validat, bancă, monedă), `PartnerContact` (nume, rol, email, telefon). Regulă: un CUI apare o singură dată în nomenclator; duplicatele se semnalează la salvare.
 
 **Proprietăți configurabile** (adăugate pe 14.11.2026): administratorul definește câmpuri suplimentare fără modificări de cod, folosite pentru parteneri și, cu același mecanism, pentru articole.
 
@@ -147,21 +126,6 @@ Copii: `PartnerAddress` (sediu, livrare, facturare), `PartnerBankAccount` (IBAN 
 Reguli: valorile se validează după tip la salvare; o proprietate obligatorie se cere doar dacă se aplică rolului partenerului; proprietățile marcate `IsFilterable` apar ca filtre în lista de parteneri și în rapoarte; modificările se auditează ca orice câmp. Exemple livrate ca model: segment, agent de vânzări, zonă de livrare, rating furnizor, certificat ISO și data expirării, acord de marketing (GDPR).
 
 ![Ecranul Parteneri · tab-ul Proprietăți](ecrane/04b-parteneri-proprietati.png)
-
-**Detalii de implementare (parteneri, 20.11.2026; decizii confirmate de Aurelian în aceeași zi):**
-
-- Tabelele `core.PartnerGroup`, `Partner`, `PartnerAddress`, `PartnerBankAccount`, `PartnerContact`, `PropertyDefinition`, `PropertyOption`, `PropertyValue` și tipul tabelar `core.PropertyValueList` (migrarea `2026.11.010`); cheia străină amânată `User.ExternalPartnerId` → `core.Partner`. `PartnerType`: 1 juridică RO, 2 juridică UE, 3 juridică non-UE, 4 persoană fizică.
-- **Sediul social stă pe partener** (`Address`, `City`, `CountyCode`, `CountryCode`, `PostalCode`, plus `Phone`, `Email`), ca la firmă; `PartnerAddress` ține celelalte adrese, pe tipurile din `core.AddressType` (o singură adresă implicită pe partener și tip). Județul e obligatoriu pentru România (`CHECK`).
-- CUI: juridica RO se salvează fără prefixul RO (cifra de control ANAF; „RO” se afișează după `VatPayer`), juridica UE ca cod de TVA cu prefixul țării (doar forma; VIES vine cu Integrări), non-UE ca text, persoana fizică fără CUI. Duplicatul dă 409 `CORE_PARTNER_DUPLICATE_FISCAL_CODE`; codul duplicat (fără majuscule) 409 `CORE_DUPLICATE_CODE`.
-- **Codul lăsat gol la creare se alocă din seria tipului de document `Core.Partner` („Cod partener”) a firmei curente**, prin `INumberSeriesService` (formatul `{Prefix}-{An}-{Număr}`). Codul partenerului nu e numerotare fiscală: dacă firma nu are o serie pentru tip și an (nici una din anul anterior cu trecere automată), primul partener fără cod creează, în aceeași tranzacție, seria implicită nefiscală `P` cu 6 cifre și trecere automată la anul următor (`core.usp_NumberSeries_EnsureDefault`; auditul salvării are `CodeSeriesCreated`); prefixul și lungimea se schimbă apoi în Configurare › Serii. Codurile sunt unice în instalare, iar seriile sunt pe firmă: un număr deja folosit (de altă firmă cu același prefix sau introdus manual) se sare la alocare (`core.usp_Partner_CodeExists`; seria nu e fiscală, golurile sunt permise). La nivelul instalării (`X-Company-Id: 0`) codul trebuie introdus.
-- **CNP-ul** (doar persoană fizică, validat cu cifra de control) se criptează cu inelul de chei Data Protection al instalării (scopul `Erp.Core.Partner.PersonalId.v1`; cheile în `core.DataProtectionKey`, protejate cu certificatul instalării, 08, 5.12). Fișa întoarce doar `HasPersonalId`; afișarea e comanda `RevealPartnerPersonalId` (`POST /api/core/partners/{id}/personal-id`), cu `Core.Partner.ViewPersonalData`, care lasă intrarea de audit `Core.Partner.ViewPersonalData`. Auditul salvărilor nu conține CNP-ul, numele persoanelor fizice sau datele persoanelor de contact (`NET-18`).
-- Proprietățile se salvează odată cu partenerul (`SavePartner.Properties`, TVP), cu aceeași versiune; `null` le lasă neschimbate. `PropertyValue.ValueUserId` (FK `core.[User]`) completează coloanele din tabelul de mai sus, pentru tipul „utilizator”. Exemplele din machetă sunt livrate ca date (`08_PropertyDefinitions`, adăugate doar dacă lipsesc). Definițiile se administrează în Configurare › Proprietăți (macheta 07l, `Core.Property.Manage`): listă grupată pe secțiuni, cu căutare și inactive; fișa cu cod (fix după creare), tip de date (fix după prima valoare: 409 `CORE_ENTITY_IN_USE`), etichetă, secțiune, ordine, cui se aplică, obligatorie, filtru (doar liste și da/nu, cum filtrează lista partenerilor), firma (gol = grupul), activă și opțiunile listelor (TVP `core.PropertyOptionList`; nu se șterg, se dezactivează; ordinea se schimbă cu săgeți). Tab-ul Articole apare odată cu articolele.
-- **Preluarea de la ANAF** (decizia lui Aurelian, 20.11.2026: clientul ANAF stă definitiv în Nucleu, nu în modulul Integrări). Butonul „ANAF ⟳” de lângă CUI (juridică RO, `Core.Partner.Manage`) apelează `GET /api/core/anaf/companies/{cui}` (interogarea `LookupAnafCompany`, în afara oricărei tranzacții) și doar completează formularul: denumire, nr. registrul comerțului, plătitor TVA (`scpTVA`), TVA la încasare (`statusTvaIncasare`), inactiv (`statusInactivi`), sediul social (stradă, număr, localitate, județul după `scod_JudetAuto`, cod poștal) și telefonul; e-Factura, plata defalcată și starea înregistrării se afișează informativ. Utilizatorul verifică și salvează; `SavePartner.AnafCheckedAt` (momentul interogării, adus la „acum” dacă e în viitor) se scrie în `Partner.AnafCheckedAt`, iar o salvare fără el păstrează data anterioară.
-- Serviciul: verificarea contribuabililor ANAF, **sincron v9** (`POST https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva`, instrucțiunile ANAF din 04.02.2025; preferat asincronului v8, care cere a doua cerere de descărcare). Adresa e setarea instalării `Anaf.VatRegistryUrl` (seed `04_Settings`), modificabilă în Configurare › Setări (`Core.Settings.Manage`, doar `https`), ca o versiune nouă ANAF să nu ceară kit nou. Clientul trimite cel mult o cerere pe secundă pentru toată instalarea (regula ANAF), cu timeout de 30 s; un răspuns 404 cu `found` gol înseamnă CUI necunoscut (404 `CORE_ANAF_NOT_FOUND`), iar o eroare de rețea, un cod HTTP de eroare sau un răspuns cu altă formă dau 503 `CORE_ANAF_UNAVAILABLE` (tipul nou `ErpErrorKind.Unavailable`). Răspunsul real v9 (verificat pe 20.11.2026, fișierele de referință din `Erp.Core.Tests/Anaf`) diferă de instrucțiuni: nu are `cod`/`message`, `perioade_TVA` e listă, codul poștal vine fără zeroul din față (se completează la 6 cifre), diacriticele sunt cu sedilă (se corectează în ș/ț). Serverul instalării are nevoie de acces HTTPS spre `webservicesp.anaf.ro`.
-- Salvarea partenerului publică `PartenerModificat`. Grupele de parteneri se administrează în Configurare › Grupe de parteneri (`Core.Nomenclature.Manage`); o grupă cu parteneri activi nu se dezactivează (409 `CORE_ENTITY_IN_USE`).
-- Ecranul (meniul Nomenclatoare › Parteneri, `/nomenclatoare/parteneri`): listă paginată pe server, căutare după începutul denumirii (fără diacritice), al codului sau al CUI-ului, filtrele Toți / Clienți / Furnizori / Persoane fizice / Inactivi ANAF / Arată inactivi și o proprietate filtrabilă; fișa cu tab-urile Date generale, Proprietăți (un singur formular, o singură salvare), Adrese, Conturi, Contacte și Istoric (auditul partenerului și al copiilor lui). Nu sunt încă: verificarea automată periodică la ANAF (amânată de Aurelian, 20.11.2026), tab-ul Condiții și soldurile (Vânzări, Achiziții, Finanțe), „folosit în N firme”.
-- **Export Excel** (butonul din lista partenerilor, `Core.Partner.View`): lista filtrată întreagă (`core.usp_Partner_Export`, aceleași filtre ca lista), cu ClosedXML (07, Stack), în coloanele șablonului de import, ca un export să poată fi corectat și reimportat.
-- **Import din Excel** (fluxul 4.8, Configurare › Import, macheta 07g, `Core.Import.Run`; deciziile lui Aurelian din 20.11.2026): șablonul are doar datele generale (cod, denumire, tip, client, furnizor, CUI, registru, plătitor TVA, TVA la încasare, inactiv ANAF, grupă, sediu, telefon, e-mail, activ), fără CNP, conturi, contacte sau proprietăți, cu foaia „Liste” și liste derulante. Validarea folosește `SavePartnerValidator` (aceleași reguli ca fișa), plus tipul, Da/Nu, grupa, județul (cod, `RO-xx` sau denumire) și țara, dublurile din fișier și potrivirea cu nomenclatorul. **Un rând cu același cod sau CUI actualizează partenerul existent** (4.8 pasul 5, apare ca avertizare; macheta arăta „doar adăugare”, decizia a ales specificația); codul și CUI-ul la parteneri diferiți sunt eroare. Opțional, **verificarea ANAF** completează câmpurile goale și ia de la ANAF plătitor TVA, TVA la încasare și inactiv, în loturi de 100 de CUI-uri (o cerere pe secundă); un CUI negăsit sau ANAF indisponibil e avertizare. Analiza e o interogare (în afara tranzacției, din cauza apelurilor ANAF); jobul `core.ImportJob` (migrarea `2026.11.011`) păstrează raportul și rândurile valide până la confirmare. Confirmarea salvează în **loturi de 500, fiecare în tranzacția lui** (macheta spunea „o singură tranzacție”; s-a urmat 4.8), cu audit pe fiecare partener (`Core.Partner.Import`) și `PartenerModificat`; un lot eșuat lasă importul „parțial”, iar reîncărcarea fișierului nu dublează. Codurile goale se alocă din seria firmei curente. Rândurile cu erori se descarcă ca Excel cu coloana „Eroare”. A18 e acoperit de un test de integrare: 10.000 de rânduri, 5% greșite, apoi reimportul aceluiași fișier, fără dubluri.
 
 ### 3.3 Articol (`Item`)
 
@@ -177,13 +141,17 @@ Reguli: valorile se validează după tip la salvare; o proprietate obligatorie s
 | `PricePrecision` | `tinyint` | Nu | 0–6; suprascrie politica firmei pentru acest articol (P7) |
 | `QuantityPrecision` | `tinyint` | Nu | 0–6 |
 | `IsStockable` | `bit` | Da | Fals pentru servicii |
-| `CnCode` | `nvarchar(10)` | Nu | Cod NC pentru Intrastat și e-Transport |
+| `CnCode` | `varchar(8)` | Nu | Cod NC8 de 8 cifre din `core.CnCode`, valabil în anul curent; moștenit din familie sau propriu (`CnCodeOverridden`), regulile în Achiziții A6 §3.6 (precizare din Achiziții A6, 27.11.2026). Obligatoriu pe articolele stocabile folosite în comerț exterior sau e-Transport |
+| `CnCodeOverridden` | `bit` | Da | 0 = codul vine din familie și se schimbă odată cu ea; 1 = cod propriu al articolului (precizare din Achiziții A6, 27.11.2026) |
+| `DomesticReverseChargeCode` | `varchar(10)` | Nu | Categoria de bunuri cu taxare inversă internă (Codul fiscal art. 331), din care Vânzările aleg categoria de TVA `AE` (V5 §3.4) (precizare din Vânzări V5, 27.11.2026) |
 | `DepositItemId` | `int` | Nu | Ambalajul cu garanție SGR (sistemul de garanție-returnare), adăugat automat pe documente lângă articol |
 | `NetWeightKg`, `GrossWeightKg` | `decimal(19,6)` | Nu | Pe UM de bază; folosite la e-Transport, avize și TMS |
 | `VolumeM3` | `decimal(19,6)` | Nu | Pe UM de bază; folosit la WMS și TMS |
 | `IsActive` | `bit` | Da | — |
 
-Copii: `ItemUom` (excepții de la set), `ItemBarcode` (EAN, intern, opțional legat de o UM), `ItemAttribute` (atribute libere cheie/valoare). Proprietățile configurabile ale articolului folosesc `PropertyDefinition` cu `EntityType = Item`.
+**Codul NC8 și nomenclatoarele INS** (adăugat pe 27.11.2026, validat odată cu Achiziții A6): nomenclatorul `core.CnCode`, tabelele separate `core.DeliveryTerm`, `core.TransactionNature`, `core.TransportMode`, moștenirea codului familie → articol → variantă și ecranul de import INS (XLS sau XML, cu propuneri) sunt descrise complet în [Achiziții A6 §3.6 și §3.7](../04-achizitii/A6-IMPORT-COSTURI.md); seed-ul e în [seed/nomenclatoare-ins/](../../seed/nomenclatoare-ins/). Comenzi: `SetItemFamilyCnCode`, `SetItemCnCode`, `ResetItemCnCodeToFamily`, `AnalyzeNomenclatureImport`, `ApplyNomenclatureImport`. `IItemQuery.SnapshotAsync` întoarce codul NC8 efectiv (varianta, altfel articolul).
+
+Copii: `ItemUom` (excepții de la set), `ItemVariant` (variantele, cel puțin una, §3.3.1), `ItemAttribute` (valorile atributelor de identitate, §3.3.1; până pe 16.11.2026 erau atribute libere cheie/valoare), `ItemAllowedValue` (valorile permise pe axe). Codurile de bare (`ItemBarcode`: EAN, intern, opțional legat de o UM) stau pe variantă. Proprietățile configurabile ale articolului folosesc `PropertyDefinition` cu `EntityType = Item`.
 
 **Seturi de UM** (adăugate pe 14.11.2026): conversiile se definesc o dată pe set și se refolosesc la toate articolele cu același ambalaj.
 
@@ -193,7 +161,7 @@ Copii: `ItemUom` (excepții de la set), `ItemBarcode` (EAN, intern, opțional le
 | `UomSetLine` | `UomSetId`, `UomId`, `FactorToBase` `decimal(19,6)`, `IsBase`, `IsDefaultSales`, `IsDefaultPurchase`, `IsDefaultPos`, `SortOrder` | O singură linie `IsBase` cu factor 1; cel mult o linie implicită pe fiecare circuit; factor > 0 |
 | `ItemUom` | `ItemId`, `UomId`, `FactorToBase`, implicitele ca mai sus | Excepție doar pentru articol (de ex. bax de 12 în loc de 6), fără a schimba setul; are prioritate față de linia din set |
 
-Reguli: documentele păstrează UM și cantitatea introduse plus cantitatea în UM de bază (de ex. 3 paleți + 2 baxuri = 1.452 buc). Factorii unui articol, din set sau din excepție, se pot modifica doar dacă articolul nu are stoc și nici documente; altfel se creează alt set. Codul de bare se poate lega de o UM, ca scanarea unui bax să aducă direct 6 buc.
+Reguli: documentele păstrează UM și cantitatea introduse plus cantitatea în UM de bază (de ex. 3 paleți + 2 baxuri = 1.452 buc). Factorii unui articol, din set sau din excepție, se pot modifica doar dacă articolul nu are stoc și nici documente; altfel se creează alt set. Codul de bare identifică varianta și, opțional, UM-ul, ca scanarea unui bax să aducă direct 6 buc din varianta corectă.
 
 **Setări pe firmă.** Articolul e comun grupului, dar conturile contabile și gestiunea sunt ale fiecărei firme și aparțin modulelor care le folosesc. Pe fișa articolului apar pentru firma curentă, ca tab-uri adăugate de module:
 
@@ -208,18 +176,196 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 
 ![Ecranul Articole · UM și conversii](ecrane/05b-articole-um.png)
 
-**Detalii de implementare (articole, 20.11.2026; decizii confirmate de Aurelian în aceeași zi):**
+### 3.3.1 Articole cu variante configurabile (adăugat pe 16.11.2026)
 
-- Tabelele `core.VatRate`, `UnitOfMeasure`, `UomSet`, `UomSetLine`, `ItemGroup`, `Item`, `ItemUom`, `ItemBarcode` și tipurile tabelare `core.VatRateList`, `UnitOfMeasureList`, `UomLineList` (migrarea `2026.11.012`). `ItemType`: 1 marfă, 2 materie primă, 3 material, 4 produs finit, 5 semifabricat, 6 serviciu (nestocabil, `CHECK`), 7 ambalaj, 8 mijloc fix. `ItemAttribute` (atribute libere) nu s-a făcut: proprietățile configurabile ale articolului îl acoperă.
-- **Date livrate** (adăugate doar dacă lipsesc): cotele TVA verificate pe 20.11.2026 (Legea 141/2025): `S21` 21% și `R11` 11% din 01.08.2025; `S19`, `R9`, `R5` istorice până la 31.07.2025; `Z0`, `E0`, `AE`, `K0`, `G0`, `O0` (categoriile UBL S, Z, E, AE, K, G, O; doar S are procent diferit de zero). UM-urile uzuale cu codurile UN/ECE (Recomandările 20 și 21: H87, KGM, LTR, XBX, XCR, XPX …) și seturile `BUC`, `KG`, `L`, `M`, `H`, `BAUT05` (buc / bax 6 / lădiță 24 / palet 480).
-- **Codul** lăsat gol se alocă din seria `Core.Item` („Cod articol”) a firmei curente, creată automat (`A-{An}-{000001}`, nefiscală), cu numerele deja folosite sărite, ca la parteneri. Codul de articol duplicat dă 409 `CORE_ITEM_DUPLICATE_CODE`, codul de bare duplicat 409 `CORE_ITEM_DUPLICATE_BARCODE`.
-- **UM**: `BaseUomId` se copiază din linia de bază a setului; schimbarea bazei setului o mută și la articolele lui. Excepțiile articolului (`ItemUom`) se salvează odată cu fișa și au prioritate față de linia din set. Regula „factorii nu se schimbă dacă articolul are stoc sau documente” se aplică odată cu modulele Stocuri și Vânzări (acum nu există stoc sau documente).
-- **Coduri de bare**: EAN-13, EAN-8, GTIN-14 (cifra de control GS1 verificată) sau intern; opțional legate de o UM a articolului (scanarea unui bax aduce baxul). Căutarea listei găsește articolul și după codul de bare exact.
-- Garanția SGR (`DepositItemId`) e un articol activ de tip ambalaj; un ambalaj folosit ca garanție nu se dezactivează. Codul NC se salvează fără spații (4–10 cifre). Greutățile și volumul sunt pe UM de bază, ca șiruri zecimale în API.
-- Proprietățile articolelor folosesc `PropertyDefinition` cu `EntityType = Item` (Configurare › Proprietăți, tab-ul Articole); toate se aplică oricărui articol.
-- Salvarea publică `ArticolModificat`; cotele TVA și UM-urile publică `NomenclatorFiscalModificat`.
-- **Ecranul** (Nomenclatoare › Articole): listă paginată pe server, căutare după denumire (fără diacritice), cod sau cod de bare, filtrele Toate / Stocabile / Nestocabile, grupă (cu subgrupele ei), tip, inactive și o proprietate filtrabilă; fișa cu Date generale, UM și conversii (liniile setului, excepțiile articolului, exemplul de conversie, masă și volum) și Proprietăți (un singur formular, o singură salvare), Coduri de bare și Istoric. Export Excel și Import (Configurare › Import, entitatea Articole) cu coloanele datelor generale, setul de UM, cota TVA și grupa după cod și un cod de bare; un rând cu același cod actualizează articolul. Nu sunt încă: tab-urile Contabilitate și Stoc (modulele Finanțe și Stocuri), „stoc / ultimul preț de achiziție / folosit în N firme”.
-- **Configurare › Nomenclatoare** (macheta 07, `Core.Nomenclature.Manage`): cotele TVA și UM-urile editate direct în tabel, salvate împreună (o cotă folosită nu își schimbă codul, procentul, categoria sau data de început, doar primește „valabil până la”; perioadele aceluiași cod nu se suprapun; o UM folosită nu își schimbă codurile), seturile de UM cu liniile lor și arborele grupelor de articole (fără cicluri; o grupă cu subgrupe sau articole active nu se dezactivează). Valutele, țările, județele și localitățile din machetă vin cu etapele lor.
+La cererea lui Aurelian din 16.11.2026, modelul din promptul „Articole cu variante configurabile” a fost integrat în Nucleu. Tabelele din prompt erau un model. Aici sunt adaptate la schema `core` și la regulile din [Bune practici](../../bune-practici/BUNE_PRACTICI.md): nume în engleză (`SQL-02`), chei `int IDENTITY` (`SQL-13`), coduri unice fără diferență de majuscule (`SQL-24`) și seturile de UM existente. Exemplele cu ață, nasturi și confecții sunt doar ilustrative. Mecanismul funcționează pentru orice articol, prin configurare, fără cod nou.
+
+**Ce se schimbă față de modelul validat pe 14.11.2026:** articolul (`core.Item`) devine **model**. Stocul și liniile de document nu mai trimit la articol, ci la **variantă** (`core.ItemVariant`), care e singura unitate de stoc. Un articol fără variante are o singură variantă implicită, creată automat. Pentru celelalte module asta înseamnă o singură regulă: orice linie cu efect în stoc, preț sau fiscal are `ItemVariantId`.
+
+**Termeni.** Termenul „tip articol” din prompt devine aici **familie de articole** (`ItemFamily`), pentru că `Item.ItemType` există deja și înseamnă natura articolului (marfă, materie primă, serviciu etc.).
+
+| Termen | Ce este | Exemplu |
+| --- | --- | --- |
+| Familie de articole | Configurarea comună a unui set de articole: atribute de identitate, axe, niveluri de stoc, șabloane, mod de creare a variantelor | Ață, Nasturi, Confecții |
+| Grupă de articole | Clasificarea ierarhică existentă (`ItemGroup`); poate da paleta implicită de valori a modelelor din ea | Mercerie › Ață |
+| Articol (model) | Combinația valorilor atributelor de identitate. Nu ține stoc și nu apare pe liniile de document | Ață mosor 500 m · Tex 30 |
+| Variantă (SKU) | Modelul plus câte o valoare pe fiecare axă. Singura unitate de stoc. Are cod SKU și coduri de bare pe UM | ATA-M500-T30-1145 (Roșu) |
+| Variantă implicită | Singura variantă a unui articol fără axe, cu toate sloturile `NULL` | orice articol simplu, inclusiv serviciile |
+| Atribut de identitate | Atribut care definește modelul: număr, text sau valoare dintr-o listă | lungime, grosime, material |
+| Axă de variantă | Atribut de tip listă care generează variante. Ocupă unul din cele 3 sloturi fixe ale familiei | culoare, mărime |
+| Listă de valori | Domeniul unei axe sau al unui atribut de tip listă, de regulă specific unui producător | paleta de culori a unui producător |
+| Grupă de valori | Gruparea valorilor unei liste, pe cel mult 3 niveluri, folosită la preț și la raportare | Culori › Nuanțe calde › Roșu |
+| Valori permise | Subsetul listei acceptat de un anumit model, pe fiecare slot | 10 culori dintr-o paletă de sute |
+| Nivel de stoc | O treaptă din arborele de stoc sub model: o grupă de la o anumită adâncime sau valoarea unei axe | Grupă culoare → Culoare |
+
+**Maparea tabelelor din prompt pe schema proiectului:**
+
+| Prompt (model) | Proiect | Ce s-a adaptat |
+| --- | --- | --- |
+| `Lista`, `ListaGrupa`, `ListaGrupaAscendent`, `ListaValoare` | `core.ValueList`, `core.ValueListGroup`, `core.ValueListGroupAncestor`, `core.ValueListValue` | Nume în engleză; `CodeKey` (`SQL-24`) unic pe listă, nu global; coloane de audit |
+| `Atribut` | `core.ItemAttributeDefinition` | Tipul de date e `tinyint` cu `CHECK` (`SQL-10`); atributul cu sistem de măsură are lista sistemelor |
+| `TipArticol` (+ sloturile de axă) | `core.ItemFamily` | Redenumit (vezi termenii); `Axis1..3AttributeId` |
+| `TipArticolAtribut` | `core.ItemFamilyAttribute` | — |
+| `TipArticolNivelStoc` | `core.ItemFamilyStockLevel` | `Source` e `tinyint` (1 = grupă, 2 = valoare) |
+| `TipArticolValoareImplicita` | `core.ItemFamilyDefaultValue` | — |
+| `GrupaArticol` | `core.ItemGroup` (existent) | Fără tabel nou |
+| `GrupaArticolValoareImplicita` | `core.ItemGroupDefaultValue` | — |
+| `Articol` | `core.Item` (existent) | Primește `ItemFamilyId` și `FirstUsedAt`. `UMBaza` e deja `UomSetId` + `BaseUomId`. `PretVanzare` nu intră în Nucleu (vezi prețul) |
+| `ArticolUM` | `core.UomSet`, `core.UomSetLine`, `core.ItemUom` (existente) | UM-urile alternative vin din setul de UM, cu excepții pe articol. Sunt comune tuturor variantelor |
+| `ArticolAtribut` | `core.ItemAttribute` (existent, refolosit) | Nu mai ține atribute libere cheie/valoare. Acelea sunt deja acoperite de proprietățile configurabile (`PropertyDefinition`). Ține valorile atributelor de identitate |
+| `ArticolValoarePermisa` | `core.ItemAllowedValue` | — |
+| `ArticolPretGrupa`, `PretVanzare` pe model și pe variantă | `sales.PriceListLine` (modulul Vânzări, 02.03) | Prețul aparține Vânzărilor (secțiunea 1). Nucleul fixează doar regula de căutare a prețului |
+| `ArticolVarianta` | `core.ItemVariant` | `Axis1ValueId..Axis3ValueId`, `Code` (SKU) cu `CodeKey`, `Name` cu `NameSearch`, `FirstUsedAt`, coloane de audit |
+| `VariantaEAN` | `core.ItemBarcode` (existent) | Primește `ItemVariantId` (obligatoriu) în loc de `ItemId`; `UomId` rămâne opțional, deci un cod de bare identifică varianta și UM-ul |
+| `Stoc` | `inv.Stock` (modulul Stocuri, 02.05) | Cheia este `ItemVariantId` + gestiune + dimensiunile de depozitare și de trasabilitate |
+| `usp_VariantaAsigura` | `core.usp_ItemVariant_Ensure` | Procedură publică, cu `UPDLOCK, HOLDLOCK` |
+| `fnPretVarianta` | `sales.fn_VariantPrice` (02.03) | Ordinea de căutare e fixată mai jos |
+
+**Reguli de modelare (invarianți).** Nu se schimbă fără o decizie explicită a lui Aurelian.
+
+1. **Stocul stă doar pe variantă.** Stocul, mișcările, rezervările, inventarul și toate liniile de document cu efect în stoc, preț sau fiscal trimit la `ItemVariantId`. Modelul nu ține stoc. Extensiile pe firmă (`fin.ItemAccounting`, `inv.ItemStockSettings`), codul NC, cota TVA și setul de UM rămân pe model și sunt moștenite de variante.
+2. **Orice articol are cel puțin o variantă.** Un articol fără familie sau dintr-o familie fără axe primește la salvare varianta implicită, cu sloturile `NULL` și SKU-ul egal cu codul articolului. Nu există linii cu `ItemId` și variantă opțională.
+3. **Cel mult 3 axe, pe sloturi fixe.** Axele sunt coloanele `Axis1ValueId..Axis3ValueId` din `ItemVariant`, iar familia spune ce atribut ocupă fiecare slot. Unicitatea combinației e constrângerea `UQ_ItemVariant_Axes (ItemId, Axis1ValueId, Axis2ValueId, Axis3ValueId)`. SQL Server tratează `NULL`-urile ca egale aici, deci există o singură variantă implicită pe articol. Nu există tabel atribut–valoare pentru axe.
+4. **Structura atribut–valoare servește doar identitatea.** `ItemAttribute` ține atributele de identitate, folosite la identitate, căutare și denumire. Prețul, UM, cota TVA, conturile și gestiunea rămân coloane obișnuite, în tabelele lor.
+5. **Axele sunt dimensiuni de produs.** Gestiunea și locația (dimensiuni de depozitare), lotul, seria și termenul de valabilitate (dimensiuni de trasabilitate, `TrackingMode`) stau pe stoc, în Stocuri. Nu devin niciodată axe de variantă.
+6. **Grupele de valori aparțin listei și sunt ierarhice.** O grupă poate avea o grupă părinte din aceeași listă, pe cel mult 3 niveluri. O valoare aparține unei singure grupe, de la orice adâncime. Un caz special pe un subset de valori (preț, raportare, aprovizionare) se rezolvă cu o grupă și un preț pe grupă, nu cu articole separate.
+7. **Fiecare model are valori permise.** La crearea modelului, valorile permise pe fiecare slot se iau din paleta celei mai apropiate grupe de articole care are paletă pentru lista slotului, urcând în arbore. Dacă nu există, se iau din paleta familiei. Modelul le restrânge sau le extinde apoi. O variantă se poate crea doar din valori permise pe slotul ei.
+8. **Modul de creare a variantelor se alege pe familie.** `D` (la prima utilizare) creează varianta la prima cantitate introdusă pe un document și e implicit pentru liste mari. `I` (imediat) generează toate combinațiile permise la salvarea articolului și se potrivește listelor mici.
+9. **Ordinea de căutare a prețului** (aplicată de Vânzări în `sales.fn_VariantPrice`, pe lista de prețuri a documentului): variantă → cea mai apropiată grupă de valori cu preț, urcând de la grupa valorii → model. Când mai multe sloturi au grupe cu preț, câștigă slotul cu numărul cel mai mic. Prețul se definește pe UM de bază. Precizare din Vânzări V2 (27.11.2026): căutarea se face în lista documentului (lista proprie a partenerului → lista din condițiile clientului → lista grupei → lista firmei), apoi în lanțul de liste părinte (cel mult 3 niveluri, cu ajustare procentuală); pe aceeași țintă se alege pragul de cantitate cel mai mare ≤ cantitatea în UM de bază, iar o linie temporară valabilă la dată are prioritate față de cea permanentă. Procedura e `sales.usp_Price_Resolve` (TVP), apelată de `IPriceEngine`.
+10. **Denumirea și SKU-ul se generează la salvare și se stochează**, din șabloanele familiei. Liniile de document păstrează o copie a denumirii de la emitere. Schimbarea unui șablon nu redenumește variantele existente și nici documentele emise.
+11. **Valoare plus sistem de măsură.** Un atribut numeric cu mai multe sisteme de măsură (de exemplu Tex / Nm) se stochează ca valoare plus sistem, niciodată doar ca număr.
+12. **Codurile valorilor sunt unice pe listă, nu global.** Același cod poate însemna lucruri diferite la doi producători.
+13. **Blocarea după prima utilizare.** Prima validare a unui document cu o variantă setează `FirstUsedAt` pe variantă, pe model și `LockedAt` pe familie, prin `core.usp_ItemVariant_MarkUsed`. Din acel moment atributele de identitate și axele familiei sunt blocate și nu se mai adaugă axe. Pentru o axă nouă se creează o familie nouă și articolele se migrează, cu stocul mutat prin ieșire și intrare. Se pot adăuga în continuare valori în liste și în valorile permise. Se pot schimba nivelurile de stoc și șabloanele, cu efect doar pentru variantele noi. O variantă folosită nu se șterge, se dezactivează și se poate reactiva. Aceeași coloană `FirstUsedAt` blochează și factorii de UM (`CORE_UOM_FACTOR_LOCKED`).
+14. **Arborele de stoc e configurabil pe familie**, cu cel mult 3 niveluri sub model. Un nivel arată fie o grupă de valori de la o anumită adâncime, fie valoarea unei axe. Raportul îl face Stocuri (02.05) după configurarea din `ItemFamilyStockLevel`.
+15. **Introducerea pe documente se face pe grilă.** La recepție, comandă și vânzare se alege modelul, apoi se completează cantitățile pe grila valorilor permise, iar fiecare celulă cu cantitate devine o linie pe variantă. Scanarea unui cod de bare duce direct la variantă și la UM-ul ei. Variantele inactive sunt ascunse implicit. Cine are `Core.Item.Manage` le poate afișa și reactiva din grilă.
+16. **UM-urile vin din setul de UM al modelului** și sunt comune tuturor variantelor. Stocul se ține în UM de bază. Linia de document păstrează UM-ul, cantitatea în acel UM, factorul copiat la emitere și cantitatea în UM de bază (regula existentă din 3.3). Fiecare pereche variantă + UM poate avea cod de bare propriu. Prețul pe o UM alternativă e prețul pe UM de bază înmulțit cu factorul. O cutie cu valori diferite în ea (de exemplu culori asortate) nu e o UM, ci un articol-pachet separat.
+
+**Entitățile noi și cele modificate:**
+
+| Entitate | Câmpuri principale | Reguli |
+| --- | --- | --- |
+| `ValueList` | `Code`, `Name`, `ProducerPartnerId` (opțional), `IsActive` | Lista unei axe sau a unui atribut de tip listă; comună grupului |
+| `ValueListGroup` | `ValueListId`, `ParentId`, `Code`, `Name`, `Depth` (1–3), `SortOrder` | Părintele e din aceeași listă; `Depth` e calculat la salvare; cod unic pe listă |
+| `ValueListGroupAncestor` | `GroupId`, `AncestorGroupId`, `Distance` | Închiderea tranzitivă a arborelui, refăcută la salvare. Servește la preț și la arborele de stoc fără CTE recursiv |
+| `ValueListValue` | `ValueListId`, `GroupId` (opțional), `Code`, `Name`, `ColorHex` (opțional), `SortOrder`, `IsActive` | Cod unic pe listă (`UX (ValueListId, CodeKey)`); o valoare aparține unei singure grupe |
+| `ItemAttributeDefinition` | `Code`, `Name`, `DataType` (1 = număr, 2 = text, 3 = listă), `ValueListId`, `MeasureSystemListId`, `UomId`, `IsActive` | `ValueListId` obligatoriu doar pentru tipul listă; o axă trebuie să fie de tip listă |
+| `ItemFamily` | `Code`, `Name`, `Axis1AttributeId`, `Axis2AttributeId`, `Axis3AttributeId`, `VariantCreationMode` (1 = la prima utilizare, 2 = imediat), `CollapseSingleGroup`, `NameTemplate`, `SkuTemplate`, `LockedAt`, `IsActive` | Sloturile se ocupă în ordine (`CK_ItemFamily_Slots`); după `LockedAt` axele și atributele nu se mai schimbă |
+| `ItemFamilyAttribute` | `ItemFamilyId`, `AttributeId`, `SortOrder`, `IsRequired`, `TemplateCode` | Atributele de identitate; `TemplateCode` e codul folosit în șabloane, de ex. `{LUNGIME}` |
+| `ItemFamilyStockLevel` | `ItemFamilyId`, `Level` (1–3), `Slot` (1–3), `Source` (1 = grupă, 2 = valoare), `GroupDepth` | `GroupDepth` doar pentru sursa grupă |
+| `ItemFamily` (completare 27.11.2026) | + `CnCode varchar(8) NULL` | Codul NC8 implicit al familiei; schimbarea lui actualizează articolele cu `CnCodeOverridden = 0` (Achiziții A6 §3.6) |
+| `ItemFamilyDefaultValue` | `ItemFamilyId`, `Slot`, `ValueId` | Paleta implicită a familiei |
+| `ItemGroupDefaultValue` | `ItemGroupId`, `ValueId` | Paleta grupei de articole, pentru slotul a cărui axă folosește lista valorii; are prioritate față de paleta familiei și se moștenește de la grupa părinte |
+| `Item` (modificat) | + `ItemFamilyId` (opțional), `FirstUsedAt`; + `CnCode`, `CnCodeOverridden` (27.11.2026, Achiziții A6 §3.6) | Fără familie = articol simplu, cu variantă implicită |
+| `ItemAttribute` (refolosit) | `ItemId`, `AttributeId`, `NumberValue` `decimal(19,6)`, `TextValue`, `ValueId`, `MeasureSystemValueId` | Exact una dintre valori, după tipul atributului; indecși pe `(AttributeId, NumberValue)` și `(AttributeId, ValueId)` pentru rapoartele între modele |
+| `ItemAllowedValue` | `ItemId`, `Slot`, `ValueId` | Inițializat din paleta grupei sau a familiei; valoarea trebuie să fie din lista axei slotului |
+| `ItemVariant` | `ItemId`, `Axis1ValueId`, `Axis2ValueId`, `Axis3ValueId`, `Code` (SKU), `Uid`, `Name`, `FirstUsedAt`, `IsActive`, `CnCode` (opțional, 27.11.2026: gol = codul articolului) | Combinație unică; SKU unic în instalare; `Uid` unic, generat la creare și neschimbat (folosit pentru etichete, scanare, sincronizare cu POS, WMS și alte instalări; stocul pe lot are în plus CKU, Stocuri S4); valorile trebuie să fie permise pe slot |
+| `ItemBarcode` (modificat) | `ItemVariantId` în loc de `ItemId`, `UomId` (opțional), `Barcode`, `BarcodeType` | Codul de bare rămâne unic în instalare |
+
+Tabelul complet al variantei, ca model pentru celelalte (`SQL-04`, `SQL-13`, `SQL-19`, `SQL-24`, `SQL-25`):
+
+```sql
+CREATE TABLE core.ItemVariant (
+    Id            int IDENTITY(1,1)  NOT NULL CONSTRAINT PK_ItemVariant PRIMARY KEY,
+    ItemId        int                NOT NULL CONSTRAINT FK_ItemVariant_Item REFERENCES core.Item(Id),
+    Axis1ValueId  int                NULL CONSTRAINT FK_ItemVariant_ValueListValue_Axis1 REFERENCES core.ValueListValue(Id),
+    Axis2ValueId  int                NULL CONSTRAINT FK_ItemVariant_ValueListValue_Axis2 REFERENCES core.ValueListValue(Id),
+    Axis3ValueId  int                NULL CONSTRAINT FK_ItemVariant_ValueListValue_Axis3 REFERENCES core.ValueListValue(Id),
+    Code          nvarchar(60)       NOT NULL,                     -- SKU, generat din ItemFamily.SkuTemplate
+    Uid           uniqueidentifier   NOT NULL CONSTRAINT DF_ItemVariant_Uid DEFAULT (NEWID()),   -- id unic al SKU-ului (adăugat 26.11.2026, Stocuri S4)
+    Name          nvarchar(250)      NOT NULL,                     -- generată din ItemFamily.NameTemplate, stocată
+    FirstUsedAt   datetime2(3)       NULL,                         -- setat de core.usp_ItemVariant_MarkUsed
+    IsActive      bit                NOT NULL CONSTRAINT DF_ItemVariant_IsActive DEFAULT (1),
+    CreatedAt     datetime2(3)       NOT NULL CONSTRAINT DF_ItemVariant_CreatedAt DEFAULT (sysutcdatetime()),
+    CreatedBy     int                NOT NULL,
+    ModifiedAt    datetime2(3)       NULL,
+    ModifiedBy    int                NULL,
+    RowVersion    rowversion         NOT NULL,
+    CodeKey       AS UPPER(Code) PERSISTED,
+    NameSearch    AS (Name COLLATE Latin1_General_100_CI_AI_SC_UTF8) PERSISTED,
+    -- NULL-urile sunt egale într-o constrângere UNIQUE: o singură variantă implicită pe articol
+    CONSTRAINT UQ_ItemVariant_Axes UNIQUE (ItemId, Axis1ValueId, Axis2ValueId, Axis3ValueId),
+    CONSTRAINT CK_ItemVariant_Slots CHECK (
+        (Axis2ValueId IS NULL OR Axis1ValueId IS NOT NULL) AND
+        (Axis3ValueId IS NULL OR Axis2ValueId IS NOT NULL))
+);
+CREATE UNIQUE INDEX UX_ItemVariant_CodeKey ON core.ItemVariant (CodeKey);
+CREATE UNIQUE INDEX UX_ItemVariant_Uid ON core.ItemVariant (Uid);
+CREATE INDEX IX_ItemVariant_NameSearch ON core.ItemVariant (NameSearch) INCLUDE (ItemId, Code, Name, IsActive);
+CREATE INDEX IX_ItemVariant_Axis1ValueId ON core.ItemVariant (Axis1ValueId) WHERE Axis1ValueId IS NOT NULL;
+CREATE INDEX IX_ItemVariant_Axis2ValueId ON core.ItemVariant (Axis2ValueId) WHERE Axis2ValueId IS NOT NULL;
+CREATE INDEX IX_ItemVariant_Axis3ValueId ON core.ItemVariant (Axis3ValueId) WHERE Axis3ValueId IS NOT NULL;
+```
+
+Faptul că valorile sunt din lista axei slotului și sunt permise pe model se verifică în `core.usp_ItemVariant_Ensure` și în `core.usp_Item_Save`, nu în trigger (`SP-01`).
+
+Găsirea sau crearea unei variante (modul „la prima utilizare” și scanarea), după șablonul din Bune practici 3.5 (procedură publică, apelată de modulele cu documente la validare):
+
+```sql
+CREATE OR ALTER PROCEDURE core.usp_ItemVariant_Ensure
+    @ItemId        int,
+    @Axis1ValueId  int = NULL,
+    @Axis2ValueId  int = NULL,
+    @Axis3ValueId  int = NULL,
+    @UserId        int,
+    @ItemVariantId int OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    -- Tranzacția e deschisă de TransactionBehavior (SP-03); UPDLOCK, HOLDLOCK
+    -- împiedică două documente să creeze simultan aceeași variantă (SP-16)
+    SELECT @ItemVariantId = v.Id
+    FROM core.ItemVariant AS v WITH (UPDLOCK, HOLDLOCK)
+    WHERE v.ItemId = @ItemId
+      AND v.Axis1ValueId IS NOT DISTINCT FROM @Axis1ValueId
+      AND v.Axis2ValueId IS NOT DISTINCT FROM @Axis2ValueId
+      AND v.Axis3ValueId IS NOT DISTINCT FROM @Axis3ValueId;
+
+    IF @ItemVariantId IS NULL
+    BEGIN
+        -- fiecare valoare trebuie să fie permisă pe slotul ei
+        IF EXISTS (
+            SELECT 1
+            FROM (VALUES (1, @Axis1ValueId), (2, @Axis2ValueId), (3, @Axis3ValueId)) AS s(Slot, ValueId)
+            WHERE s.ValueId IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM core.ItemAllowedValue AS a
+                              WHERE a.ItemId = @ItemId AND a.Slot = s.Slot AND a.ValueId = s.ValueId))
+            THROW 50018, N'Valoarea nu este permisă pe acest articol.', 1;   -- SP-04
+
+        -- numărul de valori trebuie să fie egal cu numărul de axe ale familiei
+        IF NOT EXISTS (
+            SELECT 1
+            FROM core.Item AS i
+            LEFT JOIN core.ItemFamily AS f ON f.Id = i.ItemFamilyId
+            WHERE i.Id = @ItemId
+              AND IIF(f.Axis1AttributeId IS NULL, 0, 1) = IIF(@Axis1ValueId IS NULL, 0, 1)
+              AND IIF(f.Axis2AttributeId IS NULL, 0, 1) = IIF(@Axis2ValueId IS NULL, 0, 1)
+              AND IIF(f.Axis3AttributeId IS NULL, 0, 1) = IIF(@Axis3ValueId IS NULL, 0, 1))
+            THROW 50019, N'Varianta nu are câte o valoare pe fiecare axă a familiei.', 1;
+
+        INSERT core.ItemVariant (ItemId, Axis1ValueId, Axis2ValueId, Axis3ValueId, Code, Name, CreatedBy)
+        SELECT @ItemId, @Axis1ValueId, @Axis2ValueId, @Axis3ValueId, n.Code, n.Name, @UserId
+        FROM core.fn_ItemVariant_BuildNames(@ItemId, @Axis1ValueId, @Axis2ValueId, @Axis3ValueId) AS n;
+
+        SET @ItemVariantId = SCOPE_IDENTITY();
+    END;
+END;
+```
+
+`core.fn_ItemVariant_BuildNames` e o funcție inline care aplică șabloanele familiei (`{COD}`, codurile atributelor, `{AXA1}`..`{AXA3}`) și întoarce `Code` și `Name`.
+
+**Fiscal: SAF-T D406 și e-Factura.** În raportările fiscale, produsul este varianta, pentru că ea e unitatea de stoc.
+
+- **D406:** în `MasterFiles/Products`, `MovementOfGoods` și liniile de factură, produsul raportat e varianta, iar `ProductCode` e SKU-ul. Modelul poate fi transmis ca grupă de produs. UM-ul de bază al produsului e UM-ul de bază al modelului. Cantitățile în UM alternative se raportează cu factorul copiat pe linie la emitere, nu cu factorul curent.
+- **e-Factura:** denumirea liniei e copia denumirii variantei de la emitere, codul articolului vânzătorului e SKU-ul, iar codul de bare al perechii variantă + UM, dacă există, merge ca identificator standard (GTIN). Cantitatea și UM-ul liniei sunt cele de pe document (de exemplu 3 cutii), cu codul UN/ECE. Codul NC stă pe model și e moștenit de variante.
+- Orice schimbare de structură (mutarea stocului pe model, unirea unor variante, schimbarea unui factor de conversie) se verifică înainte pentru efectul asupra acestor raportări.
+
+**Migrarea datelor existente.** Fiecare articol existent devine model fără familie, cu variantă implicită (SKU = codul articolului), iar codurile lui de bare trec pe acea variantă. Articolele vechi care diferă doar printr-o valoare se pot uni sub un model nou, prin mutare de stoc, cu codul vechi păstrat ca SKU. Pentru că modulele cu documente (Vânzări, Achiziții, Stocuri) nu sunt încă scrise, schimbarea nu cere migrarea liniilor de document.
+
+**Repere din alte ERP-uri.** Deciziile urmează practica marilor producători: SAP S/4HANA Retail (articol generic cu variante, separarea caracteristicilor de variantă de cele informative, matrice de introducere), Dynamics 365 SCM (dimensiuni de produs fixe și redenumibile, separate de cele de depozitare și de trasabilitate, grupuri de culori), Business Central (stocul pe variantă, varianta obligatorie pe documente), Odoo (modurile de creare a variantelor, blocate după utilizare, grilă pe documente) și NetSuite (părintele matricei nu apare pe tranzacții). Grupa de valori ca nivel în arborele de stoc nu există standard la ei; la noi e o extensie intenționată.
+
+![Ecranul Articole · Variante](ecrane/05c-articole-variante.png)
 
 ### 3.4 Utilizatori, roluri și permisiuni
 
@@ -229,8 +375,7 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | `Role` | `Code`, `Name`, `Description`, `IsSystem` | Rolurile de sistem (de ex. Administrator) nu se pot șterge |
 | `Permission` | `Code` (de ex. `Sales.Invoice.Validate`), `Module`, `Description` | Lista e generată din cod la pornire; nu se editează manual |
 | `RolePermission` | `RoleId`, `PermissionId` | — |
-| `UserRoleAssignment` | `UserId`, `RoleId`, `CompanyGroupId`, `CompanyId`, `BranchId`, `LocationId`, `DimensionScope` (JSON: gestiuni, centre de cost, șantiere) | Un rol se atribuie pe un nod (21.11.2026): toate nule = toată instalarea (toate firmele, și cele create ulterior), permis doar pentru rolul de sistem `ADMIN` (50034); `CompanyGroupId` = grupul de firme cu subgrupurile lui (orice rol); `CompanyId` = firma; `CompanyId` + `BranchId` sau `LocationId` = punctul de lucru sau locația (verificat în `core.usp_UserRoleAssignment_Save`, `CK_UserRoleAssignment_Scope`) |
-| `UserPermissionOverride` | `UserId`, `PermissionId`, `CompanyId`, `Effect` (`G` adăugat / `R` revocat), `Reason` | Excepție față de drepturile moștenite din roluri (21.11.2026, vezi „Roluri și excepții pe utilizator” mai jos). `CompanyId = NULL` = toate firmele; un drept adăugat cere motivul |
+| `UserRoleAssignment` | `UserId`, `RoleId`, `CompanyId`, `DimensionScope` (JSON: gestiuni, centre de cost, șantiere) | Un rol se atribuie per firmă; scope gol = toată firma. `CompanyId = NULL` = toată instalarea (toate firmele, și cele create ulterior), permis doar pentru rolul de sistem `ADMIN` (verificat în `core.usp_UserRoleAssignment_Save`) |
 | `Employee` | `CompanyId`, `BranchId`, `EmployeeNo` (marca), `FirstName`, `LastName`, `Department`, `JobTitle`, `WorkEmail`, `Phone`, `HireDate`, `LeaveDate`, `IsActive` | Fișa minimă de angajat, în Nucleu ca utilizatorii să se poată lega de ea și fără modulul HR; HR o extinde în schema `hr` (contract, salarizare, CNP). UQ `(CompanyId, EmployeeNo)` |
 
 **Utilizator angajat sau extern** (adăugat pe 14.11.2026). Pe `User` se adaugă `IsEmployee` `bit`, `EmployeeId` `int` (FK `core.Employee`), `ExternalPartnerId` `int` (organizația, FK `core.Partner`), `SponsorUserId` (responsabilul intern), `AccessReason`, `ValidFrom`, `ValidUntil` `date`, `FirstName`, `LastName`. Constrângerea `CK_User_Kind` cere: angajat ⇒ `EmployeeId` completat; extern ⇒ `EmployeeId` gol și `ValidUntil`, `SponsorUserId`, `AccessReason` completate.
@@ -248,78 +393,15 @@ Alte extensii (de ex. `mfg.ItemRecipeSettings`) stau tot în schema modulului, c
 | Cont | Detaliu |
 | --- | --- |
 | `system` (`Id = 1`) | Utilizator tehnic creat de prima migrare, `IsActive = 0`, fără cont în `ids`; e `CreatedBy` pentru datele livrate și pentru joburi |
-| Administratorul integrat | Creat de installer (08, secțiunea 5.10): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
+| Administratorul integrat | Creat de installer (08, secțiunea 8.8): nume implicit `administrator`, rolul `ADMIN` la nivel de instalare (`CompanyId = NULL`), parolă temporară cu schimbare obligatorie, 2FA obligatoriu, intrare de audit `Core.User.CreateInitialAdmin`. Nu se poate șterge; se poate dezactiva doar dacă rămâne alt Administrator activ (50015). Accesul de urgență se reface cu `ErpSetup.exe reset-admin` |
 
 Codurile rolurilor de sistem sunt fixe și se scriu exact: `ADMIN`, `NOMENCLATOARE`, `AUDITOR`, `STANDARD`.
-
-**Domeniul drepturilor și proprietarul** (deciziile lui Aurelian din 21.11.2026). Un utilizator X poate avea drepturi pe o firmă Y din grup (și atunci pe toate punctele ei de lucru și locațiile), doar pe un punct de lucru sau doar pe o locație. Adaugă articole, parteneri etc. doar unde are drepturi, iar înregistrarea adăugată aparține acelui nod. Administratorul se adaugă pe o firmă, pe mai multe sau pe grup (firma-mamă: toate firmele, punctele de lucru și locațiile grupului).
-
-| Regulă | Detaliu |
-| --- | --- |
-| Atribuirea | Pe instalare (doar `ADMIN`), pe grup (firmele grupului și ale subgrupurilor, orice rol), pe firmă, pe punct de lucru (cu locațiile lui) sau pe locație. Funcția `core.fn_AssignmentScope` desface atribuirile pe firmele acoperite; drepturile efective pe o firmă (`usp_User_GetPermissions`) și lista firmelor (`fn_UserCompanies`) le folosesc pe toate. Un rol pe un punct de lucru dă permisiunile lui pe firmă; restrângerea pe nod se aplică datelor care au proprietar |
-| Proprietarul | `Item` și `Partner` au `OwnerCompanyId`, `OwnerBranchId`, `OwnerLocationId`: toate nule = comun grupului; altfel firma, cu punctul de lucru sau locația ei. Proprietarul nu se alege (decizia lui Aurelian din 21.11.2026): o înregistrare nouă aparține nodului din antet — firma („Toată firma”), punctul de lucru sau locația curentă —, iar „Aparține” din fișă e doar pentru citire și nu se mai schimbă. Comunele vin din import și din datele existente |
-| Antetul | Lângă firmă, selectorul „Punct de lucru / locație”: „Toată firma” (doar cu rol pe toată firma) și nodurile firmei pe care utilizatorul are un rol (`/me`: `WholeCompany`, `Nodes`, din `core.usp_User_GetNodes`). Alegerea se ține în browser, pe firmă. Listele de articole și parteneri se filtrează după acest nod (`ContextBranchId` / `ContextLocationId`, `core.fn_UserOwnerNodesInContext`: ca și cum ar fi singurul nod al utilizatorului; un nod care nu e al lui se ignoră), iar filtrul „Aparține” doar restrânge |
-| Vizibilitate | Comunele, cele ale firmei curente și ale nodurilor de deasupra nodului utilizatorului (firma, punctul de lucru al locației lui) și tot ce e în nodul lui sau dedesubt. Cine are dreptul pe toată firma vede tot ce aparține firmei. Înregistrările altor firme nu se văd (se schimbă firma curentă). Listele pornesc de la nodul din antet; filtrul „Aparține” restrânge la comune, ale firmei, ale unui punct de lucru (cu locațiile lui) sau ale unei locații. O înregistrare nevăzută răspunde 404 |
-| Modificare | Doar în nodul utilizatorului și dedesubt (`core.usp_OwnerAccess_Check`, 50037; serverul verifică și proprietarul trimis de antet). Comunele și cele ale firmei cer dreptul pe toată firma. Adresele, conturile bancare, contactele partenerului și codurile de bare ale articolului urmează proprietarul. Importul Excel creează înregistrări comune, deci cere dreptul pe toată firma |
-| CUI | Unic în toată baza: la al doilea partener cu același CUI, mesajul (50002) spune partenerul existent și unde există (comun sau în ce firmă / punct de lucru / locație) și că poate fi folosit pe facturi, NIR și celelalte documente. Modulele cu documente caută partenerul după CUI indiferent de proprietar (de implementat odată cu ele) |
-| Limite actuale | Restrângerea pe nod se aplică articolelor și partenerilor. Celelalte ecrane ale Nucleului (fișa firmei, seriile, setările) folosesc încă permisiunea pe firmă; documentele modulelor vor folosi `core.fn_UserNodeAccess` / `fn_UserOwnerNodes` |
-
-Implementare: migrarea `2026.11.015` (nodul atribuirii, tipul `core.UserRoleAssignmentList` cu nodul, proprietarul pe `core.Item` și `core.Partner`, `UQ_Location_Id_CompanyId` pentru cheile compuse), funcțiile `core.fn_AssignmentScope`, `fn_UserNodeAccess` (unde are utilizatorul o permisiune în firmă), `fn_UserOwnerAccess` (accesul pe un proprietar), `fn_UserOwnerNodes` (nodurile vizibile / modificabile), procedurile `core.usp_OwnerAccess_Check`, `usp_OwnerOptions_Get` (`GET /owner-options/{Item|Partner}`); căutările, exportul, fișele și salvările articolelor și partenerilor primesc utilizatorul și firma curentă. UI: fișa utilizatorului alege nodul fiecărui rol (grup / firmă / punct de lucru / locație); fișa firmei are tab-ul „Utilizatori” (cine are roluri care acoperă firma, pe ce nod, cu matricea de drepturi doar pentru citire, `GET /companies/{id}/access`, `Core.User.Manage`).
-
-**Roluri și excepții pe utilizator** (deciziile lui Aurelian din 21.11.2026). Grupul de utilizatori este rolul: în interfață și în cod se folosește consecvent termenul „rol” (`Role`). Un utilizator moștenește drepturile tuturor rolurilor lui de pe firmă (poate avea mai multe roluri) și poate primi excepții: un drept **adăugat** (`G`) peste roluri sau un drept **revocat** (`R`) dintre cele moștenite.
-
-| Regulă | Detaliu |
-| --- | --- |
-| Calcul | Drepturi efective pe firmă = reuniunea drepturilor rolurilor + drepturile adăugate − drepturile revocate (`core.usp_User_GetPermissions`). Revocarea câștigă, chiar dacă alt rol sau o excepție pentru toate firmele dă dreptul |
-| Domeniu | Excepția e pe firmă sau pe toate firmele (`CompanyId = NULL`); pe o firmă se aplică ambele. Unic pe `(UserId, PermissionId, CompanyId)` |
-| Motiv | Obligatoriu pentru un drept adăugat (50036, `CK_UserPermissionOverride_GrantReason`); opțional la revocare |
-| Administrator | Cine are rolul `ADMIN` pe firmă are toate drepturile și nu primește excepții (50036); rolul `ADMIN` nu se editează (50035) |
-| Separare | Nimeni nu-și schimbă propriile excepții (`CORE_USER_SELF_ROLES`); excepțiile cer `Core.Role.Manage` |
-| Audit | Salvarea excepțiilor unui utilizator: `Core.User.PermissionOverride` pe `Core.User`, vizibilă în istoricul fișei; rolurile: `Core.Role.Save` / `Core.Role.Delete` pe `Core.Role` |
-
-Implementare: migrarea `2026.11.014` (`core.UserPermissionOverride`, tipurile `core.PermissionIdList`, `core.UserPermissionOverrideList`, `core.IdList`), procedurile `core.usp_RoleMatrix_Get`, `usp_Role_Save` (lista înlocuiește permisiunile; codul unui rol de sistem nu se schimbă), `usp_Role_Delete` (doar rolurile clientului, neatribuite: 50010), `usp_UserPermissionOverride_Save` (lista înlocuiește excepțiile utilizatorului pe firma aleasă; cele neschimbate își păstrează autorul și data). API: `GET /roles/matrix?companyId=`, `POST /roles`, `PUT /roles/{id}`, `POST /roles/{id}/delete`, `PUT /users/{id}/permission-overrides`. Drepturile se recalculează la fiecare cerere, deci o schimbare se aplică imediat, fără închiderea sesiunilor.
-
-**Detalii de implementare (administrarea utilizatorilor, 21.11.2026).** Deciziile lui Aurelian din 21.11.2026: parola inițială a unui utilizator nou e o parolă temporară generată de server, arătată o singură dată administratorului (schimbare obligatorie la prima autentificare), până când invitația pe email devine posibilă (notificările, etapa 10); fișa minimă de angajat rămâne `core.Employee` în Nucleu, cu ecran propriu „Angajați” (listă și fișă, fără machetă aprobată; macheta se face odată cu modulul HR); utilizatorul extern primește coloanele `ExternalAccessType` (`AUDITOR`, `CONSULTANT`, `ACCOUNTANT`, `TECHNICAL` = cont tehnic, fără parolă interactivă) și `Phone`, din macheta 06c.
-
-- Migrarea `2026.11.013`: `core.Employee` (marca unică pe firmă fără diferență de majuscule, `EmployeeNoKey`; căutare după „prenume nume” și „nume prenume” fără diacritice; punctul de lucru al firmei prin cheia compusă `(BranchId, CompanyId)`), `FK_User_Employee`, `User.ExternalAccessType`, `User.Phone`, `User.NameSearch`, indexul unic `(UserId, RoleId, CompanyId)` pe atribuiri și tipul `core.UserRoleAssignmentList`. Permisiuni noi: `Core.Employee.View` / `.Manage` (Auditorul primește `View`).
-- Proceduri: `core.usp_User_Search` (filtrele machetei 06 și indicatorii; „Fără 2FA” = activ, cu parolă, fără aplicația de autentificare), `usp_User_Get`, `usp_User_GetAccount`, `usp_User_Save`, `usp_UserRoleAssignment_Save` (înlocuiește lista; păstrează restricțiile atribuirilor neschimbate), `usp_UserLookups_Get`, `usp_User_History`, `usp_User_DeactivateExpired`; `usp_Employee_Search`, `usp_Employee_Get`, `usp_Employee_Save`, `usp_EmployeeLookups_Get`, `usp_Employee_History`. În `ids`: view-ul `ids.v_UserAccountSecurity` (fără hash-uri, citit de listă și de tab-ul Securitate) și procedurile `ids.usp_UserAccount_Create`, `usp_UserAccount_AdminUpdate`, `usp_UserAccount_AdminReset` (resetare parolă, deblocare, resetare 2FA, închiderea sesiunilor), `usp_UserSession_List`.
-- Contul din `core` și cel din `ids` se scriu în aceeași tranzacție a comenzii: contractul `IIdentityAccountAdmin` (`Erp.Core.Contracts`) e implementat în `Erp.Auth`. 2FA e obligatoriu pentru externi (fără conturile tehnice) și pentru cine are rolul `ADMIN`; se recalculează la fiecare salvare a contului sau a rolurilor.
-- Reguli: angajatul are un singur cont (50012), iar numele, emailul și funcția vin din fișa lui (salvarea fișei le actualizează și în contul legat, inclusiv emailul din `ids`); externul cere tip acces, organizație, responsabil intern activ (angajat sau cont de sistem), motiv și perioadă, cel mult `Users.ExternalAccessMaxMonths` luni (setare, implicit 12); `CompanyId = NULL` doar pentru `ADMIN` (50034); ultimul administrator activ al instalării nu se dezactivează și nu-și pierde rolul (50015); nimeni nu-și schimbă propriile roluri și nu-și dezactivează propriul cont; administratorul integrat își păstrează numele de utilizator și tipul (50033); contul tehnic `system` nu se deschide.
-- Licența: un utilizator nou sau reactivat consumă o poziție din limita `users`; se numără utilizatorii activi fără conturile de sistem (50032). Dacă se numără și administratorul integrat rămâne de confirmat.
-- Autentificarea refuză contul din ziua expirării accesului extern (după `ValidUntil`, și înainte de `ValidFrom`) și din data încetării contractului angajatului (`core.v_UserLoginStatus`, folosit și de `usp_User_GetPermissions`). Jobul zilnic Hangfire `core-user-access-expiration` din `Erp.Worker` (00:05 UTC) trece apoi conturile pe inactiv, scrie auditul ca `system`, pune `UtilizatorDezactivat` în outbox și închide sesiunile. Notificarea responsabilului cu 14 zile înainte vine cu notificările (etapa 10).
-- Preferințe (21.11.2026, deciziile lui Aurelian): preferințele de notificare se țin **doar** în `User.NotificationPreferences` (JSON `{"version":1,"types":{"<cod>":{"inApp","email","emailMode"}}}`, salvat cu `SaveUser.NotificationPreferences`, aceeași versiune ca fișa; `null` = neschimbate), nu și în `core.Setting`. Catalogul tipurilor e în cod (`NotificationTypes`): acum doar tipurile Nucleului — `Core.ExternalAccessExpiring`, `Core.AccountLocked`, `Core.LicenseExpiring`, `Core.OutboxFailed`, `Core.ImportCompleted`; modulele își adaugă tipurile odată cu notificările lor. Un tip fără alegere primește implicitele: în aplicație toate, email imediat doar pentru cele critice (propunere: critice sunt contul blocat, licența care expiră și mesajul de integrare eșuat definitiv; de validat). Un tip critic nu se oprește în aplicație (400 pe câmpul `notificationPreferences.<cod>`). Ora rezumatului zilnic se stabilește cu notificările (etapa 10); până atunci preferințele doar se păstrează.
-- Nerealizate încă: export Excel, sincronizarea Active Directory și legătura cu contul Windows, cheile API ale conturilor tehnice (`ids.ApiKey`), restricțiile pe dimensiuni din „Roluri și firme” (vin cu dimensiunile).
 
 ![Ecranul Utilizatori · listă](ecrane/06-utilizatori.png)
 
 ![Utilizator angajat](ecrane/06b-utilizator-angajat.png)
 
 ![Utilizator extern](ecrane/06c-utilizator-extern.png)
-
-#### 3.4.1 Extinderi aprobate pentru utilizatori și drepturi (revenim asupra lor mai târziu)
-
-**Stare: aprobat de Aurelian (21.11.2026), neimplementat; revenim asupra lor mai târziu.** Lista a pornit de la ce oferă alte ERP-uri (SAP, Microsoft Dynamics 365, Oracle NetSuite, Odoo, Charisma, WinMentor Enterprise, Senior ERP) față de ce există deja: conturi de angajați și de externi, roluri pe instalare / grup / firmă / punct de lucru / locație, matricea de drepturi cu excepții, proprietarul articolelor și partenerilor din nodul din antet, 2FA, sesiuni și istoric. Fiecare punct se detaliază (model, reguli, ecran) înainte de implementare. Ordinea propusă pentru început: 1, 3, 2; punctul 4 odată cu modulul Stocuri.
-
-| Nr. | Extindere | Ce înseamnă | Inspirație | Mărime |
-| --- | --- | --- | --- | --- |
-| 1 | Raport „cine poate face ce” și „de ce are dreptul” | Pentru un drept: toți utilizatorii care îl au, pe ce firmă sau nod. Pentru un utilizator: fiecare drept explicat (rolul R pe nodul N, excepție sau Administrator). Include „Raport utilizatori și drepturi” și „Compară cu alt rol” din macheta 07e | SAP SUIM, Dynamics „Security diagnostics” | M |
-| 2 | Drepturi incompatibile | Perechi de drepturi care nu trebuie să ajungă la același om (de exemplu creare furnizor și aprobare plată, emitere factură și încasare); avertisment sau blocaj cu motiv obligatoriu la salvarea unui rol sau a unei excepții | SAP GRC, Dynamics „Segregation of duties” | M |
-| 3 | Roluri și excepții cu valabilitate în timp; înlocuitori | Atribuirea și excepția cu dată de început și de sfârșit; „îl înlocuiește pe X între …”, cu drepturile lui X pe perioadă, expirate automat de jobul zilnic | Substituirea din SAP, delegările din NetSuite și Odoo | M |
-| 4 | Restricții pe date dincolo de proprietar | Agentul vede doar clienții lui, gestionarul doar gestiunile lui, cineva doar anumite centre de cost; folosește `DimensionScope` de pe atribuire | Regulile pe înregistrări din Odoo, Dynamics „Data security policies” | L |
-| 5 | Limite de aprobare pe sumă | De exemplu „aprobă comenzi de achiziție până la 10.000 lei”, cu trecere automată la nivelul următor; legat de fluxurile de aprobare din documente | Strategiile de aprobare din SAP, limitele din NetSuite | M |
-| 6 | Securitate la nivel de câmp | Câmpuri ascunse unor roluri (preț de achiziție, adaos, salariu, CNP), ca regulă generală, nu doar „Date personale” | Dynamics „Field security”, NetSuite | M |
-| 7 | „Vezi ca utilizatorul X”, doar pentru citire | Administratorul vede meniul și ecranele ca X, fără parola lui; totul în audit | Practica ERP-urilor cloud | S/M |
-| 8 | Operații în masă | Copierea drepturilor altui utilizator, un rol atribuit la mai mulți deodată, import de utilizatori din Excel, dezactivarea unui departament | ERP-urile românești, la implementare | S |
-| 9 | Valori implicite pe utilizator, pe server | Nodul din antet, gestiunea, seria, casa și imprimanta implicite (acum nodul se ține doar în browser) | Majoritatea ERP-urilor | S |
-| 10 | Autentificare unică (SSO) | Microsoft Entra ID (fostul Azure AD) sau Google, cu grupurile din directorul firmei transformate automat în roluri | Dynamics, NetSuite, Odoo | M/L |
-| 11 | Politici de acces configurabile | Reguli de parolă, chei de acces fără parolă (passkeys), restricții pe IP sau pe program pentru externi, număr maxim de sesiuni simultane, deconectare după inactivitate în funcție de rol | SAP, Dynamics | M |
-| 12 | Alerte de securitate către administratori | Multe autentificări eșuate, drepturi critice acordate, acces dintr-o locație nouă; pe notificările existente | Dynamics, NetSuite | S |
-| 13 | Revizuirea periodică a accesului | La 6 luni, fiecare șef confirmă sau retrage drepturile oamenilor lui | Oracle, Dynamics | M |
-| 14 | Tipuri de licență pe utilizator | Complet, limitat, doar citire; influențează prețul și limitele din licență | Dynamics | M |
-| 15 | Ecran pentru conturile tehnice și cheile API | POS, Power BI, integrări: cheie nouă, revocare, ultima folosire | — | S/M |
-| 16 | Invitație pe email | În locul parolei temporare arătate o singură dată; după modulul de notificări | Majoritatea ERP-urilor | S |
-
-Mărime: S = mic, M = mediu, L = mare.
 
 ### 3.5 Celelalte nomenclatoare și entități
 
@@ -331,6 +413,12 @@ Mărime: S = mic, M = mediu, L = mare.
 | `UnitOfMeasure` | `Code`, `Name`, `UneceCode` | Codul UN/ECE e obligatoriu pentru e-Factura |
 | `Country`, `County`, `City` | coduri ISO și SIRUTA | Livrate cu kitul, actualizabile |
 | `NumberSeries` | `CompanyId`, `BranchId` (opțional), `DocumentType`, `Prefix`, `Year`, `NextNumber`, `Padding`, `IsFiscal`, `IsDefault`, `AutoRollover`, `ClosedAt` | Serie separată pe punct de lucru, dacă firma o cere; detaliat la fluxul 4.2. După prima folosire a unei serii fiscale, `Prefix`, `Year` și `NextNumber` nu se mai modifică; seria se poate doar închide (`ClosedAt`, auditat). `AutoRollover` creează seria anului următor la 1 ianuarie |
+| `PaymentMeansCode` | `Code` (`varchar(3)`, codul UNCL 4461, de exemplu `10`, `30`, `42`, `48`, `49`, `97`, `ZZZ`), `Name`, `IsActive` | Doar citire; livrat cu kitul (seed `MERGE` care doar inserează, `database/seed/core/44_PaymentMeansCode.sql`, 14 coduri); trimis în e-Factura la `PaymentMeans/PaymentMeansCode` (precizare din Vânzări V1, 27.11.2026) |
+| `PaymentMethod` | `Code` (`varchar(10)`, neschimbat după prima folosire, `52014`), `Name`, `PaymentMeansCode`, `Kind` (numerar, bancă, card, compensare, efect comercial, ramburs), `RequiresImmediatePayment` (plată pe loc: termen 0 și încasarea odată cu factura), `IsSystem`, `IsActive` | Comună Vânzărilor, Achizițiilor și Finanțelor; 8 valori livrate (`45_PaymentMethod.sql`), firma poate adăuga altele; se salvează cu comanda `SavePaymentMethod` (Nucleu, drept `core.paymentmethod.edit`); propusă din condițiile clientului (Vânzări V1 §3.4) sau ale furnizorului (Achiziții A1) (precizare din Vânzări V1, 27.11.2026) |
+| `ETransportOperationType`, `ETransportPurpose` | `Code` (codul din schema ANAF e-Transport, de exemplu `30` Transport pe teritoriul național, `20` Livrare intracomunitară, `50` Export; scopurile `101` Comercializare, `704` Transfer între gestiuni, `705` Bunuri puse la dispoziția clientului), `Name`, `IsActive`; `ETransportPurpose` are `AllowedOperationTypes` (codurile tipurilor la care scopul e permis; gol = toate) | Comune Vânzărilor (V4 §3.7), Stocurilor (S2, transferurile) și Achizițiilor (A4, retururile); seed din schema în vigoare (`46_ETransportOperationType.sql`, `47_ETransportPurpose.sql`), de verificat la fiecare versiune a schemei ANAF (precizare din Vânzări V4, 27.11.2026) |
+| `VatExemptionReason` | `Code` (VATEX), `NameRo`, `MentionText` (textul mențiunii pe factură), `LegalReference` (articolul din Codul fiscal), `VatCategory` | Motivele de scutire și neimpozitare pentru e-Factura (BT-120, BT-121); seed `48_VatExemptionReason.sql` (precizare din Vânzări V5, 27.11.2026) |
+| `UneceUnit` | `Code` (UN/ECE Rec. 20, de exemplu `H87`, `KGM`, `LTR`, `XBX`), `Name`; `core.Uom` primește `UneceCode` | Codul UM-ului în e-Factura și e-Transport; seed `49_UneceUnit.sql` (subsetul uzual) (precizare din Vânzări V5, 27.11.2026) |
+| `CpvCode` | `Code`, `Name`, `ParentCode` | Nomenclatorul CPV (Regulamentul (CE) 213/2008), pentru facturile către autorități; încărcat din fișier la instalare (precizare din Vânzări V5, 27.11.2026) |
 | `PrecisionPolicy` | `Code`, `PricePrecision`, `QuantityPrecision`, `AmountPrecision` (2), `RoundingMode` | Ierarhie: listă de prețuri → articol → firmă |
 | `Dimension`, `DimensionValue` | `DimensionType` (centru de cost, proiect, gestiune, șantier), `Code`, `Name`, `CompanyId`, `ParentId`, `ResponsibleUserId`, `ValidFrom`, `ValidTo` | Valorile se pot crea și din modulele care le dețin. `ParentId` (pentru rapoarte pe niveluri), responsabilul și valabilitatea au fost adăugate pe 14.11.2026. Codul nu se schimbă după prima folosire; o valoare folosită se dezactivează, nu se șterge |
 | `AuditEntry` | `OccurredAt`, `UserId`, `CompanyId`, `Action`, `EntityType`, `EntityId`, `Changes` (JSON), `IpAddress`, `CorrelationId` | Doar adăugare; fără UPDATE sau DELETE; retenție la fluxul 4.9 |
@@ -339,130 +427,199 @@ Mărime: S = mic, M = mediu, L = mare.
 | `IdempotencyKey` | `Key`, `UserId`, `CommandType`, `ResultJson`, `CreatedAt` | Previne dublarea la dublu-clic sau reîncercare (fluxul 4.1); păstrată 24 de ore |
 | `LoginEvent` | `OccurredAt`, `UserName`, `Success`, `FailureReason`, `IpAddress` | Scrise de modulul de autentificare; baza raportului de autentificări |
 | `ImportJob` | `EntityType`, `FileName`, `Status`, `TotalRows`, `ErrorRows`, `ErrorReport` | Importuri din Excel (fluxul 4.8) |
-| `InstallationLicense` | `LicenseId`, `CustomerName`, `FiscalCodes`, `Modules`, `Limits` (case POS, angajați), `ValidUntil`, `Signature` | Verificată la pornire și zilnic (fluxul 4.4) |
-| `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu Data Protection, cu inelul de chei în bază (`NET-17`; 08, secțiunea 5.12) |
+| `ReportView` | `OwnerUserId`, `ReportCode` (de forma `<modul>.<raport>`, de exemplu `inv.StockAtDate`, `purch.SupplierPerformance`), `Name`, `FiltersJson`, `ColumnsJson`, `SortJson`, `SharedWithRoleId` | Motorul comun de rapoarte, folosit de toate modulele: filtre, desfășurare din total până la document, export Excel (în flux, fără limită de rânduri), PDF cu antetul firmei și CSV; vizualizări personale sau partajate pe rol. Descris inițial în Stocuri S7 §3.1, mutat în Nucleu (precizare din Achiziții A7, 27.11.2026) |
+| `ReportSchedule` | `ReportViewId`, `Frequency` (zilnic / săptămânal / lunar), `RunAt`, `Format` (PDF / Excel), `Recipients`, `NextRunAt`, `IsActive` | Trimitere programată pe e-mail prin joburile Nucleului; destinatarii trebuie să aibă dreptul de vizualizare al raportului, iar filtrul de vizibilitate al modulului (de exemplu `BuyerDataScope` din Achiziții) se aplică pe destinatar (precizare din Achiziții A7, 27.11.2026) |
+| `InstallationLicense` | `LicenseId`, `CustomerName`, `FiscalCodes` (doar partea numerică, separate prin „:”), `Modules`, `Limits` (case POS, angajați), `ValidUntil`, `LicenseFile` (`varbinary(max)`, fișierul `.lic` criptat și semnat, exact cum a fost încărcat) | Verificată la pornire și zilnic (fluxul 4.4) |
+| `Setting` | `Scope` (instalare / firmă / utilizator), `ScopeId`, `Key`, `Value` | Chei definite în cod, cu valori implicite; secretele (de ex. parola SMTP) criptate cu DPAPI (`NET-17`) |
 
-**Implementare atașamente (23.11.2026, decizia lui Aurelian de a le construi pentru Decontări):** migrarea `2026.11.039` (`core.Attachment`, pe firmă), procedurile `core.usp_Attachment_Save`, `_Get`, `_List` și serviciul `IAttachmentStore` din `Erp.Core.Contracts` (`SaveAsync`, `OpenAsync`, `GetInfoAsync`, `ListAsync`). Modulele îl folosesc în propriile comenzi, care verifică drepturile pe documentul de care se leagă fișierul; nu există rute HTTP generice. SEC-05: cel mult 10 MB, tipurile PDF, PNG, JPG, TIFF și XML, tipul de conținut stabilit după extensie și verificat după semnătura fișierului, numele păstrat doar ca nume afișat (fără cale); erorile `CORE_ATTACHMENT_INVALID` (400) și `CORE_ATTACHMENT_NOT_FOUND` (404). Faza 1 stochează în baza de date (`StorageKind = 1`); stocarea pe disc (`Attachments:StorageKind`) rămâne de făcut. Atașamentele nu se șterg (păstrare fiscală).
+### 3.6 Tipuri de tranzacții, legături între documente și istoricul stărilor (adăugat pe 26.11.2026)
 
-**Dimensiuni: detalii de implementare** (21.11.2026; macheta 07k).
+Adăugat la cererea lui Aurelian (26.11.2026, decizia D1 de la 02.04 Achiziții): tipul de tranzacție și legăturile între documente stau în Nucleu, ca să fie comune tuturor modulelor. Achizițiile sunt primul utilizator; Vânzările, Stocurile și Producția le folosesc la fel. Ideea vine dintr-un ERP folosit anterior de Aurelian (notele din [04-achizitii/INSPIRATIE_WINDOWS_CLIENT.md](../04-achizitii/INSPIRATIE_WINDOWS_CLIENT.md)). Am preluat comportamentul, nu și configurarea prin SQL scris de client. Detaliile de folosire în achiziții sunt în [02.04 A1](../04-achizitii/A1-CONFIGURARE.md).
 
-- Migrarea `2026.11.017`: `core.DimensionType` (tipuri fixe, livrate în `13_DimensionTypes.sql`: `COST_CENTER` centre de cost, `PROJECT` proiecte, `WAREHOUSE` gestiuni, `SITE` șantiere) și `core.DimensionValue` (firmă, tip, cod unic pe firmă și tip fără diferență de majuscule, denumire, părinte de același tip și din aceeași firmă — cheie străină compusă —, responsabil, valabilitate, activ). Tabela `core.Dimension` din schița inițială a devenit catalogul `core.DimensionType`.
-- Reguli (`core.usp_DimensionValue_Save`): firma și tipul nu se schimbă după creare; firma trebuie să fie una pe care utilizatorul are `Core.Dimension.Manage`; părintele e activ și nu creează cicluri; o valoare cu copii activi nu se dezactivează (50020); dezactivarea înlocuiește ștergerea. Regula „codul nu se schimbă după prima folosire” se aplică odată cu documentele care folosesc dimensiunile (azi nu există încă folosiri).
-- `IDimensionLookup` (`Erp.Core.Contracts`): `GetAsync` și `EnsureAsync` (creează valoarea după cod dacă lipsește, în tranzacția modulului) pentru Stocuri (gestiuni) și Construcții (șantiere).
-- API: `GET /dimensions?type=&companyId=&search=&includeInactive=`, `POST /dimensions`, `PUT /dimensions/{id}` (`Core.Dimension.Manage`, auditate). Ecran: Configurare › Dimensiuni (`/admin/config/dimensiuni`, familia „Nomenclatoare”): tipurile cu numărul de valori, valorile cu căutare, firmă și „Inactive”, fișa valorii. Fără „Export Excel” și coloana „Folosit pe” (vin cu documentele).
-- Restricțiile pe gestiuni din atribuirile de roluri (`DimensionScope`, punctul 4 din 3.4.1) rămân de făcut, odată cu modulul Stocuri.
+**Ce rezolvă.** Tipul de document spune *ce este* documentul (NIR, factură de furnizor). Tipul de tranzacție spune *cum a apărut și ce face*. „Înregistrare NIR” e manuală. „NIR din comanda furnizorului” și „NIR din factura furnizorului” sunt generate dintr-o sursă și preiau liniile ei. Legăturile pe linie, cu cantitate, dau cantitatea rămasă pe sursă, drumul documentului în ambele sensuri și limita la retur și storno.
 
-**Precizie: detalii de implementare** (21.11.2026; macheta 07d).
+**Reguli:**
 
-- Tabela `core.PrecisionPolicy` exista din etapa 4 (migrarea `2026.11.006`, datele `06_PrecisionPolicies.sql`); nu a fost nevoie de migrare nouă. Valoarea (sumele) are mereu 2 zecimale, cerință fiscală: `core.usp_PrecisionPolicy_Save` o fixează la 2, refuză un cod duplicat (50018) și dezactivarea unei politici folosite de o firmă (50010).
-- `core.usp_PrecisionPolicy_List`: politicile cu numărul de firme, firmele cu politica lor și numărul de articole cu zecimale proprii. `core.usp_Precision_Resolve(@CompanyId, @ItemId)`: zecimalele articolului, dacă există, altfel politica firmei.
-- `IPrecisionService` (`Erp.Core.Contracts`) a devenit asincron (`ResolveAsync`, citește din bază); `RoundAmount` primește `PrecisionInfo`, nu moneda (valoarea are mereu 2 zecimale). Rotunjirea propriu-zisă e în `PrecisionRounding` (aplicația), folosită de serviciu și de documente: preț și cantitate rotunjite după politică, valoarea liniei = cantitate × preț rotunjită la 2. Nivelul „listă de prețuri” din ierarhie se adaugă odată cu Vânzările (parametrul `priceListId` e deja în contract).
-- API: `GET /precision-policies`, `POST /precision-policies`, `PUT /precision-policies/{id}` (`Core.Precision.Manage`, auditate), `GET /precision?itemId=` (orice utilizator autentificat, pe firma curentă). Ecran: Configurare › Precizie (`/admin/config/precizie`, familia „Documente”): politicile, fișa politicii (zecimale preț și cantitate 0–6, rotunjirea), unde se aplică și previzualizarea pe exemplul 3,25 × 12,345678. Atribuirea politicii pe firmă rămâne în fișa firmei (Firme și structură).
+1. **Orice document cu linii din orice modul se creează printr-un tip de tranzacție.** Tranzacția se alege la creare și nu se mai schimbă după prima salvare. Fiecare document păstrează `TransactionTypeId`.
+2. **Comportamentul e definit în cod, nu în configurare.** Fiecare modul declară comportamentele pe care le știe (`Behavior`, un cod fix pe tip de document, de exemplu `GoodsReceipt.FromPurchaseOrder`). Comportamentul fixează sursele posibile, maparea câmpurilor sursă → destinație și efectul asupra stocului. Clientul poate crea oricâte tranzacții pe un comportament livrat, cu altă denumire, alte drepturi, alte valori implicite și alt semnal pentru contare. Nu poate crea comportamente noi și nu poate scrie SQL.
+3. **Legătura sursă → destinație se ține pe linie și are cantitate.** Disponibilul unei linii sursă se calculează pe **grupul de consum** (`ConsumptionGroup`): o linie de comandă se consumă separat la recepție (`RECEIVE`) și la facturare (`INVOICE`). Tranzacțiile din același grup sunt „echivalente” la calculul disponibilului.
+4. **Disponibilul nu se depășește** decât în limita toleranței tranzacției (procent, implicit 0). Verificarea și scrierea legăturii se fac în tranzacția SQL a documentului destinație, cu blocare pe documentul sursă, deci două generări simultane din aceeași comandă nu pot consuma de două ori aceeași cantitate.
+5. **Legăturile devin active la validarea destinației.** Pe ciornă, legătura e rezervată: se vede în asistent ca „în ciornă” și se scade din disponibil, ca să nu fie preluată de două ori. Anularea ciornei sau stornarea destinației dezactivează legăturile (`IsActive = 0`, nu se șterg), iar cantitatea redevine disponibilă.
+6. **O sursă cu linii consumate nu se mai modifică pe acele linii și nu se anulează.** Se pot doar închide manual liniile cu rest (cantitatea rămasă devine 0, cu motiv).
+7. **Fiecare schimbare de stare a unui document se păstrează** în istoricul stărilor (`DocumentStatusLog`): cine, când, din ce stare în ce stare și motivul. Istoricul completează auditul pe câmpuri (`AuditEntry`), nu îl înlocuiește.
 
-**Jurnalul de audit: detalii de implementare** (21.11.2026; macheta 07h).
+#### 3.6.1 Tip de tranzacție (`TransactionType`)
 
-- Migrarea `2026.11.018`: indexul `IX_AuditEntry_OccurredAt` (descrescător, cu utilizatorul, firma, acțiunea și entitatea incluse), pentru căutarea pe interval. Jurnalul rămâne doar cu adăugare (trigger-ul `tr_AuditEntry_Immutable`, 50009).
-- Vizibilitatea (`core.usp_Audit_Search`, `usp_Audit_Get`): intrările firmelor pe care utilizatorul are `Core.Audit.View`. Intrările fără firmă (utilizatori, roluri, licență, nomenclatoare comune) și jurnalul de autentificări (`core.usp_LoginEvent_Search`) cer dreptul pe toate firmele, pentru că atribuirea pe instalare e rezervată rolului ADMIN; un auditor primește rolul pe grupul rădăcină. Ecranul spune când vederea e parțială.
-- Înainte / după: `Changes` păstrează valorile de după modificare (`IAuditScope.Describe`), deci valorile de dinainte se iau din intrarea anterioară a aceleiași înregistrări (`EntityType` + `EntityId`), fără să se schimbe scrierea auditului. Prima intrare a unei înregistrări e afișată ca „Creare”, următoarele salvări ca „Modificare”. Coloana „Înregistrare” (`core.fn_AuditRecordLabel`) arată denumirea de azi pentru entitățile principale (partener, articol, utilizator, angajat, firmă, punct de lucru, locație, rol, dimensiune, serie), altfel câmpurile `name` / `code` din `Changes`.
-- API: `GET /audit?from=&to=&userId=&entityType=&entityId=&action=&search=&page=&pageSize=`, `GET /audit/{id}`, `GET /audit/logins?from=&to=&search=&success=&page=` (toate `Core.Audit.View`, doar citire), `GET /companies/{id}/history` (`Core.Company.View`, firma curentă). Ecran: Configurare › Audit (`/admin/config/audit`, familia „Securitate”): căutare, interval (azi … tot jurnalul), utilizator, entitate, acțiune, comutatorul „Autentificări”; detaliul cu Câmp / Înainte / După, „Deschide fișa” și „Tot istoricul înregistrării”. Intrarea de meniu Configurare apare acum cu oricare dintre drepturile tab-urilor ei (înainte cerea dreptul pe serii), iar `/admin/config` deschide primul tab permis.
-- Fișa firmei are tab-ul Istoric (`core.usp_Company_History`): firma, punctele de lucru, locațiile, adresele, contactele, conturile bancare, seriile și dimensiunile ei, cu legătură spre Configurare › Audit filtrat pe firmă.
-- Rămân de făcut: „Export Excel” și butonul separat „Jurnal de autentificări” din antet (comutatorul din filtre îl înlocuiește).
+| Câmp | Tip | Reguli |
+| --- | --- | --- |
+| `CompanyId` | `int NULL` | Gol = pentru toate firmele grupului; altfel doar pentru firma dată |
+| `Module` | `varchar(10)` | `purch`, `sales`, `inv`, `mfg`... |
+| `DocumentType` | `varchar(40)` | Tipul documentului destinație, același cod ca la `NumberSeries` și în `AccountingPayload` (`GoodsReceipt`, `SupplierInvoice`...) |
+| `Behavior` | `varchar(60)` | Comportamentul din cod (regula 2). Nu se schimbă după prima folosire (`50029`) |
+| `Code`, `Name` | `nvarchar(20)`, `nvarchar(150)` | Cod unic pe `(CompanyId, DocumentType)` prin `CodeKey` (`SQL-24`). Denumirea apare pe document și în rapoarte |
+| `Mode` | `tinyint` | 1 Manuală (fără sursă) · 2 Generată din sursă. Citit din comportament |
+| `ConsumptionGroup` | `varchar(20) NULL` | Grupul de consum pe sursă (regula 3). Citit din comportament |
+| `OverTolerancePct` | `decimal(9,4)` | Toleranța de depășire a disponibilului, 0–100. Implicit 0. Comportamentul poate impune 0 (de exemplu la storno) |
+| `LimitsConsumption` | `bit` | Implicit 1. Cu 0, grupul de consum e informativ: legăturile se scriu și rămasul se afișează, dar depășirea nu ridică `50027` (de exemplu cererea de ofertă trimisă la mai mulți furnizori). Citit din comportament (adăugat pe 26.11.2026, Achiziții A2 decizia 9) |
+| `AllowManualLines` | `bit` | Permite adăugarea de linii fără sursă pe un document generat (de exemplu ambalaje primite gratuit pe un NIR din comandă) |
+| `AllowCostCenter` | `bit` | Liniile pot primi centru de cost și proiect |
+| `PostingFlags` | `nvarchar(200) NULL` | Semnale adăugate în `AccountingPayload.Flags` (C2): din lista livrată (`Import`, `IntraCommunity`...) sau semnale proprii cu prefixul `X_`. Variantele modelului de contare le pot cere sau interzice |
+| `DefaultsJson` | `nvarchar(max) NULL` | Valori implicite pe antet, din lista permisă de comportament (gestiune, monedă, termen de livrare); validat la salvare (`SQL-10`) |
+| `Description` | `nvarchar(1000) NULL` | Când se folosește |
+| `IsSystem` | `bit` | Livrată (`MIG-06`). Nu se șterge; se poate redenumi sau dezactiva |
+| `IsActive` | `bit` | Doar tranzacțiile active apar la creare |
+| `SortOrder` | `int` | Ordinea în lista de alegere |
 
-**Localități SIRUTA: detalii de implementare** (21.11.2026; e-Factura cere adrese corecte).
+**Surse (`TransactionTypeSource`)**, pentru tranzacțiile generate. Rândurile se creează din comportament; clientul poate doar restrânge stările sau filtrul.
 
-- Sursa: nomenclatorul SIRUTA al INS (fișierul CSV `SIRUTA;DENLOC;CODP;JUD;SIRSUP;TIP;NIV;…`). Site-urile INS și data.gov.ro refuză conexiunile din mediul de dezvoltare cloud, deci datele livrate au fost generate din copia publică a aceluiași fișier ([strainu/SIRUTA](https://github.com/strainu/SIRUTA), actualizată în 2025): 16.936 de rânduri, 42 de județe. La o versiune nouă INS: `node build/siruta-seed.mjs <siruta.csv>` regenerează `14_Cities.sql` (numele din majuscule devin „Gârbova de Jos”, „Gersa II”; prefixele „Municipiul”, „Oraș” cad; sectoarele devin „Sectorul 1”…; codul numeric INS al județului devine indicativul ISO după nume).
-- Migrarea `2026.11.019`: `core.City` (cheia = codul SIRUTA; nivelul 2 = unitatea administrativ-teritorială, nivelul 3 = localitatea, cu unitatea ei în `ParentSirutaCode`, tipul SIRUTA în `Kind`, codul poștal; `NameSearch` fără diacritice și majuscule, SQL-25) și coloana `CitySirutaCode` (opțională, cheie străină) pe `Company`, `Branch`, `Location`, `CompanyAddress`, `Partner`, `PartnerAddress`. Textul localității rămâne pe adresă (străinătate, tipărire, e-Factura). O localitate care dispare din SIRUTA se dezactivează la livrare, nu se șterge.
-- Salvarea (`core.usp_City_Resolve`, apelată de cele șase proceduri de salvare): codul ales din listă trebuie să fie o localitate activă din județul adresei (altfel 50022 `CORE_INVALID_ADDRESS`), iar textul devine numele oficial. Fără cod, în România se caută localitatea după nume (`core.fn_CityMatch`: fără diacritice și majuscule, fără prefixele „Mun.”, „Municipiul”, „Oraș”, „Comuna”, „Sat”; în București „Sector 3” = „Sectorul 3”), doar dacă e unică în județ: importul, completarea de la ANAF și adresele vechi se leagă singure. Un nume ambiguu (392 de nume de sate se repetă în același județ) sau negăsit rămâne text, fără cod. `15_CityLinks.sql` leagă la fiecare livrare adresele existente încă nelegate (doar codul; textul se schimbă la următoarea salvare).
-- API: `GET /cities?county=&search=&sirutaCode=` (orice utilizator autentificat; cel mult 30, reședințele întâi). În cele șase formulare de adresă, pentru România cu județ ales, „Localitate” e o listă cu căutare („Gârbova de Jos · mun. Aiud · 515204”); alegerea completează codul poștal, dacă lipsește. Schimbarea județului sau a țării șterge codul ales. Pentru alte țări rămâne text liber. O adresă veche nelegată își arată textul sub listă până la alegere.
-- e-Factura (la implementarea modulului): `CityName` = numele localității, iar pentru București `SECTOR1` … `SECTOR6` din „Sectorul n”; `CountrySubentity` = `RO-` + indicativul județului.
+| Câmp | Reguli |
+| --- | --- |
+| `TransactionTypeId`, `SourceDocumentType` | Tipul documentului sursă, din lista comportamentului |
+| `IsPrimary` | Exact o sursă principală. Celelalte sunt auxiliare (de exemplu facturile de transport la NIR-ul de import) |
+| `Level` | 1 Pe linie (contează liniile și cantitățile) · 2 Pe antet (contează valoarea, de exemplu o plată pe o factură) |
+| `Measure` | 1 Cantitate · 2 Valoare în moneda documentului · 3 Valoare în lei |
+| `AllowedStatuses` | Stările sursei în care poate fi preluată (de exemplu doar „Validat” sau „Confirmat”) |
+| `FilterCode` | `varchar(40) NULL`: filtru din lista livrată de comportament (de exemplu `SERVICE_LINES_ONLY`, `SAME_SUPPLIER`, `ITEM_KIND:TRANSPORT`). Nu acceptă SQL |
+| `IsRequired` | Sursa e obligatorie (cel puțin un document) |
 
-**Valute și cursuri: detalii de implementare** (deciziile lui Aurelian din 21.11.2026; macheta 07b).
+**Drepturi (`TransactionTypeRole`).** Rolurile care pot folosi tranzacția și tranzacția implicită a rolului pe tipul de document. Cel mult una implicită pe `(RoleId, DocumentType, CompanyId)`. Un utilizator vede reuniunea tranzacțiilor rolurilor lui din firma curentă; implicită e cea a primului rol, în ordinea de prioritate a atribuirilor. Fără niciun rând de drepturi, tranzacția e disponibilă tuturor celor care au dreptul de creare pe tipul de document.
 
-- Migrarea `2026.11.016`: `core.Currency` (cod ISO 4217 ca cheie, denumire, zecimale, activ; RON e baza și rămâne activ, `CK_Currency_BaseActive`), `core.ExchangeRate` (`Rate decimal(19,6)` = lei pentru `Multiplier` unități, `Source` `BNR` / `MANUAL`, `Note` obligatoriu la manual, unic pe monedă + zi + sursă; RON nu are curs), tipul `core.ExchangeRateList` și cheile străine ale monedei din `CompanyBankAccount` și `PartnerBankAccount` (monedele conturilor existente devin active). Datele livrate `12_Currencies.sql`: monedele publicate de BNR, cu denumiri în română; active la prima livrare RON, EUR, USD, GBP, CHF.
-- Sursa BNR: fișierele XML zilnic (`https://www.bnr.ro/nbrfxrates.xml`) și pe 10 zile (`nbrfxrates10days.xml`), actualizate puțin după ora 13:00 în zilele bancare; BNR cere HTTPS (TLS 1.2+) și descărcări rare. Adresele se pot schimba din configurare (`Bnr:DailyUrl`, `Bnr:TenDaysUrl`, în `Erp.Host` și `Erp.Worker`). Citirea (`Shared/Erp.Bnr`, folosit de Nucleu și de `Erp.Worker`) caută `Cube` cu atributul `date` și `Rate` cu `currency` și `multiplier` după numele local, deci nu depinde de spațiul de nume (`http://www.bnr.ro/xsd` în arhive, `https://…` din 2026). Un răspuns care nu e XML de cursuri (de exemplu o pagină de eroare) se refuză cu mesaj clar (503 `CORE_BNR_UNAVAILABLE` la preluarea din ecran). Structura fișierului nu a putut fi verificată direct pe 21.11.2026: site-ul BNR refuză cererile din mediul de dezvoltare cloud; se verifică la prima preluare de pe un server real.
-- `IExchangeRateProvider` (`core.usp_ExchangeRate_Get`): cursul BNR al zilei sau ultimul anterior, cu data lui; RON = 1; fără curs, `CORE_EXCHANGE_RATE_NOT_FOUND`. Cursul manual nu înlocuiește cursul BNR pe documente (pentru el, cererea va indica explicit sursa `MANUAL`).
-- API: `GET /currencies`, `GET /exchange-rates?from=&to=`, `GET /exchange-rates/rate?currency=&date=`, `POST /exchange-rates/manual`, `PUT /exchange-rates/manual/{id}` (`Core.ExchangeRate.ManageManual`, auditate; un curs BNR răspunde 50008), `POST /exchange-rates/import-bnr` (`Core.ExchangeRate.ManageManual`, auditat), `PUT /currencies/{code}/active` (`Core.Nomenclature.Manage`, auditat).
+#### 3.6.2 Legături între documente (`DocumentLink`)
 
-### 3.6 Extinderi pentru restul Nucleului (inspirate din alte ERP-uri)
+Un rând pe pereche (linie sursă, linie destinație). Pentru sursele pe antet (`Level` = 2), `SourceLineId` și `DestLineId` sunt goale și se folosește `Amount`.
 
-**Stare (decizia lui Aurelian din 21.11.2026):** punctele 2, 6, 7, 11, 12, 13, 14, 15 și 16 sunt **aprobate și implementate** (21.11.2026; detaliile sub tabel) (punctul 6 extins cu blocarea la depășirea limitei de credit); celelalte sunt **de făcut**, revenim asupra lor mai târziu. Analiza a pornit de la ce are deja Nucleul (firme și structură, parteneri și articole comuni sau proprii unui nod, proprietăți configurabile, seturi de UM, valute cu BNR, dimensiuni, precizie, serii fără goluri, audit cu înainte / după, localități SIRUTA, import din Excel, ANAF) și de la ce oferă Microsoft Dynamics 365 Business Central, SAP (S/4HANA, Business One), Oracle NetSuite, Odoo și ERP-urile românești (Charisma, WinMentor Enterprise, Senior ERP). Extinderile pentru utilizatori și drepturi sunt separat, în 3.4.1, și nu se repetă aici. Fiecare punct se detaliază (model, reguli, ecran) la implementare; detaliile apar sub tabel.
+| Câmp | Tip | Reguli |
+| --- | --- | --- |
+| `CompanyId` | `int` | Firma documentelor; legăturile nu trec între firme (documentele intra-grup se leagă prin evenimente) |
+| `SourceModule`, `SourceDocumentType`, `SourceDocumentId`, `SourceLineId` | `varchar(10)`, `varchar(40)`, `bigint`, `bigint NULL` | Sursa |
+| `DestModule`, `DestDocumentType`, `DestDocumentId`, `DestLineId` | idem | Destinația |
+| `TransactionTypeId` | `int` | Tranzacția destinației |
+| `ConsumptionGroup` | `varchar(20)` | Copiat din tranzacție, ca disponibilul să se calculeze fără join |
+| `Qty` | `decimal(19,6) NULL` | Cantitatea preluată, în UM de bază a articolului |
+| `Amount`, `AmountRon` | `decimal(19,4) NULL` | Valoarea preluată (surse pe antet sau pe valoare) |
+| `State` | `tinyint` | 1 În ciornă · 2 Activă · 0 Inactivă (destinația anulată sau stornată) |
+| `CreatedAt`, `CreatedBy`, `DeactivatedAt`, `DeactivatedBy` | | Audit |
 
-| Nr. | Stare | Zonă | Extindere | Ce înseamnă | Inspirație | Mărime |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | De făcut | Firme | Firmă nouă dintr-o firmă model | La crearea unei firme se copiază, la alegere, seriile (cu anul curent și numărul de start), dimensiunile, politica de precizie, proprietățile proprii firmei, setările și rolurile pe firmă; util pentru grupuri cu multe firme asemănătoare | Pachetele de configurare și „Copy company” din Business Central, șabloanele de companie din Odoo | M |
-| 2 | Implementat (21.11.2026) | Firme | Datele firmei cu dată de vigoare | Denumirea, sediul, regimul TVA (plătitor, TVA la încasare), capitalul social și registrul comerțului păstrează istoricul pe intervale („TVA la încasare din 01.03.2027”); documentele iau valoarea valabilă la data lor, ca la cotele TVA (P6), iar rapoartele pe perioade vechi arată datele de atunci | Datele cu valabilitate din SAP și Oracle | M |
-| 3 | De făcut | Firme | Interval permis de înregistrare, pe firmă și pe utilizator | „Se pot înregistra documente între 01.11 și 30.11”; implicit pe firmă, cu excepții pe utilizator (contabilul șef poate și luna trecută). Completează închiderea de perioadă din Finanțe (`PeriodLockBehavior`), care e definitivă, cu o limită operativă care se mută lunar | „Allow posting from / to” din Business Central (General Ledger Setup și User Setup) | S |
-| 4 | De făcut | Firme | Reverificarea periodică la ANAF a firmelor din grup și a partenerilor | Job săptămânal (configurabil) pe registrul ANAF: plătitor TVA, TVA la încasare, inactiv, radiat, înscris în registrul RO e-Factura; schimbările se salvează cu data verificării, se trec în audit și se notifică responsabilul nomenclatoarelor. Amânat pe 20.11.2026; aici rămâne ca propunere | Verificările de registru ale ERP-urilor românești (Charisma, WinMentor) | M |
-| 5 | De făcut | Parteneri | Starea e-Factura și dovada verificărilor | Pe partener se păstrează înscrierea în registrul RO e-Factura (din răspunsul ANAF v9, acum doar afișată) și istoricul verificărilor ANAF și VIES (data, rezultatul, utilizatorul): dovada cerută la livrările intracomunitare scutite și la controale | Validarea VIES din Dynamics 365 și SAP; registrele ANAF | S |
-| 6 | Implementat (21.11.2026) | Parteneri, articole | Blocare parțială, cu motiv, și limita de credit | Pe lângă „activ / inactiv”: blocat pentru vânzare, pentru achiziție, pentru plăți sau pentru tot, cu motiv și dată; partenerul blocat la plăți poate primi facturi, dar nu ordine de plată. Clientul are limită de credit pe firmă: la depășire, vânzarea se blochează sau doar avertizează (decizia din 21.11.2026) | Câmpul „Blocked” (Ship / Invoice / All, Payment) din Business Central; blocările pe clienți și furnizori din SAP | S/M |
-| 7 | Implementat (21.11.2026) | Parteneri, articole | Detectarea și unirea duplicatelor | CUI-ul unic acoperă persoanele juridice române; pentru persoane fizice, străini și articole: reguli de potrivire (nume fără diacritice și majuscule, telefon, e-mail, IBAN, cod de bare), un job care propune perechi și unirea într-o înregistrare principală, cu documentele, adresele și istoricul mutate și auditul unirii. Include raportul „Parteneri duplicați sau incompleți” din secțiunea 10 | „Merge contacts” și aplicația Data Cleaning din Odoo; „Merge duplicates” din Business Central | M |
-| 8 | De făcut | Parteneri | Aprobarea datelor sensibile | Un partener nou sau modificarea unor câmpuri alese (IBAN, plătitor TVA, condiții) intră în stare „de aprobat” și nu se poate folosi pe plăți până la aprobare; aprobatorul nu poate fi cel care a modificat | Fluxurile de aprobare pentru clienți și furnizori din Business Central; „dual control” pe datele bancare din SAP | M |
-| 9 | De făcut | Audit | Monitorizarea câmpurilor sensibile, cu alertă | Administratorul alege câmpurile urmărite (IBAN-ul partenerului, plătitor TVA, cota TVA a articolului, limita de credit); orice modificare trimite notificare destinatarilor aleși, pe lângă intrarea de audit. Protejează mai ales împotriva fraudei cu IBAN schimbat | „Field Monitoring” din Business Central | S/M |
-| 10 | De făcut | Audit | Politici de retenție configurabile | Duratele din 4.9 devin politici editabile (doar pentru datele tehnice; cele legale au minim fix), cu job de curățare, jurnalul fiecărei rulări (ce s-a șters, câte rânduri) și previzualizare înainte de activare | „Retention policies” din Business Central | S |
-| 11 | Implementat (21.11.2026) | Articole | Coduri de articol ale partenerilor | Pentru fiecare client sau furnizor: codul și denumirea articolului la el. Documentele de achiziție găsesc articolul după codul furnizorului, iar facturile pot tipări codul clientului (e-Factura are `BuyersItemIdentification` și `SellersItemIdentification`) | „Item references” din Business Central, „Business partner catalog numbers” din SAP Business One | M |
-| 12 | Implementat (21.11.2026) | Articole | Traduceri ale denumirilor | Denumirea articolului (și a UM) în alte limbi, aleasă după limba partenerului pe documentele de export | Traducerile de articole din Business Central și Odoo | S/M |
-| 13 | Implementat (21.11.2026) | Articole | Variante de articol | Un articol cu atribute (mărime, culoare, aromă) și variantele lui, fiecare cu cod de bare și stoc propriu, fără a crea zeci de fișe de mână | „Item variants” din Business Central, variantele din Odoo | L |
-| 14 | Implementat (21.11.2026) | Dimensiuni | Dimensiuni implicite și reguli de completare | Valori implicite pe partener, articol, locație sau utilizator (proiectul unui client, centrul de cost al unei locații), copiate pe documente; pentru fiecare: opțională, obligatorie sau fixă; combinații blocate (de exemplu un proiect doar cu centrele de cost ale lui) | „Default dimensions”, „Value posting” și „Dimension combinations” din Business Central | M |
-| 15 | Implementat (21.11.2026) | Dimensiuni | Tipuri de dimensiuni definite de client | Pe lângă cele patru fixe (centru de cost, proiect, gestiune, șantier), tipuri noi definite din ecran (regiune, canal de vânzare, linie de business), folosite în rapoarte și în analitică | Dimensiunile nelimitate din Business Central; segmentele din NetSuite | M |
-| 16 | Implementat (21.11.2026) | Numerotare | Serii alternative și serii legate | Mai multe serii active pentru același tip de document, alese de utilizator sau după reguli (export / intern, punct de lucru, casă, utilizator), cu seria implicită pe utilizator; relația dintre serii (de exemplu factura și chitanța din aceeași casă) | „Number series relationships” din Business Central; seriile pe gestiune din ERP-urile românești | S/M |
-| 17 | De făcut | GDPR | Ecranul cererilor persoanelor vizate | Pentru o persoană fizică: exportul tuturor datelor ei (partener, contacte, utilizator, angajat), anonimizarea la cerere (A19) și registrul cererilor cu termenul legal de răspuns (30 de zile); documentele fiscale rămân neschimbate | Instrumentele GDPR din Business Central (Data Subject Requests) și din Odoo | M |
-| 18 | De făcut | Platformă | Vizualizări salvate pe liste | Filtrele, coloanele și ordinea unei liste salvate cu nume, personale sau partajate pe rol; folosite și ca bază pentru export și pentru alerte | „Saved searches” din NetSuite, vizualizările salvate din Business Central și Odoo | M |
-| 19 | De făcut | Platformă | Activități și notițe pe orice înregistrare | Pe fișa oricărei entități: comentarii cu @mențiuni (care ajung în notificări), sarcini cu termen și responsabil, atașamente; legate generic prin `EntityType` + `EntityId`, ca auditul | „Chatter” și activitățile din Odoo; notițele din Business Central | M |
-| 20 | De făcut | Platformă | Motor comun de aprobări | Un singur mecanism în Nucleu pentru toate modulele: cerere, aprobatori pe rol, sumă sau dimensiune, delegare, termene și escaladare, istoric; folosit de 3.4.1 punctul 5 (limite pe sumă) și de punctul 8 de mai sus | „Approval workflows” din Business Central, strategiile de aprobare din SAP | L |
-| 21 | De făcut | Platformă | Alerte definite de utilizator | Reguli „când … atunci notifică” pe date (stoc sub minim, partener cu IBAN schimbat, curs lipsă la ora 14, serie aproape plină), verificate de un job, pe vizualizările salvate de la punctul 18 | Alertele din SAP Business One, „Saved search alerts” din NetSuite | M |
-| 22 | De făcut | Import | Import pentru toate nomenclatoarele | Șabloane și același flux 4.8 pentru grupele de articole, UM și seturi, dimensiuni, proprietăți și opțiuni, adresele și conturile partenerilor; util la implementare, când clientul vine cu date din alt program | Pachetele de configurare din Business Central; importul generic din Odoo | S/M |
+**Închiderea manuală a unei linii sursă (`DocumentLineClosure`).** `SourceModule`, `SourceDocumentType`, `SourceLineId`, `ConsumptionGroup`, `ClosedQty`, `Reason`, `ClosedAt`, `ClosedBy`, `ReopenedAt`. Exemplu: din 3.840 de bucăți comandate furnizorul livrează doar 3.600 și anunță că nu mai livrează restul; achizitorul închide linia, iar cele 240 de bucăți nu mai apar ca „de primit” în disponibilul proiectat (Stocuri S5).
 
-Mărime: S = mic, M = mediu, L = mare.
+**Cum se calculează disponibilul.** Pentru o linie sursă și un grup de consum:
 
-**Punctul 6, blocare parțială și limita de credit: detalii de implementare** (21.11.2026).
+```
+Disponibil = Cantitatea liniei sursă (o dă modulul sursă)
+           − Σ DocumentLink.Qty cu State ∈ {1, 2} pe (SourceLineId, ConsumptionGroup)
+           − ClosedQty (dacă linia a fost închisă manual)
+Maxim preluabil = Disponibil + Cantitatea liniei × OverTolerancePct / 100
+```
 
-- Migrarea `2026.11.020`: `core.PartnerBlock` (masca `BlockedFor`: 1 vânzare, 2 achiziție, 4 plăți; motivul obligatoriu la blocare, `CHECK`), `core.ItemBlock` (1 vânzare, 2 achiziție) și `core.PartnerCredit` (pe partener și firmă: `CreditLimit` sau fără limită, `OverLimitAction` 1 avertizare / 2 blocare). Stau în tabele separate, ca blocarea să nu schimbe `RowVersion`-ul fișei deschise de altcineva; deblocarea păstrează rândul cu masca 0, iar istoricul e în audit (`Core.Partner.Block`, `Core.Item.Block`, `Core.Partner.CreditLimit`).
-- Blocarea e comună tuturor firmelor și cere `Core.Partner.Manage` / `Core.Item.Manage` (plus dreptul pe proprietarul înregistrării); limita de credit e a firmei curente și cere permisiunea nouă `Core.Partner.ManageCredit`; doar pentru clienți.
-- Contractul pentru module (`Erp.Core.Contracts/MasterData.cs`): `IMasterDataBlockCheck.CheckPartnerAsync(firmă, partener, scop, valoarea documentului)` și `CheckItemAsync(articol, scop)` întorc `None`, `Warning` sau `Blocked` cu cod (`CORE_PARTNER_BLOCKED`, `CORE_ITEM_BLOCKED`, `CORE_PARTNER_INACTIVE`, `CORE_ITEM_INACTIVE`, `CORE_CREDIT_LIMIT_EXCEEDED`) și mesaj. Limita se verifică doar la vânzare: expunerea clientului (`IPartnerExposureProvider`, implementat de modulul care ține soldurile; în Nucleu 0) plus documentul curent, comparate cu limita. Documentele vor apela verificarea la adăugarea partenerului sau articolului și la validare.
-- API: `GET/PUT /partners/{id}/block`, `PUT /partners/{id}/credit-limit`, `GET/PUT /items/{id}/block`; lista partenerilor are filtrul `Blocked` și coloana `BlockedFor`. Ecran: tab-ul „Blocare și credit” al partenerului (bifele, motivul, cine și când a blocat; limita în lei și ce se întâmplă la depășire, pe firma curentă), tab-ul „Blocare” al articolului, eticheta „blocat” și filtrul „Blocați” în lista partenerilor.
+Cantitatea liniei sursă nu stă în `core`: fiecare modul o expune prin `ILinkableDocumentSource` (6). Calculul pe mai multe linii se face o dată, cu TVP (`SP-07`), prin `core.usp_DocumentLink_Available`.
 
-**Punctele 11 și 12, codurile articolelor la parteneri și traducerile: detalii de implementare** (21.11.2026).
+**Concurența.** Procedura `core.usp_DocumentLink_Consume` ia un `sp_getapplock` exclusiv pe resursa `DL:{SourceDocumentType}:{SourceDocumentId}`, în tranzacția documentului destinație (`SP-03`), recalculează disponibilul și scrie legăturile. A doua generare simultană din aceeași sursă așteaptă și apoi vede cantitatea deja consumată (`50027` dacă depășește).
 
-- Migrarea `2026.11.021`: `core.ItemPartnerReference` (articol, partener, tip 1 client / 2 furnizor, cod unic pe partener și tip fără diferență de majuscule, denumirea și UM la partener, activ), `core.ItemTranslation` (articol, limba ISO 639-1 alta decât română, denumirea), tipul `core.ItemTranslationList` și `core.Partner.DocumentLanguage` (limba documentelor; gol = română).
-- Reguli: partenerul are rolul cerut de tip (client / furnizor, 50021); UM e una a articolului; codul duplicat la același partener dă 50018; codurile nu se șterg, se dezactivează. Traducerile se salvează împreună (lista înlocuiește). Limba documentelor se salvează doar din fișa partenerului; importul o păstrează.
-- Contractul pentru module: `IItemCatalog` (`FindByPartnerCodeAsync`: articolul după codul furnizorului, pentru recepții și facturile primite prin e-Factura; `GetPartnerCodeAsync`: codul clientului de tipărit, `BuyersItemIdentification`; `GetItemNameAsync`: denumirea în limba documentelor partenerului, altfel în română). Lista articolelor găsește articolul și după codul exact de la un partener.
-- API: `GET/POST /items/{id}/references`, `PUT /items/{id}/references/{referenceId}`, `GET/PUT /items/{id}/translations` (`Core.Item.View` / `Core.Item.Manage`, auditate). Ecran: tab-urile „Coduri la parteneri” și „Traduceri” ale articolului; „Limba documentelor” în fișa partenerului. Traducerea numelui UM rămâne de făcut (e-Factura folosește codul UN/ECE).
+#### 3.6.3 Istoricul stărilor (`DocumentStatusLog`)
 
-**Punctul 16, serii alternative și reguli de alegere: detalii de implementare** (21.11.2026).
+`Module`, `DocumentType`, `DocumentId`, `FromStatus`, `ToStatus`, `Reason`, `OccurredAt`, `UserId`, `CorrelationId`. Doar adăugare (ca `AuditEntry`, `SP-21`). Scris prin `IDocumentStatusLog.WriteAsync`, în tranzacția schimbării de stare. Pe fiecare document, tab-ul Istoric arată stările, legăturile și modificările de câmpuri într-o singură cronologie.
 
-- Un tip de document poate avea mai multe serii deschise pe firmă și an (exista deja, cu una implicită). Migrarea `2026.11.022`: `core.NumberSeriesRule` (firmă, tip de document, ordine, condiții opționale: utilizator, punct de lucru, locație, tipul partenerului 1 România / 2 UE / 3 non-UE; prefixul seriei țintă, deci regula rămâne valabilă de la un an la altul; activă). O regulă are cel puțin o condiție; prefixul trebuie să fie al unei serii a firmei pentru același tip; regulile nu se șterg, se dezactivează.
-- Alegerea la validare (`core.usp_NumberSeries_Next`, `INumberSeriesService.NextAsync(..., NumberSeriesChoice)`): seria aleasă de utilizator pe document (deschisă, a anului, a tipului și a punctului de lucru, altfel 50021); fără ea, seria cu prefixul primei reguli potrivite (`core.fn_NumberSeriesRuleMatch`: ordinea, apoi cea cu mai multe condiții), creată din anul anterior dacă are `AutoRollover`, altfel 50001 cu prefixul cerut; fără regulă, seria implicită, ca înainte.
-- `INumberSeriesService.GetOptionsAsync` (`core.usp_NumberSeries_Options`) și `GET /number-series/options?documentType=&date=&branchId=&locationId=&partnerScope=` (orice utilizator autentificat, firma curentă): seriile deschise cu numărul următor și seria propusă, pentru lista de pe documente.
-- API: `GET/POST /companies/{companyId}/number-series-rules`, `PUT .../{id}` (`Core.NumberSeries.Manage`, auditate); lista întoarce și utilizatorii cu rol pe firmă. Ecran: secțiunea „Reguli de alegere a seriei” sub seriile din Configurare › Serii. Alegerea seriei pe documente vine cu modulele care le dețin.
+#### 3.6.4 Asistentul de generare (componentă comună de interfață)
 
-**Punctele 14 și 15, dimensiuni implicite, combinații blocate și tipuri ale clientului: detalii de implementare** (21.11.2026).
+Același asistent pe orice document generat, în trei pași:
 
-- Migrarea `2026.11.023`: `core.DimensionType` primește `IsSystem` (cele patru livrate, care nu se dezactivează) și `IsActive`; clientul adaugă tipuri proprii (cod fix, de exemplu `REGIUNE`; un tip cu valori active nu se dezactivează). `core.DefaultDimension` (pe firmă, pentru partener / articol / locație: tipul, valoarea și regula 1 opțională, 2 obligatorie, 3 fixă, care cere valoare), tipul `core.DefaultDimensionList` și `core.DimensionCombination` (două tipuri care nu se folosesc împreună sau o pereche de valori blocată; tipurile se ordonează, ca perechea să nu apară de două ori). Valorile sunt ale firmei și de tipul lor (chei străine compuse).
-- Contractul pentru module: `IDimensionRules.GetDefaultsAsync(firmă, partener, articol, locație)` propune valorile (articolul înaintea partenerului, partenerul înaintea locației; o valoare fixă câștigă; regula e cea mai strictă) și `ValidateAsync(firmă, valorile documentului, ...)` întoarce problemele: `CORE_DIMENSION_REQUIRED`, `CORE_DIMENSION_FIXED`, `CORE_DIMENSION_CONFLICT` (surse cu valori fixe diferite), `CORE_DIMENSION_COMBINATION_BLOCKED`. Logica e în `DimensionRuleEngine` (fără acces la date, cu teste unitare).
-- API: `POST /dimension-types`, `PUT /dimension-types/{code}`, `GET/PUT /default-dimensions/{sursa}/{id}` (sursa 1 partener, 2 articol, 3 locație; firma curentă), `GET/POST /dimension-combinations`, `DELETE /dimension-combinations/{id}` (`Core.Dimension.Manage`, auditate; citirea regulilor unei surse cere dreptul de a o vedea). Ecran: în Configurare › Dimensiuni, „+ Tip” și „Modifică tipul ales” și cardul „Combinații blocate”; tab-ul „Dimensiuni” al partenerului și al articolului; secțiunea „Dimensiuni” sub locație (pentru firma curentă).
+1. **Tranzacția**: lista tranzacțiilor active ale utilizatorului pentru tipul de document, cu cea implicită selectată. Pentru o tranzacție manuală, asistentul se închide și documentul se completează direct.
+2. **Documentele sursă**: documentele cu disponibil, filtrate de tranzacție (stări, filtru) și de antetul deja completat (partener, gestiune, monedă). Pentru sursele auxiliare (`IsPrimary` = 0), pasul se repetă pe fiecare sursă.
+3. **Liniile**: liniile surselor bifate, cu cantitatea totală, cea deja preluată, cea rămasă și cantitatea de preluat (propusă = rămasă, editabilă până la maximul preluabil). La depășirea disponibilului, rândul se colorează și apare procentul de toleranță folosit.
 
-**Punctul 2, datele firmei cu dată de la care se aplică: detalii de implementare** (21.11.2026).
+La „Generează”, modulul destinație primește lista (sursă, linie, cantitate) și o transformă în linii prin maparea din cod a comportamentului. Liniile generate păstrează legătura și nu își mai pot schimba articolul sau UM-ul; cantitatea și prețul se pot modifica, după regulile comportamentului.
 
-- Migrarea `2026.11.024`: `core.CompanyVersion` (firmă, `ValidFrom`, denumire, plătitor TVA, TVA la încasare, registrul comerțului, capital social, sediul cu localitatea SIRUTA), unică pe firmă și dată; fiecare firmă existentă primește versiunea inițială de la 01.01.1900. Codul, CUI-ul, contactul și setările nu au istoric pe perioade (modificările lor sunt în audit).
-- Salvarea firmei (`SaveCompany.EffectiveFrom`, implicit azi) scrie versiunea de la data aleasă; `core.Company` rămâne la versiunea valabilă azi (`core.usp_CompanyVersion_Apply`). O dată viitoare programează schimbarea (de exemplu „TVA la încasare de la 01.03”), aplicată de jobul zilnic `core-company-versions` din `Erp.Worker` (00:02 UTC); o dată trecută corectează perioada respectivă.
-- Contractul pentru documente: `ICompanyDirectory.GetAtAsync(firmă, data documentului)` întoarce `CompanySnapshotDto` cu datele valabile atunci (`core.usp_Company_At`).
-- API: `GET /companies/{id}/versions` (`Core.Company.View`). Ecran: în fișa firmei, câmpul „Modificările … se aplică de la” deasupra formularului și tab-ul „Date pe perioade” (perioadele, cea curentă evidențiată, cele programate marcate).
+#### 3.6.5 Contracte
 
-**Punctul 7, detectarea și unirea dublurilor: detalii de implementare** (21.11.2026).
+```csharp
+public enum TransactionMode : byte { Manual = 1, FromSource = 2 }
+public enum LinkLevel : byte { Line = 1, Header = 2 }
+public enum LinkState : byte { Inactive = 0, Draft = 1, Active = 2 }
 
-- Migrarea `2026.11.025`: `MergedIntoId` pe `core.Partner` și `core.Item` și `core.DuplicateIgnore` (perechile marcate „nu sunt dubluri”). Funcția `core.fn_NameKey` face cheia denumirii: litere mari, fără punctuație, spații și forma juridică (SRL, SA, SNC, SCS, PFA, II, IF); diacriticele se ignoră la comparare.
-- Detectarea (`core.usp_Duplicate_Find`): perechi de parteneri activi cu aceeași cheie de denumire, același e-mail, același telefon (doar cifrele, minim 9) sau același IBAN; articole cu aceeași cheie de denumire. Perechile ignorate nu apar; cele cu mai multe motive întâi; cel mult 200.
-- Unirea (`core.usp_Partner_Merge`, `usp_Item_Merge`, în tranzacția comenzii; dreptul pe proprietarul ambelor înregistrări): copiii trec pe înregistrarea păstrată (partener: adrese, conturi fără IBAN-urile deja existente, contacte, proprietățile lipsă, codurile articolelor, utilizatorii externi legați, CUI-ul dacă păstratul nu are; articol: coduri de bare, excepții de UM, coduri la parteneri, traduceri, proprietăți, garanțiile SGR); implicitele adreselor și conturilor mutate se scot. Înregistrarea unită nu se șterge: devine inactivă cu `MergedIntoId`. Modulele își mută documentele, soldurile și stocurile la evenimentele noi `PartenerUnificat` și `ArticolUnificat`.
-- API: `GET /duplicates/{1|2}`, `POST /duplicates/{1|2}/merge`, `POST /duplicates/{1|2}/ignore` (`Core.Partner.Manage` pentru parteneri, `Core.Item.Manage` pentru articole; auditate). Ecran: Configurare › Dubluri (familia „Date de bază”), cu „Păstrează prima” / „Păstrează a doua” (confirmare, ireversibil) și „Nu sunt dubluri”.
+public sealed record TransactionTypeDto(int Id, int? CompanyId, string Module, string DocumentType, string Behavior,
+    string Code, string Name, TransactionMode Mode, string? ConsumptionGroup, decimal OverTolerancePct,
+    bool AllowManualLines, bool AllowCostCenter, IReadOnlyList<string> PostingFlags, bool IsActive);
 
-**Punctul 13, variantele articolelor: detalii de implementare** (21.11.2026).
+// Fiecare modul își declară comportamentele la pornire (înregistrare în DI)
+public interface ITransactionBehavior
+{
+    string Module { get; }
+    string DocumentType { get; }
+    string Behavior { get; }                       // de exemplu "GoodsReceipt.FromPurchaseOrder"
+    TransactionMode Mode { get; }
+    string? ConsumptionGroup { get; }
+    IReadOnlyList<SourceSpec> Sources { get; }     // tipurile sursă, nivel, măsură, filtrele permise
+    IReadOnlyList<string> AllowedDefaults { get; } // cheile permise în DefaultsJson
+    bool ForbidsTolerance { get; }
+    bool LimitsConsumption { get; }               // false = grup informativ, fără 50027 (A2, 26.11.2026)
+}
 
-- Migrarea `2026.11.026`: `core.ItemAttribute` și `core.ItemAttributeValue` (atribute comune grupului, de exemplu mărime și culoare, cu valori; cod unic fără diferență de majuscule; nu se șterg, se dezactivează), tipul `core.ItemAttributeValueList`, `core.ItemVariant` (articol, cod unic pe articol, denumire, `ValueKey` = combinația de valori, unică pe articol, activ) și `core.ItemVariantValue`; `core.ItemBarcode.VariantId` (codul de bare al unei variante, din același articol).
-- Generarea (`core.usp_ItemVariant_Generate`): toate combinațiile cu câte o valoare din fiecare atribut ales, fără cele care există; codul = codurile valorilor unite cu „-” (`M-ROSU`), denumirea = denumirea articolului urmată de valori („Tricou Basic — M / Roșu”). Toate variantele unui articol folosesc aceleași atribute; cel mult 500 la o generare. Codul și denumirea variantei se pot schimba; combinația nu.
-- Stocul, prețul și documentele pe variantă țin de Stocuri, Vânzări și Achiziții, care vor folosi `ItemVariant.Id` lângă articol.
-- API: `GET /item-attributes`, `POST /item-attributes`, `PUT /item-attributes/{id}` (`Core.Nomenclature.Manage`), `GET /items/{id}/variants`, `POST /items/{id}/variants/generate`, `PUT /items/{id}/variants/{variantId}` (`Core.Item.View` / `Core.Item.Manage`, auditate); `SaveItemBarcode.VariantId`. Ecran: Configurare › Atribute variante (familia „Date de bază”); tab-ul „Variante” al articolului (bifele valorilor, „Generează (n)”, lista variantelor editabilă); varianta în formularul codului de bare.
+public sealed record SourceSpec(string SourceDocumentType, bool IsPrimary, LinkLevel Level, byte Measure,
+    IReadOnlyList<byte> DefaultStatuses, IReadOnlyList<string> AllowedFilters);
 
-Surse verificate pe 21.11.2026: [dimensiuni implicite și combinații (Business Central)](https://learn.microsoft.com/en-us/dynamics365/business-central/finance-dimensions), [jurnalul de modificări și monitorizarea câmpurilor (Business Central)](https://learn.microsoft.com/dynamics365/business-central/across-log-changes), [politici de retenție (Business Central)](https://learn.microsoft.com/dynamics365/business-central/admin-data-retention-policies), [serii de numerotare și relații (Business Central)](https://learn.microsoft.com/en-us/dynamics365/business-central/ui-create-number-series), [pachete de configurare (Business Central)](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/administration/set-up-standard-company-configuration-packages), [unirea contactelor (Odoo)](https://www.odoo.com/documentation/19.0/applications/essentials/contacts/merge.html), [Data Cleaning (Odoo)](https://www.odoo.com/documentation/19.0/applications/productivity/data_cleaning.html). Celelalte trimiteri (SAP, NetSuite, Oracle, ERP-urile românești) sunt din cunoașterea generală a produselor și se verifică la detalierea punctului.
+// Implementat de modulul care deține documentul sursă
+public interface ILinkableDocumentSource
+{
+    string DocumentType { get; }
+    Task<IReadOnlyList<SourceDocumentRow>> FindAvailableAsync(SourceQuery query, CancellationToken ct);
+    Task<IReadOnlyList<SourceLineRow>> GetLinesAsync(IReadOnlyCollection<long> documentIds, CancellationToken ct);
+}
+
+public interface ITransactionTypeService
+{
+    Task<IReadOnlyList<TransactionTypeDto>> ListForUserAsync(int companyId, string documentType, CancellationToken ct);
+    Task<TransactionTypeDto> GetAsync(int id, CancellationToken ct);
+}
+
+public interface IDocumentLinkService
+{
+    // În tranzacția documentului destinație; blochează sursele, verifică disponibilul, scrie legăturile
+    Task ConsumeAsync(int companyId, DocumentRef dest, int transactionTypeId,
+        IReadOnlyList<LinkRequest> links, LinkState state, CancellationToken ct);
+    Task ActivateAsync(DocumentRef dest, CancellationToken ct);       // la validarea destinației
+    Task DeactivateAsync(DocumentRef dest, CancellationToken ct);     // la anulare sau stornare
+    Task<IReadOnlyList<AvailableLine>> GetAvailableAsync(IReadOnlyCollection<SourceLineKey> lines, CancellationToken ct);
+    Task<DocumentTrail> GetTrailAsync(DocumentRef document, CancellationToken ct);   // drumul în ambele sensuri
+    Task CloseLineAsync(SourceLineKey line, decimal closedQty, string reason, CancellationToken ct);
+}
+
+public sealed record DocumentRef(string Module, string DocumentType, long DocumentId);
+public sealed record SourceLineKey(string Module, string DocumentType, long DocumentId, long? LineId, string ConsumptionGroup);
+public sealed record LinkRequest(SourceLineKey Source, long? DestLineId, decimal? Qty, decimal? Amount, decimal? AmountRon);
+
+public interface IDocumentStatusLog
+{
+    Task WriteAsync(DocumentRef document, byte? fromStatus, byte toStatus, string? reason, CancellationToken ct);
+}
+```
+
+Pe lângă acestea, un `[Behavior]` pe comanda MediatR de generare (`GenerateFromSourcesCommand<TDest>`) aduce validarea comună: tranzacția e activă și permisă utilizatorului (`50023`, `50024`), sursele sunt de tipul și în starea permise (`50025`, `50026`), iar cantitățile nu depășesc maximul preluabil (`50027`), doar pentru tranzacțiile cu `LimitsConsumption` = 1.
+
+#### 3.6.6 Tabele și coduri de eroare
+
+| Tabel | Cheie primară | Chei unice / străine principale | Indecși suplimentari |
+| --- | --- | --- | --- |
+| `core.TransactionType` | `Id int` | UX `(CompanyId, DocumentType, CodeKey)` cu `CompanyId` tratat prin coloană calculată `ISNULL(CompanyId, 0)`; FK `CompanyId` | `(DocumentType, IsActive) INCLUDE (Code, Name, Behavior)` |
+| `core.TransactionTypeSource` | `Id int` | UQ `(TransactionTypeId, SourceDocumentType)`; UX `(TransactionTypeId) WHERE IsPrimary = 1` | — |
+| `core.TransactionTypeRole` | `Id int` | UQ `(TransactionTypeId, RoleId)`; FK `RoleId` | `RoleId` |
+| `core.DocumentLink` | `Id bigint` | FK `TransactionTypeId`, `CompanyId` | `(SourceDocumentType, SourceLineId, ConsumptionGroup) INCLUDE (Qty, Amount, State)`; `(SourceDocumentType, SourceDocumentId)`; `(DestDocumentType, DestDocumentId)` |
+| `core.DocumentLineClosure` | `Id bigint` | UX `(SourceDocumentType, SourceLineId, ConsumptionGroup) WHERE ReopenedAt IS NULL` | — |
+| `core.DocumentStatusLog` | `Id bigint` | — | `(DocumentType, DocumentId, OccurredAt)` |
+
+Proceduri publice noi: `core.usp_DocumentLink_Available` (disponibil pe un set de linii, TVP), `core.usp_DocumentLink_Consume` (blocare + verificare + scriere), `core.usp_DocumentLink_SetState` (activare sau dezactivare pe un document destinație), `core.usp_DocumentLink_Trail` (drumul unui document, recursiv, adâncime maximă 10), `core.usp_DocumentStatusLog_Write`.
+
+| Cod SQL | Cod API | HTTP | Când apare |
+| --- | --- | --- | --- |
+| 50023 | `CORE_TRANSACTION_TYPE_INACTIVE` | 409 | Tranzacția aleasă e inactivă sau nu e a firmei curente |
+| 50024 | `CORE_TRANSACTION_NOT_ALLOWED` | 403 | Niciun rol al utilizatorului nu are voie să folosească tranzacția |
+| 50025 | `CORE_SOURCE_TYPE_NOT_ALLOWED` | 409 | Tipul documentului sursă nu e permis de tranzacție |
+| 50026 | `CORE_SOURCE_STATUS_INVALID` | 409 | Documentul sursă nu e într-o stare permisă (de exemplu comanda e încă ciornă) |
+| 50027 | `CORE_LINK_QTY_EXCEEDED` | 409 | Cantitatea preluată depășește disponibilul plus toleranța |
+| 50028 | `CORE_SOURCE_LINE_LOCKED` | 409 | Modificarea, ștergerea sau anularea unei linii sursă deja preluate |
+| 50029 | `CORE_TRANSACTION_BEHAVIOR_LOCKED` | 409 | Schimbarea comportamentului sau a tipului de document al unei tranzacții folosite |
+| 50030 | `CORE_TRANSACTION_DEFAULT_DUPLICATE` | 409 | Două tranzacții implicite pentru același rol și tip de document |
+
+Permisiune nouă: `Core.TransactionType.Manage` (tranzacțiile și drepturile lor), dată implicit Administratorului. Ecranul e în Administrare › Configurare, grupul Documente, tab-ul Tranzacții (lângă Serii și Precizie), desenat în [02.04 A1](../04-achizitii/A1-CONFIGURARE.md) (`a1-01-tranzactii`).
 
 ## 4. Fluxuri principale
 
@@ -488,15 +645,6 @@ Interogările (`IQuery`) trec doar prin pașii 1–3 și nu deschid tranzacție 
 
 Protecție la dublă trimitere: comenzile de creare acceptă antetul `Idempotency-Key`, generat de interfață la deschiderea formularului. `TransactionBehavior` salvează cheia și rezultatul în `core.IdempotencyKey`, în aceeași tranzacție; o a doua cerere cu aceeași cheie (dublu-clic, reîncercare după o întrerupere de rețea) primește rezultatul primei, fără să creeze încă un document.
 
-**Detalii de implementare (etapa 1, 15.11.2026):**
-
-- Proiectele `Erp.Core.Contracts`, `.Domain`, `.Application`, `.Infrastructure`, `.Api` (`NET-01`). Pipeline-ul se înregistrează cu `AddErpMediator(assembly-urile modulelor)`; ordinea behaviors e cea din tabel, iar `AuditBehavior` rulează în interiorul tranzacției, după handler.
-- Contextul cererii vine din antete: `X-Correlation-Id` (întors și în răspuns; generat dacă lipsește), `X-Company-Id` (firma curentă; fără antet, ultima firmă a utilizatorului, `0` = nicio firmă), `Idempotency-Key` (maximum 100 de caractere). Utilizatorul se identifică prin claim-ul `NameIdentifier` = `SubjectId` și se încarcă o dată per cerere cu `core.usp_User_GetPermissions`; un cont inactiv sau extern expirat rămâne neautentificat (4.6).
-- Pe lângă cele din secțiunea 6, contractele au: `ICurrentContext.IsAuthenticated`, `IdempotencyKey`, `IpAddress`; `IAuditScope` (handler-ul descrie entitatea modificată; fără descriere, intrarea de audit are doar acțiunea și tipul derivat din ea); `IPeriodLock` (implementat de Finanțe; până atunci nicio perioadă nu e închisă); `IAccountingDated` (comenzile cu dată contabilă); `ErpException` / `ErpValidationException` cu codul stabil.
-- Autorizarea e „fail closed”: o cerere fără `[RequiresPermission]` e refuzată, cu excepția interogărilor marcate `[AuthenticatedUser]` (de exemplu `GET /api/core/me`). Testul de arhitectură verifică `[Module]` și permisiunea pe fiecare comandă și interogare (`NET-04`).
-- Idempotența: `core.usp_IdempotencyKey_Claim` rezervă cheia cu `UPDLOCK, HOLDLOCK`, deci cererile simultane cu aceeași cheie se serializează; aceeași cheie folosită pentru altă operațiune dă 409 `CORE_IDEMPOTENCY_KEY_REUSED`. Deadlock-ul (1205) și expirarea blocării (1222) se reîncearcă de 3 ori, apoi 409 `CORE_RESOURCE_BUSY` (`SP-17`). Erorile `THROW 50xxx` se traduc în pipeline prin tabelul modulului (`NET-09`).
-- Licența (4.4): starea se calculează din `ValidUntil` (avertizare cu 30 de zile înainte, 15 zile de grație, apoi doar citire). Fără licență validă, instalarea rămâne doar pentru consultare cu modulul `Core` activ; în mediul `Development` toate modulele sunt active (jurnalizat). Reverificarea zilnică și refuzul la pornire (A7) vin în etapa licenței.
-
 ### 4.2 Alocarea numărului la validare
 
 1. Handler-ul de validare cere `INumberSeriesService.NextAsync(companyId, documentType, documentDate)`.
@@ -506,22 +654,22 @@ Protecție la dublă trimitere: comenzile de creare acceptă antetul `Idempotenc
 
 Caz limită: două validări simultane pe aceeași serie se serializează pe rândul seriei; durata blocajului e cât tranzacția de validare (țintă sub 2 s, din 01). Pentru serii nefiscale (oferte, comenzi) se poate folosi `SEQUENCE` SQL, fără blocaj.
 
-**Detalii de implementare (etapa 4, 15.11.2026):** `core.usp_NumberSeries_Next(@CompanyId, @BranchId, @DocumentTypeCode, @DocumentDate)` refuză apelul în afara unei tranzacții (50028, eroare de programare) și alege seria implicită deschisă a punctului de lucru, apoi pe cea a firmei. Seria anului nou se creează automat doar dacă seria anului anterior are `AutoRollover` (comutatorul din macheta 07c); altfel 50001. Tipurile de documente sunt în catalogul `core.DocumentType` (`Modul.Tip`, de exemplu `Sales.Invoice`), completat de fiecare modul. Formatul: `{Prefix}-{An}-{Număr}`, cu `Padding` cifre. O serie fiscală folosită nu-și mai schimbă tipul, punctul de lucru, prefixul, anul sau următorul număr (50024); o serie nefiscală folosită poate doar sări înainte; o serie închisă e înghețată (50025). Testele A2 (2 × 500 de validări simultane dau numerele 1…1000) și A3 rulează pe SQL Server real.
-
 ### 4.3 Cursul valutar
 
-1. Jobul zilnic preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`. Până la modulul Integrări (decizia lui Aurelian din 21.11.2026), jobul stă în `Erp.Worker` (`core-bnr-rates`, de luni până vineri la :15 și :45 între 13:00 și 16:45, ora României; se oprește când cursul zilei există), iar în Configurare › Cursuri valutare butonul „Preia acum de la BNR” aduce la cerere cursurile ultimelor zile bancare. Integrări poate prelua jobul fără schimbări în Nucleu.
+1. Jobul zilnic din Integrări preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`.
 2. Nucleul salvează cursurile cu `Source = BNR` și publică `CursValutarActualizat`.
 3. `IExchangeRateProvider.GetRate(currency, date)` întoarce cursul BNR din ziua cerută; dacă ziua nu are curs (weekend, sărbătoare), întoarce ultimul curs anterior și data lui.
 4. Documentele memorează cursul folosit; o corectare ulterioară a cursului nu modifică documentele validate.
 
 ### 4.4 Licența
 
-1. La pornire, host-ul citește fișierul de licență și verifică semnătura cu cheia publică încorporată în aplicație.
+1. La pornire, host-ul citește fișierul de licență `erp.lic` (emis de generatorul intern `ErpLicenseGen`, criptat AES-256-GCM și semnat ECDSA P-256; formatul complet în [08 Instalare și actualizare](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), secțiunile 3 și 4), verifică semnătura cu cheia publică încorporată în aplicație, apoi îl decriptează.
 2. Verifică că fiecare firmă activă are CUI-ul în licență și că data curentă e înainte de `ValidUntil`.
 3. Înregistrează doar modulele din licență (endpoint-uri, handler-e, consumatori, joburi, meniuri).
 4. Zilnic, un job reverifică licența; cu 30 de zile înainte de expirare afișează avertizare administratorilor.
 5. După expirare: perioadă de grație de 15 zile cu funcționare completă, apoi **doar citire** (consultare și rapoarte, fără documente noi; LicenseBehavior refuză scrierile cu CORE_LICENSE_READ_ONLY). Datele clientului nu sunt niciodată blocate.
+
+6. **La adăugarea unei firme sau a unui grup** (`CreateCompany`, `UpdateCompany` cu CUI schimbat, pasul „Firme” al asistentului de configurare), handler-ul apelează `ILicenseService.EnsureFiscalCodeLicensed` înainte de orice scriere: CUI-ul se reduce la partea numerică (`RO 12345678` → `12345678`) și se caută în lista din licență. Dacă lipsește, comanda se refuză cu 403 `CORE_FISCAL_CODE_NOT_LICENSED` și mesajul pe câmpul CUI: „CUI-ul 12345678 nu figurează în licența acestei instalări. Pentru a adăuga firma, cereți furnizorului o licență care o include și încărcați-o din Administrare › Configurare › Licență.” La un grup se verifică toate firmele, mesajul le listează pe cele lipsă și nu se salvează nimic parțial.
 
 Perioada de grație și modul doar-citire sunt o propunere de politică comercială, de confirmat.
 
@@ -532,14 +680,16 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 3. Pentru fiecare mesaj apelează consumatorii înregistrați; fiecare consumator își notează mesajul în `core.InboxProcessed` (idempotență: același mesaj nu se procesează de două ori).
 4. La eroare: reîncercare cu așteptare crescătoare (1 min, 5 min, 30 min, 2 h), apoi mesajul trece în stare `Failed` și apare în ecranul de monitorizare, cu alertă.
 
-**Implementare (23.11.2026, decizia lui Aurelian de a construi dispecerul):** consumatorii implementează `IIntegrationEventHandler<TEvent>` (în `Erp.Core.Contracts`) și se înregistrează cu `AddIntegrationEventHandler<TEvent, THandler>()`; `OutboxDispatcher` (în `Erp.Core.Infrastructure/Messaging`) ia lotul cu `core.usp_Outbox_FetchBatch` (`UPDLOCK, READPAST`, cu un termen de 5 minute în `NextAttemptAt`, ca alt procesor să nu ia aceleași mesaje), deserializează evenimentul după `EventType` (numele complet al clasei) și îl livrează fiecărui consumator în scope-ul și tranzacția lui, împreună cu nota din `core.InboxProcessed` (`core.usp_InboxProcessed_Claim`). Contextul consumatorului e utilizatorul de sistem (Id 1), în firma și cu corelarea evenimentului. Un mesaj fără consumatori se marchează procesat. Un consumator care eșuează nu repetă consumatorii reușiți la reîncercare. În `Erp.Worker`, bucla rulează la 2 secunde (`Outbox:IntervalSeconds`) doar cât procesarea de fundal e pornită. Ștergerea mesajelor procesate după 30 de zile și notificarea `Core.OutboxFailed` vin cu jobul de retenție și cu notificările.
-
 ### 4.6 Cazuri limită
 
 | Situație | Comportament |
 | --- | --- |
 | Utilizator dezactivat în timp ce e logat | Cookie-ul e respins la următoarea verificare a sesiunii (cel mult un minut); cheile API ale contului nu mai sunt acceptate |
 | Articol dezactivat care apare pe ciorne | Ciornele existente se pot valida; articolul nu mai apare la căutare pentru documente noi |
+| Variantă dezactivată care apare pe ciorne | La fel ca articolul: ciornele se pot valida; în grila documentelor noi varianta e ascunsă, iar cine are `Core.Item.Manage` o poate afișa și reactiva din grilă |
+| Două documente creează simultan aceeași variantă (modul „la prima utilizare”) | `core.usp_ItemVariant_Ensure` blochează combinația cu `UPDLOCK, HOLDLOCK`; al doilea document primește varianta creată de primul |
+| Familie folosită care are nevoie de o axă nouă | Refuzat (`CORE_ITEM_FAMILY_LOCKED`); se creează o familie nouă și articolele se migrează, cu stocul mutat prin ieșire și intrare |
+| Schimbarea șablonului de denumire sau SKU | Afectează doar variantele create de acum înainte; variantele existente și documentele emise își păstrează denumirea |
 | Modificare de partener după facturare | Factura validată păstrează datele partenerului de la validare (copie pe document); nomenclatorul se poate modifica |
 | Două firme din grup cu același partener | Un singur partener; condiții diferite per firmă în modulele comerciale |
 | Modificarea zecimalelor unui articol | Afectează doar documentele noi; cele existente păstrează precizia de la creare |
@@ -549,10 +699,8 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 
 1. Modulele trimit notificări prin `INotificationService` (către utilizatori anume sau către un rol dintr-o firmă), în aceeași tranzacție cu operația: se scriu în `core.Notification` și în outbox.
 2. Utilizatorul le vede în aplicație: clopoțel în antet, cu numărul celor necitite.
-3. Emailul pleacă din outbox prin serverul SMTP configurat la instalare (setările `Smtp.*`, parola criptată cu Data Protection, `NET-17`), după preferințele utilizatorului pentru fiecare tip de notificare.
+3. Emailul pleacă din outbox prin serverul SMTP configurat la instalare (setările `Smtp.*`, parola criptată cu DPAPI), după preferințele utilizatorului pentru fiecare tip de notificare.
 4. Notificări trimise de Nucleu: licența expiră în 30 de zile, mesaj outbox eșuat definitiv, cont blocat după încercări greșite (către administratori). Celelalte module își definesc propriile notificări.
-
-**Implementare email (23.11.2026, decizia lui Aurelian de a-l construi pentru confirmările de sold):** migrarea `2026.11.042` (`core.EmailMessage`, `core.EmailMessageAttachment`), `IEmailOutbox` în `Erp.Core.Contracts`: mesajul se scrie în tranzacția operației, împreună cu evenimentul `EmailCerut` în outbox; consumatorul `SendEmail` din Worker îl trimite prin SMTP (MailKit) cu atașamentele lui (atașamentele Nucleului), o singură dată, iar o eroare rămâne pe mesaj (`LastError`, `Attempts`) și se reia după regulile outbox-ului. Setările SMTP ale instalării (Configurare › Setări › Email, `Core.Settings.Manage`): serverul, portul, criptarea (STARTTLS, SSL), utilizatorul, expeditorul și adresa de răspuns în cheia `Smtp.Settings`, parola criptată cu Data Protection în `Smtp.Password` (nu se întoarce niciodată; gol = rămâne cea salvată); „Trimite email de test” trimite imediat (`CORE_SMTP_NOT_CONFIGURED`, `CORE_EMAIL_SEND_FAILED` 503). Rămân de făcut: suprascrierea pe firmă, limita de mesaje pe minut, BCC-ul pentru facturi, notificările (`INotificationService`) și preferințele de email pe tip de notificare.
 
 ### 4.8 Import inițial din Excel
 
@@ -561,8 +709,6 @@ Perioada de grație și modul doar-citire sunt o propunere de politică comercia
 3. Afișează raportul: rânduri valide, rânduri cu erori și motivul, rânduri care există deja în bază.
 4. La confirmare, rândurile valide se salvează în loturi de 500, fiecare lot în tranzacția lui, prin aceleași comenzi ca interfața (cu audit). Rândurile cu erori se descarcă, se corectează și se reîncarcă.
 5. Importul se poate relua: un rând cu același cod sau CUI actualizează înregistrarea existentă, nu o dublează.
-
-**Import pentru celelalte module (23.11.2026, pentru soldurile inițiale din 02.02, F3 4.9):** `ISpreadsheetFiles` (șablonul cu listele, citirea rândurilor, fișierul cu rândurile greșite, prin același cititor ClosedXML; o celulă de tip dată se citește ISO, AAAA-LL-ZZ) și `IImportJobs` (crearea, citirea și actualizarea jobului `core.ImportJob`, cu firma și utilizatorul din context) în `Erp.Core.Contracts`. Modulul își face singur validarea, raportul și loturile, cu propriile permisiuni și rute; jobul rămâne în istoricul importurilor. Migrarea `2026.11.046` lasă orice tip de entitate nevid pe job (nu doar `Partner` și `Item`).
 
 ### 4.9 Retenția datelor
 
@@ -595,7 +741,9 @@ public abstract record IntegrationEvent
 | Eveniment | Când | Conținut (pe lângă anvelop) | Consumatori tipici |
 | --- | --- | --- | --- |
 | `PartenerModificat` v1 | Creare sau modificare de partener | `PartnerId`, `Code`, `Name`, `FiscalCode`, `VatPayer`, `VatOnCollection`, `AnafInactive`, `IsActive` | CRM, Vânzări, Achiziții (cache-uri locale), POS |
-| `ArticolModificat` v1 | Creare sau modificare de articol | `ItemId`, `Code`, `Name`, `ItemType`, `BaseUomCode`, `VatRateCode`, `DepositItemId`, `IsActive` | POS (sincronizare), Stocuri, Producție |
+| `CodNcArticolModificat` v1 | Schimbarea codului NC8 pe familie, articol sau variantă, inclusiv din importul anual | `ItemId`, `ItemVariantId` (opțional), `OldCnCode`, `NewCnCode`, `Source` (familie, articol, import) | Stocuri (Intrastat), Achiziții, Vânzări |
+| `ArticolModificat` v1 | Creare sau modificare de articol (model) | `ItemId`, `Code`, `Name`, `ItemType`, `ItemFamilyId` (câmp opțional nou, 16.11.2026), `BaseUomCode`, `VatRateCode`, `DepositItemId`, `IsActive` | POS (sincronizare), Stocuri, Producție |
+| `VariantaArticolModificata` v1 | Creare, redenumire, dezactivare sau reactivare de variantă; schimbarea codurilor ei de bare | `ItemVariantId`, `ItemId`, `Code` (SKU), `Name`, axele `{Slot, ValueCode, ValueName}`, codurile de bare `{Barcode, UomCode}`, `IsActive` | POS (sincronizare offline), Stocuri, Vânzări, Achiziții |
 | `NomenclatorFiscalModificat` v1 | Adăugarea sau modificarea unei cote TVA ori a unei UM | `Kind` (VatRate / Uom), `Code`, `ValidFrom` | POS (sincronizare offline), Vânzări, Achiziții |
 | `CursValutarActualizat` v1 | Salvarea cursurilor unei zile | `RateDate`, `Source`, lista `{CurrencyCode, Rate, Multiplier}` | Finanțe (reevaluare), Raportare |
 | `FirmaModificata` v1 | Modificarea datelor unei firme | `CompanyId`, `FiscalCode`, `Name`, `VatPayer`, `VatOnCollection` | Integrări (date emitent e-Factura), Finanțe |
@@ -622,17 +770,17 @@ public interface ICurrentContext
 public interface INumberSeriesService
 {
     Task<DocumentNumber> NextAsync(int companyId, string documentType,
-        DateOnly documentDate, CancellationToken ct, int? branchId = null);   // branchId adăugat în etapa 4
+        DateOnly documentDate, CancellationToken ct);
 }
 public sealed record DocumentNumber(string Prefix, int Year, long Number, string Formatted);
 
 // Precizie și rotunjire
 public interface IPrecisionService
 {
-    Task<PrecisionInfo> ResolveAsync(int companyId, int? itemId, int? priceListId, CancellationToken ct);
-    decimal RoundPrice(decimal value, PrecisionInfo precision);     // 0–6 zecimale
-    decimal RoundQuantity(decimal value, PrecisionInfo precision);
-    decimal RoundAmount(decimal value, PrecisionInfo precision);    // mereu 2 zecimale
+    PrecisionInfo Resolve(int companyId, int? itemId, int? priceListId);
+    decimal RoundAmount(decimal value, string currency);   // 2 zecimale pentru RON
+    decimal RoundPrice(decimal value, PrecisionInfo p);     // 0–6 zecimale
+    decimal RoundQuantity(decimal value, PrecisionInfo p);
 }
 public sealed record PrecisionInfo(byte PriceDecimals, byte QuantityDecimals, byte AmountDecimals,
     MidpointRounding Rounding);
@@ -656,6 +804,17 @@ public interface IItemLookup
     Task<ItemDto?> GetAsync(int itemId, CancellationToken ct);
     Task<IReadOnlyList<ItemDto>> GetManyAsync(IEnumerable<int> ids, CancellationToken ct);
 }
+// Variante (adăugat pe 16.11.2026, §3.3.1): toate liniile de document trimit la ItemVariantId
+public interface IItemVariantService
+{
+    Task<ItemVariantDto?> GetAsync(int itemVariantId, CancellationToken ct);
+    Task<BarcodeMatchDto?> FindByBarcodeAsync(string barcode, CancellationToken ct);      // variantă + UM
+    Task<VariantGridDto> GetGridAsync(int itemId, bool includeInactive, CancellationToken ct); // valori permise, variante existente, celule „NOU”
+    Task<int> EnsureAsync(int itemId, int? axis1ValueId, int? axis2ValueId, int? axis3ValueId,
+        CancellationToken ct);                         // core.usp_ItemVariant_Ensure, în tranzacția curentă
+    Task MarkUsedAsync(IEnumerable<int> itemVariantIds, CancellationToken ct); // la validarea documentului (regula 13)
+    Task<ItemVariantSnapshotDto> SnapshotAsync(int itemVariantId, int uomId, CancellationToken ct); // denumire, SKU, cod de bare, factor UM, cod NC pentru linie
+}
 public interface IVatRateLookup
 {
     Task<VatRateDto> GetAsync(string code, DateOnly onDate, CancellationToken ct);
@@ -673,8 +832,6 @@ public interface IAttachmentStore
 public interface ILicenseInfo
 {
     bool IsModuleActive(string moduleCode);
-    IReadOnlyCollection<string> ActiveModules { get; }      // meniul interfeței (adăugat în etapa 3)
-    bool IsFiscalCodeLicensed(string fiscalCode);           // CUI-ul firmei e în licență (4.4; adăugat în etapa 4)
     int? GetLimit(string limitCode);
     DateOnly ValidUntil { get; }
     LicenseState State { get; }                             // Valid, ExpiringSoon, Grace, ReadOnly
@@ -689,7 +846,7 @@ public sealed class AuditedAttribute(string action) : Attribute { }
 public sealed class ModuleAttribute(string moduleCode) : Attribute { }
 ```
 
-DTO-urile (`PartnerDto`, `ItemDto`, `VatRateDto`, `PartnerSnapshotDto`, `AuditRecord`) sunt `record`-uri imutabile, fără logică. `PartnerSnapshotDto` conține exact datele care se copiază pe un document fiscal (denumire, CUI, registru, adresă, cont bancar), ca factura să nu se schimbe dacă partenerul se modifică ulterior.
+DTO-urile (`PartnerDto`, `ItemDto`, `ItemVariantDto`, `ItemVariantSnapshotDto`, `VatRateDto`, `PartnerSnapshotDto`, `AuditRecord`) sunt `record`-uri imutabile, fără logică. `PartnerSnapshotDto` conține exact datele care se copiază pe un document fiscal (denumire, CUI, registru, adresă, cont bancar), ca factura să nu se schimbe dacă partenerul se modifică ulterior.
 
 Abstracțiunile de platformă, folosite de toate modulele, stau tot în `Erp.Core.Contracts`:
 
@@ -712,8 +869,7 @@ public interface IDbSession
 // Scriere cursuri (folosit doar de Integrări)
 public interface IExchangeRateWriter
 {
-    // Una sau mai multe zile (fișierul BNR pe 10 zile); întoarce cursurile adăugate (21.11.2026).
-    Task<IReadOnlyList<ExchangeRateDto>> SaveBnrRatesAsync(IReadOnlyList<ExchangeRateDto> rates, CancellationToken ct);
+    Task SaveBnrRatesAsync(DateOnly rateDate, IReadOnlyList<ExchangeRateDto> rates, CancellationToken ct);
 }
 
 // Datele firmei pentru documente (emitent e-Factura, antet tipărire)
@@ -750,12 +906,26 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.Company` | `Id int` | UQ `Code`, UQ `FiscalCode` | — |
 | `core.Branch` | `Id int` | FK `CompanyId` | `CompanyId` |
 | `core.CompanyBankAccount` | `Id int` | FK `CompanyId`; UQ `Iban` | `CompanyId` |
-| `core.Partner` | `Id int` | UX `CodeKey` (`SQL-24`), UQ filtrat `FiscalCode WHERE FiscalCode IS NOT NULL`; FK proprietar `OwnerCompanyId`, `(OwnerBranchId, OwnerCompanyId)`, `(OwnerLocationId, OwnerCompanyId)` | `NameSearch` (căutare, `SQL-25`), full-text opțional, `(OwnerCompanyId, OwnerBranchId, OwnerLocationId)` filtrat |
+| `core.Partner` | `Id int` | UX `CodeKey` (`SQL-24`), UQ filtrat `FiscalCode WHERE FiscalCode IS NOT NULL` | `NameSearch` (căutare, `SQL-25`), full-text opțional |
 | `core.PartnerAddress`, `PartnerBankAccount`, `PartnerContact` | `Id int` | FK `PartnerId` | `PartnerId` |
-| `core.Item` | `Id int` | UX `CodeKey`; FK `UomSetId`, `BaseUomId`, `DefaultVatRateId`, `ItemGroupId`, `DepositItemId`, proprietarul ca la `core.Partner` | `NameSearch`, `ItemGroupId`, `(OwnerCompanyId, OwnerBranchId, OwnerLocationId)` filtrat |
+| `core.Item` | `Id int` | UX `CodeKey`; FK `UomSetId`, `BaseUomId`, `DefaultVatRateId`, `ItemGroupId`, `DepositItemId`, `ItemFamilyId` | `NameSearch`, `ItemGroupId`, `ItemFamilyId` |
 | `core.UomSet`, `core.UomSetLine` | `Id int` | UQ `UomSet.Code`; UQ `UomSetLine (UomSetId, UomId)`; index filtrat unic pe `IsBase = 1` | `UomSetId` |
-| `core.ItemUom`, `ItemBarcode`, `ItemAttribute` | `Id int` | FK `ItemId`; UQ `ItemUom (ItemId, UomId)`; UQ `ItemBarcode.Barcode`; FK opțional `ItemBarcode.UomId` | `ItemId` |
+| `core.ItemUom`, `ItemAttribute` | `Id int` | FK `ItemId`; UQ `ItemUom (ItemId, UomId)`; UQ `ItemAttribute (ItemId, AttributeId)`; FK `ItemAttribute.AttributeId`, `ValueId`, `MeasureSystemValueId` | `ItemId`; `ItemAttribute (AttributeId, NumberValue)` și `(AttributeId, ValueId)` `INCLUDE (ItemId)` |
+| `core.ItemBarcode` | `Id int` | FK `ItemVariantId`; UQ `Barcode`; FK opțional `UomId` | `ItemVariantId` |
+| `core.ItemVariant` | `Id int` | FK `ItemId`, `Axis1ValueId`..`Axis3ValueId`; UQ `(ItemId, Axis1ValueId, Axis2ValueId, Axis3ValueId)`; UX `CodeKey`; UX `Uid`; `CK_ItemVariant_Slots` | `NameSearch`; filtrați pe fiecare `AxisNValueId` |
+| `core.ItemAllowedValue` | `Id int` | FK `ItemId`, `ValueId`; UQ `(ItemId, Slot, ValueId)` | `ValueId` |
+| `core.ItemFamily` | `Id int` | UX `CodeKey`; FK `Axis1AttributeId`..`Axis3AttributeId`; `CK_ItemFamily_Slots` | — |
+| `core.ItemFamilyAttribute`, `ItemFamilyStockLevel`, `ItemFamilyDefaultValue` | `Id int` | FK `ItemFamilyId`; UQ `(ItemFamilyId, AttributeId)`, `(ItemFamilyId, Level)`, `(ItemFamilyId, Slot, ValueId)` | `ItemFamilyId` |
+| `core.ItemGroupDefaultValue` | `Id int` | FK `ItemGroupId`, `ValueId`; UQ `(ItemGroupId, ValueId)` | `ValueId` |
+| `core.ItemAttributeDefinition` | `Id int` | UX `CodeKey`; FK `ValueListId`, `MeasureSystemListId`, `UomId` | — |
+| `core.ValueList` | `Id int` | UX `CodeKey`; FK opțional `ProducerPartnerId` | — |
+| `core.ValueListGroup` | `Id int` | FK `ValueListId`, `ParentId`; UX `(ValueListId, CodeKey)`; `CK_ValueListGroup_Depth` (1–3) | `ParentId` |
+| `core.ValueListGroupAncestor` | `(GroupId, AncestorGroupId)` | FK `GroupId`, `AncestorGroupId` | `AncestorGroupId` |
+| `core.ValueListValue` | `Id int` | FK `ValueListId`, `GroupId`; UX `(ValueListId, CodeKey)` | `GroupId`; `NameSearch` |
 | `core.ItemGroup` | `Id int` | FK `ParentId` (arbore) | `ParentId` |
+| `core.CnCode` | `Key varchar(20)` | UX `(Code, ValidFrom) WHERE Code <> ''`; FK `ParentKey` (arbore) | `(Kind, Code)`, `ParentKey` |
+| `core.DeliveryTerm`, `core.TransportMode`, `core.TransactionNature` | `Code` (cod INS) | `TransactionNature` FK `ParentCode` | — |
+| `core.NomenclatureImportBatch`, `core.NomenclatureImportLine` | `Id bigint` | FK `BatchId`; UQ `(BatchId, Nomenclature, Key)` | `(BatchId, ChangeKind)` |
 | `core.Currency` | `Code char(3)` | — | — |
 | `core.ExchangeRate` | `Id int` | UQ `(CurrencyCode, RateDate, Source)` | `(CurrencyCode, RateDate DESC)` |
 | `core.VatRate` | `Id int` | UQ `(Code, ValidFrom)` | — |
@@ -765,20 +935,21 @@ Toate tabelele Nucleului stau în schema `core`. Celelalte module au drept de ci
 | `core.Employee` | `Id int` | UQ `(CompanyId, EmployeeNo)`; FK `CompanyId`, `BranchId` | `(CompanyId, LastName)` |
 | `core.Role`, `Permission` | `Id int` | UQ `Code` | — |
 | `core.RolePermission` | `(RoleId, PermissionId)` | FK `RoleId`, `PermissionId` | — |
-| `core.UserRoleAssignment` | `Id int` | UQ `(UserId, RoleId, CompanyGroupId, CompanyId, BranchId, LocationId)`; FK `UserId`, `RoleId`, `CompanyGroupId`, `CompanyId`, `(BranchId, CompanyId)`, `(LocationId, CompanyId)` (toate nule = toată instalarea, doar pentru `ADMIN`) | `(UserId, CompanyId)`, `CompanyGroupId` (filtrat) |
-| `core.UserPermissionOverride` | `Id int` | UQ `(UserId, PermissionId, CompanyId)`; FK `UserId`, `PermissionId`, `CompanyId` (nullable: `NULL` = toate firmele) | `PermissionId`, `CompanyId` (filtrat) |
+| `core.UserRoleAssignment` | `Id int` | FK `UserId`, `RoleId`, `CompanyId` (nullable: `NULL` = toată instalarea, doar pentru `ADMIN`) | `(UserId, CompanyId)` |
 | `core.NumberSeries` | `Id int` | UQ `(CompanyId, BranchId, DocumentType, Prefix, Year)` | — |
 | `core.PrecisionPolicy` | `Id int` | UQ `Code` | — |
-| `core.DimensionType`, `core.DimensionValue` | `Code varchar(20)`; `Id int` | UQ `(CompanyId, DimensionType, CodeKey)`; FK `CompanyId`, `DimensionType`, `ResponsibleUserId`, părintele `(ParentId, CompanyId, DimensionType)` | `ParentId` (filtrat), `(DimensionType, CompanyId)` |
+| `core.Dimension`, `DimensionValue` | `Id int` | UQ `(CompanyId, DimensionType, Code)` | — |
 | `core.AuditEntry` | `Id bigint` | — | Cluster pe `Id`; `(EntityType, EntityId)`, `(UserId, OccurredAt)` |
 | `core.Attachment` | `Id int` | — | `(EntityType, EntityId)` |
 | `core.Notification` | `Id bigint` | FK `UserId` | `(UserId, ReadAt)` |
+| `core.ReportView`, `core.ReportSchedule` | `Id int` | UX `(OwnerUserId, ReportCode, Name)`; FK `ReportViewId` | `(NextRunAt) WHERE IsActive = 1` (motorul comun de rapoarte (precizare din Achiziții A7, 27.11.2026)) |
 | `core.Outbox` | `Id bigint` | UQ `EventId` | Filtrat `WHERE ProcessedAt IS NULL` |
 | `core.InboxProcessed` | `Id bigint` | UQ `(EventId, Consumer)` | — |
+| `core.TransactionType`, `TransactionTypeSource`, `TransactionTypeRole`, `DocumentLink`, `DocumentLineClosure`, `DocumentStatusLog` | vezi §3.6.6 | Tranzacții, legături între documente, istoricul stărilor (adăugate pe 26.11.2026) | |
 | `core.IdempotencyKey` | `Id bigint` | UQ `(UserId, Key)` | `CreatedAt` (curățare) |
 | `core.LoginEvent` | `Id bigint` | — | `(UserName, OccurredAt)` |
 | `core.ImportJob` | `Id int` | — | `(EntityType, CreatedAt)` |
-| `core.InstallationLicense` | `Id int` | Index unic filtrat `UX_InstallationLicense_IsCurrent` (`WHERE IsCurrent = 1`); `CHECK` JSON pe `FiscalCodes`, `Modules`; `ValidUntil >= IssuedDate` | — |
+| `core.InstallationLicense` | `Id int` | — | — |
 | `core.Setting` | `Id int` | UQ `(Scope, ScopeId, Key)` | — |
 | `core.SchemaVersion` | gestionat de DbUp | — | — |
 | `core.CompanyGroup` | `Id int` | UQ `Code`; FK `ParentGroupId` (arbore), `ParentCompanyId` | `ParentGroupId` |
@@ -823,15 +994,18 @@ Proceduri stocate principale (convenție de nume `core.usp_<Entitate>_<Acțiune>
 | --- | --- | --- |
 | `core.usp_NumberSeries_Next` | Alocă următorul număr în tranzacția curentă | Da |
 | `core.usp_ExchangeRate_Get` | Curs pentru monedă și zi, cu fallback la ultima zi cu curs | Da |
-| `core.usp_ExchangeRate_SaveBatch` | Salvează cursurile BNR lipsă, pe una sau mai multe zile (table-valued parameter); o monedă nouă publicată de BNR se adaugă inactivă | Nu |
-| `core.usp_ExchangeRate_SaveManual`, `usp_ExchangeRate_List`, `usp_Currency_List`, `usp_Currency_SetActive` | Cursul manual (motiv obligatoriu); ecranul Cursuri valutare; lista valutelor; activarea unei monede | Nu |
+| `core.usp_ExchangeRate_SaveBatch` | Salvează cursurile unei zile (table-valued parameter) | Nu |
 | `core.usp_Partner_Save`, `usp_Partner_Search` | Salvare cu validare de duplicat CUI; căutare pagină | Search: da |
-| `core.usp_Item_Save`, `usp_Item_Search` | Idem pentru articole, cu UM și coduri de bare (TVP) | Search: da |
+| `core.usp_Item_Save`, `usp_Item_Search` | Idem pentru articole, cu UM, atribute de identitate și valori permise (TVP); creează varianta implicită sau, în modul „imediat”, toate combinațiile permise | Search: da |
+| `core.usp_ItemVariant_Ensure` | Găsește sau creează varianta unei combinații de valori (`UPDLOCK, HOLDLOCK`), în tranzacția documentului | Da |
+| `core.usp_ItemVariant_MarkUsed` | Setează `FirstUsedAt` pe variante și pe model și `LockedAt` pe familie, la validarea unui document (TVP cu Id-uri) | Da |
+| `core.usp_ItemVariant_FindByBarcode` | Variantă + UM după codul de bare | Da |
+| `core.usp_ItemVariant_Save`, `usp_ItemVariant_SetActive` | Coduri de bare ale variantei, dezactivare și reactivare | Nu |
+| `core.usp_ItemFamily_Save`, `usp_ValueList_Save` | Familii și liste de valori; refac `ValueListGroupAncestor` și `Depth`; refuză schimbarea axelor după `LockedAt` | Nu |
+| `core.fn_ItemVariant_BuildNames` | Funcție inline: SKU și denumire din șabloanele familiei | Nu |
 | `core.usp_User_GetPermissions` | Permisiunile efective ale unui utilizator pe o firmă | Nu (doar Nucleu) |
 | `core.usp_Outbox_FetchBatch` | Lot de mesaje cu `UPDLOCK, READPAST` | Nu |
-| `core.usp_Audit_Search`, `usp_Audit_Get`, `usp_LoginEvent_Search`, `usp_Company_History` | Căutare în jurnalul de audit, paginată, cu valorile filtrelor; detaliul cu intrarea anterioară (înainte / după); jurnalul de autentificări; istoricul fișei firmei | Nu |
-| `core.usp_City_Search`, `usp_City_Resolve`, `fn_CityMatch` | Lista de localități SIRUTA a județului; verificarea și legarea localității la salvarea adreselor | Nu |
-| `core.usp_Maintenance_IndexesAndStatistics` | Mentenanța indecșilor și a statisticilor, rulată de jobul SQL Agent (08, 5.13) | Nu |
+| `core.usp_Audit_Search` | Căutare în jurnalul de audit, paginată | Nu |
 
 Permisiuni SQL: fiecare modul are propriul rol de bază de date (`role_sales`, `role_fin` ș.a.) cu drepturi complete pe schema lui, `SELECT` pe `core.v_*` și `EXECUTE` pe procedurile publice. Aplicația folosește un singur login SQL, dar testele de arhitectură verifică aceste granițe pe un mediu cu loginuri separate.
 
@@ -855,45 +1029,22 @@ Coduri de eroare: Nucleul folosește plaja SQL `50000–50999` (`SP-04`), iar î
 | 50014 | `CORE_INITIAL_ADMIN_EXISTS` | 409 | Installer-ul încearcă să creeze administratorul inițial, dar există deja un administrator activ |
 | 50015 | `CORE_LAST_ADMINISTRATOR` | 409 | Dezactivarea sau scoaterea rolului `ADMIN` ar lăsa instalarea fără administrator activ |
 | 50016 | `CORE_SYSTEM_ROLE_MISSING` | 500 | Rolul de sistem `ADMIN` lipsește (datele livrate nu au rulat) |
-| 50017 | `CORE_LICENSE_INVALID_DATES` | 400 | Licența salvată are `ValidUntil` înaintea `IssuedDate` (`core.usp_InstallationLicense_Save`) |
-| 50018 | `CORE_DUPLICATE_CODE` | 409 | Codul există deja, fără diferență de majuscule (grup sau firmă în instalare, punct de lucru sau locație în firmă) |
-| 50019 | `CORE_COMPANY_DUPLICATE_FISCAL_CODE` | 409 | Există deja o firmă cu acest CUI |
-| 50020 | `CORE_NODE_HAS_ACTIVE_CHILDREN` | 409 | Dezactivarea unui grup, a unei firme sau a unui punct de lucru care are copii activi |
-| 50021 | `CORE_INVALID_REFERENCE` | 400 | Părinte sau legătură invalidă: grup inexistent sau ciclu, firmă-mamă din afara grupului, punct de lucru al altei firme, tip de document sau politică inexistente |
-| 50022 | `CORE_INVALID_ADDRESS` | 400 | Țara sau județul nu există în nomenclator (pentru România județul e obligatoriu) |
-| 50023 | `CORE_BANK_ACCOUNT_DUPLICATE_IBAN` | 409 | IBAN-ul este deja înregistrat |
-| 50024 | `CORE_NUMBER_SERIES_LOCKED` | 409 | Schimbarea numerotării unei serii fiscale deja folosite, sau coborârea următorului număr al unei serii folosite |
-| 50025 | `CORE_NUMBER_SERIES_CLOSED` | 409 | Modificarea sau închiderea unei serii închise |
-| 50026 | `CORE_NUMBER_SERIES_DUPLICATE` | 409 | Există deja o serie cu același prefix pentru firmă, punct de lucru, tip de document și an |
-| 50027 | `CORE_ENTITY_NOT_FOUND` | 404 | Înregistrarea modificată nu există (sau nu aparține firmei) |
-| 50028 | — | 500 | `core.usp_NumberSeries_Next` apelată în afara tranzacției documentului (eroare de programare) |
-| 50029 | `CORE_ADDRESS_TYPE_DUPLICATE` | 409 | Codul tipului de adresă există deja |
-| 50030 | `CORE_ADDRESS_TYPE_PROTECTED` | 400 | Tip de adresă de sistem dezactivat sau cu codul schimbat |
-| 50031 | `CORE_USER_DUPLICATE_USERNAME` | 409 | Numele de utilizator e deja folosit |
-| 50032 | `CORE_USER_LICENSE_LIMIT` | 409 | Utilizatorul nou sau reactivat ar depăși limita `users` din licență |
-| 50033 | `CORE_SYSTEM_USER_PROTECTED` | 409 | Modificarea contului `system` sau a tipului / numelui administratorului integrat |
-| 50034 | `CORE_ROLE_SCOPE_INVALID` | 400 | Atribuire pentru toate firmele a altui rol decât `ADMIN` |
-| 50035 | `CORE_ROLE_PROTECTED` | 409 | Modificarea rolului `ADMIN`, schimbarea codului unui rol de sistem sau ștergerea unui rol de sistem |
-| 50036 | `CORE_PERMISSION_OVERRIDE_INVALID` | 400 | Drept adăugat fără motiv sau excepție pentru un utilizator cu rolul `ADMIN` |
-| 50037 | `CORE_OWNER_ACCESS_DENIED` | 403 | Adăugare sau modificare a unui articol / partener într-un nod (comun, firmă, punct de lucru, locație) pe care utilizatorul nu are drept de modificare |
+| 50017 | `CORE_FISCAL_CODE_NOT_LICENSED` | 403 | CUI-ul firmei adăugate nu figurează în licență (fluxul 4.4, pasul 6) |
+| 50018 | `CORE_VARIANT_VALUE_NOT_ALLOWED` | 409 | Valoarea nu e permisă pe slotul ei pentru acest articol |
+| 50019 | `CORE_VARIANT_AXES_MISMATCH` | 400 | Varianta nu are exact câte o valoare pe fiecare axă a familiei |
+| 50020 | `CORE_ITEM_FAMILY_LOCKED` | 409 | Schimbarea axelor sau a atributelor de identitate ale unei familii cu articole folosite |
+| 50021 | `CORE_VARIANT_IN_USE` | 409 | Ștergerea unei variante folosite; se dezactivează în loc |
+| 50022 | `CORE_TEMPLATE_UNKNOWN_CODE` | 400 | Șablonul de denumire sau SKU conține un cod care nu e atribut al familiei |
+| 50023–50030 | `CORE_TRANSACTION_*`, `CORE_SOURCE_*`, `CORE_LINK_*` | 403 / 409 | Tranzacții și legături între documente, detaliate în §3.6.6 |
+| 50031 | `CORE_NOMENCLATURE_FILE_INVALID` | 400 | Fișier de import INS fără foile sau elementele așteptate, sau cu alt an decât cel ales (Achiziții A6 §3.7) |
+| 50032 | `CORE_NOMENCLATURE_REPLACEMENT_REQUIRED` | 409 | Aplicarea unui import care elimină un cod NC8 folosit, fără înlocuitor ales și fără marcarea articolelor pentru revizuire |
+| 50033 | `CORE_CN_CODE_INVALID` | 409 | Cod NC8 care nu e de 8 cifre sau nu e valabil în anul curent, pus pe familie, articol sau variantă |
 
-Cod API fără cod SQL (etapa 4): `CORE_COMPANY_NOT_LICENSED` (409), CUI-ul unei firme active nu este în licență (4.4).
-
-Coduri API fără cod SQL (utilizatori): `CORE_USER_SELF_ROLES` (409, propriile roluri), `CORE_USER_TECHNICAL_ACCOUNT` (409, parolă pentru un cont tehnic), `CORE_USER_NO_ACCOUNT` (409, acțiune de securitate pe un utilizator fără cont `ids`; resetarea parolei îl creează).
-
-Coduri API ale pipeline-ului, fără cod SQL (etapa 1, 15.11.2026): `CORE_UNAUTHENTICATED` (401), `CORE_FORBIDDEN`, `CORE_MODULE_NOT_LICENSED`, `CORE_LICENSE_READ_ONLY` (403), `CORE_VALIDATION` (400, cu `errors` pe câmp), `CORE_PERIOD_CLOSED`, `CORE_RESOURCE_BUSY`, `CORE_IDEMPOTENCY_KEY_REUSED` (409), `CORE_UNEXPECTED_ERROR` (500, fără detalii tehnice). Răspunsurile de eroare sunt ProblemDetails cu extensiile `code` și `correlationId`. Codurile 50009 și 50016 rămân erori neprevăzute (500).
-
-Tabelele adăugate în etapa 1 (migrarea `2026.11.004`): `core.Permission` (`Code`, `ModuleCode`, `Description`; `CHECK` că codul începe cu modulul), `core.RolePermission`, `core.Outbox` (`EventId`, `EventType`, `EventVersion`, `CompanyId`, `CorrelationId`, `Payload` JSON, `OccurredAt`, `Status` 0 = în așteptare / 1 = procesat / 2 = eșuat, `Attempts`, `NextAttemptAt`, `ProcessedAt`, `LastError`), `core.InboxProcessed`, `core.IdempotencyKey` (`UserId`, `Key`, `RequestType`, `ResultJson`). Procedurile noi: `core.usp_User_GetPermissions`, `core.usp_Outbox_Enqueue`, `core.usp_AuditEntry_Insert`, `core.usp_IdempotencyKey_Claim`, `core.usp_IdempotencyKey_Complete`. Datele livrate `02_Permissions.sql` și `03_RolePermissions.sql` conțin catalogul din secțiunea 8 și permisiunile rolurilor de sistem; rolul NOMENCLATOARE primește în plus `Core.Partner.View` și `Core.Item.View`, fără de care nu ar vedea listele pe care le gestionează.
-
-Etapa 2 (migrarea `2026.11.005`): `core.LoginEvent` (`UserName` tastat, `UserId` dacă e cunoscut, `Success`, `FailureReason`, `IpAddress`, `UserAgent`), procedura `core.usp_LoginEvent_Insert` (actualizează `User.LastLoginAt`; la blocare pune `Erp.Auth.UtilizatorBlocat` în outbox) și view-ul `core.v_UserLoginStatus`, prin care `Erp.Auth` citește doar dacă utilizatorul poate intra (activ, în perioada de valabilitate).
-
-Etapa 4 (migrarea `2026.11.006`): `core.Country`, `core.County`, `core.PrecisionPolicy`, `core.CompanyGroup`, `core.Company`, `core.Branch`, `core.Location`, `core.CompanyBankAccount`, `core.DocumentType`, `core.NumberSeries` (cu `FirstNumber` și `LastUsedAt`; cheile compuse `(BranchId, CompanyId)` țin locația și seria în firma punctului de lucru) și cheile străine spre `core.Company` amânate în etapa 1 (`User.LastCompanyId`, `UserRoleAssignment.CompanyId`, `AuditEntry.CompanyId`). Funcția `core.fn_UserCompanies` (firmele unui utilizator, opțional cu o permisiune) și procedurile `core.usp_OrgTree_Get`, `usp_OrgLookups_Get`, `usp_Company_Get`, `usp_User_GetCompanies`, `usp_CompanyGroup_Save`, `usp_Company_Save`, `usp_Branch_Save`, `usp_Location_Save`, `usp_CompanyBankAccount_Save`, `usp_NumberSeries_Save`, `usp_NumberSeries_Close`, `usp_NumberSeries_List`, `usp_NumberSeries_Next`. Datele livrate `04_Countries` … `07_DocumentTypes`. `core.usp_User_GetPermissions` validează acum firma cerută (vezi 3.1).
-
-Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu trei abateri:
+Conformitate: schema și procedurile respectă [Bune practici (SQL și cod)](../../bune-practici/BUNE_PRACTICI.md), regulile `SQL-01`–`SQL-25`, `SP-01`–`SP-21` și `MIG-01`–`MIG-07`, cu două abateri:
 
 - Abatere de la `SQL-13` pentru `core.Currency`, `core.Country`, `core.County`, `core.City`: cheia primară e codul standard (ISO 4217, ISO 3166, cod județ, SIRUTA), nu `int IDENTITY`. Motiv: liste standard, mici și stabile, referite peste tot prin cod. Permanentă.
 - Abatere de la `SQL-13` pentru `core.RolePermission`: cheie primară compusă `(RoleId, PermissionId)`, fără `Id`. Motiv: tabelă de legătură pură, fără alte coloane. Permanentă.
-- Abatere de la `SP-08` pentru `core.usp_Maintenance_IndexesAndStatistics`: buclă pe lista de indecși și statistici, pentru că fiecare `ALTER INDEX` / `UPDATE STATISTICS` e o comandă DDL separată. Lucrează pe metadate, nu pe date de business. Permanentă.
+- Abatere de la `SQL-13` pentru `core.ValueListGroupAncestor`: cheie primară compusă `(GroupId, AncestorGroupId)`. Motiv: închidere tranzitivă refăcută integral la salvarea listei, fără alte coloane de business. Permanentă.
 
 ## 8. Permisiuni și roluri
 
@@ -905,14 +1056,15 @@ Permisiunile Nucleului (format `Core.<Resursă>.<Acțiune>`):
 | `Core.Partner.View` / `.Manage` | Vizualizare / creare și modificare parteneri |
 | `Core.Partner.ViewPersonalData` | Vizualizare CNP și date personale ale persoanelor fizice (jurnalizată) |
 | `Core.Partner.Anonymize` | Export și anonimizare GDPR a datelor unei persoane fizice (auditată) |
-| `Core.Item.View` / `.Manage` | Vizualizare / creare și modificare articole |
+| `Core.Item.View` / `.Manage` | Vizualizare / creare și modificare articole și variante, inclusiv reactivarea variantelor din grila documentelor |
+| `Core.ItemFamily.Manage` | Familii de articole, atribute de identitate și liste de valori cu grupele lor; codul NC8 al familiei |
+| `Core.CnNomenclature.Manage` | Importul nomenclatoarelor INS (NC8, termeni de livrare, natura tranzacției, moduri de transport), acceptarea propunerilor, marcajele termenilor de livrare (Achiziții A6 §3.7) |
 | `Core.Nomenclature.Manage` | Valute, cote TVA, UM, țări, județe |
 | `Core.Dimension.Manage` | Centre de cost, proiecte, gestiuni, șantiere (valorile dimensiunilor) |
 | `Core.ExchangeRate.ManageManual` | Cursuri manuale (nu BNR) |
 | `Core.NumberSeries.Manage` | Creare și modificare serii |
 | `Core.Precision.Manage` | Politici de zecimale |
 | `Core.Import.Run` | Importuri din Excel |
-| `Core.Employee.View` / `.Manage` | Vizualizare / creare și modificare fișe minime de angajat (adăugat pe 21.11.2026) |
 | `Core.User.Manage` | Utilizatori, atribuiri de roluri, deblocare cont și resetare 2FA |
 | `Core.Role.Manage` | Roluri și permisiunile lor |
 | `Core.Audit.View` | Consultare jurnal de audit și jurnal de autentificări |
@@ -920,17 +1072,18 @@ Permisiunile Nucleului (format `Core.<Resursă>.<Acțiune>`):
 | `Core.Settings.Manage` | Setări de instalare și de firmă (inclusiv SMTP) |
 | `Core.Property.Manage` | Definițiile de proprietăți pentru parteneri și articole (valorile se completează cu drepturile de pe entitate) |
 | `Core.Integration.Monitor` | Ecranul de outbox, reîncercare mesaje eșuate |
+| `Core.TransactionType.Manage` | Tipurile de tranzacții, sursele și drepturile lor pe roluri (§3.6, adăugat pe 26.11.2026) |
 
 Roluri de sistem livrate implicit (clientul le poate copia și adapta):
 
 | Rol | Permisiuni Nucleu |
 | --- | --- |
-| Administrator | Drepturi depline: toate permisiunile din catalog, ale tuturor modulelor, inclusiv cele adăugate ulterior (decizie Aurelian, 15.11.2026; aplicată de `core.usp_User_GetPermissions`, independent de `core.RolePermission`) |
-| Responsabil nomenclatoare | `Partner.Manage`, `Item.Manage`, `Nomenclature.Manage`, `Dimension.Manage`, `Import.Run` |
+| Administrator | Toate permisiunile `Core.*` |
+| Responsabil nomenclatoare | `Partner.Manage`, `Item.Manage`, `ItemFamily.Manage`, `Nomenclature.Manage`, `Dimension.Manage`, `Import.Run` |
 | Auditor | Toate permisiunile `*.View` + `Core.Audit.View`, fără modificări |
 | Utilizator standard | `Partner.View`, `Item.View`, `Company.View` |
 
-Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separat, ca nimeni să nu-și poată acorda singur drepturi noi (configurabil). Excepțiile de drepturi pe utilizator (adăugate sau revocate față de roluri) sunt descrise în 3.4 și cer `Core.Role.Manage`.
+Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separat, ca nimeni să nu-și poată acorda singur drepturi noi (configurabil).
 
 ## 9. Cerințe legale și integrări
 
@@ -942,13 +1095,14 @@ Regulă de separare: `Core.User.Manage` și `Core.Role.Manage` pot fi date separ
 | Numerotare fără goluri | Serii fiscale cu alocare tranzacțională (fluxul 4.2), opțional pe punct de lucru |
 | Modificări de cote TVA | Cote cu `ValidFrom` / `ValidTo`; documentele folosesc cota valabilă la data faptului generator (P6) |
 | TVA la încasare și contribuabili inactivi | Partenerul are `VatOnCollection` și `AnafInactive`, actualizate din registrele ANAF prin Integrări; documentele de achiziție avertizează la furnizorii inactivi |
+| SAF-T D406 și e-Factura pentru articole cu variante | Produsul raportat e varianta: `ProductCode` = SKU, denumirea liniei = copia denumirii variantei, codul de bare al perechii variantă + UM ca GTIN, factorul UM copiat pe linie la emitere (§3.3.1) |
 | Sistemul de garanție-returnare (SGR) | Articolele cu ambalaj SGR au `DepositItemId`; garanția se adaugă automat pe documente |
 | Curs BNR | Cursuri BNR nemodificabile, cu sursă și dată memorate |
 | GDPR | CNP criptat la nivel de coloană, acces doar cu `Core.Partner.ViewPersonalData` și jurnalizat; export și anonimizare la cerere pentru persoane fizice, fără a atinge documentele fiscale |
 | Pistă de audit | `core.AuditEntry` doar cu adăugare, cu trigger care refuză UPDATE și DELETE |
 | Arhivare și păstrare | Atașamentele fiscale (XML ANAF, PDF) cu hash SHA-256; păstrare minimum 10 ani pentru audit și atașamente fiscale (fluxul 4.9) |
 
-Integrări ale Nucleului: autentificarea cu ASP.NET Core Identity și cookie, în aceeași aplicație, fără server de identitate separat (deciziile lui Aurelian din 14.11.2026: fără Duende, fără OpenIddict; detalii în [08](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), secțiunea 8) (legătura utilizatorilor după `SubjectId`, evenimentele de autentificare scrise în `core.LoginEvent`), Active Directory prin autentificarea Windows din IIS pe `/account/windows` (opțional), cheile API pentru conturile tehnice, serverul SMTP al clientului pentru email, și interogarea ANAF pentru datele unui CUI pe fișa partenerului (în Nucleu, decizia lui Aurelian din 20.11.2026; vezi 3.2). Autentificarea își ține datele (conturi locale, parole, 2FA, sesiuni, chei API) într-o schemă `ids` din aceeași bază, ca backup-ul să le cuprindă (confirmat 14.11.2026, detaliat în secțiunea 06).
+Integrări ale Nucleului: autentificarea cu ASP.NET Core Identity și cookie, în aceeași aplicație, fără server de identitate separat (deciziile lui Aurelian din 14.11.2026: fără Duende, fără OpenIddict; detalii în [08](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md), secțiunea 8.7) (legătura utilizatorilor după `SubjectId`, evenimentele de autentificare scrise în `core.LoginEvent`), Active Directory prin autentificarea Windows din IIS pe `/account/windows` (opțional), cheile API pentru conturile tehnice, serverul SMTP al clientului pentru email, și interogarea ANAF pentru datele unui CUI la adăugarea partenerului (apelată prin modulul Integrări, opțional). Autentificarea își ține datele (conturi locale, parole, 2FA, sesiuni, chei API) într-o schemă `ids` din aceeași bază, ca backup-ul să le cuprindă (confirmat 14.11.2026, detaliat în secțiunea 06).
 
 ## 10. Rapoarte ale modulului
 
@@ -957,7 +1111,10 @@ Integrări ale Nucleului: autentificarea cu ASP.NET Core Identity și cookie, î
 | Lista partenerilor | Filtre pe tip, țară, plătitor TVA, TVA la încasare, inactiv ANAF, activ; export Excel | Toate rolurile cu `Partner.View` |
 | Parteneri duplicați sau incompleți | CUI-uri invalide, fără adresă de județ, nume foarte asemănătoare | Responsabil nomenclatoare |
 | Lista articolelor | Pe grupe, tip, cotă TVA, UM; export Excel | Toate rolurile cu `Item.View` |
-| Articole incomplete pentru e-Factura | Fără UM UN/ECE, fără cotă TVA, fără cod NC (unde e nevoie) | Responsabil nomenclatoare |
+| Lista variantelor | SKU, model, valori pe axe, coduri de bare pe UM, stare, prima utilizare; filtre pe familie, grupă, atribute de identitate | Toate rolurile cu `Item.View` |
+| Familii de articole | Axe, atribute, mod de creare, câte articole și variante are fiecare, starea de blocare | Responsabil nomenclatoare |
+| Articole incomplete pentru e-Factura | Fără UM UN/ECE, fără cotă TVA, fără cod NC8 efectiv (unde e nevoie) | Responsabil nomenclatoare |
+| Coduri NC8 de revizuit | Articole și variante stocabile fără cod NC8, cu cod scos din nomenclator sau diferit de ultimul DVI; înlocuitorii propuși la import (Achiziții A6 §3.7) | Responsabil nomenclatoare |
 | Istoric cursuri valutare | Cursuri pe monedă și interval | Finanțe |
 | Utilizatori și drepturi | Cine are ce rol, pe ce firmă și dimensiuni; ultima autentificare | Administrator, Auditor |
 | Jurnal de autentificări | Reușite și eșuate, pe utilizator, interval și IP; conturi blocate | Administrator, Auditor |
@@ -972,21 +1129,22 @@ Toate ecranele urmează același tipar: listă cu filtre și căutare → fișă
 
 | Ecran | Conținut principal | Note |
 | --- | --- | --- |
-| Autentificare (login) | Utilizator și parolă sau butonul „Autentificare cu contul Windows” (Active Directory, dacă e configurat); pasul al doilea cu cod 2FA dacă e activat; link „Am uitat parola”; blocare temporară după 5 încercări greșite. După autentificare, utilizatorul cu roluri în mai multe firme alege firma (implicit ultima folosită). | Pagină Razor `/account/login` din aplicația ERP; după autentificare se emite cookie-ul de sesiune (08, secțiunea 8). Poartă numele și sigla clientului. Încercările eșuate se jurnalizează. |
+| Autentificare (login) | Utilizator și parolă sau butonul „Autentificare cu contul Windows” (Active Directory, dacă e configurat); pasul al doilea cu cod 2FA dacă e activat; link „Am uitat parola”; blocare temporară după 5 încercări greșite. După autentificare, utilizatorul cu roluri în mai multe firme alege firma (implicit ultima folosită). | Pagină Razor `/account/login` din aplicația ERP; după autentificare se emite cookie-ul de sesiune (08, 8.7). Poartă numele și sigla clientului. Încercările eșuate se jurnalizează. |
 | Parolă: recuperare și schimbare | Email cu link de resetare valabil 30 de minute; schimbare obligatorie la prima autentificare și după resetare de către administrator; reguli de complexitate configurabile. | Doar pentru conturile locale; conturile Active Directory își schimbă parola în Windows. |
 | Activare 2FA | Cod QR pentru o aplicație de autentificare (TOTP) și coduri de rezervă de unică folosință. | Obligatoriu pentru rolul Administrator, opțional pentru restul (configurabil). Valorile de 5 încercări și 30 de minute sunt propuneri. |
 | Selector de firmă | În antetul aplicației; schimbă firma curentă pentru toate ecranele | Doar firmele pe care utilizatorul are roluri |
-| Firme | Arbore în stânga (grupuri → firme → puncte de lucru → locații, cu căutare și filtre); în dreapta fișa nodului selectat, cu tab-uri: Date generale, Structură, Conturi bancare, Serii, Setări, Certificat ANAF, Istoric | Certificatul se configurează aici, se folosește în Integrări. Tab „Utilizatori” (21.11.2026, cu `Core.User.Manage`): utilizatorii cu roluri care acoperă firma, nodul fiecărei atribuiri și matricea de drepturi doar pentru citire. Tab „Istoric” (21.11.2026): auditul firmei și al structurii ei |
+| Firme | Arbore în stânga (grupuri → firme → puncte de lucru → locații, cu căutare și filtre); în dreapta fișa nodului selectat, cu tab-uri: Date generale, Structură, Conturi bancare, Serii, Setări, Certificat ANAF, Istoric | Certificatul se configurează aici, se folosește în Integrări |
 | Parteneri | Listă cu căutare după nume, cod, CUI; fișă: Date, Adrese, Conturi bancare, Contacte, Istoric | Buton „Preia de la ANAF” după CUI |
-| Articole | Listă cu filtre pe stocabil, grupă și tip; fișă: Date generale, UM și conversii, Proprietăți, Coduri de bare, Istoric, plus Contabilitate și Stoc pentru firma curentă (tab-uri ale modulelor Finanțe și Stocuri) | Tab-urile de modul apar doar dacă modulul e licențiat |
-| Nomenclatoare | Valute, cote TVA, UM, țări, județe, localități, grupe de articole | Editare în tabel, cu validare la salvare |
-| Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | Implementat (21.11.2026, `/admin/config/cursuri`, familia „Nomenclatoare”, cu `Core.Nomenclature.Manage` sau `Core.ExchangeRate.ManageManual`), după macheta 07b: cursurile BNR pe zile (intervalul 7–92 de zile, monedele afișate se aleg), zilele fără curs arată ziua cursului folosit; cursurile manuale; monedele active („+ monedă”, cu `Core.Nomenclature.Manage`); „Preia acum de la BNR” (cu `Core.ExchangeRate.ManageManual`). Fără „Export Excel” și „Raport istoric cursuri” (rămân de făcut) |
-| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount`. Implementat (21.11.2026, `/admin/utilizatori`): Roluri și firme = rolul pe un nod (instalare, grup, firmă, punct de lucru, locație), cu coloana „Se aplică pe”; Preferințe = matricea de notificări (limba și firma implicită rămân în Cont, ca în 06b); fără export și sincronizare AD; parola temporară se arată o singură dată (vezi 3.4) |
-| Angajați | Listă cu căutare după nume sau marcă, filtre pe firmă și „fără cont”; fișa minimă și Istoric | Fără machetă aprobată (decizie 21.11.2026); `/admin/angajati`, `Core.Employee.View` / `.Manage` |
-| Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate. Implementat (21.11.2026, `/admin/config/roluri`, familia „Securitate”): comutatorul „Pe rol” (macheta 07e: listă de roluri, matricea resursă × acțiune, copiere, ștergere pentru rolurile clientului) / „Roluri și utilizatori” (rândurile sunt rolurile cu utilizatorii lor dedesubt, coloanele sunt resursele și acțiunile; filtru pe firmă — sau „Toate firmele” —, pe modul și „Doar cu excepții”; clic pe celula unui utilizator revocă un drept moștenit sau adaugă unul lipsă; lista „Modificări nesalvate” cere motivul drepturilor adăugate). Drepturile rolului se schimbă doar din „Pe rol”. Fără „Raport utilizatori și drepturi” și „Compară cu alt rol” (rămân de făcut) |
+| Articole | Listă cu filtre pe stocabil, grupă, tip și familie; fișă: Date generale (cu atributele de identitate ale familiei), UM și conversii, Variante (valori permise, variante, coduri de bare pe UM, butoanele „Creează acum variantele lipsă” și „Adaugă valori din listă”), Proprietăți, Istoric, plus Contabilitate și Stoc pentru firma curentă (tab-uri ale modulelor Finanțe și Stocuri) | Tab-urile de modul apar doar dacă modulul e licențiat |
+| Nomenclatoare | Valute, cote TVA, UM, țări, județe, localități, grupe de articole (cu paleta implicită pe listă) | Editare în tabel, cu validare la salvare |
+| Familii de articole | Atribute de identitate, cele 3 sloturi de axă, modul de creare, nivelurile de stoc cu bifa de colapsare, șabloanele de denumire și SKU cu exemplu calculat, previzualizarea arborelui de stoc, starea de blocare | Tab în Configurare (11.1) |
+| Liste de valori | Arborele de grupe pe cel mult 3 niveluri și valorile trase pe grupe | Tab în Configurare (11.1) |
+| Cursuri valutare | Tabel pe zile și monede; BNR doar citire, manuale editabile | — |
+| Utilizatori | Listă cu filtre Angajați / Externi / Inactivi / Expiră curând / Fără 2FA; fișă: Cont (bifa angajat sau extern), Roluri și firme, Securitate, Preferințe, Sesiuni, Istoric; permisiunile efective se calculează | Invitarea utilizatorului creează contul în `ids.UserAccount` |
+| Roluri | Listă; matrice permisiuni grupate pe module | Doar modulele licențiate |
 | Serii de numerotare | Pe firmă și tip de document | Avertizare la modificarea unei serii fiscale folosite |
-| Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale. Implementat (21.11.2026, `/admin/config/precizie`, familia „Documente”, cu `Core.Precision.Manage`), după macheta 07d; atribuirea pe firmă se face din fișa firmei (vezi 3.5) |
-| Audit | Căutare și detaliu de modificare (înainte / după) | Doar citire. Implementat (21.11.2026, `/admin/config/audit`, familia „Securitate”, cu `Core.Audit.View`), după macheta 07h, cu jurnalul de autentificări în același tab; fără „Export Excel” (vezi 3.5) |
+| Precizie | Politici și atribuirea lor pe firmă | Previzualizare: cum arată un preț cu 2, 4, 6 zecimale |
+| Audit | Căutare și detaliu de modificare (înainte / după) | Doar citire |
 | Licență | Module active, limite, valabilitate; încărcare fișier nou | — |
 | Monitor integrări | Outbox: în așteptare, eșuate, reîncercare manuală | — |
 | Asistent de configurare | Pașii de la prima pornire: firme, administrator, AD, certificat ANAF, import inițial din Excel | Administratorul e creat de installer; asistentul îi completează profilul. Vezi [08 Instalare și actualizare](../../08-instalare-actualizare/INSTALARE_ACTUALIZARE.md) |
@@ -1000,32 +1158,11 @@ Machetele pentru autentificare și pagina de start (aprobată pe 14.11.2026):
 
 ![Acasă · rolul Contabil șef](ecrane/02-acasa.png)
 
-**Detalii de implementare (etapa 3, 15.11.2026):** interfața React din `src/Web/erp-web` (07, ST1–ST4) are antetul (firma curentă — dezactivată până la firme, etapa 4; notificările — dezactivate până la etapa 10; meniul utilizatorului cu Schimbă parola, Autentificare în doi pași, Ieșire), meniul lateral și pagina Acasă. Meniul arată un ecran numai dacă modulul e activ în licență și rolul are permisiunea; `GET /api/core/me` întoarce pentru asta și `modules` (modulele active) și `licenseState`. Pagina Acasă arată salutul, data (Europe/Bucharest), avertismentul de licență (expiră curând, grație, doar consultare) și modulele active; indicatorii, sarcinile „De rezolvat”, graficele și documentele recente din machetă vin cu modulele care dețin datele (Finanțe, Vânzări, Integrări). Fără sesiune, orice răspuns 401 trimite la `/account/login?returnUrl=…`, iar `IDS_PASSWORD_CHANGE_REQUIRED`/`IDS_TWO_FACTOR_SETUP_REQUIRED` la paginile de cont. `Erp.Host` servește `index.html` pe `/` și pe rutele aplicației (200 HTML, cerința 8.14); `/api/*` necunoscut răspunde 404 ProblemDetails.
-
-**Tema vizuală (20.11.2026):** toate ecranele, inclusiv paginile `/account/*`, folosesc paleta din
-[10 Interfață și temă vizuală](../../10-interfata-tema/INTERFATA_TEMA.md): albastru deschis pal pe
-suprafețe, nicio suprafață albă, antetul și meniul lateral în bleumarin ca repere de orientare, câte
-un accent pe modul. Culorile vin dintr-un singur fișier de tokeni, folosit și de React și de Razor
-(`UI-13`–`UI-17`). Machetele 01–10 au fost reculorate cu aceeași paletă și **revalidate de Aurelian
-(20.11.2026)**; PNG-urile se regenerează din HTML cu `build/machete-png.mjs`. Banda de tab-uri a unei
-fișe urmează harta zonelor: tab-urile inactive pe `--surface-muted`, cel activ pe suprafața fișei, cu
-care se unește.
-
-**Ecranul de autentificare, completări (20.11.2026):** pagina aduce acum elementele din macheta
-aprobată care lipseau — sigla clientului (fișierul din `Branding:LogoPath`, implicit
-`wwwroot/brand/logo.svg|png`; fără fișier, inițiala numelui din licență) și ilustrația decorativă din
-panoul de brand. În plus: avertisment „Caps Lock este activ” la câmpul parolă, butonul se dezactivează
-la trimitere (un dublu clic consuma două din cele 5 încercări), mesajul de blocare spune minutele
-rămase din `LockoutEnd` în loc de durata configurată, iar pe ecrane înguste panoul ascuns e înlocuit
-cu o bandă compactă de brand. Butonul „Autentificare cu contul Windows” din machetă **nu e
-implementat**: autentificarea AD rămâne o sarcină separată (10, secțiunea 9), iar până atunci butonul
-nu apare nici în machetă.
-
 **Date de exemplu comune tuturor machetelor** (verificate pe 14.11.2026): instalarea „Grupul Exemplu” are 4 firme (Exemplu Holding SA, Exemplu Distribuție SRL, Exemplu Producție SRL, Exemplu Construct SRL), licență pentru 11 din 14 module (fără WMS, TMS, CRM), 100 de utilizatori din care 86 activi. Meniul Administrare are trei intrări: Utilizatori, Firme și structură, Configurare. Politica de precizie STANDARD are preț 4, cantitate 3, valoare 2 zecimale.
 
 ### 11.1 Ecranul comun „Configurare” (adăugat pe 14.11.2026)
 
-La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui singur ecran, **Administrare › Configurare**, în loc de intrări separate în meniu. Tab-urile sunt grupate în patru familii: **Date de bază** (Nomenclatoare, Cursuri valutare, Dimensiuni, Proprietăți), **Documente** (Serii, Precizie), **Securitate** (Roluri, Audit) și **Sistem** (Setări, Import, Integrări, Licență).
+La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui singur ecran, **Administrare › Configurare**, în loc de intrări separate în meniu. Tab-urile sunt grupate în patru familii: **Date de bază** (Nomenclatoare, Cursuri valutare, Dimensiuni, Proprietăți, Familii de articole, Liste de valori; ultimele două adăugate pe 16.11.2026), **Documente** (Serii, Precizie), **Securitate** (Roluri, Audit) și **Sistem** (Setări, Import, Integrări, Licență).
 
 | Regulă | Detaliu |
 | --- | --- |
@@ -1040,8 +1177,6 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 ![Configurare · Cursuri valutare](ecrane/07b-configurare-cursuri.png)
 
 ![Configurare · Serii de numerotare](ecrane/07c-configurare-serii.png)
-
-**Detalii de implementare (etapa 4, 15.11.2026):** ecranul Configurare are deocamdată doar tab-ul Serii (`/admin/config/serii`, permisiunea `Core.NumberSeries.Manage`; nu există o permisiune separată de vizualizare a seriilor), pe firma curentă din antet sau pe cea din `?firma=`. Celelalte tab-uri apar odată cu etapele lor. Selectorul de firmă din antet arată firmele active la care utilizatorul are un rol; alegerea se memorează în browser (`LastCompanyId` din profil se folosește când browserul nu are o alegere; actualizarea lui vine cu Profilul meu, etapa 10).
 
 ![Configurare · Precizie](ecrane/07d-configurare-precizie.png)
 
@@ -1061,15 +1196,19 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 
 ![Configurare · Proprietăți (definiții)](ecrane/07l-configurare-proprietati.png)
 
+![Configurare · Familii de articole](ecrane/07m-configurare-familii.png)
+
+![Configurare · Liste de valori](ecrane/07n-configurare-liste-valori.png)
+
 ### 11.2 Ecrane personale, de autentificare și asistentul (adăugat pe 14.11.2026)
 
 | Ecran | Ce arată macheta | Reguli |
 | --- | --- | --- |
-| Profilul meu | Trei coloane: datele din fișa de angajat (doar citire) și rolurile mele; Securitate (parolă, 2FA, sesiuni active cu „Închide”); matricea de notificări pe tip × canal (în aplicație, email) și momentul trimiterii (imediat sau rezumat zilnic) | Preferințele se salvează în `User.NotificationPreferences` (singura sursă, decizie 21.11.2026; vezi 3.4). Notificările critice (erori ANAF, aprobări) nu se pot opri în aplicație. Schimbarea parolei și 2FA trimit la paginile `/account/*` |
+| Profilul meu | Trei coloane: datele din fișa de angajat (doar citire) și rolurile mele; Securitate (parolă, 2FA, sesiuni active cu „Închide”); matricea de notificări pe tip × canal (în aplicație, email) și momentul trimiterii (imediat sau rezumat zilnic) | Preferințele se salvează ca `Setting` cu `Scope = utilizator` și în `User.NotificationPreferences`. Notificările critice (erori ANAF, aprobări) nu se pot opri în aplicație. Schimbarea parolei și 2FA trimit la paginile `/account/*` |
 | Notificări | Panou deschis din clopoțel: filtre Necitite / Toate / Aprobări / Erori, fiecare notificare cu link spre document, „Marchează toate ca citite”, „Vezi toate” | Fluxul 4.7; necititele au punct albastru și intră în contorul din antet |
 | Parolă nouă | Pagina `/account/password` cu pașii recuperării în stânga; în dreapta parola nouă, indicator de putere, regulile verificate pe loc, confirmare, timpul rămas al linkului | Aceeași pagină la prima autentificare și după resetare de administrator. Propuneri de reguli implicite (configurabile): minimum 12 caractere, literă mare și mică, cifră, fără numele de utilizator, diferită de ultimele 5, verificată contra unei liste de parole compromise. După salvare se închid toate sesiunile |
 | Activare 2FA | Cod QR și cheie manuală, cod de 6 cifre, cele 10 coduri de rezervă afișate o singură dată (descărcare, tipărire) | TOTP; obligatorie pentru Administrator și externi. Fără telefon: cod de rezervă sau resetare 2FA de către administrator (`Core.User.Manage`) |
-| Asistent de configurare | Ecran întreg, fără meniu: 8 pași în stânga (Licență, Administrator, Firme și puncte de lucru, Active Directory, Email SMTP, Certificat ANAF, Import inițial, Verificare și pornire), formularul pasului în centru, ajutor în dreapta | Pasul Administrator completează profilul administratorului creat de installer (nume, email, limbă) și recomandă un al doilea administrator nominal; nu creează contul. Progresul se salvează după fiecare pas; AD, certificatul ANAF și importul sunt opționale. La adăugarea firmei se preiau datele de la ANAF după CUI și se creează automat planul de conturi, seriile implicite, gestiunea „Sediu” și politica STANDARD. Aplicația rămâne în modul de configurare până la ultimul pas |
+| Asistent de configurare | Ecran întreg, fără meniu: 8 pași în stânga (Licență, Administrator, Firme și puncte de lucru, Active Directory, Email SMTP, Certificat ANAF, Import inițial, Verificare și pornire), formularul pasului în centru, ajutor în dreapta | Pasul Administrator completează profilul administratorului creat de installer (nume, email, limbă) și recomandă un al doilea administrator nominal; nu creează contul. Progresul se salvează după fiecare pas; AD, certificatul ANAF și importul sunt opționale. La adăugarea firmei se verifică întâi CUI-ul în licență (fluxul 4.4, pasul 6; eroare afișată pe câmp dacă lipsește), apoi se preiau datele de la ANAF după CUI și se creează automat planul de conturi, seriile implicite, gestiunea „Sediu” și politica STANDARD. Aplicația rămâne în modul de configurare până la ultimul pas |
 
 ![Profilul meu](ecrane/08-profilul-meu.png)
 
@@ -1080,8 +1219,6 @@ La cererea lui Aurelian, ecranele de administrare rămase sunt tab-uri ale unui 
 ![Activare 2FA](ecrane/09b-activare-2fa.png)
 
 ![Asistent de configurare · pasul Firme](ecrane/10-asistent-configurare.png)
-
-**Detalii de implementare (etapa 2, 15.11.2026):** paginile Login, al doilea factor, Parolă nouă, Activare 2FA, Ieșire și „Am uitat parola” sunt implementate în `Erp.Auth` (detalii tehnice în 08, secțiunea 8). După autentificare, parola temporară și apoi activarea 2FA (când e obligatorie) sunt impuse înaintea oricărei alte pagini. Fiecare încercare se scrie în `core.LoginEvent`; la blocarea contului se pune în `core.Outbox` evenimentul `Erp.Auth.UtilizatorBlocat`, pentru notificarea administratorilor (consumatorul vine cu notificările, etapa 10). Până la configurarea SMTP, „Am uitat parola” îndrumă utilizatorul spre administrator. Alegerea firmei după autentificare vine cu firmele (etapa 4).
 
 ## 12. Criterii de acceptare și teste cheie
 
@@ -1110,6 +1247,49 @@ Nucleul e gata (poarta fazei 0 din roadmap) când toate criteriile de mai jos su
 | A19 | Anonimizarea unei persoane fizice șterge datele personale din nomenclator, păstrează neschimbate documentele fiscale și e înregistrată în audit | Test de integrare |
 | A20 | După 5 autentificări greșite contul se blochează temporar, apare în jurnalul de autentificări, iar administratorii primesc notificare | Test de integrare pe autentificare |
 | A21 | Pe baza `Latin1_General_100_CS_AS_SC_UTF8`, codurile `abc` și `ABC` sunt refuzate ca duplicat, căutarea „brasov” găsește „Brașov”, iar toate procedurile Nucleului rulează pe un server cu collation case insensitive (`TST-09`) | Test de integrare |
-| A22 | După instalare există exact un administrator activ, cu `ADMIN` la nivel de instalare; ultimul administrator activ nu poate fi dezactivat (50015) | Test de integrare (08, IA-06) |
+| A22 | După instalare există exact un administrator activ, cu `ADMIN` la nivel de instalare; ultimul administrator activ nu poate fi dezactivat (50015) | Test de integrare (08, IA-04) |
+| A23 | Adăugarea unei firme sau a unui grup cu un CUI care nu e în licență e refuzată cu 403 `CORE_FISCAL_CODE_NOT_LICENSED` și mesajul pe câmpul CUI; `RO 12345678` și `12345678` sunt tratate la fel; un grup cu un CUI lipsă nu se salvează deloc | Test de integrare (08, IA-07) |
+| A24 | Orice articol salvat are cel puțin o variantă; un articol fără axe are exact una, cu sloturile `NULL`; a doua variantă implicită e refuzată de `UQ_ItemVariant_Axes` | Test de integrare |
+| A25 | 20 de documente validate simultan cu aceeași combinație nouă de valori creează o singură variantă, iar toate liniile trimit la ea | Test de integrare concurent |
+| A26 | După prima validare a unui document cu o variantă, schimbarea axelor familiei e refuzată cu `CORE_ITEM_FAMILY_LOCKED`, iar adăugarea de valori în listă și în valorile permise merge | Test de integrare |
+| A27 | Scanarea codului de bare al unei cutii (cutie = 2 buc) adaugă 1 cutie pe varianta corectă, iar cantitatea în UM de bază e 2 | Test de integrare |
 
 Testele se scriu înainte sau odată cu codul; criteriile A2, A8 și A10 sunt critice pentru conformitate și nu se acceptă excepții.
+
+## Precizări din 02.15 Mijloace fixe și obiecte de inventar (aplicate pe 27.11.2026)
+
+Modulul 02.15 ([README](../15-mijloace-fixe/README.md), părțile M1–M7) a fost adăugat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate.
+
+- **Serii de numerotare** (§3.6): două tipuri noi, `AssetInventoryNumber` (numerele de inventar ale mijloacelor fixe, format implicit `MF 000001`, nerefolosite niciodată; componentele primesc numărul părintelui cu sufixul `/n`) și `InUseRecordNumber` (numerele individuale opționale ale obiectelor de inventar în folosință, `OB 000001`, și ale bunurilor terților, `TP 000001`). [M1 §3.8](../15-mijloace-fixe/M1-CONFIGURARE.md)
+- **Proprietăți** (§3.5): `EntityType = Asset`, cu `AppliesToAssetGroupIds` (datele tehnice ale fișei pe grupă de mijloace fixe). [M1 §3.7](../15-mijloace-fixe/M1-CONFIGURARE.md)
+- **Articole** (§3.3): `ItemType` are valorile mijloc fix (nestocabil, descrie ce s-a cumpărat; fișa e bunul concret) și obiect de inventar (stocabil, scos din stoc prin bonul de consum S2 și urmărit apoi în M6).
+- **Locații** (§3.1): câmpul `IsInUseStorage` marchează locațiile de depozitare a obiectelor de inventar restituite (rămân în evidența de folosință, nu revin în stoc). [M6 §3.2](../15-mijloace-fixe/M6-OBIECTE-FOLOSINTA.md)
+- **Parteneri**: `GroupCompanyId` leagă partenerul de o firmă a grupului din aceeași bază (folosit de transferul în grup, M5 §3.6).
+- **Roluri livrate**: Contabil mijloace fixe, Administrator patrimoniu, Șef administrativ, Responsabil de loc; rolul Membru comisie primește și semnarea casărilor și inventarierea mijloacelor fixe. [M1 §8](../15-mijloace-fixe/M1-CONFIGURARE.md)
+- **Asistentul de configurare**: pasul „Mijloace fixe” (pragul, regimurile active, grupele, seria numerelor de inventar), afișat doar cu pachetul de licență „Active”.
+
+## Precizări din 02.12 CRM (aplicate pe 27.11.2026)
+
+Modulul 02.12 CRM ([README](../12-crm/README.md), părțile CR1–CR5) a fost documentat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate. Toate legăturile spre CRM sunt opționale: fără pachetul de licență „CRM”, câmpurile și butoanele de mai jos sunt ascunse și modulul funcționează ca până acum.
+
+- **Serii de numerotare** (§3.6): tipurile noi `Lead` (`LD 000001`), `Opportunity` (`OP 000001`), `Campaign` (`CMP 000001`) și `Case` (`CAZ 000001`), cu tranzacțiile livrate din [CR1 §3.6](../12-crm/CR1-CONFIGURARE.md). Activitățile CRM nu au număr.
+- **Parteneri**: rolul nou `Prospect` (client potențial), pus la calificarea lead-ului; devine automat „Client” la prima factură emisă (evenimentul `FacturaEmisa`). Partenerul prospect nu apare în listele de facturare decât dacă e ales explicit. [CR2 §3.5](../12-crm/CR2-LEADURI-CONTACTE.md)
+- **Persoane de contact** (`core.PartnerContact`): rămân singura sursă pentru nume, e-mail și telefon; CRM-ul adaugă tabelul 1:1 `crm.ContactProfile` (rol în decizie, interese) și consimțămintele `crm.Consent`. Acțiunea „Anonimizează persoana” (GDPR art. 17) e executată de CRM și scrie în jurnalul de audit; documentele fiscale nu se modifică.
+- **Chei API**: tipul nou „Formular web”, legat de o firmă și de un `FormCode`, cu limită de rată; folosit de endpoint-ul `POST /api/crm/leads/webform`. [CR2 §3.1](../12-crm/CR2-LEADURI-CONTACTE.md)
+- **Roluri livrate**: Manager vânzări, Agent CRM, Marketing, Operator relații clienți. [CR1 §8](../12-crm/CR1-CONFIGURARE.md)
+- **Asistentul de configurare**: pasul „CRM” (pipeline-ul implicit, vizibilitatea, furnizorul de e-mail), afișat doar cu pachetul de licență „CRM”.
+- **Protecția secretelor**: parolele și tokenurile căsuțelor de e-mail sincronizate (`crm.Mailbox`) se salvează cu `IDataProtector`, ca celelalte secrete.
+
+## Precizări din 02.13 Raportare și BI (aplicate pe 27.11.2026)
+
+Modulul 02.13 Raportare și BI ([README](../13-raportare-bi/README.md), părțile BI1–BI5) a fost documentat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate. Vederile publicate sunt doar citire și sunt contracte versionate: o schimbare incompatibilă cere o versiune nouă a vederii (`_v2`), cu vechea păstrată o versiune de produs.
+
+- **Roluri livrate noi**: Director general (toate tablourile și măsurile, toate firmele, doar citire), Director economic (Finanțe, Mijloace fixe, Buget, măsurile sensibile financiare), Analist (generatorul de analize, tablouri partajate), Responsabil buget (BI5). [BI1 §8](../13-raportare-bi/BI1-CONFIGURARE-CATALOG.md)
+- **Motorul comun de rapoarte** (§3.5) rămâne în Nucleu. `core.ReportSchedule` primește coloanele `ReportPackId int NULL` (pachete), `SendOnlyIfRows bit` (trimite doar dacă are rânduri), `WaitForEvent nvarchar(64) NULL` (de exemplu `LunaInchisa`) și `ParamsJson` cu parametri relativi („luna trecută”, „ieri”). `core.ReportView` cu `ReportCode = 'rpt.Analysis'` păstrează analizele din generator. [BI3 §3.5](../13-raportare-bi/BI3-RAPOARTE-ANALIZE.md)
+- **Vederile salvate** (`core.ReportView`, completare din 28.11.2026): coloana `IsDefault bit` (cel mult o vedere implicită pe utilizator și raport, index unic filtrat) și filtre relative pe dată sau pe măsură în `FiltersJson`, recalculate la fiecare deschidere. [BI3 §3.6](../13-raportare-bi/BI3-RAPOARTE-ANALIZE.md)
+- **Serii de numerotare** (§3.6): tipul de document nou `Budget` (`BUG 2026/01`), cu tranzacțiile `BUG-BVC`, `BUG-VNZ` și `BUG-REV` (rectificare). Aprobarea bugetului folosește fluxul de aprobare Nucleu. [BI5](../13-raportare-bi/BI5-BUGETARE.md)
+- **Chei de dispozitiv**: tipul nou „Ecran”, legat de un tablou și de o firmă, doar citire, pentru modul kiosk (`/kiosk/<cod>`); se revocă din administrare, accesul se jurnalizează. [BI4 §3.5](../13-raportare-bi/BI4-TABLOURI-KPI-ALERTE.md)
+- **Parteneri**: câmpul `GroupCompanyId` marchează partenerul care e o firmă din grup; rapoartele „pe grup” exclud tranzacțiile cu el. Setarea de instalare `ReportingConnection` (baza principală sau o replică doar citire). [BI2 §3.5](../13-raportare-bi/BI2-DEPOZIT-DATE.md)
+- **Dimensiunile analitice** (`DimensionValue`) primesc `ResponsibleUserId`, responsabilul centrului de cost, folosit de secțiunile bugetului și de aprobarea depășirilor.
+- **Ecranul „Acasă”** primește widget-uri prin `IHomeWidgetProvider`, implementat de BI4 (cartonașele KPI ale utilizatorului).
+- **Licențe**: pachetul nou „BI” (generatorul de analize, tablourile proprii, alertele, ecranele mari, bugetarea, accesul extern), care cere „Bază”. Catalogul, rapoartele modulelor și tablourile livrate rămân în „Bază”.

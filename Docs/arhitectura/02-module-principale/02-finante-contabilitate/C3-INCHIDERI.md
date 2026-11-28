@@ -122,10 +122,11 @@ Pașii sunt livrați de sistem, în ordinea în care se rulează; clientul poate
 | `DRAFT_ENTRIES` | Nu există ciorne de note manuale sau recurente în lună | C2 | Blocant |
 | `FX_REVALUATION` | Reevaluarea valutară a lunii e validată (doar firmele cu elemente în valută) | F4 | Blocant |
 | `PAYROLL` | Statul de salarii al lunii e închis și contat | HR (când e licențiat) | Blocant |
-| `DEPRECIATION` | Amortizarea lunii e calculată și contată | Mijloace fixe (când e licențiat) | Blocant |
+| `DEPRECIATION` | Amortizarea lunii e calculată și contată (`IDepreciationStatusQuery`, 02.15 M3) | Mijloace fixe (când e licențiat) | Blocant |
 | `RECONCILIATION` | Concordanțele (3.4) nu au diferențe | C3 + modulele | Blocant |
 | `ALT_MAPPING` | Liniile lunii sunt mapate în planurile cu `RequireCompleteMapping` | C1 | Blocant |
 | `ABNORMAL_BALANCES` | Conturi cu sold pe partea greșită (`5311` creditor, `401*` debitor pe partener, `371` creditor) | C3 | Avertisment |
+| `GOODS_IN_TRANSIT` | Reclasificarea mărfurilor facturate și nerecepționate: `32x` = `408`, stornată automat în prima zi a lunii următoare (precizare din Achiziții A5, 27.11.2026) | Achiziții (`IGoodsInTransitProvider`) | Generare |
 | `VAT_CLOSING` | Nota de regularizare TVA (doar în luna de sfârșit a perioadei fiscale de TVA) | C3 | Generare |
 | `PL_CLOSING` | Nota de închidere a conturilor de venituri și cheltuieli în `121` | C3 | Generare |
 
@@ -146,6 +147,7 @@ Comparații între soldul contabil și evidența operativă, la ultima zi a luni
 | `AdvanceToEmployee` (`542`) | Avansurile spre decontare nedecontate | Pe angajat | F1 |
 | `Stock` (`371`, `301`, `381`...) | Valoarea stocului din evidența de stocuri | Pe gestiune și cont | Stocuri |
 | `VatPending` (`4428`) | TVA neexigibilă din facturile cu TVA la încasare neîncasate | Pe partener | F3 |
+| `GoodsReceivedNotInvoiced` (`408` și analiticul `4428` pentru recepții) | NIR-urile nefacturate minus facturile nerecepționate, net și TVA (`IReceivedNotInvoiced`); include și DVI-urile și liniile de cost de achiziție validate și neconsumate de NIR sau de `CA` (precizare din Achiziții A6, 27.11.2026) | Pe partener | Achiziții A4, A6 (precizare din Achiziții A4, 27.11.2026) |
 
 Pentru fiecare diferență, ecranul arată documentele care o explică, găsite automat: documente validate dar necontate (din coadă), note manuale pe conturi controlate, partide fără notă. Toleranța e zero; diferențele de rotunjire au propria lor notă în C2.
 
@@ -154,6 +156,7 @@ Pentru fiecare diferență, ecranul arată documentele care o explică, găsite 
 | Notă | Când | Conținut | Regulă |
 | --- | --- | --- | --- |
 | Regularizarea TVA | Ultima lună a perioadei fiscale de TVA a firmei (lunar sau trimestrial) | `4427` = `4426` pentru suma mai mică; diferența pe `4423` (TVA de plată) sau `4424` (TVA de recuperat); soldurile `4423` / `4424` reportate din perioada anterioară se compensează doar dacă firma a ales compensarea în D300 | Suma trebuie să fie egală cu rezultatul D300 calculat de C4; dacă nu e, pasul e blocant |
+| TVA-ul avizelor nefacturate | Fiecare lună, dacă Vânzări `UninvoicedVatAtMonthEnd` = 1 | `4428` (analiticul avizelor) = `4427` pentru TVA-ul avizelor validate în lună și nefacturate la sfârșitul ei (`IDeliveryNoteQueries.GetUninvoicedAsync`); inversată la data facturii, când nota facturii face transferul | Ca TVA-ul să intre în decontul lunii livrării (precizare din Vânzări V5, 27.11.2026) |
 | Închiderea veniturilor și cheltuielilor | Fiecare lună, pentru conturile cu `ClosingTarget` = 1 (lunar) | `121` = clasa 6 pe fiecare cont cu sold; clasa 7 = `121` pe fiecare cont cu sold | Fără dimensiuni pe linii (o linie pe cont); rapoartele de profitabilitate pe centre de cost ignoră notele cu `SourceKind` 4 |
 | Închiderea anuală | Decembrie, pentru conturile cu `ClosingTarget` = 2 | La fel, pentru conturile care se închid doar anual (setarea pe firmă „închidere doar anuală”, decizia 5) | — |
 
@@ -449,6 +452,14 @@ Fiecare criteriu are cel puțin un test automat marcat `[Trait("Criteriu", "02.0
 | C3-A13 | Toate procedurile C3 rulează corect pe baza case sensitive creată pe un server cu collation case insensitive | Test de integrare (`TST-09`) |
 
 Criteriile C3-A2, C3-A3 și C3-A5 sunt critice: o lună închisă cu documente necontate sau cu `121` greșit ajunge direct în declarații și în bilanț.
+
+## Precizări din 02.15 Mijloace fixe și obiecte de inventar (aplicate pe 27.11.2026)
+
+Modulul 02.15 ([README](../15-mijloace-fixe/README.md), părțile M1–M7) a fost adăugat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate.
+
+- **Verificarea `DEPRECIATION`** citește `IDepreciationStatusQuery.GetMonthStatusAsync` ([M3 §6](../15-mijloace-fixe/M3-AMORTIZARE.md)): îndeplinită când documentul `AML` al lunii e validat și nu există fișe eligibile neincluse.
+- **Concordanțe noi**, pe firmă și lună: `FIXED_ASSETS` (soldurile `21x`, `20x`, `28xx`, `29xx` din balanță = registrul mijloacelor fixe pe grupe, M7), `ASSET_PENDING` (soldul `231.PRL` = valoarea cozii „Imobilizări de preluat”, M2), `OPENING_ASSETS` (preluarea inițială = soldurile de deschidere, M2 §3.8), `ASSET_SALES` (linii `FV-MF` validate fără ieșire = 0, M5), `IN_USE` (soldul `8039` = evidența obiectelor în folosință, M6).
+- **Închiderea anului**: verificarea „inventarierea mijloacelor fixe închisă” (evenimentul `InventariereMfInchisa`, M7), avertisment blocant confirmabil cu motiv.
 
 ## Decizii de validare
 

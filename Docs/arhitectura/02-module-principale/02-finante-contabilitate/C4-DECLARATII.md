@@ -417,6 +417,15 @@ Fiecare criteriu are cel puțin un test automat marcat `[Trait("Criteriu", "02.0
 
 Criteriile C4-A1, C4-A2 și C4-A6 sunt critice: o declarație care nu se potrivește cu contabilitatea sau pe care ANAF o respinge înseamnă amenzi pentru client.
 
+## Precizări din 02.15 Mijloace fixe și obiecte de inventar (aplicate pe 27.11.2026)
+
+Modulul 02.15 ([README](../15-mijloace-fixe/README.md), părțile M1–M7) a fost adăugat pe 27.11.2026. Precizările de mai jos completează acest document; unde textul de mai sus spune altceva, precizarea are prioritate.
+
+- **D101**: amortizarea contabilă (nedeductibilă) și cea fiscală (deducere), partea nedeductibilă (plafon, uz mixt), rezerva din reevaluare devenită impozabilă și valoarea fiscală rămasă la ieșiri vin din `IFiscalDepreciationQuery` ([M3 §6](../15-mijloace-fixe/M3-AMORTIZARE.md)) și din evenimentul `MijlocFixIesit` (marcajele fiscale, M5).
+- **D406 active**: secțiunea `Assets` și `AssetTransactions` vine din `ISaftAssetsQuery` ([M7 §6](../15-mijloace-fixe/M7-INVENTARIERE-RAPOARTE.md)), implementarea pentru Mijloace fixe a contractului de mai sus.
+- **TVA**: semnalele de ajustare din M5 și M6 (lipsuri neimputabile, donații, bunuri de capital) apar în lista de ajustări propuse pentru decont, confirmate de contabil.
+- **Sponsorizarea**: valoarea donațiilor de mijloace fixe (`IMF-DON`) intră în calculul limitei.
+
 ## Decizii de validare
 
 Toate deciziile au fost confirmate de Aurelian pe 15.11.2026:
