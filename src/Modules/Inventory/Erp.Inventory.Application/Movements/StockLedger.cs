@@ -29,6 +29,13 @@ public sealed record PostedStockMovement(long MovementId, long SourceLineId, byt
     public Guid? CkuUid { get; init; }
 
     public DateOnly? ExpiryDate { get; init; }
+
+    /// <summary>Seria miscarii (S4 3.4) si garantia ei, la vanzare.</summary>
+    public int? SerialId { get; init; }
+
+    public string? SerialNo { get; init; }
+
+    public DateOnly? WarrantyUntil { get; init; }
 }
 
 /// <summary>
@@ -46,6 +53,12 @@ public sealed record BackdatingSettings(short BackdatingDays, bool BackdatingWit
 public interface IStockMovementStore
 {
     Task<BackdatingSettings> GetBackdatingAsync(int companyId, CancellationToken ct);
+
+    Task<IReadOnlyList<(string Code, string? Mask, byte CheckKind)>> SerialIdentifierTypesAsync(CancellationToken ct);
+
+    /// <summary>Seriile liniilor (inv.usp_Serial_ResolveForMovements): seria si lotul ei, pe randurile urmarite pe serie.</summary>
+    Task<IReadOnlyDictionary<int, (int SerialId, int? LotId)>> ResolveSerialsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int userId,
+        CancellationToken ct);
 
     Task<LotResolution> ResolveLotsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, bool allowExpiredReceipt, int userId, CancellationToken ct);
 
@@ -66,7 +79,8 @@ public interface IStockMovementStore
 /// outbox, oricare ar fi sursa. Faptele din afara ERP (POS) nu trec prin verificarea datei. Fara modulul Stocuri licentiat nu scrie nimic.
 /// </summary>
 public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license, IPeriodLock periods, ICurrentContext context, IOutbox outbox,
-    TimeProvider time, CostRecalculator recalculator, Costing.LandedCostService landedCosts, Lots.LotService lots, Lots.ILotStore lotStore) : IStockLedger
+    TimeProvider time, CostRecalculator recalculator, Costing.LandedCostService landedCosts, Lots.LotService lots, Lots.ILotStore lotStore,
+    Lots.ISerialStore serialStore) : IStockLedger
 {
     public bool IsEnabled => license.IsModuleActive(InventoryModule.Code);
 
@@ -93,7 +107,7 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         if (!outcome.Replayed)
         {
             await PublishAsync(request.CompanyId, request.SourceModule, request.SourceDocumentType, request.SourceDocumentId, request.SourceDocumentNumber,
-                request.MovementDate, request.AccountingDate, false, outcome, ct).ConfigureAwait(false);
+                request.MovementDate, request.AccountingDate, false, outcome, ct, request.PartnerId).ConfigureAwait(false);
         }
 
         return outcome;
@@ -167,12 +181,19 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         Info(await lotStore.GetAsync(companyId, Guid.TryParse(ckuCodeOrUid, out var uid) ? new Lots.LotLookup(CkuUid: uid) : new Lots.LotLookup(CkuCode: ckuCodeOrUid),
             ct).ConfigureAwait(false));
 
+    public async Task<SerialInfoDto?> FindSerialAsync(int itemVariantId, string serialNo, CancellationToken ct) =>
+        (await serialStore.FindAsync(null, itemVariantId, serialNo, null, true, ct).ConfigureAwait(false)).FirstOrDefault(s => s.SerialNo == serialNo);
+
+    public Task<IReadOnlyList<SerialInfoDto>> FindSerialByIdentifierAsync(string value, string? identifierTypeCode, CancellationToken ct) =>
+        serialStore.FindAsync(null, null, value.Trim(), identifierTypeCode, true, ct);
+
     private static LotInfoDto? Info(Lots.LotDto? lot) =>
         lot is null ? null : new LotInfoDto(lot.LotId, lot.CkuUid, lot.CkuCode, lot.LotCode, lot.SupplierLotCode, lot.ExpiryDate, lot.Status);
 
     /// <summary>Starea de cost a cheilor (blocate), costul calculat de motor (S3), apoi scrierea intr-un singur apel SQL.</summary>
     private async Task<StockPostingOutcome> PostCostedAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int? employeeId, CancellationToken ct)
     {
+        lines = await ResolveSerialsAsync(request, lines, ct).ConfigureAwait(false);
         lines = await ResolveLotsAsync(request, lines, ct).ConfigureAwait(false);
         var keys = lines.Select(l => new CostKey(l.Request.WarehouseId, l.Request.DepotId, l.Request.ItemVariantId, l.Request.LotId)).Distinct().ToList();
         var load = await store.LoadCostAsync(request.CompanyId, keys, lines.Select(l => l.ReversalOfId).OfType<long>().ToList(), ct).ConfigureAwait(false);
@@ -208,6 +229,39 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
         }
 
         return outcome;
+    }
+
+    /// <summary>
+    /// Seriile (02.05, S4 3.4): formatul identificatorilor (masca, Luhn, VIN) se verifica aici, apoi SQL creeaza sau verifica seria si
+    /// identificatorii; linia primeste seria si, la urmarirea pe serie si lot, lotul seriei; perechea unui transfer primeste seria iesirii.
+    /// </summary>
+    private async Task<IReadOnlyList<PostingLine>> ResolveSerialsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, CancellationToken ct)
+    {
+        if (lines.Count == 0)
+        {
+            return lines;
+        }
+
+        if (lines.Any(l => l.Request.SerialIdentifiers is { Count: > 0 }))
+        {
+            var types = (await store.SerialIdentifierTypesAsync(ct).ConfigureAwait(false)).ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
+            foreach (var value in lines.SelectMany(l => l.Request.SerialIdentifiers ?? []))
+            {
+                if (types.TryGetValue(value.TypeCode, out var type) && !Domain.Lots.SerialIdentifierRules.IsValid(value.Value, type.Mask, type.CheckKind))
+                {
+                    throw new ErpException(ErpErrorKind.Validation, Domain.Lots.SerialIdentifierRules.Invalid,
+                        $"Identificatorul {value.TypeCode} „{value.Value}” nu are formatul cerut.");
+                }
+            }
+        }
+
+        var serials = await store.ResolveSerialsAsync(request, lines, context.UserId, ct).ConfigureAwait(false);
+        var result = lines.Select(l => serials.TryGetValue(l.Row, out var s)
+            ? l with { Request = l.Request with { SerialId = s.SerialId, LotId = l.Request.LotId ?? (l.Request.QtyBase < 0 ? s.LotId : null) } }
+            : l).ToList();
+        return result.Select(l => l.CounterRow is { } counter && result[counter - 1].Request.SerialId is { } serial
+            ? l with { Request = l.Request with { SerialId = serial } }
+            : l).ToList();
     }
 
     /// <summary>
@@ -308,19 +362,28 @@ public sealed class StockLedger(IStockMovementStore store, ILicenseInfo license,
     }
 
     private async Task PublishAsync(int companyId, string module, string documentType, long documentId, string? number, DateOnly movementDate,
-        DateOnly accountingDate, bool reversal, StockPostingOutcome outcome, CancellationToken ct)
+        DateOnly accountingDate, bool reversal, StockPostingOutcome outcome, CancellationToken ct, int? partnerId = null)
     {
         var lines = outcome.Movements.Select(m => new StockMovementEventLine(m.MovementId, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost,
             m.CostAmount, m.MovementTypeCode, m.ReasonCode, m.IsForcedNegative)
         {
             RetailAmount = m.RetailAmount, RetailVatAmount = m.RetailVatAmount, RetailDischargeMethod = m.RetailDischargeMethod, CostCenterId = m.CostCenterId,
-            LotId = m.LotId, LotCode = m.LotCode, CkuCode = m.CkuCode, CkuUid = m.CkuUid, ExpiryDate = m.ExpiryDate,
+            LotId = m.LotId, LotCode = m.LotCode, CkuCode = m.CkuCode, CkuUid = m.CkuUid, ExpiryDate = m.ExpiryDate, SerialId = m.SerialId, SerialNo = m.SerialNo,
         }).ToList();
         await outbox.EnqueueAsync(new MiscareStocValidata(module, documentType, documentId, number, movementDate, accountingDate, reversal, lines)
         {
             CompanyId = companyId,
             Accounting = Costing.StockAccounting.Movements(module, documentType, documentId, number, movementDate, accountingDate, reversal, lines),
         }, ct).ConfigureAwait(false);
+        // Seria vanduta (S4 5.1), pentru Service (garantia).
+        foreach (var sold in outcome.Movements.Where(m => m.SerialId is not null && !reversal && m.MovementTypeCode is "ISSUE_SALE" or "POS_SALE"))
+        {
+            await outbox.EnqueueAsync(new SerieVanduta(sold.SerialId!.Value, sold.SerialNo ?? "", sold.ItemVariantId, partnerId, movementDate, sold.WarrantyUntil)
+            {
+                CompanyId = companyId,
+            }, ct).ConfigureAwait(false);
+        }
+
         foreach (var forced in outcome.Movements.Where(m => m.IsForcedNegative))
         {
             await outbox.EnqueueAsync(new StocNegativFortat(forced.WarehouseId, forced.ItemVariantId, forced.MovementId, module, documentId)

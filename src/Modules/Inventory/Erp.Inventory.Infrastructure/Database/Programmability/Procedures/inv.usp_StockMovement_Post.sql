@@ -54,12 +54,13 @@ BEGIN
         SELECT m.Id AS MovementId, m.SourceLineId, m.SourceRole, m.WarehouseId, m.DepotId, m.ItemVariantId, m.QtyBase, m.UnitCost, m.CostAmount,
             m.IsForcedNegative, t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(1 AS bit) AS Replayed, m.RetailAmount, m.RetailVatAmount,
             m.RetailDischargeMethod, COALESCE(m.CostCenterId, w.DefaultCostCenterId) AS CostCenterId, m.LotId, lot.LotCode, lot.CkuCode, lot.CkuUid,
-            lot.ExpiryDate
+            lot.ExpiryDate, m.SerialId, ser.SerialNo, ser.WarrantyUntil
         FROM @Rows AS r
         JOIN inv.StockMovement AS m ON m.SourceModule = @SourceModule AND m.SourceLineId = r.SourceLineId AND m.SourceRole = r.SourceRole
             AND m.ReversalKey = ISNULL(r.ReversalOfId, 0) AND m.LotKey = ISNULL(r.LotId, 0) AND m.SerialKey = ISNULL(r.SerialId, 0)
         JOIN inv.MovementType AS t ON t.Id = m.MovementTypeId
         LEFT JOIN inv.Lot AS lot ON lot.Id = m.LotId
+        LEFT JOIN inv.Serial AS ser ON ser.Id = m.SerialId
         JOIN inv.Warehouse AS w ON w.Id = m.WarehouseId
         LEFT JOIN inv.StockSettings AS ss ON ss.CompanyId = @CompanyId
         LEFT JOIN inv.MovementReason AS mr ON mr.Id = m.ReasonId
@@ -307,6 +308,34 @@ BEGIN
           FROM @Rows WHERE RetailAmount IS NOT NULL GROUP BY WarehouseId, ISNULL(DepotId, 0), ItemVariantId, ISNULL(LotId, 0)) AS x
         ON x.WarehouseId = s.WarehouseId AND x.DepotKey = s.DepotKey AND x.ItemVariantId = s.ItemVariantId AND x.LotKey = s.LotKey;
 
+    -- Starea seriilor dupa ultima lor miscare din apel (S4 3.4): intrarea le pune in stoc (returul clientului cu starea 4, tranzitul cu 2),
+    -- vanzarea si returul la furnizor le scot ca vandute (cu garantia la vanzare), descarcarea si stornarea intrarii le caseaza.
+    WITH LastMove AS (
+        SELECT r.*, ROW_NUMBER() OVER (PARTITION BY r.SerialId ORDER BY r.RowNo DESC) AS N FROM @Rows AS r WHERE r.SerialId IS NOT NULL
+    )
+    UPDATE s
+    SET Status = CASE WHEN l.Direction = 1 THEN CASE WHEN t.Code = 'RETURN_FROM_CUSTOMER' AND l.ReversalOfId IS NULL THEN 4 WHEN w.Kind = 3 THEN 2 ELSE 1 END
+                      WHEN l.ReversalOfId IS NOT NULL THEN 5
+                      WHEN t.Code IN ('ISSUE_SALE', 'POS_SALE', 'RETURN_TO_SUPPLIER') THEN 3
+                      WHEN t.Code = 'TRANSFER_OUT' THEN 2
+                      ELSE 5 END,
+        WarehouseId = CASE WHEN l.Direction = 1 OR t.Code = 'TRANSFER_OUT' THEN l.WarehouseId END,
+        DepotId = CASE WHEN l.Direction = 1 THEN l.DepotId END,
+        LotId = COALESCE(l.LotId, s.LotId),
+        SoldAt = CASE WHEN l.Direction = -1 AND l.ReversalOfId IS NULL AND t.Code IN ('ISSUE_SALE', 'POS_SALE') THEN @MovementDate
+                      WHEN l.Direction = 1 THEN NULL ELSE s.SoldAt END,
+        SoldToPartnerId = CASE WHEN l.Direction = -1 AND l.ReversalOfId IS NULL AND t.Code IN ('ISSUE_SALE', 'POS_SALE', 'RETURN_TO_SUPPLIER') THEN @PartnerId
+                               WHEN l.Direction = 1 THEN NULL ELSE s.SoldToPartnerId END,
+        WarrantyUntil = CASE WHEN l.Direction = -1 AND l.ReversalOfId IS NULL AND t.Code IN ('ISSUE_SALE', 'POS_SALE') AND iss.WarrantyMonths IS NOT NULL
+                             THEN DATEADD(MONTH, iss.WarrantyMonths, @MovementDate) WHEN l.Direction = 1 THEN NULL ELSE s.WarrantyUntil END,
+        ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId
+    FROM inv.Serial AS s
+    JOIN LastMove AS l ON l.SerialId = s.Id AND l.N = 1
+    JOIN inv.MovementType AS t ON t.Id = l.MovementTypeId
+    JOIN inv.Warehouse AS w ON w.Id = l.WarehouseId
+    JOIN core.ItemVariant AS v ON v.Id = s.ItemVariantId
+    LEFT JOIN inv.ItemStockSettings AS iss ON iss.CompanyId = @CompanyId AND iss.ItemId = v.ItemId;
+
     -- Prima intrare a fiecarui lot nou (trasabilitatea inapoi, S4 3.2).
     UPDATE x SET FirstReceiptMovementId = f.MovementId
     FROM inv.Lot AS x
@@ -320,11 +349,13 @@ BEGIN
     SELECT r.MovementId, r.SourceLineId, r.SourceRole, r.WarehouseId, r.DepotId, r.ItemVariantId, r.QtyBase, r.UnitCost, r.CostAmount, r.IsForcedNegative,
         t.Code AS MovementTypeCode, mr.Code AS ReasonCode, CAST(0 AS bit) AS Replayed, r.RetailAmount, r.RetailVatAmount,
         CASE WHEN r.RetailAmount IS NULL THEN NULL ELSE r.RetailDischargeMethod END AS RetailDischargeMethod,
-        COALESCE(r.CostCenterId, w.DefaultCostCenterId) AS CostCenterId, r.LotId, lot.LotCode, lot.CkuCode, lot.CkuUid, lot.ExpiryDate
+        COALESCE(r.CostCenterId, w.DefaultCostCenterId) AS CostCenterId, r.LotId, lot.LotCode, lot.CkuCode, lot.CkuUid, lot.ExpiryDate, r.SerialId,
+        ser.SerialNo, ser.WarrantyUntil
     FROM @Rows AS r
     JOIN inv.MovementType AS t ON t.Id = r.MovementTypeId
     JOIN inv.Warehouse AS w ON w.Id = r.WarehouseId
     LEFT JOIN inv.Lot AS lot ON lot.Id = r.LotId
+    LEFT JOIN inv.Serial AS ser ON ser.Id = r.SerialId
     LEFT JOIN inv.MovementReason AS mr ON mr.Id = r.ReasonId
     ORDER BY r.RowNo;
 END;

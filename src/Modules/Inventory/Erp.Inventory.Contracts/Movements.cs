@@ -29,6 +29,11 @@ public sealed record StockMovementEventLine(long MovementId, int WarehouseId, in
     public Guid? CkuUid { get; init; }
 
     public DateOnly? ExpiryDate { get; init; }
+
+    /// <summary>Seria bucatii (S4 5.1, aditiv).</summary>
+    public int? SerialId { get; init; }
+
+    public string? SerialNo { get; init; }
 }
 
 /// <summary>
@@ -108,3 +113,6 @@ public sealed record DescarcareAmanuntValidata(int WarehouseId, int DocumentId, 
     /// <summary>Blocul de contare (C2 3.1), construit de Stocuri (S3 3.6); C2 il conteaza cu modelul tipului de eveniment.</summary>
     public Erp.Finance.Contracts.Accounting.AccountingPayload? Accounting { get; init; }
 }
+
+/// <summary>Iesirea unei serii catre un client (S4 5.1): data vanzarii si garantia. Consumator: Service (02.11).</summary>
+public sealed record SerieVanduta(int SerialId, string SerialNo, int ItemVariantId, int? PartnerId, DateOnly SoldAt, DateOnly? WarrantyUntil) : IntegrationEvent;

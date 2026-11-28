@@ -80,6 +80,39 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
             consumptions.Select(c => (c.OutboundMovementId, c.CostLayerId, c.Qty, c.CostAmount)).ToList());
     }
 
+    public async Task<IReadOnlyList<(string Code, string? Mask, byte CheckKind)>> SerialIdentifierTypesAsync(CancellationToken ct) =>
+        (await session.Connection.QueryAsync<(string Code, string? Mask, byte CheckKind)>(new CommandDefinition(
+            "SELECT Code, Mask, CheckKind FROM inv.SerialIdentifierType WHERE IsActive = 1", transaction: session.Transaction, cancellationToken: ct))
+            .ConfigureAwait(false)).ToList();
+
+    public Task<IReadOnlyDictionary<int, (int SerialId, int? LotId)>> ResolveSerialsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, int userId,
+        CancellationToken ct)
+    {
+        var table = Table(("RowNo", typeof(int)), ("MovementTypeCode", typeof(string)), ("WarehouseId", typeof(int)), ("DepotId", typeof(int)),
+            ("ItemVariantId", typeof(int)), ("QtyBase", typeof(decimal)), ("SerialId", typeof(int)), ("SerialNo", typeof(string)), ("ReversalOfId", typeof(long)),
+            ("IsCounter", typeof(bool)));
+        var identifiers = Table(("RowNo", typeof(int)), ("TypeCode", typeof(string)), ("Value", typeof(string)));
+        foreach (var line in lines)
+        {
+            var r = line.Request;
+            table.Rows.Add(line.Row, r.MovementTypeCode, r.WarehouseId, Db(r.DepotId), r.ItemVariantId, r.QtyBase, Db(r.SerialId), (object?)r.NewSerialNo ?? DBNull.Value,
+                Db(line.ReversalOfId), line.CounterRow is not null);
+            foreach (var value in (r.SerialIdentifiers ?? []).GroupBy(v => v.TypeCode.Trim().ToUpperInvariant()).Select(g => g.First()))
+            {
+                identifiers.Rows.Add(line.Row, value.TypeCode.Trim(), value.Value);
+            }
+        }
+
+        return Translated<IReadOnlyDictionary<int, (int SerialId, int? LotId)>>(async () =>
+            (await session.Connection.QueryAsync<(int RowNo, int? SerialId, int? LotId)>(new CommandDefinition("inv.usp_Serial_ResolveForMovements", new
+            {
+                request.CompanyId, request.IsExternalFact, Lines = table.AsTableValuedParameter("inv.tt_SerialRequest"),
+                Identifiers = identifiers.AsTableValuedParameter("inv.tt_SerialIdentifierValue"), UserId = userId,
+            }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false))
+            .Where(r => r.SerialId is not null)
+            .ToDictionary(r => r.RowNo, r => (r.SerialId!.Value, r.LotId)));
+    }
+
     public Task<LotResolution> ResolveLotsAsync(StockPostingRequest request, IReadOnlyList<PostingLine> lines, bool allowExpiredReceipt, int userId,
         CancellationToken ct)
     {
@@ -249,11 +282,13 @@ public sealed class StockMovementStore(IDbSession session) : IStockMovementStore
         {
             RetailAmount = r.RetailAmount, RetailVatAmount = r.RetailVatAmount, RetailDischargeMethod = r.RetailDischargeMethod, CostCenterId = r.CostCenterId,
             LotId = r.LotId, LotCode = r.LotCode, CkuCode = r.CkuCode, CkuUid = r.CkuUid, ExpiryDate = r.ExpiryDate is { } e ? DateOnly.FromDateTime(e) : null,
+            SerialId = r.SerialId, SerialNo = r.SerialNo, WarrantyUntil = r.WarrantyUntil is { } w ? DateOnly.FromDateTime(w) : null,
         }).ToList(), rows.Count > 0 && rows.All(r => r.Replayed));
 
     private sealed record Row(long MovementId, long SourceLineId, byte SourceRole, int WarehouseId, int? DepotId, int ItemVariantId, decimal QtyBase,
         decimal UnitCost, decimal CostAmount, bool IsForcedNegative, string MovementTypeCode, string? ReasonCode, bool Replayed, decimal? RetailAmount,
-        decimal? RetailVatAmount, byte? RetailDischargeMethod, int? CostCenterId, int? LotId, string? LotCode, string? CkuCode, Guid? CkuUid, DateTime? ExpiryDate);
+        decimal? RetailVatAmount, byte? RetailDischargeMethod, int? CostCenterId, int? LotId, string? LotCode, string? CkuCode, Guid? CkuUid, DateTime? ExpiryDate,
+        int? SerialId, string? SerialNo, DateTime? WarrantyUntil);
 
     private sealed record KeyRow(int WarehouseId, int DepotKey, int ItemVariantId, int LotKey, decimal QtyOnHand, decimal CostOnHand, decimal? LastUnitCost,
         byte Method, decimal? FallbackUnitCost);

@@ -30,6 +30,12 @@ public interface IStockLedger
 
     /// <summary>Lotul dupa codul sau id-ul CKU de pe eticheta interna (S4 6).</summary>
     Task<LotInfoDto?> FindCkuAsync(int companyId, string ckuCodeOrUid, CancellationToken ct);
+
+    /// <summary>Seria unei variante dupa numar (S4 6).</summary>
+    Task<SerialInfoDto?> FindSerialAsync(int itemVariantId, string serialNo, CancellationToken ct);
+
+    /// <summary>Bucatile gasite dupa serie sau dupa un identificator (IMEI, MAC, VIN), optional doar pe un tip (S4 3.4, 6).</summary>
+    Task<IReadOnlyList<SerialInfoDto>> FindSerialByIdentifierAsync(string value, string? identifierTypeCode, CancellationToken ct);
 }
 
 /// <summary>Cererea de propunere a loturilor: cheia, cantitatea, clientul (durata minima) si data livrarii.</summary>
@@ -92,7 +98,29 @@ public sealed record StockMovementRequest(long SourceLineId, byte SourceRole, st
 
     /// <summary>Motivul alegerii altui lot decat primul propus FEFO (S4 3.5): 1 cererea clientului, 2 lot deja pregatit, 3 altul.</summary>
     public byte? LotOverrideReason { get; init; }
+
+    /// <summary>Seria bucatii (S4 3.4): numarul citit (la intrare sau, cu citire doar la iesire, la iesire) si identificatorii ei (IMEI, MAC, VIN).</summary>
+    public string? NewSerialNo { get; init; }
+
+    public IReadOnlyList<SerialIdentifierValue>? SerialIdentifiers { get; init; }
 }
+
+/// <summary>Un identificator al bucatii: tipul (IMEI, MAC, VIN...) si valoarea.</summary>
+public sealed record SerialIdentifierValue(string TypeCode, string Value);
+
+/// <summary>Starea unei serii (02.05, S4 3.4).</summary>
+public enum SerialStatus : byte
+{
+    InStock = 1,
+    InTransit = 2,
+    Sold = 3,
+    ReturnedByCustomer = 4,
+    Scrapped = 5,
+    Blocked = 6,
+}
+
+/// <summary>O serie gasita dupa numar sau dupa un identificator.</summary>
+public sealed record SerialInfoDto(int SerialId, string SerialNo, int ItemVariantId, int CompanyId, SerialStatus Status, int? WarehouseId, DateOnly? WarrantyUntil);
 
 /// <summary>Starea unui lot (02.05, S4 3.3).</summary>
 public enum LotStatus : byte
@@ -136,4 +164,9 @@ public sealed class NoStockLedger : IStockLedger
         Task.FromResult<LotInfoDto?>(null);
 
     public Task<LotInfoDto?> FindCkuAsync(int companyId, string ckuCodeOrUid, CancellationToken ct) => Task.FromResult<LotInfoDto?>(null);
+
+    public Task<SerialInfoDto?> FindSerialAsync(int itemVariantId, string serialNo, CancellationToken ct) => Task.FromResult<SerialInfoDto?>(null);
+
+    public Task<IReadOnlyList<SerialInfoDto>> FindSerialByIdentifierAsync(string value, string? identifierTypeCode, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<SerialInfoDto>>([]);
 }

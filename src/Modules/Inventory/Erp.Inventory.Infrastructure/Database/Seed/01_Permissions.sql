@@ -41,7 +41,9 @@ USING (VALUES
     (N'Inv.Lot.Block',              N'Blocarea și deblocarea loturilor'),
     (N'Inv.Lot.OverrideShelfLife',  N'Livrarea unui lot sub durata minimă a clientului, cu motiv'),
     (N'Inv.Lot.SellAfterBestBefore', N'Vânzarea sau donarea după data durabilității minimale'),
-    (N'Inv.Lot.ReceiveExpired',     N'Recepția unui lot deja expirat (pentru retur sau casare)')
+    (N'Inv.Lot.ReceiveExpired',     N'Recepția unui lot deja expirat (pentru retur sau casare)'),
+    (N'Inv.Serial.EditIdentifiers', N'Corectarea identificatorilor unei bucăți (IMEI, MAC, VIN), cu motiv'),
+    (N'Inv.Settings.SerialIdentifiers', N'Tipurile de identificatori și regulile pe grupă sau model')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN

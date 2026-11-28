@@ -34947,6 +34947,187 @@
         }
       }
     },
+    "/api/inventory/serials": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetSerials",
+        "parameters": [
+          {
+            "name": "ItemVariantId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "WarehouseId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "uint8"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SerialItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/serials/{id}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "GetSerial",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerialDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/serials/{id}/identifiers": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "EditSerialIdentifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditSerialIdentifier"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/serial-identifier-rules": {
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "operationId": "SaveSerialIdentifierRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSerialIdentifierRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SerialIdentifierRuleDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/inventory/partner-shelf-life-rules": {
       "put": {
         "tags": [
@@ -67028,6 +67209,331 @@
             "format": "byte"
           }
         }
+      },
+      "EditSerialIdentifier": {
+        "required": [
+          "serialId",
+          "typeCode",
+          "value",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "serialId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "SaveSerialIdentifierRule": {
+        "required": [
+          "itemId",
+          "itemGroupId",
+          "typeCode",
+          "sortOrder",
+          "requiredAtReceipt",
+          "requiredAtIssue",
+          "isUnique",
+          "onDocuments",
+          "delete"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "itemGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredAtReceipt": {
+            "type": "boolean"
+          },
+          "requiredAtIssue": {
+            "type": "boolean"
+          },
+          "isUnique": {
+            "type": "boolean"
+          },
+          "onDocuments": {
+            "type": "boolean"
+          },
+          "delete": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SerialDto": {
+        "required": [
+          "serial",
+          "identifiers",
+          "movements"
+        ],
+        "type": "object",
+        "properties": {
+          "serial": {
+            "$ref": "#/components/schemas/SerialItemDto"
+          },
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SerialIdentifierDto"
+            }
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SerialMovementDto"
+            }
+          }
+        }
+      },
+      "SerialIdentifierDto": {
+        "required": [
+          "typeCode",
+          "typeName",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "typeCode": {
+            "type": "string"
+          },
+          "typeName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "SerialIdentifierRuleDto": {
+        "required": [
+          "id",
+          "itemId",
+          "itemGroupId",
+          "typeCode",
+          "sortOrder",
+          "requiredAtReceipt",
+          "requiredAtIssue",
+          "isUnique",
+          "onDocuments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "itemGroupId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredAtReceipt": {
+            "type": "boolean"
+          },
+          "requiredAtIssue": {
+            "type": "boolean"
+          },
+          "isUnique": {
+            "type": "boolean"
+          },
+          "onDocuments": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SerialItemDto": {
+        "required": [
+          "serialId",
+          "serialNo",
+          "itemVariantId",
+          "variantCode",
+          "variantName",
+          "status",
+          "warehouseId",
+          "warehouseCode",
+          "lotId",
+          "lotCode",
+          "soldAt",
+          "soldToPartnerId",
+          "soldToName",
+          "warrantyUntil",
+          "isCapturedAtIssue"
+        ],
+        "type": "object",
+        "properties": {
+          "serialId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serialNo": {
+            "type": "string"
+          },
+          "itemVariantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantCode": {
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SerialStatus"
+          },
+          "warehouseId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "warehouseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lotId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "lotCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "soldAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "soldToPartnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "soldToName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "warrantyUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isCapturedAtIssue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SerialMovementDto": {
+        "required": [
+          "movementId",
+          "movementDate",
+          "movementTypeCode",
+          "warehouseCode",
+          "qtyBase",
+          "sourceDocumentType",
+          "sourceDocumentNumber",
+          "partnerId"
+        ],
+        "type": "object",
+        "properties": {
+          "movementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "movementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "movementTypeCode": {
+            "type": "string"
+          },
+          "warehouseCode": {
+            "type": "string"
+          },
+          "qtyBase": {
+            "type": "string"
+          },
+          "sourceDocumentType": {
+            "type": "string"
+          },
+          "sourceDocumentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partnerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SerialStatus": {
+        "type": "integer"
       }
     }
   },

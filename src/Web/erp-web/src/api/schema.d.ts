@@ -6485,6 +6485,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/serials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSerials"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/serials/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSerial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/serials/{id}/identifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EditSerialIdentifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/serial-identifier-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SaveSerialIdentifierRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/partner-shelf-life-rules": {
         parameters: {
             query?: never;
@@ -14886,6 +14950,90 @@ export interface components {
             /** Format: byte */
             rowVersion: string;
         };
+        EditSerialIdentifier: {
+            /** Format: int32 */
+            serialId: number;
+            typeCode: string;
+            value: null | string;
+            reason: string;
+        };
+        SaveSerialIdentifierRule: {
+            /** Format: int32 */
+            itemId: null | number;
+            /** Format: int32 */
+            itemGroupId: null | number;
+            typeCode: string;
+            /** Format: int32 */
+            sortOrder: number;
+            requiredAtReceipt: boolean;
+            requiredAtIssue: boolean;
+            isUnique: boolean;
+            onDocuments: boolean;
+            delete: boolean;
+        };
+        SerialDto: {
+            serial: components["schemas"]["SerialItemDto"];
+            identifiers: components["schemas"]["SerialIdentifierDto"][];
+            movements: components["schemas"]["SerialMovementDto"][];
+        };
+        SerialIdentifierDto: {
+            typeCode: string;
+            typeName: string;
+            value: string;
+        };
+        SerialIdentifierRuleDto: {
+            /** Format: int32 */
+            id: number;
+            /** Format: int32 */
+            itemId: null | number;
+            /** Format: int32 */
+            itemGroupId: null | number;
+            typeCode: string;
+            /** Format: int32 */
+            sortOrder: number;
+            requiredAtReceipt: boolean;
+            requiredAtIssue: boolean;
+            isUnique: boolean;
+            onDocuments: boolean;
+        };
+        SerialItemDto: {
+            /** Format: int32 */
+            serialId: number;
+            serialNo: string;
+            /** Format: int32 */
+            itemVariantId: number;
+            variantCode: string;
+            variantName: string;
+            status: components["schemas"]["SerialStatus"];
+            /** Format: int32 */
+            warehouseId: null | number;
+            warehouseCode: null | string;
+            /** Format: int32 */
+            lotId: null | number;
+            lotCode: null | string;
+            /** Format: date */
+            soldAt: null | string;
+            /** Format: int32 */
+            soldToPartnerId: null | number;
+            soldToName: null | string;
+            /** Format: date */
+            warrantyUntil: null | string;
+            isCapturedAtIssue: boolean;
+        };
+        SerialMovementDto: {
+            /** Format: int64 */
+            movementId: number;
+            /** Format: date */
+            movementDate: string;
+            movementTypeCode: string;
+            warehouseCode: string;
+            qtyBase: string;
+            sourceDocumentType: string;
+            sourceDocumentNumber: null | string;
+            /** Format: int32 */
+            partnerId: null | number;
+        };
+        SerialStatus: number;
     };
     responses: never;
     parameters: never;
@@ -41655,6 +41803,121 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetSerials: {
+        parameters: {
+            query?: {
+                ItemVariantId?: number;
+                WarehouseId?: number;
+                Status?: number;
+                Search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerialItemDto"][];
+                };
+            };
+        };
+    };
+    GetSerial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerialDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EditSerialIdentifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditSerialIdentifier"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveSerialIdentifierRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSerialIdentifierRule"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerialIdentifierRuleDto"][];
                 };
             };
         };

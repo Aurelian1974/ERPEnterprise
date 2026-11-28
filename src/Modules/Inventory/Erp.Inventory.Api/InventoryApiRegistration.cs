@@ -233,6 +233,15 @@ public static class InventoryApiRegistration
             .WithName("ChangeLotStatus").Saves();
         inventory.MapPut("/lots/{id:int}", (int id, UpdateLot body, ISender sender, CancellationToken ct) => sender.Send(body with { Id = id }, ct))
             .WithName("UpdateLot").Saves();
+        inventory.MapGet("/serials", ([AsParameters] GetSerials query, ISender sender, CancellationToken ct) => sender.Send(query, ct))
+            .WithName("GetSerials").Produces<IReadOnlyList<SerialItemDto>>();
+        inventory.MapGet("/serials/{id:int}", (int id, ISender sender, CancellationToken ct) => sender.Send(new GetSerial(id), ct))
+            .WithName("GetSerial").Produces<SerialDto>().ProducesProblem(StatusCodes.Status404NotFound);
+        inventory.MapPost("/serials/{id:int}/identifiers", (int id, EditSerialIdentifier body, ISender sender, CancellationToken ct) =>
+                sender.Send(body with { SerialId = id }, ct))
+            .WithName("EditSerialIdentifier").Produces<bool>().ProducesProblem(StatusCodes.Status409Conflict);
+        inventory.MapPut("/serial-identifier-rules", (SaveSerialIdentifierRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
+            .WithName("SaveSerialIdentifierRule").Produces<IReadOnlyList<SerialIdentifierRuleDto>>();
         inventory.MapPut("/partner-shelf-life-rules", (SavePartnerShelfLifeRule body, ISender sender, CancellationToken ct) => sender.Send(body, ct))
             .WithName("SavePartnerShelfLifeRule").Produces<IReadOnlyList<PartnerShelfLifeRuleDto>>();
     }

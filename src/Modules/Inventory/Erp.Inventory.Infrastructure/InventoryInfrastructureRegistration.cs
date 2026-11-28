@@ -30,6 +30,7 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<Application.Costing.IValuationViewStore, Costing.ValuationViewStore>();
         services.AddScoped<Application.Lots.ILotStore, Lots.LotStore>();
         services.AddScoped<Application.Lots.LotService>();
+        services.AddScoped<Application.Lots.ISerialStore, Lots.SerialStore>();
         services.AddTransient<Lots.LotExpiryJob>();
         // Lista de inchidere si concordanta C3 (S3 3.5–3.7): pasii Stocurilor si evidenta operativa a stocului.
         foreach (var (code, severity, allowOverride, ok, fail) in Costing.StockCloseCheck.Shipped)
@@ -116,7 +117,14 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54457] = (ErpErrorKind.Conflict, "INV_LOT_EXPIRED"),
         [54458] = (ErpErrorKind.Conflict, "INV_LOT_SHELF_LIFE_TOO_SHORT"),
         [54459] = (ErpErrorKind.Validation, "INV_LOT_OVERRIDE_REASON_REQUIRED"),
+        [54460] = (ErpErrorKind.Validation, "INV_SERIAL_REQUIRED"),
+        [54461] = (ErpErrorKind.Conflict, "INV_SERIAL_NOT_IN_STOCK"),
+        [54462] = (ErpErrorKind.Conflict, "INV_SERIAL_STATUS_INVALID"),
+        [54463] = (ErpErrorKind.Conflict, "INV_SERIAL_DUPLICATE"),
         [54464] = (ErpErrorKind.Conflict, "INV_LOT_STATUS_TRANSITION_INVALID"),
+        [54471] = (ErpErrorKind.Validation, "INV_SERIAL_IDENTIFIER_INVALID"),
+        [54472] = (ErpErrorKind.Conflict, "INV_SERIAL_IDENTIFIER_DUPLICATE"),
+        [54473] = (ErpErrorKind.Validation, "INV_SERIAL_IDENTIFIER_REQUIRED"),
         [54311] = (ErpErrorKind.Validation, "INV_RETAIL_PRICE_MISSING"),
         [54312] = (ErpErrorKind.Validation, "INV_RETAIL_WAREHOUSE_REQUIRED"),
         [54313] = (ErpErrorKind.Conflict, "INV_RETAIL_PRICE_CHANGE_BACKDATED"),
