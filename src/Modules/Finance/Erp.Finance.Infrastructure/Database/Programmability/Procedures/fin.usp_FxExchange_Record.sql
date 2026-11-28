@@ -6,7 +6,7 @@ AS
 BEGIN
     -- Diferenta realizata la schimbul valutar intre conturi proprii (F4 3.5, 4.3), dupa validarea liniilor de extras: pentru fiecare parte
     -- BANK-SCHIMB-VALUTAR a liniilor date, legata de perechea ei din celalalt cont, cand ambele linii sunt validate si perechea nu are inca
-    -- diferenta. Valoarea in lei a fiecarei parti: suma, in lei; altfel suma la cursul BNR al zilei liniei. Diferenta = valoarea intrata −
+    -- diferenta. Valoarea in lei a fiecarei parti: suma, in lei; altfel suma la cursul BNR folosit in ziua liniei (ultimul cu data strict anterioara, 02.01, 4.3). Diferenta = valoarea intrata −
     -- valoarea iesita (pozitiv = castig, 765; negativ = pierdere, 665). Intoarce diferentele scrise.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
@@ -35,7 +35,7 @@ BEGIN
     JOIN fin.BankStatementLine AS l ON l.Id = p.BankStatementLineId
     JOIN fin.TreasuryAccount AS a ON a.Id = l.TreasuryAccountId
     OUTER APPLY (SELECT TOP (1) x.Rate / x.Multiplier AS PerUnit FROM core.ExchangeRate AS x
-                 WHERE x.CurrencyCode = a.CurrencyCode AND x.RateDate <= l.BookingDate ORDER BY x.RateDate DESC) AS r
+                 WHERE x.CurrencyCode = a.CurrencyCode AND x.RateDate < l.BookingDate ORDER BY x.RateDate DESC) AS r
     WHERE p.Id IN (SELECT PartId FROM @Pairs UNION SELECT PairPartId FROM @Pairs);
 
     IF EXISTS (SELECT 1 FROM @Values WHERE Ron IS NULL)

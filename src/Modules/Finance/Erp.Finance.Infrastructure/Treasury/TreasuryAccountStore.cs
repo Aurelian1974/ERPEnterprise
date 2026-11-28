@@ -106,7 +106,7 @@ public sealed class TreasuryAccountQueries(IDbSession session, IExchangeRateProv
             cancellationToken: ct)).ConfigureAwait(false)
             ?? throw ErpException.NotFound(FinanceErrorCodes.TreasuryAccountNotFound, "Contul de trezorerie nu există.");
         var currency = row.CurrencyCode.Trim();
-        var rate = await rates.GetRateAsync(currency, day, ct).ConfigureAwait(false);
+        var rate = await rates.GetClosingRateAsync(currency, day, ct).ConfigureAwait(false);
         var policy = await precision.ResolveAsync(row.CompanyId, null, null, ct).ConfigureAwait(false);
         return new TreasuryBalanceDto(row.TreasuryAccountId, day, currency, row.Balance, precision.RoundAmount(row.Balance * rate.PerUnit, policy),
             row.IsDayClosed);

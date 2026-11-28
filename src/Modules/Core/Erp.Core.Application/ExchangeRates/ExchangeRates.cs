@@ -56,7 +56,7 @@ public sealed record GetExchangeRates(DateOnly? From = null, DateOnly? To = null
 [AuthenticatedUser]
 public sealed record GetCurrencies : IQuery<IReadOnlyList<CurrencyDto>>;
 
-/// <summary>Cursul folosit pe documente pentru o moneda si o zi (ultimul curs anterior daca ziua nu are curs).</summary>
+/// <summary>Cursul folosit pe documentele unei zile: ultimul curs BNR cu data strict anterioara (vineri pentru sambata–luni).</summary>
 [Module("Core")]
 [AuthenticatedUser]
 public sealed record GetExchangeRate(string Currency, DateOnly Date) : IQuery<ExchangeRateDto>;

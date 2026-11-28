@@ -47,12 +47,15 @@ export function importTime(utc: string): string {
 export interface RateRow {
   readonly day: string;
   readonly rates: ReadonlyMap<string, BnrRate>;
-  /** Ziua fara curs: ziua cursului folosit pe documente (ultima anterioara cu curs), daca exista. */
-  readonly fallback: string | undefined;
+  /**
+   * Ziua cursului folosit pe documentele zilei: ultima zi cu curs strict anterioara (cursul de vineri se foloseste sambata, duminica
+   * si luni; 02.01, 4.3), daca exista.
+   */
+  readonly documentsRateDay: string | undefined;
   readonly importedAt: string | undefined;
 }
 
-/** Randurile tabelului BNR: fiecare zi a intervalului, cu cursurile ei sau cu ziua cursului folosit in locul lor. */
+/** Randurile tabelului BNR: fiecare zi a intervalului, cu cursurile publicate in ea si ziua cursului folosit pe documentele ei. */
 export function rateRows(data: Pick<ExchangeRates, 'from' | 'to' | 'bnrRates' | 'previousRates'>): RateRow[] {
   const byDay = new Map<string, Map<string, BnrRate>>();
   for (const rate of data.bnrRates) {
@@ -68,7 +71,7 @@ export function rateRows(data: Pick<ExchangeRates, 'from' | 'to' | 'bnrRates' | 
     return {
       day,
       rates,
-      fallback: rates.size === 0 ? earlier : undefined,
+      documentsRateDay: earlier,
       importedAt: [...rates.values()].map((r) => r.importedAt).sort().at(-1),
     };
   });

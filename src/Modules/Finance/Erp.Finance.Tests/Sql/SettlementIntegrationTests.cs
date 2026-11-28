@@ -754,7 +754,7 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
             WHEN MATCHED THEN UPDATE SET Rate = 5.0
             WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, 5.0, 1, 'BNR', 1);
             SELECT @@ROWCOUNT
-            """, new { Day = payDay.ToDateTime(TimeOnly.MinValue) });
+            """, new { Day = payDay.AddDays(-1).ToDateTime(TimeOnly.MinValue) });
         var eur = Sale(partner, 1000m, invoiceDate, invoiceDate.AddDays(30)) with { CurrencyCode = "EUR", ExchangeRate = 4.95m, TotalAmountRon = 4950m };
         var invoice = await Register(eur);
         await Query<int>("""
@@ -932,7 +932,7 @@ public sealed class SettlementIntegrationTests : FinanceTestBase, IClassFixture<
             WHEN MATCHED THEN UPDATE SET Rate = 4.99
             WHEN NOT MATCHED THEN INSERT (CurrencyCode, RateDate, Rate, Multiplier, Source, CreatedBy) VALUES ('EUR', @Day, 4.99, 1, 'BNR', 1);
             SELECT @@ROWCOUNT
-            """, new { Day = payDay.ToDateTime(TimeOnly.MinValue) });
+            """, new { Day = payDay.AddDays(-1).ToDateTime(TimeOnly.MinValue) });
 
         // 4.950 RON = 1.000 EUR la 4,95, cu TVA la incasare 790,34; incasarea la 4,99: 4.990 RON stinge 1.000 EUR, diferenta 40 pe 768.
         var invoice = await Register(Sale(partner, 4950m, invoiceDate, invoiceDate.AddDays(15), vat: 790.34m, vatOnCollection: true) with

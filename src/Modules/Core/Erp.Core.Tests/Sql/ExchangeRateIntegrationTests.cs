@@ -22,17 +22,25 @@ public sealed partial class UserIntegrationTests
 
     [Fact]
     [Trait("Criteriu", "02.01-A11")]
-    public async Task Bnr_rates_are_added_once_and_a_day_without_rate_uses_the_last_previous_one()
+    public async Task Bnr_rates_are_added_once_and_a_day_uses_the_last_rate_published_before_it()
     {
         bnr.Rates.AddRange([Bnr("EUR", 11, 5.0809m), Bnr("EUR", 12, 5.0812m), Bnr("HUF", 12, 1.3125m, 100), Bnr("XYZ", 12, 2.5m)]);
         var first = await Send(new ImportBnrRates());
         Assert.Equal((2, 4, (DateOnly?)new DateOnly(2027, 3, 12)), (first.Days, first.Added, first.LastRateDate));
         Assert.Equal(0, (await Send(new ImportBnrRates())).Added);
 
-        // Sambata 13.03.2027 nu are curs: se foloseste cel de vineri, cu data lui.
-        var saturday = await Send(new GetExchangeRate("eur", new DateOnly(2027, 3, 13)));
-        Assert.Equal((new DateOnly(2027, 3, 12), 5.0812m, "BNR"), (saturday.RateDate, saturday.Rate, saturday.Source));
-        var huf = await Send(new GetExchangeRate("HUF", new DateOnly(2027, 3, 12)));
+        // Cursul publicat vineri 12.03.2027 se foloseste sambata, duminica si luni; vineri se foloseste cel de joi.
+        foreach (var day in new[] { 13, 14, 15 })
+        {
+            var weekend = await Send(new GetExchangeRate("eur", new DateOnly(2027, 3, day)));
+            Assert.Equal((new DateOnly(2027, 3, 12), 5.0812m, "BNR"), (weekend.RateDate, weekend.Rate, weekend.Source));
+        }
+
+        var friday = await Send(new GetExchangeRate("EUR", new DateOnly(2027, 3, 12)));
+        Assert.Equal((new DateOnly(2027, 3, 11), 5.0809m), (friday.RateDate, friday.Rate));
+        Assert.Equal("CORE_EXCHANGE_RATE_NOT_FOUND",
+            (await Assert.ThrowsAsync<ErpException>(() => Send(new GetExchangeRate("HUF", new DateOnly(2027, 3, 12))))).Code);
+        var huf = await Send(new GetExchangeRate("HUF", new DateOnly(2027, 3, 15)));
         Assert.Equal((100, 0.013125m), (huf.Multiplier, huf.PerUnit));
         Assert.Equal(1m, (await Send(new GetExchangeRate("RON", new DateOnly(2027, 3, 13)))).Rate);
         var missing = await Assert.ThrowsAsync<ErpException>(() => Send(new GetExchangeRate("EUR", new DateOnly(2000, 1, 3))));
@@ -74,7 +82,7 @@ public sealed partial class UserIntegrationTests
             Send(new SaveManualExchangeRate(bnrRate.Id, "USD", new DateOnly(2027, 3, 19), "4.5", 1, "Corectie", bnrRate.RowVersion)));
         Assert.Equal("CORE_BNR_RATE_READONLY", readOnly.Code);
 
-        Assert.Equal(4.3794m, (await Send(new GetExchangeRate("USD", new DateOnly(2027, 3, 19)))).Rate);
+        Assert.Equal(4.3794m, (await Send(new GetExchangeRate("USD", new DateOnly(2027, 3, 20)))).Rate);
         var manual = Assert.Single((await Send(new GetExchangeRates(new DateOnly(2027, 3, 19), new DateOnly(2027, 3, 19)))).ManualRates, m => m.Id == saved.Id);
         Assert.Equal(("4.41", "Curs fix din contract"), (manual.Rate, manual.Note));
     }

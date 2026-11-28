@@ -65,13 +65,17 @@ public sealed class ExchangeRateStore(IDbSession session) : IExchangeRateStore
 /// <summary>Cursul pentru documente (core.usp_ExchangeRate_Get), cu codul THROW tradus si din afara comenzilor (NET-09).</summary>
 public sealed class ExchangeRateProvider(IDbSession session, ISqlErrorTranslator errors) : IExchangeRateProvider
 {
-    public async Task<ExchangeRateDto> GetRateAsync(string currency, DateOnly date, CancellationToken ct)
+    public Task<ExchangeRateDto> GetRateAsync(string currency, DateOnly date, CancellationToken ct) => GetAsync(currency, date, false, ct);
+
+    public Task<ExchangeRateDto> GetClosingRateAsync(string currency, DateOnly date, CancellationToken ct) => GetAsync(currency, date, true, ct);
+
+    private async Task<ExchangeRateDto> GetAsync(string currency, DateOnly date, bool closing, CancellationToken ct)
     {
         try
         {
             var row = await session.Connection.QuerySingleAsync<Row>(new CommandDefinition("core.usp_ExchangeRate_Get", new
             {
-                CurrencyCode = ExchangeRateStore.Code(currency), Date = date.ToDateTime(TimeOnly.MinValue),
+                CurrencyCode = ExchangeRateStore.Code(currency), Date = date.ToDateTime(TimeOnly.MinValue), Closing = closing,
             }, session.Transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct)).ConfigureAwait(false);
             return new ExchangeRateDto(row.Currency.Trim(), DateOnly.FromDateTime(row.RateDate), row.Rate, row.Multiplier, row.Source);
         }

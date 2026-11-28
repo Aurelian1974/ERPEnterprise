@@ -38,7 +38,7 @@ internal sealed class GetTreasuryFxValuesHandler(IFxTreasuryStore store, IExchan
             decimal? perUnit = null;
             try
             {
-                perUnit = (await rates.GetRateAsync(v.CurrencyCode, asOf, cancellationToken).ConfigureAwait(false)).PerUnit;
+                perUnit = (await rates.GetClosingRateAsync(v.CurrencyCode, asOf, cancellationToken).ConfigureAwait(false)).PerUnit;
             }
             catch (ErpException e) when (e.Kind == ErpErrorKind.NotFound)
             {

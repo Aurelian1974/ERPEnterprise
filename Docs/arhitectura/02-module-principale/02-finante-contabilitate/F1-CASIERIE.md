@@ -259,7 +259,7 @@ Moduri de închidere (decizia lui Aurelian, 15.11.2026), setate pe fiecare casă
 | Partener care plătește 3.000 lei dimineața și 3.000 lei după-amiaza la două case diferite | A doua încasare e refuzată (plafon pe firmă, regula 1 din 3.6) |
 | Chitanță tipărită greșit după validare | Storno și chitanță nouă corectă; ambele apar în registru |
 | Eroare descoperită după închiderea zilei | Storno în ziua curentă și document nou corect; ziua veche nu se modifică |
-| Casă în valută fără curs BNR în ziua documentului | Se folosește ultimul curs anterior (02.01, fluxul 4.3), cu data lui memorată în `RateDate` |
+| Casă în valută | Se folosește ultimul curs BNR cu dată strict anterioară zilei documentului (02.01, fluxul 4.3; vineri pentru sâmbătă, duminică și luni), cu data lui memorată în `RateDate` |
 | Angajat plecat din firmă cu avans nedecontat | Raportul de avansuri îl evidențiază; reținerea din lichidare e o operațiune HR (02.09) |
 | Perioadă contabilă închisă | Refuz în pipeline `CORE_PERIOD_CLOSED` (02.01, fluxul 4.1), inclusiv la redeschiderea zilei |
 
@@ -666,7 +666,7 @@ Fiecare criteriu are cel puțin un test automat marcat `[Trait("Criteriu", "02.0
 | F1-A12 | Decontul cu diferență negativă generează dispoziția de încasare corectă, iar validarea ei închide avansul | Test de integrare |
 | F1-A13 | Evenimentele `IncasareInregistrata` și `PlataInregistrata` se scriu în outbox în aceeași tranzacție cu validarea și au conținutul din 5.1 | Test de integrare |
 | F1-A14 | Raportul Z din POS creează exact o dispoziție de încasare, chiar dacă evenimentul e livrat de două ori | Test de integrare (idempotență) |
-| F1-A15 | Echivalentul în lei al unui document în valută folosește cursul BNR din ziua lui (sau ultimul anterior) și rotunjirea P7 | Test unitar |
+| F1-A15 | Echivalentul în lei al unui document în valută folosește ultimul curs BNR dinaintea zilei lui (02.01, 4.3) și rotunjirea P7 | Test unitar |
 | F1-A16 | Toate procedurile F1 rulează corect pe baza case sensitive creată pe un server cu collation case insensitive | Test de integrare (`TST-09`) |
 | F1-A17 | Registrul de casă pe o zi cu 500 de documente se generează în sub 3 secunde | Test de performanță |
 

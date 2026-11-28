@@ -23,7 +23,8 @@ public sealed class FxTreasuryIntegrationTests : BankTestBase, IClassFixture<Fin
     {
         var company = Database.FxBankCompanyId;
         var (day, monthEnd) = (new DateOnly(2023, 10, 2), new DateOnly(2023, 10, 31));
-        foreach (var (date, rate) in new[] { (day.AddDays(-3), 4.96m), (day, 4.97m), (monthEnd, 5.00m) })
+        // Luni 02.10.2023 se foloseste cursul publicat vineri (4,97), nu cel de luni; reevaluarea foloseste cursul din 31.10, inclusiv.
+        foreach (var (date, rate) in new[] { (day.AddDays(-4), 4.96m), (day.AddDays(-3), 4.97m), (day, 4.99m), (monthEnd, 5.00m) })
         {
             await Query<int>("""
                 MERGE core.ExchangeRate AS t USING (SELECT 'EUR' AS CurrencyCode, @Day AS RateDate) AS s ON t.CurrencyCode = s.CurrencyCode AND t.RateDate = s.RateDate

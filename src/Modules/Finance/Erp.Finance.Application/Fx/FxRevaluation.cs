@@ -130,7 +130,7 @@ internal sealed class GenerateFxRevaluationHandler(IFxRevaluationStore store, IE
             ExchangeRateDto rate;
             try
             {
-                rate = await rates.GetRateAsync(currency, revaluationDate, cancellationToken).ConfigureAwait(false);
+                rate = await rates.GetClosingRateAsync(currency, revaluationDate, cancellationToken).ConfigureAwait(false);
             }
             catch (ErpException e) when (e.Kind == ErpErrorKind.NotFound)
             {

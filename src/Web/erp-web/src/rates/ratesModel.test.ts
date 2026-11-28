@@ -10,16 +10,17 @@ describe('cursurile valutare', () => {
     expect(dayLabel('2026-11-13')).toBe('Vineri 13.11.2026');
   });
 
-  it('o zi fără curs arată ziua cursului folosit, inclusiv de dinaintea intervalului', () => {
+  it('documentele unei zile iau ultimul curs dinaintea ei: vineri pentru sâmbătă, duminică și luni', () => {
     const rows = rateRows({
-      from: '2026-11-08', to: '2026-11-10',
+      from: '2026-11-07', to: '2026-11-10',
       bnrRates: [rate('EUR', '2026-11-09', '5.0798'), rate('HUF', '2026-11-09', '1.3119')],
       previousRates: [rate('EUR', '2026-11-06', '5.079')],
     });
-    expect(rows.map((r) => [r.day, r.rates.size, r.fallback])).toEqual([
+    expect(rows.map((r) => [r.day, r.rates.size, r.documentsRateDay])).toEqual([
       ['2026-11-10', 0, '2026-11-09'],
-      ['2026-11-09', 2, undefined],
+      ['2026-11-09', 2, '2026-11-06'],
       ['2026-11-08', 0, '2026-11-06'],
+      ['2026-11-07', 0, '2026-11-06'],
     ]);
   });
 

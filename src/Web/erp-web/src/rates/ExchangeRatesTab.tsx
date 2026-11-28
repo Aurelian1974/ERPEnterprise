@@ -113,6 +113,7 @@ export function ExchangeRatesTab({ user }: { readonly user: CurrentUser }) {
                   <th key={code} scope="col" className="num">{(multipliers.get(code) ?? 1) > 1 ? `${multipliers.get(code)} ${code}` : code}</th>
                 ))}
                 <th scope="col">{t('rates.col.source')}</th>
+                <th scope="col">{t('rates.col.documents')}</th>
               </tr>
             </thead>
             <tbody>
@@ -126,7 +127,10 @@ export function ExchangeRatesTab({ user }: { readonly user: CurrentUser }) {
                   <td className="muted">
                     {row.rates.size > 0
                       ? <span title={t('rates.locked')}>🔒 {t('rates.bnrAt', { time: row.importedAt === undefined ? '' : importTime(row.importedAt) })}</span>
-                      : row.fallback === undefined ? t('rates.noRateYet') : t('rates.usesRateOf', { date: shortDay(row.fallback) })}
+                      : t('rates.noBnrRate')}
+                  </td>
+                  <td className="muted">
+                    {row.documentsRateDay === undefined ? t('rates.noRateYet') : t('rates.usesRateOf', { date: shortDay(row.documentsRateDay) })}
                   </td>
                 </tr>
               ))}

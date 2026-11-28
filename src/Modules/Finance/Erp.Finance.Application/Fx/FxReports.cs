@@ -92,7 +92,7 @@ internal sealed class GetFxExposureHandler(IFxReportStore store, IExchangeRatePr
             decimal? perUnit = null;
             try
             {
-                perUnit = (await rates.GetRateAsync(group.Key, asOf, cancellationToken).ConfigureAwait(false)).PerUnit;
+                perUnit = (await rates.GetClosingRateAsync(group.Key, asOf, cancellationToken).ConfigureAwait(false)).PerUnit;
             }
             catch (ErpException e) when (e.Kind == ErpErrorKind.NotFound)
             {

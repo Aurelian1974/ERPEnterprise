@@ -2,7 +2,7 @@ namespace Erp.Core.Contracts;
 
 /// <summary>
 /// Cursul unei monede (02.01, 4.3 si 6): <see cref="Rate"/> lei pentru <see cref="Multiplier"/> unitati (BNR publica HUF, JPY, KRW
-/// la 100). RateDate = ziua cursului folosit (pentru o zi fara curs, ultima zi anterioara cu curs). Source: BNR sau MANUAL.
+/// la 100). RateDate = ziua cursului folosit (vezi <see cref="IExchangeRateProvider"/>). Source: BNR sau MANUAL.
 /// </summary>
 public sealed record ExchangeRateDto(string Currency, DateOnly RateDate, decimal Rate, int Multiplier, string Source)
 {
@@ -11,13 +11,19 @@ public sealed record ExchangeRateDto(string Currency, DateOnly RateDate, decimal
 }
 
 /// <summary>
-/// Cursul pentru documente (02.01, 4.3): cursul BNR al zilei sau, daca ziua nu are curs (weekend, sarbatoare, inainte de publicare),
-/// ultimul curs anterior, cu data lui. RON intoarce 1. Fara niciun curs pana la data ceruta: ErpException CORE_EXCHANGE_RATE_NOT_FOUND.
-/// Documentele memoreaza cursul folosit; o corectare ulterioara nu le schimba.
+/// Cursul BNR (02.01, 4.3), cu data lui. RON intoarce 1. Fara curs: ErpException CORE_EXCHANGE_RATE_NOT_FOUND. Documentele memoreaza
+/// cursul folosit; o corectare ulterioara nu le schimba.
 /// </summary>
 public interface IExchangeRateProvider
 {
+    /// <summary>
+    /// Cursul pentru operatiunile din ziua <paramref name="date"/> (documente, casa, banca, plati): ultimul curs BNR cu data strict
+    /// anterioara. Cursul publicat vineri dupa-amiaza se foloseste sambata, duminica si luni (Codul fiscal, art. 290).
+    /// </summary>
     Task<ExchangeRateDto> GetRateAsync(string currency, DateOnly date, CancellationToken ct);
+
+    /// <summary>Cursul de inchidere la <paramref name="date"/> (reevaluare, solduri la o data): ultimul curs BNR pana la data, inclusiv.</summary>
+    Task<ExchangeRateDto> GetClosingRateAsync(string currency, DateOnly date, CancellationToken ct);
 }
 
 /// <summary>

@@ -5,8 +5,8 @@ CREATE OR ALTER PROCEDURE fin.usp_TreasuryFx_Values
 AS
 BEGIN
     -- Valoarea contabila in lei a conturilor de trezorerie in valuta la o data (F4 3.4): soldul in valuta si valoarea lui in lei = soldul de
-    -- deschidere si fiecare miscare la cursul BNR al zilei ei (liniile de extras; documentele de casa validate si stornate, cu valoarea lor in
-    -- lei) plus diferentele reevaluarilor validate pana la data. MissingRates = cate miscari nu au curs (valoarea in lei nu e completa).
+    -- deschidere si fiecare miscare la cursul BNR folosit in ziua ei, adica ultimul cu data strict anterioara (02.01, 4.3): liniile de
+    -- extras; documentele de casa validate si stornate, cu valoarea lor in lei; plus diferentele reevaluarilor validate pana la data. MissingRates = cate miscari nu au curs (valoarea in lei nu e completa).
     SET NOCOUNT ON;
 
     SELECT a.Id AS TreasuryAccountId, a.Code, a.Kind, a.CurrencyCode,
@@ -26,7 +26,7 @@ BEGIN
     OUTER APPLY (SELECT SUM(l.Amount) AS Amount, SUM(ROUND(l.Amount * r.PerUnit, 2)) AS AmountRon, SUM(CASE WHEN r.PerUnit IS NULL THEN 1 ELSE 0 END) AS Missing
                  FROM fin.BankStatementLine AS l
                  OUTER APPLY (SELECT TOP (1) x.Rate / x.Multiplier AS PerUnit FROM core.ExchangeRate AS x
-                              WHERE x.CurrencyCode = a.CurrencyCode AND x.RateDate <= l.BookingDate ORDER BY x.RateDate DESC) AS r
+                              WHERE x.CurrencyCode = a.CurrencyCode AND x.RateDate < l.BookingDate ORDER BY x.RateDate DESC) AS r
                  WHERE l.TreasuryAccountId = a.Id AND l.BookingDate <= @AsOf) AS bl
     OUTER APPLY (SELECT TOP (1) d.OpeningBalance AS Opening, ROUND(d.OpeningBalance * r.PerUnit, 2) AS OpeningRon
                  FROM fin.CashRegisterDay AS d

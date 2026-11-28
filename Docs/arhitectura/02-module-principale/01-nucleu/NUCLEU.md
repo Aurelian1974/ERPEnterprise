@@ -658,7 +658,8 @@ Caz limită: două validări simultane pe aceeași serie se serializează pe râ
 
 1. Jobul zilnic din Integrări preia cursul BNR și apelează `IExchangeRateWriter.SaveBnrRatesAsync`.
 2. Nucleul salvează cursurile cu `Source = BNR` și publică `CursValutarActualizat`.
-3. `IExchangeRateProvider.GetRate(currency, date)` întoarce cursul BNR din ziua cerută; dacă ziua nu are curs (weekend, sărbătoare), întoarce ultimul curs anterior și data lui.
+3. `IExchangeRateProvider.GetRateAsync(currency, date)` întoarce cursul pentru operațiunile din ziua cerută: ultimul curs BNR cu dată **strict anterioară** și data lui. BNR publică cursul zilei D după ora 13:00, deci el se folosește începând din următoarea zi: cursul de vineri se folosește sâmbătă, duminică și luni, iar cel de luni se folosește marți (Codul fiscal, art. 290: ultimul curs comunicat de BNR anterior datei exigibilității). Așa se înțelege „cursul BNR al zilei” în toate specificațiile, pentru documente, casă, bancă, plăți și compensări. Decizie Aurelian, 28.11.2026.
+   - Excepție: `GetClosingRateAsync(currency, date)` întoarce ultimul curs BNR până la data cerută, **inclusiv** ea. Se folosește pentru reevaluarea de sfârșit de lună și pentru soldurile la o dată (expunerea valutară, valoarea conturilor de trezorerie): de exemplu, la 30.11.2026 (duminică) se ia cursul din 27.11.2026.
 4. Documentele memorează cursul folosit; o corectare ulterioară a cursului nu modifică documentele validate.
 
 ### 4.4 Licența
@@ -1236,7 +1237,7 @@ Nucleul e gata (poarta fazei 0 din roadmap) când toate criteriile de mai jos su
 | A8 | Un eveniment scris în outbox e livrat consumatorului exact o dată, inclusiv după o oprire forțată a serviciului | Test de integrare cu oprire simulată |
 | A9 | Un CUI invalid sau duplicat e refuzat la salvarea partenerului | Teste unitare pe validator (set de CUI-uri reale și invalide) |
 | A10 | Rotunjirea respectă politica: preț cu 6 zecimale, valoare și TVA la 2 zecimale, pe un set de cazuri inclusiv energie | Teste unitare pe `IPrecisionService` |
-| A11 | Cursul pentru o zi fără curs BNR e ultimul curs anterior, cu data lui | Test unitar |
+| A11 | Cursul pentru operațiunile unei zile e ultimul curs BNR cu dată strict anterioară, cu data lui (vineri pentru sâmbătă, duminică și luni); cursul de închidere include ziua | Test de integrare |
 | A12 | Orice UPDATE sau DELETE pe `core.AuditEntry` e refuzat de baza de date | Test de integrare |
 | A13 | CNP-ul unui partener persoană fizică nu apare în clar în bază, în jurnale sau în răspunsurile API fără permisiune | Test de integrare + scanare de jurnale |
 | A14 | Niciun alt modul nu referențiază `Erp.Core.Domain` sau `Erp.Core.Infrastructure` | NetArchTest |
