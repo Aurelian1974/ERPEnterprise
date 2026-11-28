@@ -105,6 +105,14 @@ export const menuGroups: readonly MenuGroup[] = [
     ],
   },
   {
+    module: 'Inventory',
+    icon: '▦',
+    items: [
+      { id: 'warehouses', label: 'menu.warehouses', path: '/stocuri/gestiuni', icon: '', module: 'Inventory', permission: 'Inv.Warehouse.View' },
+      { id: 'depots', label: 'menu.depots', path: '/stocuri/depozite', icon: '', module: 'Inventory', permission: 'Inv.Warehouse.View' },
+    ],
+  },
+  {
     module: 'Core',
     label: 'menu.admin',
     icon: '⛭',

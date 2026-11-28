@@ -3,6 +3,7 @@ import { OwnerFilter } from '../org/OwnerFilter';
 import { ownerLabel, useOwnerOptions } from '../org/owner';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router';
+import { ItemStockTab } from '../inventory/ItemStockTab';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -309,11 +310,14 @@ function NewItemPanel({ lookups, canManage, onSaved, onCancel }: {
   );
 }
 
-type ItemTab = ItemSection | 'barcodes' | 'variants' | 'references' | 'translations' | 'block' | 'dimensions' | 'history';
+type ItemTab = ItemSection | 'barcodes' | 'variants' | 'references' | 'translations' | 'block' | 'dimensions' | 'stock' | 'history';
 
 function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; readonly lookups: ItemLookups; readonly canManage: boolean }) {
-  const canManageDimensions = useOutletContext<CurrentUser>().permissions.includes('Core.Dimension.Manage');
+  const user = useOutletContext<CurrentUser>();
+  const canManageDimensions = user.permissions.includes('Core.Dimension.Manage');
   const item = useItem(itemId);
+  // Tab-ul Stoc (02.05, S1 3.4) apare doar cu modulul Stocuri licentiat si dreptul de consultare a gestiunilor (UI-07).
+  const showStock = user.modules.includes('Inventory') && user.permissions.includes('Inv.Warehouse.View') && item.data?.isStockable === true;
   const [tab, setTab] = useState<ItemTab>('general');
   const [visited, setVisited] = useState<ReadonlySet<ItemTab>>(() => new Set<ItemTab>(['general']));
   const tabButtons = useRef(new Map<ItemTab, HTMLButtonElement>());
@@ -333,6 +337,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
     ['translations', t('item.tab.translations')],
     ['block', t('item.tab.block')],
     ['dimensions', t('tab.dimensions')],
+    ...(showStock ? ([['stock', t('inv.item.tab')]] as [ItemTab, string][]) : []),
     ['history', t('item.tab.history')],
   ];
   const open = (next: ItemTab, focus = false) => {
@@ -408,6 +413,7 @@ function ItemPanel({ itemId, lookups, canManage }: { readonly itemId: number; re
       {panel('translations', <ItemTranslationsTab itemId={itemId} itemName={data.name} canManage={canManage} active={tab === 'translations'} />)}
       {panel('block', <ItemBlockTab itemId={itemId} active={tab === 'block'} canManage={canManage} />)}
       {panel('dimensions', <DefaultDimensionsTab source={2} sourceId={itemId} active={tab === 'dimensions'} canManage={canManageDimensions} />)}
+      {showStock && panel('stock', <ItemStockTab itemId={itemId} active={tab === 'stock'} canManage={user.permissions.includes('Inv.ItemSettings.Manage')} />)}
       {panel('history', <HistoryView history={history} />)}
     </div>
   );

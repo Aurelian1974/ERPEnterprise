@@ -108,12 +108,12 @@ public sealed class KeeperAndItemSettingsIntegrationTests(InventoryDatabase data
             TrackingMode.None, null, null, null, false, null)));
         Assert.Equal("INV_INVALID_REFERENCE", notStockable.Code);
 
-        var saved = await Send(new SaveItemStockSettings(item, null, ValuationMethod.Fifo, TrackingMode.LotAndExpiry, 10, 100, null, false, null));
+        var saved = await Send(new SaveItemStockSettings(item, null, ValuationMethod.Fifo, TrackingMode.LotAndExpiry, "10", "100", null, false, null));
         var tab = await Send(new GetItemStockSettings(item));
         Assert.Equal((ValuationMethod.Fifo, TrackingMode.LotAndExpiry, ReplenishmentMethod.MinMax), (tab.Company.ValuationMethod, tab.Company.TrackingMode,
             tab.Company.ReplenishmentMethod));
         var method = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveItemStockSettings(item, null, ValuationMethod.WeightedAverage,
-            TrackingMode.LotAndExpiry, 10, 100, null, false, saved.RowVersion)));
+            TrackingMode.LotAndExpiry, "10", "100", null, false, saved.RowVersion)));
         Assert.Equal("INV_VALUATION_CHANGE_INVALID", method.Code);
     }
 
@@ -123,10 +123,10 @@ public sealed class KeeperAndItemSettingsIntegrationTests(InventoryDatabase data
     {
         var warehouse = await NewDepot("PP-");
         var (item, variants) = await NewItem(Unique("DZ"), true, "ALB", "NEGRU");
-        await Send(new SaveItemStockSettings(item, null, ValuationMethod.Fifo, TrackingMode.None, 5, 50, null, true, null));
-        await Send(new SaveItemWarehouseSettings(null, warehouse, item, null, 2, 20, 10, null, false, false, true, null));
-        await Send(new SaveItemWarehouseSettings(null, warehouse, item, variants[0], 1, 8, 4, ReplenishmentMethod.Mrp, false, true, true, null));
-        var duplicate = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveItemWarehouseSettings(null, warehouse, item, variants[0], 1, 8, 4,
+        await Send(new SaveItemStockSettings(item, null, ValuationMethod.Fifo, TrackingMode.None, "5", "50", null, true, null));
+        await Send(new SaveItemWarehouseSettings(null, warehouse, item, null, "2", "20", "10", null, false, false, true, null));
+        await Send(new SaveItemWarehouseSettings(null, warehouse, item, variants[0], "1", "8", "4.5", ReplenishmentMethod.Mrp, false, true, true, null));
+        var duplicate = await Assert.ThrowsAsync<ErpException>(() => Send(new SaveItemWarehouseSettings(null, warehouse, item, variants[0], "1", "8", "4",
             null, false, false, true, null)));
         Assert.Equal("INV_ITEM_WAREHOUSE_SETTINGS_EXISTS", duplicate.Code);
 
@@ -134,7 +134,7 @@ public sealed class KeeperAndItemSettingsIntegrationTests(InventoryDatabase data
             p.GetManyAsync(warehouse, variants, Ct));
         var white = policies[variants[0]];
         var black = policies[variants[1]];
-        Assert.Equal((1m, 8m, 4m, true, ReplenishmentMethod.Mrp), (white.MinQty!.Value, white.MaxQty!.Value, white.ReorderQty!.Value, white.IsBlockedForReceipt,
+        Assert.Equal((1m, 8m, 4.5m, true, ReplenishmentMethod.Mrp), (white.MinQty!.Value, white.MaxQty!.Value, white.ReorderQty!.Value, white.IsBlockedForReceipt,
             white.Replenishment));
         Assert.Equal((2m, 20m, false, ReplenishmentMethod.MinMax), (black.MinQty!.Value, black.MaxQty!.Value, black.IsBlockedForReceipt, black.Replenishment));
         // Blocarea iesirilor pe tot modelul (firma) se aplica in ambele variante; metoda e a modelului.

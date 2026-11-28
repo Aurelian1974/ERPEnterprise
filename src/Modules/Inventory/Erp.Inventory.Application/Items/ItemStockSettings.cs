@@ -1,17 +1,18 @@
 using Erp.Core.Contracts;
 using Erp.Inventory.Application.Warehouses;
 using Erp.Inventory.Contracts;
+using Erp.Inventory.Domain;
 using FluentValidation;
 
 namespace Erp.Inventory.Application.Items;
 
 /// <summary>Setarile modelului pe firma (S1 3.4); Id null = randul lipseste si se arata valorile implicite ale firmei.</summary>
-public sealed record ItemCompanyStockDto(int? Id, int? DefaultWarehouseId, ValuationMethod ValuationMethod, TrackingMode TrackingMode, decimal? MinQty,
-    decimal? MaxQty, ReplenishmentMethod ReplenishmentMethod, bool IsBlockedForIssue, byte[]? RowVersion);
+public sealed record ItemCompanyStockDto(int? Id, int? DefaultWarehouseId, ValuationMethod ValuationMethod, TrackingMode TrackingMode, string? MinQty,
+    string? MaxQty, ReplenishmentMethod ReplenishmentMethod, bool IsBlockedForIssue, byte[]? RowVersion);
 
 /// <summary>Pragurile si blocarile unui model sau ale unei variante intr-o gestiune (S1 3.4).</summary>
 public sealed record ItemWarehouseStockDto(int Id, int WarehouseId, string WarehouseCode, string WarehouseName, int? ItemVariantId, string? VariantCode,
-    decimal? MinQty, decimal? MaxQty, decimal? ReorderQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, bool IsBlockedForReceipt,
+    string? MinQty, string? MaxQty, string? ReorderQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, bool IsBlockedForReceipt,
     bool IsListed, byte[] RowVersion);
 
 /// <summary>Tab-ul Stoc al fisei articolului pentru firma curenta (macheta s1-03).</summary>
@@ -42,14 +43,14 @@ public sealed record GetItemStockSettings(int ItemId) : IQuery<ItemStockTabDto>;
 [RequiresPermission(InventoryPermissions.ItemSettingsManage)]
 [Audited("Inv.ItemStockSettings.Save")]
 public sealed record SaveItemStockSettings(int ItemId, int? DefaultWarehouseId, ValuationMethod ValuationMethod, TrackingMode TrackingMode,
-    decimal? MinQty, decimal? MaxQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, byte[]? RowVersion) : ICommand<InventorySaved>;
+    string? MinQty, string? MaxQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, byte[]? RowVersion) : ICommand<InventorySaved>;
 
 /// <summary>Salveaza pragurile si blocarile unui model sau ale unei variante intr-o gestiune.</summary>
 [Module(InventoryModule.Code)]
 [RequiresPermission(InventoryPermissions.ItemSettingsManage)]
 [Audited("Inv.ItemWarehouseSettings.Save")]
-public sealed record SaveItemWarehouseSettings(int? Id, int WarehouseId, int ItemId, int? ItemVariantId, decimal? MinQty, decimal? MaxQty,
-    decimal? ReorderQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, bool IsBlockedForReceipt, bool IsListed, byte[]? RowVersion)
+public sealed record SaveItemWarehouseSettings(int? Id, int WarehouseId, int ItemId, int? ItemVariantId, string? MinQty, string? MaxQty,
+    string? ReorderQty, ReplenishmentMethod? ReplenishmentMethod, bool IsBlockedForIssue, bool IsBlockedForReceipt, bool IsListed, byte[]? RowVersion)
     : ICommand<InventorySaved>;
 
 /// <summary>Sterge pragurile pe gestiune; se revine la stratul urmator (model in gestiune, apoi firma).</summary>
@@ -65,10 +66,16 @@ internal sealed class SaveItemStockSettingsValidator : AbstractValidator<SaveIte
         RuleFor(x => x.ValuationMethod).IsInEnum().WithMessage("Alegeți metoda de evaluare.");
         RuleFor(x => x.TrackingMode).IsInEnum().WithMessage("Alegeți urmărirea pe lot sau serie.");
         RuleFor(x => x.ReplenishmentMethod).IsInEnum().When(x => x.ReplenishmentMethod is not null).WithMessage("Alegeți metoda de reaprovizionare.");
-        RuleFor(x => x.MinQty).GreaterThanOrEqualTo(0).When(x => x.MinQty is not null).WithMessage("Stocul minim nu poate fi negativ.");
-        RuleFor(x => x.MaxQty).GreaterThanOrEqualTo(x => x.MinQty ?? 0).When(x => x.MaxQty is not null)
-            .WithMessage("Stocul maxim este cel puțin egal cu stocul minim.");
+        RuleFor(x => x.MinQty).Must(Quantity.IsValidOptional).WithMessage("Stocul minim este o cantitate pozitivă, cu cel mult șase zecimale.");
+        RuleFor(x => x.MaxQty).Must(Quantity.IsValidOptional).WithMessage("Stocul maxim este o cantitate pozitivă, cu cel mult șase zecimale.");
+        RuleFor(x => x.MaxQty).Must((x, max) => ItemQty.MaxNotBelowMin(x.MinQty, max)).WithMessage("Stocul maxim este cel puțin egal cu stocul minim.");
     }
+}
+
+internal static class ItemQty
+{
+    public static bool MaxNotBelowMin(string? min, string? max) =>
+        Quantity.ParseOptional(min) is not { } a || Quantity.ParseOptional(max) is not { } b || b >= a;
 }
 
 internal sealed class SaveItemWarehouseSettingsValidator : AbstractValidator<SaveItemWarehouseSettings>
@@ -76,10 +83,11 @@ internal sealed class SaveItemWarehouseSettingsValidator : AbstractValidator<Sav
     public SaveItemWarehouseSettingsValidator()
     {
         RuleFor(x => x.ReplenishmentMethod).IsInEnum().When(x => x.ReplenishmentMethod is not null).WithMessage("Alegeți metoda de reaprovizionare.");
-        RuleFor(x => x.MinQty).GreaterThanOrEqualTo(0).When(x => x.MinQty is not null).WithMessage("Stocul minim nu poate fi negativ.");
-        RuleFor(x => x.MaxQty).GreaterThanOrEqualTo(x => x.MinQty ?? 0).When(x => x.MaxQty is not null)
-            .WithMessage("Stocul maxim este cel puțin egal cu stocul minim.");
-        RuleFor(x => x.ReorderQty).GreaterThan(0).When(x => x.ReorderQty is not null).WithMessage("Cantitatea de comandă este pozitivă.");
+        RuleFor(x => x.MinQty).Must(Quantity.IsValidOptional).WithMessage("Stocul minim este o cantitate pozitivă, cu cel mult șase zecimale.");
+        RuleFor(x => x.MaxQty).Must(Quantity.IsValidOptional).WithMessage("Stocul maxim este o cantitate pozitivă, cu cel mult șase zecimale.");
+        RuleFor(x => x.MaxQty).Must((x, max) => ItemQty.MaxNotBelowMin(x.MinQty, max)).WithMessage("Stocul maxim este cel puțin egal cu stocul minim.");
+        RuleFor(x => x.ReorderQty).Must(q => string.IsNullOrWhiteSpace(q) || (Quantity.TryParse(q, out var v) && v > 0))
+            .WithMessage("Cantitatea de comandă este pozitivă, cu cel mult șase zecimale.");
         RuleFor(x => x.RowVersion).NotNull().When(x => x.Id is not null).WithMessage("Lipsește versiunea înregistrării.");
     }
 }

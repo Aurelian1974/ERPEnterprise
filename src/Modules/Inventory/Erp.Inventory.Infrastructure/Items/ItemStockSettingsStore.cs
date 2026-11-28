@@ -17,10 +17,11 @@ public sealed class ItemStockSettingsStore(IDbSession session) : IItemStockSetti
         using var grid = await session.Connection.QueryMultipleAsync(Command("inv.usp_ItemStockSettings_Get",
             new { CompanyId = companyId, ItemId = itemId }, ct)).ConfigureAwait(false);
         var c = await grid.ReadSingleAsync<CompanyRow>().ConfigureAwait(false);
-        var company = new ItemCompanyStockDto(c.Id, c.DefaultWarehouseId, (ValuationMethod)c.ValuationMethod, (TrackingMode)c.TrackingMode, c.MinQty,
-            c.MaxQty, (ReplenishmentMethod)c.ReplenishmentMethod, c.IsBlockedForIssue, c.RowVersion);
+        var company = new ItemCompanyStockDto(c.Id, c.DefaultWarehouseId, (ValuationMethod)c.ValuationMethod, (TrackingMode)c.TrackingMode,
+            Quantity.Format(c.MinQty), Quantity.Format(c.MaxQty), (ReplenishmentMethod)c.ReplenishmentMethod, c.IsBlockedForIssue, c.RowVersion);
         var warehouses = (await grid.ReadAsync<WarehouseRow>().ConfigureAwait(false)).Select(w => new ItemWarehouseStockDto(w.Id, w.WarehouseId,
-            w.WarehouseCode, w.WarehouseName, w.ItemVariantId, w.VariantCode, w.MinQty, w.MaxQty, w.ReorderQty, (ReplenishmentMethod?)w.ReplenishmentMethod,
+            w.WarehouseCode, w.WarehouseName, w.ItemVariantId, w.VariantCode, Quantity.Format(w.MinQty), Quantity.Format(w.MaxQty),
+            Quantity.Format(w.ReorderQty), (ReplenishmentMethod?)w.ReplenishmentMethod,
             w.IsBlockedForIssue, w.IsBlockedForReceipt, w.IsListed, w.RowVersion)).ToList();
         var variants = (await grid.ReadAsync<WarehouseOptionDto>().ConfigureAwait(false)).ToList();
         var defaults = (await grid.ReadAsync<WarehouseOptionDto>().ConfigureAwait(false)).ToList();
@@ -31,13 +32,15 @@ public sealed class ItemStockSettingsStore(IDbSession session) : IItemStockSetti
         session.Connection.QuerySingleAsync<InventorySaved>(Command("inv.usp_ItemStockSettings_Save", new
         {
             CompanyId = companyId, s.ItemId, s.DefaultWarehouseId, ValuationMethod = (byte)s.ValuationMethod, TrackingMode = (byte)s.TrackingMode,
-            s.MinQty, s.MaxQty, ReplenishmentMethod = (byte?)s.ReplenishmentMethod, s.IsBlockedForIssue, s.RowVersion, UserId = userId,
+            MinQty = Quantity.ParseOptional(s.MinQty), MaxQty = Quantity.ParseOptional(s.MaxQty), ReplenishmentMethod = (byte?)s.ReplenishmentMethod,
+            s.IsBlockedForIssue, s.RowVersion, UserId = userId,
         }, ct));
 
     public Task<InventorySaved> SaveWarehouseAsync(int companyId, SaveItemWarehouseSettings s, int userId, CancellationToken ct) =>
         session.Connection.QuerySingleAsync<InventorySaved>(Command("inv.usp_ItemWarehouseSettings_Save", new
         {
-            CompanyId = companyId, s.Id, s.WarehouseId, s.ItemId, s.ItemVariantId, s.MinQty, s.MaxQty, s.ReorderQty,
+            CompanyId = companyId, s.Id, s.WarehouseId, s.ItemId, s.ItemVariantId, MinQty = Quantity.ParseOptional(s.MinQty),
+            MaxQty = Quantity.ParseOptional(s.MaxQty), ReorderQty = Quantity.ParseOptional(s.ReorderQty),
             ReplenishmentMethod = (byte?)s.ReplenishmentMethod, s.IsBlockedForIssue, s.IsBlockedForReceipt, s.IsListed, s.RowVersion, UserId = userId,
         }, ct));
 

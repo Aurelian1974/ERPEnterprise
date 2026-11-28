@@ -3009,3 +3009,9 @@ tr.clickable.picked { background: var(--info-bg); }
 /* Declaratii (02.02, C4; machetele c4-01…c4-05): listele de fisiere si de probleme, legaturile ca text. */
 .plain-list { list-style: none; padding-left: 0; display: grid; gap: 6px; }
 button.link { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* ---------- Stocuri › Gestiuni (macheta s1-01) ---------- */
+
+.segmented.four {
+  grid-template-columns: repeat(4, 1fr);
+}
