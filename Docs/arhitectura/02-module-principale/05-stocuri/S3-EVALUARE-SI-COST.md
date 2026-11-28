@@ -10,7 +10,7 @@ Schema SQL `inv`, prefix de cod `Erp.Inventory`, plaja de erori S3 `54300–5444
 - **Cheia de cost** = cheia stocului din S2: (gestiune, variantă) sau (depozit, gestiune, variantă). La identificarea directă se adaugă lotul sau seria (S4).
 - Metoda (`ItemStockSettings.ValuationMethod`) e a modelului, pe firmă: 1 FIFO, 2 CMP, 3 LIFO, 4 identificare directă (S1 §3.4). Gestiunile cu `ValuationBasis` = 2 (preț cu amănuntul) folosesc regulile din 3.7, indiferent de metodă.
 - **Stocul se evaluează doar în RON.** Recepția în valută se transformă la cursul documentului de recepție (F4). Diferențele de curs de la plata facturii merg în `665` / `765` (F4) și nu schimbă costul stocului.
-- S3 rulează **în tranzacția mișcării** (S2, fluxul 4.1, pasul 4) și completează `UnitCost` și `CostAmount` pe fiecare mișcare. Costul unitar are 6 zecimale; valorile se rotunjesc la 2 zecimale prin `IPrecisionService` (P7, `NET-14`).
+- S3 rulează **în tranzacția mișcării** (S2, fluxul 4.1, pasul 4) și completează `UnitCost` și `CostAmount` pe fiecare mișcare. Costul îl calculează **motorul de cost `CostEngine`** (`Erp.Inventory.Domain.Costing`, cod C# pur), același la înregistrare și la recalculare; SQL blochează cheile, citește starea și persistă rezultatul (decizia 9). Costul unitar are 6 zecimale; valorile se rotunjesc la 2 zecimale prin `IPrecisionService` (P7, `NET-14`).
 - Contarea e a Finanțelor (C2). S3 trimite costul în blocul `Accounting` al evenimentelor (`AccountingPayload` v1, componenta `Cost`). Ajustările de valoare, fără cantitate, au evenimentul lor (`CostStocAjustat`).
 - **Ce NU face S3:** nu calculează costul de producție (Producție 02.08 trimite costul produselor predate), nu face ajustările pentru deprecierea stocurilor (`397`, note manuale în C2 la inventar sau la închiderea anului) și nu calculează TVA-ul (C2, C4).
 
@@ -40,7 +40,7 @@ Schema SQL `inv`, prefix de cod `Erp.Inventory`, plaja de erori S3 `54300–5444
    costuri adăugate · diferență de preț pe factură · regularizare negativ · recalculare · modificare preț cu amănuntul
         └──► outbox: CostStocAjustat (bloc Accounting) ──► C2
 
- CostRecalcQueue (chei de refăcut de la o dată) ──► inv.usp_StockCost_Recalculate ──► CostAdjustment
+ CostRecalcQueue (chei de refăcut de la o dată) ──► CostRecalculator + CostEngine ──► CostAdjustment
 
  Gestiune la preț cu amănuntul:
    RetailPriceChange (modificare de preț) · RetailDischarge (descărcarea lunii, cu coeficientul K)
@@ -87,7 +87,7 @@ Consumul se salvează în `CostLayerConsumption` (ieșirea, stratul, cantitatea,
 
 **Stornarea** (S2, 4.6) refolosește costul original: stornarea unei ieșiri pune înapoi cantitatea în straturile din care a ieșit, iar stornarea unei intrări scoate stratul ei. Dacă stratul a fost consumat între timp, stornarea intrării e refuzată cu politica „blocat” (S2) sau, cu politica permisivă, lasă cheia pe minus și o regularizează (3.4).
 
-**Algoritmul.** Consumul straturilor e secvențial pe o cheie. Se face pe set pentru toate liniile unui document: o singură trecere, cu sumă cumulată pe straturi (`SUM(QtyRemaining) OVER (ORDER BY ...)`) și intersectarea intervalelor cumulate cu cantitățile cerute. Nu se folosesc cursoare (`SP-08`). Abaterea e permisă doar în recalcularea în masă (3.5), declarată în 7.
+**Algoritmul** (decizia 9). Consumul straturilor e secvențial pe o cheie: fiecare ieșire depinde de straturile lăsate de cea dinainte. Îl face motorul de cost `CostEngine` (C#, `Erp.Inventory.Domain.Costing`, fără acces la date, `NET-01`), pe liniile documentului în ordinea lor, cu straturile cheii citite și blocate înainte. Aceeași funcție costă mișcările la înregistrare (4.1) și le reface la recalculare (3.5), deci cele două nu pot da rezultate diferite. SQL nu conține reguli de cost și nu folosește cursoare (`SP-08`).
 
 ### 3.3 Costuri adăugate și diferențe de preț (`LandedCost`, documentul `CA`)
 
@@ -127,7 +127,7 @@ O cheie intră în coadă, cu data de la care trebuie refăcută, când apare:
 - o stornare a unei mișcări vechi;
 - o schimbare de metodă (S1, 4.5), doar de la data schimbării.
 
-Recalcularea (`inv.usp_StockCost_Recalculate`) reface, pe cheie, straturile și consumurile de la data din coadă încolo, în ordinea din S2 (regula 4). Pentru fiecare mișcare al cărei cost se schimbă:
+Recalcularea (`CostRecalculator` cu motorul `CostEngine`; datele prin `inv.usp_StockCost_History` și `inv.usp_StockCost_Rebuild`) reface, pe cheie, straturile, consumurile și regularizările, pe istoria cheii, în ordinea din S2 (regula 4). Cheile intrărilor pereche ale transferurilor schimbate se refac apoi la rândul lor. Pentru fiecare mișcare al cărei cost se schimbă:
 
 - actualizează `UnitCost` și `CostAmount` (singura actualizare permisă de trigger-ul din S2, cu `SESSION_CONTEXT`);
 - scrie un rând în `CostAdjustment` cu diferența, motivul `Recalculation` și luna contabilă (cea a mișcării, dacă e deschisă; altfel prima lună deschisă, regula 6);
@@ -198,11 +198,11 @@ Costul standard se schimbă cu un document de actualizare (cine, când, de ce), 
 
 ### 4.1 Costul la validarea unei mișcări
 
-1. `inv.usp_StockMovement_Post` (S2) apelează `inv.usp_StockCost_Apply` cu mișcările din TVP.
-2. Pentru intrări: creează straturile (FIFO, LIFO, ID) sau refăcă media (CMP), cu costul din 3.1.
-3. Pentru ieșiri: consumă straturile sau aplică media; scrie `CostLayerConsumption`; pune restul de rotunjire pe ieșirea care golește cheia (regula 3).
-4. Dacă există mișcări ulterioare pe cheie, pune cheia în coadă de la data mișcării; dacă recalcularea e sub limită, o rulează imediat (3.5).
-5. Întoarce `UnitCost` și `CostAmount` pe mișcări; S2 le pune în eveniment.
+1. Portul de stoc (`StockLedger`, S2) citește starea cheilor atinse prin `inv.usp_StockCost_Load`: creează rândurile `Stock` lipsă și le blochează în ordinea cheii (`UPDLOCK, ROWLOCK`, `SP-16`), cu metoda, costul de rezervă, straturile deschise și, la stornări, consumurile și straturile mișcărilor stornate.
+2. Motorul `CostEngine` costă liniile: pentru intrări creează straturile (FIFO, LIFO, ID) sau reface media (CMP), cu costul din 3.1, acoperind întâi straturile negative (3.4); pentru ieșiri consumă straturile sau aplică media și pune restul de rotunjire pe ieșirea care golește cheia (regula 3); intrarea unui transfer primește straturile ieșirii pereche (regula 4).
+3. `inv.usp_StockMovement_Post` scrie, în același apel și aceeași tranzacție, mișcările cu costul, straturile, `CostLayerConsumption`, regularizările (`CostAdjustment`) și soldul.
+4. Dacă există mișcări ulterioare pe cheie, cheia intră în coadă de la data mișcării; dacă recalcularea e sub limită, rulează imediat (3.5).
+5. `UnitCost` și `CostAmount` ajung în eveniment (S2).
 
 ### 4.2 Factura de transport după recepție
 
@@ -346,9 +346,11 @@ Proceduri stocate principale:
 
 | Procedură | Rol | Publică |
 | --- | --- | --- |
-| `inv.usp_StockCost_Apply` | Costul unui set de mișcări (din `usp_StockMovement_Post`) | Nu |
-| `inv.usp_StockCost_Recalculate` | Refacerea pe cheie de la o dată, cu ajustări | Nu |
-| `inv.usp_CostRecalcQueue_Process` | Jobul: preia cheile din coadă, în loturi, pe gestiuni | Nu |
+| `inv.usp_StockCost_Load` | Starea de cost a cheilor unui apel, cu blocarea lor (pentru motorul `CostEngine`) | Nu |
+| `inv.usp_StockMovement_Post` (S2) | Scrierea mișcărilor costate, a straturilor, consumurilor, regularizărilor și a soldului | Da, prin portul `IStockLedger` |
+| `inv.usp_CostRecalc_Enqueue` | Punerea cheilor în coadă după o mișcare cu dată în trecut | Nu |
+| `inv.usp_StockCost_History`, `inv.usp_StockCost_Rebuild` | Istoria unei chei și scrierea refacerii ei (recalcularea, cu `CostEngine`) | Nu |
+| `inv.usp_CostRecalcQueue_List` | Coada, pentru jobul la 15 minute (`CostRecalcJob`) și ecranul s3-02 | Nu |
 | `inv.usp_LandedCost_Allocate`, `_Validate` | Repartizarea și aplicarea costurilor adăugate | Nu |
 | `inv.usp_RetailPriceChange_Validate` | Modificarea prețului cu amănuntul | Nu |
 | `inv.usp_RetailDischarge_Simulate`, `_Validate` | Calculul K și al descărcării | Nu |
@@ -371,7 +373,7 @@ Coduri de eroare (plaja S3 `54300–54449`, prefix API `INV_`):
 
 Conformitate: schema și procedurile respectă `SQL-01`–`SQL-25`, `SP-01`–`SP-21`, `MIG-01`–`MIG-07`, cu abaterile:
 
-- Abatere de la `SP-08` pentru `inv.usp_StockCost_Recalculate`: recalcularea unei chei e secvențială (fiecare ieșire depinde de straturile lăsate de cea dinainte). Se face cu o buclă pe mișcările cheii (nu pe rânduri de document), într-un tabel temporar cu `COLLATE DATABASE_DEFAULT` (`SQL-23`). Bune practici permit explicit excepția pentru FIFO. Permanentă.
+- Fără abatere de la `SP-08`: calculul secvențial al costului e în motorul C# `CostEngine` (decizia 9), nu în proceduri; procedurile S3 sunt set-based.
 - Abatere de la `SQL-11` pentru `inv.CostLayer`, `inv.CostLayerConsumption`, `inv.CostAdjustment`: fără `RowVersion`, pentru că nu se editează din interfață. Permanentă.
 
 ## 8. Permisiuni și roluri
@@ -455,9 +457,10 @@ Criteriile S3-A1, S3-A2 și S3-A5 sunt critice: ele țin valoarea stocului egal�
 | 6 | Valoarea reziduală din rotunjiri | Se pune pe ieșirea care golește cheia; nicio cheie cu cantitate 0 și valoare ≠ 0 | 2 (regula 3) | Decis (26.11.2026) |
 | 7 | Costul ieșirii pe minus | Ultimul cost cunoscut, regularizat automat la prima intrare | 3.4 | Decis (26.11.2026) |
 | 8 | Costurile pentru gestionari | Gestionarii și șefii de depozit nu văd costurile (doar cantitățile), setabil pe rol | 8 | Decis (26.11.2026) |
+| 9 | Unde se calculează costul | În motorul C# `CostEngine` (`Erp.Inventory.Domain`), același la înregistrare și la recalculare, testabil unitar; SQL blochează cheile, citește starea și persistă rezultatul, în aceeași tranzacție. Înlocuiește `inv.usp_StockCost_Apply` (set-based) și bucla din `inv.usp_StockCost_Recalculate` propuse inițial. Riscul de performanță pe chei foarte mari se verifică cu S3-A11 | 3.2, 3.5, 4.1, 7 | Decis de Aurelian (28.11.2026) |
 
 ## Note de implementare (28.11.2026)
 
 | Pas | Ce s-a implementat | Decizii și abateri |
 | --- | --- | --- |
-| S3.1 | Migrarea `2026.11.081` (`inv.CostLayer`, `inv.CostLayerConsumption`, `inv.CostAdjustment`, `inv.CostRecalcQueue`, `ItemStockSettings.StandardCost`, tipurile `inv.tt_StockMovementCosted`, `tt_CostKey`, `tt_CostKeyState`, `tt_CostLayerWrite`, `tt_CostConsumptionWrite`, `tt_CostAdjustmentWrite`, `tt_MovementCostUpdate`, `BigIdList`; ștergerea `inv.usp_StockMovement_Reverse`); motorul pur `CostEngine` (`Erp.Inventory.Domain.Costing`); `CostCalculator`, `CostRecalculator` (`Erp.Inventory.Application.Movements`); procedurile `inv.usp_StockCost_Load`, `inv.usp_StockMovement_ForReversal`, `inv.usp_CostRecalc_Enqueue`, `inv.usp_StockCost_History`, `inv.usp_StockCost_Rebuild`, `inv.usp_CostRecalcQueue_List`; `inv.usp_StockMovement_Post` scrie acum miscările costate, straturile, consumurile și regularizările; `inv.usp_Stock_Verify` adună ajustările care schimbă stocul; comanda `RecalculateCost`, interogarea `GetCostRecalcQueue`, jobul `CostRecalcJob` (la 15 minute); evenimentul `CostStocAjustat` v1; permisiunile S3 (8); testele S3-A1, A2 (proprietate în motor și în bază), A3 (unitar și în bază pe cele trei metode), A4 (transferul mută straturile cu data lor, stornarea le pune înapoi), A5 (recepția retroactivă la CMP, lanțul prin transfer la LIFO), A7, stornarea unei intrări consumate (54302) | **Abatere de la 4.1 și 7** (`inv.usp_StockCost_Apply` set-based): costul îl calculează motorul C# `CostEngine`, aceeași funcție la înregistrare și la recalculare (nu două algoritme care pot diverge), testabil unitar; SQL blochează cheile (`usp_StockCost_Load`, `UPDLOCK` în ordinea cheii), citește starea și persistă rezultatul în același apel și aceeași tranzacție. **Recalcularea** reface cheia pe toată istoria ei (nu doar de la data din coadă), înlocuiește straturile, consumurile și regularizările cheii, actualizează doar mișcările al căror cost se schimbă (cu ajustarea `Recalculation`, `InStock` = 0) și reface apoi cheile intrărilor pereche ale transferurilor (cel mult 50 de pași într-un apel, restul rămân în coadă). **Ajustările** au `InStock`: 1 = schimbă valoarea stocului (regularizarea negativului; costurile adăugate vor folosi tot asta), 0 = urma unei schimbări deja scrise pe mișcare; valoarea cheii = mișcările + ajustările `InStock` = 1. **Luna ajustării** e luna mișcării; mutarea în prima lună deschisă (regula 6) o face contarea (C2), odată cu blocul `Accounting`. **Stornarea unei intrări** e refuzată (54302) dacă vreun strat al ei a fost atins, indiferent de politică. LIFO și FIFO consumă întâi straturile existente la data ieșirii, apoi (la o ieșire cu dată în trecut) restul, iar recalcularea pune ordinea corectă. Gestiunile la preț cu amănuntul folosesc deocamdată CMP (S3.3). `OriginLayerId` nu are cheie străină: straturile se refac la recalculare |
+| S3.1 | Migrarea `2026.11.081` (`inv.CostLayer`, `inv.CostLayerConsumption`, `inv.CostAdjustment`, `inv.CostRecalcQueue`, `ItemStockSettings.StandardCost`, tipurile `inv.tt_StockMovementCosted`, `tt_CostKey`, `tt_CostKeyState`, `tt_CostLayerWrite`, `tt_CostConsumptionWrite`, `tt_CostAdjustmentWrite`, `tt_MovementCostUpdate`, `BigIdList`; ștergerea `inv.usp_StockMovement_Reverse`); motorul pur `CostEngine` (`Erp.Inventory.Domain.Costing`); `CostCalculator`, `CostRecalculator` (`Erp.Inventory.Application.Movements`); procedurile `inv.usp_StockCost_Load`, `inv.usp_StockMovement_ForReversal`, `inv.usp_CostRecalc_Enqueue`, `inv.usp_StockCost_History`, `inv.usp_StockCost_Rebuild`, `inv.usp_CostRecalcQueue_List`; `inv.usp_StockMovement_Post` scrie acum miscările costate, straturile, consumurile și regularizările; `inv.usp_Stock_Verify` adună ajustările care schimbă stocul; comanda `RecalculateCost`, interogarea `GetCostRecalcQueue`, jobul `CostRecalcJob` (la 15 minute); evenimentul `CostStocAjustat` v1; permisiunile S3 (8); testele S3-A1, A2 (proprietate în motor și în bază), A3 (unitar și în bază pe cele trei metode), A4 (transferul mută straturile cu data lor, stornarea le pune înapoi), A5 (recepția retroactivă la CMP, lanțul prin transfer la LIFO), A7, stornarea unei intrări consumate (54302) | **Decizia 9** (aprobată de Aurelian pe 28.11.2026, trecută în 3.2, 3.5, 4.1 și 7): costul îl calculează motorul C# `CostEngine`, aceeași funcție la înregistrare și la recalculare (nu două algoritme care pot diverge), testabil unitar; SQL blochează cheile (`usp_StockCost_Load`, `UPDLOCK` în ordinea cheii), citește starea și persistă rezultatul în același apel și aceeași tranzacție. **Recalcularea** reface cheia pe toată istoria ei (nu doar de la data din coadă), înlocuiește straturile, consumurile și regularizările cheii, actualizează doar mișcările al căror cost se schimbă (cu ajustarea `Recalculation`, `InStock` = 0) și reface apoi cheile intrărilor pereche ale transferurilor (cel mult 50 de pași într-un apel, restul rămân în coadă). **Ajustările** au `InStock`: 1 = schimbă valoarea stocului (regularizarea negativului; costurile adăugate vor folosi tot asta), 0 = urma unei schimbări deja scrise pe mișcare; valoarea cheii = mișcările + ajustările `InStock` = 1. **Luna ajustării** e luna mișcării; mutarea în prima lună deschisă (regula 6) o face contarea (C2), odată cu blocul `Accounting`. **Stornarea unei intrări** e refuzată (54302) dacă vreun strat al ei a fost atins, indiferent de politică. LIFO și FIFO consumă întâi straturile existente la data ieșirii, apoi (la o ieșire cu dată în trecut) restul, iar recalcularea pune ordinea corectă. Gestiunile la preț cu amănuntul folosesc deocamdată CMP (S3.3). `OriginLayerId` nu are cheie străină: straturile se refac la recalculare |

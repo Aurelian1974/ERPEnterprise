@@ -248,12 +248,10 @@ Sursele nu au tabele în `inv`. Mișcarea păstrează doar sursa (`SourceModule`
 1. Handler-ul documentului (Stocuri sau alt modul) construiește lista de `StockMovementRequest` (6), cu cantitatea în UM de bază.
 2. `IStockPolicyProvider` (S1) dă politica pentru toate variantele o dată: blocări pe articol sau gestiune, stoc negativ, urmărire.
 3. S4 completează sau verifică loturile și seriile.
-4. `inv.usp_StockMovement_Post` primește lista ca TVP (`SP-07`) și, în aceeași tranzacție:
-   - blochează rândurile `Stock` atinse, în ordinea cheii (`UPDLOCK, ROWLOCK`, `SP-16`), creând rândurile lipsă;
-   - verifică stocul negativ la data mișcării și la toate datele ulterioare, din `StockDayBalance` (regula 5), și refuză cu `54101` dacă politica e „blocat”;
-   - alocă `PostingSeq`, scrie mișcările, actualizează `Stock` și `StockDayBalance`;
-   - apelează motorul de cost S3 (`inv.usp_StockCost_Apply`), care completează `UnitCost` și `CostAmount`;
-   - întoarce mișcările cu costul.
+4. În aceeași tranzacție:
+   - `inv.usp_StockCost_Load` blochează rândurile `Stock` atinse, în ordinea cheii (`UPDLOCK, ROWLOCK`, `SP-16`), creând rândurile lipsă, și dă starea de cost a cheilor;
+   - motorul de cost S3 (`CostEngine`, C#, S3 decizia 9) completează `UnitCost` și `CostAmount` pe fiecare linie;
+   - `inv.usp_StockMovement_Post` primește liniile costate ca TVP (`SP-07`), verifică stocul negativ la data mișcării și la toate datele ulterioare, din `StockDayBalance` (regula 5), refuză cu `54101` dacă politica e „blocat”, alocă `PostingSeq`, scrie mișcările, straturile și consumurile, actualizează `Stock` și `StockDayBalance` și întoarce mișcările cu costul.
 5. Handler-ul scrie în outbox `MiscareStocValidata`, cu liniile și costul (blocul `Accounting`).
 6. Dacă mișcarea e retroactivă (există mișcări ulterioare pe cheie), S3 marchează cheile pentru recalculare (S3).
 
@@ -456,8 +454,8 @@ Proceduri stocate principale:
 
 | Procedură | Rol | Publică |
 | --- | --- | --- |
-| `inv.usp_StockMovement_Post` | Înregistrarea unui set de mișcări (TVP `inv.tt_StockMovementRequest`): blocare, verificare negativ, scriere, sold, apel S3 (4.1) | Da, prin portul `IStockLedger` |
-| `inv.usp_StockMovement_Reverse` | Stornarea, cu refolosirea costului | Da, prin port |
+| `inv.usp_StockMovement_Post` | Înregistrarea unui set de mișcări costate de motorul S3 (TVP `inv.tt_StockMovementCosted`): blocare, verificare negativ, scriere, straturi, sold (4.1) | Da, prin portul `IStockLedger` |
+| `inv.usp_StockMovement_ForReversal` | Mișcările de stornat; stornarea o costează motorul S3, cu valoarea exactă a originalului | Da, prin port |
 | `inv.usp_StockNegative_Check` | Verificarea pe datele ulterioare, din `StockDayBalance`, pe set | Nu |
 | `inv.usp_StockDocument_Save`, `_Validate`, `_Reverse`, `_Cancel` | Documentele proprii | Nu |
 | `inv.usp_StockDocument_Approve`, `_Reject` | Aprobarea descărcărilor | Nu |
