@@ -19,12 +19,28 @@ public static class InventoryPermissions
     public const string SettingsManage = "Inv.Settings.Manage";
     public const string ItemSettingsManage = "Inv.ItemSettings.Manage";
     public const string ValuationMethodChange = "Inv.ValuationMethod.Change";
+    public const string DocumentView = "Inv.Document.View";
+    public const string TransferEdit = "Inv.Transfer.Edit";
+    public const string TransferValidate = "Inv.Transfer.Validate";
+    public const string LoadUnloadEdit = "Inv.LoadUnload.Edit";
+    public const string LoadUnloadValidate = "Inv.LoadUnload.Validate";
+    public const string LoadUnloadApprove = "Inv.LoadUnload.Approve";
+    public const string ConsumptionEdit = "Inv.Consumption.Edit";
+    public const string ConsumptionValidate = "Inv.Consumption.Validate";
+    public const string ProductionNoteEdit = "Inv.ProductionNote.Edit";
+    public const string ProductionNoteValidate = "Inv.ProductionNote.Validate";
+    public const string CustodyEdit = "Inv.Custody.Edit";
+    public const string CustodyValidate = "Inv.Custody.Validate";
+    public const string DocumentReverse = "Inv.Document.Reverse";
+    public const string MovementBackdate = "Inv.Movement.Backdate";
+    public const string ReasonManage = "Inv.Reason.Manage";
 }
 
 /// <summary>Codurile API ale Stocurilor ridicate din C# (NET-09). Cele din SQL sunt in InventorySqlErrors.</summary>
 public static class InventoryErrorCodes
 {
     public const string WarehouseNotFound = "INV_WAREHOUSE_NOT_FOUND";
+    public const string BackdateNotAllowed = "INV_BACKDATE_NOT_ALLOWED";
 }
 
 /// <summary>Rezultatul unei salvari: identificatorul si versiunea noua (SQL-19).</summary>

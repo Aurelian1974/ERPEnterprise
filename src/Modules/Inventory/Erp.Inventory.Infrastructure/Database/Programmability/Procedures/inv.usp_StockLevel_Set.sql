@@ -7,7 +7,7 @@ CREATE OR ALTER PROCEDURE inv.usp_StockLevel_Set
 AS
 BEGIN
     -- Nivelul de evidenta pe firma (fara punct de lucru si locatie), pe punct de lucru sau pe locatie (02.05, S1 3.8); @Level NULL sterge
-    -- suprascrierea. Nivelul se schimba doar fara stoc si fara ciorne in perimetru (54016; verificarea pe stoc se completeaza cu S2) si fara
+    -- suprascrierea. Nivelul se schimba doar fara stoc si fara ciorne in perimetru (54016; ciornele se adauga cu documentele S2) si fara
     -- legaturi care l-ar contrazice: gestiuni legate direct de o locatie care trece pe „depozit”, depozite active intr-o locatie care trece pe
     -- „gestiune” (54017). Referinte: 54018.
     SET NOCOUNT ON;
@@ -42,6 +42,13 @@ BEGIN
     JOIN @Before AS b ON b.LocationId = a.LocationId
     WHERE a.StockKeepingLevel <> b.StockKeepingLevel;
 
+    IF EXISTS (SELECT 1 FROM @Changed AS c
+               JOIN inv.Warehouse AS w ON w.LocationId = c.LocationId
+               JOIN inv.Stock AS s ON s.WarehouseId = w.Id AND s.QtyOnHand <> 0)
+       OR EXISTS (SELECT 1 FROM @Changed AS c
+                  JOIN inv.Depot AS d ON d.LocationId = c.LocationId
+                  JOIN inv.Stock AS s ON s.DepotId = d.Id AND s.QtyOnHand <> 0)
+        THROW 54016, N'Gestiunile sau depozitele locației au stoc; goliți-le prin note de mișcare înainte de schimbarea nivelului.', 1;
     IF EXISTS (SELECT 1 FROM @Changed AS c JOIN inv.Warehouse AS w ON w.LocationId = c.LocationId WHERE c.StockKeepingLevel = 2 AND w.IsActive = 1)
         THROW 54017, N'Locația are gestiuni legate direct; mutați-le întâi în depozite (golind stocul prin note de mișcare).', 1;
     IF EXISTS (SELECT 1 FROM @Changed AS c JOIN inv.Depot AS d ON d.LocationId = c.LocationId WHERE c.StockKeepingLevel = 1 AND d.IsActive = 1)

@@ -14,7 +14,7 @@ AS
 BEGIN
     -- Setarile de stoc ale modelului pe firma (02.05, S1 3.4). Modelul e stocabil, gestiunea implicita e a firmei, activa, depozit sau magazin
     -- (54018). Identificarea directa cere lot sau serie (54015). Metoda unui model deja configurat se schimba doar prin documentul de schimbare
-    -- (54011, S1 4.5); urmarirea doar fara stoc (54010; verificarea pe stoc se adauga cu S2). Versiune diferita: 54014.
+    -- (54011, S1 4.5); urmarirea doar fara stoc in firma (54010). Versiune diferita: 54014.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -43,6 +43,10 @@ BEGIN
     BEGIN
         IF @CurrentMethod <> @ValuationMethod
             THROW 54011, N'Metoda de evaluare se schimbă doar prin documentul de schimbare a metodei.', 1;
+        IF EXISTS (SELECT 1 FROM inv.ItemStockSettings WHERE Id = @Id AND TrackingMode <> @TrackingMode)
+           AND EXISTS (SELECT 1 FROM inv.Stock AS s JOIN core.ItemVariant AS v ON v.Id = s.ItemVariantId
+                       WHERE s.CompanyId = @CompanyId AND v.ItemId = @ItemId AND s.QtyOnHand <> 0)
+            THROW 54010, N'Urmărirea pe lot sau serie se schimbă doar cât timp nicio variantă a articolului nu are stoc în firmă.', 1;
 
         UPDATE inv.ItemStockSettings
         SET DefaultWarehouseId = @DefaultWarehouseId, TrackingMode = @TrackingMode, MinQty = @MinQty, MaxQty = @MaxQty,

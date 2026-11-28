@@ -3,6 +3,7 @@ using Erp.Inventory.Application.Settings;
 using Erp.Inventory.Application.Warehouses;
 using Erp.Inventory.Infrastructure.Warehouses;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Erp.Inventory.Infrastructure;
 
@@ -18,6 +19,10 @@ public static class InventoryInfrastructureRegistration
         services.AddScoped<IWarehouseKeeperStore, WarehouseKeeperStore>();
         services.AddScoped<IDepotStore, DepotStore>();
         services.AddScoped<Contracts.IWarehouseLookup, WarehouseLookup>();
+        services.AddScoped<Application.Movements.IStockMovementStore, Movements.StockMovementStore>();
+        services.AddScoped<Application.Movements.StockLedger>();
+        // Portul de stoc al Nucleului (02.05, S2 6): Stocurile inlocuiesc implementarea goala.
+        services.Replace(ServiceDescriptor.Scoped<IStockLedger>(sp => sp.GetRequiredService<Application.Movements.StockLedger>()));
         services.AddScoped<Application.Items.IItemStockSettingsStore, Items.ItemStockSettingsStore>();
         services.AddScoped<Contracts.IStockPolicyProvider, Items.StockPolicyProvider>();
         return services;
@@ -55,5 +60,23 @@ public sealed class InventorySqlErrors : ISqlErrorMap
         [54021] = (ErpErrorKind.Conflict, "INV_ITEM_WAREHOUSE_SETTINGS_EXISTS"),
         [54022] = (ErpErrorKind.Conflict, "INV_DEPOT_CODE_EXISTS"),
         [54023] = (ErpErrorKind.NotFound, "INV_DEPOT_NOT_FOUND"),
+        [54101] = (ErpErrorKind.Conflict, "INV_STOCK_INSUFFICIENT"),
+        [54102] = (ErpErrorKind.Conflict, "INV_SOURCE_ALREADY_POSTED"),
+        [54103] = (ErpErrorKind.Forbidden, "INV_BACKDATE_NOT_ALLOWED"),
+        [54104] = (ErpErrorKind.Validation, "INV_LINE_QTY_INVALID"),
+        [54105] = (ErpErrorKind.Validation, "INV_VARIANT_NOT_STOCKABLE"),
+        [54106] = (ErpErrorKind.Validation, "INV_WAREHOUSE_PAIR_INVALID"),
+        [54107] = (ErpErrorKind.Conflict, "INV_TRANSFER_MODE_MISMATCH"),
+        [54108] = (ErpErrorKind.Validation, "INV_TRANSIT_DIRECT_USE"),
+        [54109] = (ErpErrorKind.Validation, "INV_RECEIPT_EXCEEDS_SHIPMENT"),
+        [54110] = (ErpErrorKind.Validation, "INV_REASON_REQUIRED"),
+        [54111] = (ErpErrorKind.Validation, "INV_ATTACHMENT_REQUIRED"),
+        [54112] = (ErpErrorKind.Conflict, "INV_APPROVAL_REQUIRED"),
+        [54113] = (ErpErrorKind.Forbidden, "INV_APPROVER_IS_AUTHOR"),
+        [54114] = (ErpErrorKind.Conflict, "INV_REVERSAL_INVALID"),
+        [54115] = (ErpErrorKind.Validation, "INV_COST_CENTER_REQUIRED"),
+        [54116] = (ErpErrorKind.Validation, "INV_CUSTODY_MISUSE"),
+        [54117] = (ErpErrorKind.Conflict, "INV_DOCUMENT_CONCURRENCY"),
+        [54199] = (ErpErrorKind.Conflict, "INV_MOVEMENT_IMMUTABLE"),
     };
 }

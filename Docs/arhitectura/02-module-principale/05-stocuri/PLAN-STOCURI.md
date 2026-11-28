@@ -26,4 +26,13 @@ se leagă de inventarul din S6; până atunci predarea fără inventar obligator
 | S1.3 | Depozitele, gestiunile din depozite, regulile de propunere, nivelul de evidență (firmă, punct de lucru, locație); `IWarehouseLookup` | S1-A15 (partea 2) |
 | S1.4 | Ecranele Gestiuni, Gestionari și predare, Articol · tab Stoc, Depozite (s1-01, s1-02, s1-03, s1-05) | — |
 
-Pașii părților S2–S7 se detaliază la începutul fiecărei părți.
+## 3. Pașii părții S2
+
+| Pas | Conținut | Criterii |
+| --- | --- | --- |
+| S2.1 | Registrul (`inv.StockMovement`, imuabil), soldul curent și soldurile pe zile, tipurile de mișcare și motivele livrate, `inv.usp_StockMovement_Post` (blocare, negativ pe toate datele ulterioare, idempotență pe sursă, cost mediu pe cheie), stornarea la ban, portul `IStockLedger` (Nucleu) implementat de Stocuri, evenimentele `MiscareStocValidata` și `StocNegativFortat`, data mișcării (`BackdatingDays`) | S2-A1, A2, A3, A4, A8, A9 (portul), A12, A14 |
+| S2.2 | Documentele proprii: încărcare și descărcare cu motive și aprobare, bon de consum, custodie, notă de predare produse; numerotarea la validare, stornarea documentului | S2-A7, A11 |
+| S2.3 | Nota de predare într-o etapă și în două etape (`TRANZIT`, `TransitShipment`), nota de primire cu diferențele și rezolvarea lor, avizul de însoțire | S2-A5, A6 |
+| S2.4 | Consumatorul POS (`BonuriPOSSincronizate`), registrul de mișcări, ecranele s2-01…s2-05 | S2-A9, A13 |
+
+Pașii părților S3–S7 se detaliază la începutul fiecărei părți.

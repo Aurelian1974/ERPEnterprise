@@ -21,14 +21,33 @@ WITH RoleMap (RoleCode, PermissionCode) AS (
     UNION ALL
     SELECT N'CONTABIL_SEF', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Inv'
     UNION ALL
-    SELECT N'CONTABIL_STOCURI', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Inv' AND p.Code <> N'Inv.ValuationMethod.Change'
+    SELECT N'CONTABIL_STOCURI', p.Code FROM core.Permission AS p WHERE p.ModuleCode = N'Inv'
+        AND p.Code NOT IN (N'Inv.ValuationMethod.Change', N'Inv.LoadUnload.Approve')
     UNION ALL
     SELECT RoleCode, PermissionCode FROM (VALUES
         (N'SEF_DEPOZIT', N'Inv.Warehouse.View'),
         (N'SEF_DEPOZIT', N'Inv.Warehouse.Block'),
         (N'SEF_DEPOZIT', N'Inv.Warehouse.Keeper'),
         (N'SEF_DEPOZIT', N'Inv.ItemSettings.Manage'),
+        (N'SEF_DEPOZIT', N'Inv.Document.View'),
+        (N'SEF_DEPOZIT', N'Inv.Transfer.Edit'),
+        (N'SEF_DEPOZIT', N'Inv.Transfer.Validate'),
+        (N'SEF_DEPOZIT', N'Inv.Consumption.Edit'),
+        (N'SEF_DEPOZIT', N'Inv.Consumption.Validate'),
+        (N'SEF_DEPOZIT', N'Inv.LoadUnload.Edit'),
+        (N'SEF_DEPOZIT', N'Inv.LoadUnload.Validate'),
+        (N'SEF_DEPOZIT', N'Inv.Custody.Edit'),
+        (N'SEF_DEPOZIT', N'Inv.Custody.Validate'),
+        (N'SEF_DEPOZIT', N'Inv.Document.Reverse'),
         (N'GESTIONAR',   N'Inv.Warehouse.View'),
+        (N'GESTIONAR',   N'Inv.Document.View'),
+        (N'GESTIONAR',   N'Inv.Transfer.Edit'),
+        (N'GESTIONAR',   N'Inv.Transfer.Validate'),
+        (N'GESTIONAR',   N'Inv.Consumption.Edit'),
+        (N'GESTIONAR',   N'Inv.Consumption.Validate'),
+        (N'GESTIONAR',   N'Inv.LoadUnload.Edit'),
+        (N'DIRECTOR_GENERAL', N'Inv.LoadUnload.Approve'),
+        (N'AUDITOR',     N'Inv.Document.View'),
         (N'AUDITOR',     N'Inv.Warehouse.View')
     ) AS fixed (RoleCode, PermissionCode)
 )

@@ -7,7 +7,7 @@ CREATE OR ALTER PROCEDURE inv.usp_Warehouse_SetActive
 AS
 BEGIN
     -- Dezactivarea si reactivarea gestiunii (02.05, S1 4.4). Tranzitul nu se dezactiveaza; o gestiune cu stoc, ciorne sau rezervari active nu se
-    -- dezactiveaza (54006; verificarile pe stoc se completeaza odata cu tabelele S2 si S5). Gestiune inexistenta: 54001; versiune: 54014.
+    -- dezactiveaza (54006; ciornele si rezervarile se adauga cu documentele S2 si S5). Gestiune inexistenta: 54001; versiune: 54014.
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -16,6 +16,8 @@ BEGIN
         THROW 54001, N'Gestiunea nu există în firma curentă.', 1;
     IF @IsActive = 0 AND @Kind = 3
         THROW 54006, N'Gestiunea de tranzit nu se dezactivează.', 1;
+    IF @IsActive = 0 AND EXISTS (SELECT 1 FROM inv.Stock WHERE WarehouseId = @Id AND (QtyOnHand <> 0 OR CostOnHand <> 0))
+        THROW 54006, N'Gestiunea are stoc; goliți-o (transfer sau ieșire) înainte de dezactivare.', 1;
 
     UPDATE inv.Warehouse
     SET IsActive = @IsActive, ModifiedAt = SYSUTCDATETIME(), ModifiedBy = @UserId

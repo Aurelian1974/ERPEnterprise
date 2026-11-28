@@ -117,7 +117,7 @@ public abstract class InventoryTestBase(InventoryDatabase database)
     {
         InventoryPermissions.WarehouseView, InventoryPermissions.WarehouseManage, InventoryPermissions.WarehouseBlock,
         InventoryPermissions.WarehouseKeeper, InventoryPermissions.SettingsManage, InventoryPermissions.ItemSettingsManage,
-        InventoryPermissions.ValuationMethodChange,
+        InventoryPermissions.ValuationMethodChange, InventoryPermissions.MovementBackdate,
     };
 
     /// <summary>Scope-ul pe gestiuni al utilizatorului de test (null = toate).</summary>
@@ -141,6 +141,18 @@ public abstract class InventoryTestBase(InventoryDatabase database)
         await unit.BeginAsync(Ct);
         await work(scope.ServiceProvider);
         await unit.CommitAsync(Ct);
+    }
+
+    /// <summary>Un serviciu intern intr-o tranzactie proprie, cu rezultat (portul de stoc, ca documentele apelantului).</summary>
+    protected async Task<T> InTransaction<T>(Func<IServiceProvider, Task<T>> work, int? companyId = null)
+    {
+        await using var provider = Services(null, companyId);
+        await using var scope = provider.CreateAsyncScope();
+        var unit = scope.ServiceProvider.GetRequiredService<Erp.Core.Application.Abstractions.IUnitOfWork>();
+        await unit.BeginAsync(Ct);
+        var result = await work(scope.ServiceProvider);
+        await unit.CommitAsync(Ct);
+        return result;
     }
 
     protected async Task<T> Query<T>(string sql, object? parameters = null)
@@ -203,6 +215,7 @@ public abstract class InventoryTestBase(InventoryDatabase database)
         services.AddErpMediator(InventoryApplication.Assembly);
         services.AddCoreInfrastructure(Database.ConnectionString, new LicenseOptions(Development: true));
         services.AddInventoryInfrastructure();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ILicenseInfo>(new FakeLicense());
         services.AddSingleton<IPeriodLock>(new FakePeriodLock(ClosedDays));
         var context = new FakeContext { UserId = userId ?? Database.AdminId, CompanyId = companyId ?? Database.CompanyId, WarehouseScope = WarehouseScope };

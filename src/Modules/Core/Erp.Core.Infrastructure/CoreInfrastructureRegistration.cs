@@ -63,6 +63,8 @@ public static class CoreInfrastructureRegistration
         services.AddScoped<Application.Items.IItemVariantStore, Items.ItemVariantStore>();
         // Modulul care tine soldurile clientilor (Finante / Vanzari) isi inregistreaza propriul IPartnerExposureProvider inainte de Nucleu.
         services.TryAddScoped<IPartnerExposureProvider, Application.Partners.NoPartnerExposure>();
+        // Portul de stoc (02.05, S2 6): implementarea goala pana cand Stocurile o inlocuiesc.
+        services.TryAddScoped<IStockLedger, NoStockLedger>();
         services.AddScoped<IPrecisionService, Precision.PrecisionService>();
         services.AddScoped<Application.Employees.IEmployeeStore, Employees.EmployeeStore>();
         services.AddSingleton(sp => new Anaf.AnafHttp(sp.GetRequiredService<TimeProvider>()));

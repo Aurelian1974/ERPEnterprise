@@ -11,7 +11,22 @@ USING (VALUES
     (N'Inv.Warehouse.Keeper',       N'Gestionarii și predarea-primirea gestiunii'),
     (N'Inv.Settings.Manage',        N'Setările de stoc ale firmei'),
     (N'Inv.ItemSettings.Manage',    N'Tab-ul Stoc pe fișa articolului și pragurile pe gestiune'),
-    (N'Inv.ValuationMethod.Change', N'Documentul de schimbare a metodei de evaluare')
+    (N'Inv.ValuationMethod.Change', N'Documentul de schimbare a metodei de evaluare'),
+    (N'Inv.Document.View',          N'Documentele de stoc și registrul de mișcări (în limita gestiunilor permise)'),
+    (N'Inv.Transfer.Edit',          N'Note de predare și de primire în ciornă'),
+    (N'Inv.Transfer.Validate',      N'Validarea notelor de predare și de primire'),
+    (N'Inv.LoadUnload.Edit',        N'Încărcări și descărcări în ciornă'),
+    (N'Inv.LoadUnload.Validate',    N'Validarea încărcărilor și descărcărilor'),
+    (N'Inv.LoadUnload.Approve',     N'Aprobarea descărcărilor peste prag'),
+    (N'Inv.Consumption.Edit',       N'Bonuri de consum în ciornă'),
+    (N'Inv.Consumption.Validate',   N'Validarea bonurilor de consum'),
+    (N'Inv.ProductionNote.Edit',    N'Note de predare produse în ciornă (fără Producție)'),
+    (N'Inv.ProductionNote.Validate', N'Validarea notelor de predare produse'),
+    (N'Inv.Custody.Edit',           N'Intrări și ieșiri de custodie în ciornă'),
+    (N'Inv.Custody.Validate',       N'Validarea documentelor de custodie'),
+    (N'Inv.Document.Reverse',       N'Stornarea documentelor de stoc'),
+    (N'Inv.Movement.Backdate',      N'Mișcări cu dată mai veche decât limita firmei'),
+    (N'Inv.Reason.Manage',          N'Motivele de încărcare și descărcare')
 ) AS source (Code, Description)
 ON target.Code = source.Code
 WHEN MATCHED AND target.Description <> source.Description THEN
